@@ -19,7 +19,7 @@ export const ROICalculator: React.FC<ROIProps> = ({ lang }) => {
   const [teamSize, setTeamSize] = useState(5);
   const [dailyMsgs, setDailyMsgs] = useState(50);
   const [manualHours, setManualHours] = useState(3);
-  const [staffCost, setStaffCost] = useState(100);
+  const [staffCost, setStaffCost] = useState(15);
   const [showLeadForm, setShowLeadForm] = useState(false);
 
   // Result State
@@ -145,7 +145,7 @@ export const ROICalculator: React.FC<ROIProps> = ({ lang }) => {
                 
                 <div className="flex justify-between items-center pb-6 border-b border-slate-700">
                   <span className="text-slate-400">{t.result.savedMoney}</span>
-                  <span className="text-4xl font-extrabold text-green-400">₹{result?.monthlySavedMoney.toLocaleString()}</span>
+                  <span className="text-4xl font-extrabold text-green-400">${result?.monthlySavedMoney.toLocaleString()}</span>
                 </div>
 
                 <div className="bg-slate-800/50 p-6 rounded-xl border border-slate-700">

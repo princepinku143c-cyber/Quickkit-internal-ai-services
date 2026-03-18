@@ -42,13 +42,13 @@ export const Hero: React.FC<HeroProps> = ({ lang, onLaunchArchitect }) => {
           <Terminal className="w-3 h-3" /> System Status: Operational
         </div>
 
-        <h1 className="text-5xl md:text-8xl font-black mb-6 leading-tight tracking-tighter text-white">
-          Internal <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-cyan-300 to-emerald-400">AI Services</span> Agency
+        <h1 className="text-5xl md:text-8xl font-black mb-6 leading-tight tracking-tighter text-white animate-slide-up">
+          QuickKit <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-emerald-400">Global AI</span>
         </h1>
         
-        <p className="text-lg md:text-2xl text-slate-400 max-w-3xl mx-auto mb-12 font-mono leading-relaxed">
-          Deploy premium automation infrastructure. We manage the accounts, updates, and maintenance. 
-          <span className="text-blue-400 block mt-2 font-bold border-b border-blue-500/30 w-fit mx-auto">Everything delivered within 3 days.</span>
+        <p className="text-lg md:text-2xl text-slate-400 max-w-3xl mx-auto mb-12 font-sans leading-relaxed animate-slide-up [animation-delay:200ms]">
+          Deploy premium automation infrastructure using our proprietary <span className="text-white font-bold">QuickKit Engine</span>. 
+          Managed accounts, 24/7 maintenance, and rapid deployment.
         </p>
 
         {/* AI Architect Command Center */}

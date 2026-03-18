@@ -8,13 +8,13 @@ import { getFirestore } from "firebase/firestore";
 // SHARED CONFIG: Use ONE firebaseConfig for the entire app.
 
 const firebaseConfig = {
-  // TODO: Paste your firebaseConfig string here immediately
-  // apiKey: "YOUR_API_KEY",
-  // authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  // projectId: "YOUR_PROJECT_ID",
-  // storageBucket: "YOUR_PROJECT_ID.appspot.com",
-  // messagingSenderId: "YOUR_SENDER_ID",
-  // appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyC0c0orE9oK7JZMwswRviBB0cWdnVnwdD4",
+  authDomain: "nexusstream-3a734.firebaseapp.com",
+  projectId: "nexusstream-3a734",
+  storageBucket: "nexusstream-3a734.firebasestorage.app",
+  messagingSenderId: "639362646888",
+  appId: "1:639362646888:web:5a917cd44032eb5989ccdd",
+  measurementId: "G-HD73Q2TQHW"
 };
 
 // Initialize Firebase only if config is present (prevents crash in demo mode)

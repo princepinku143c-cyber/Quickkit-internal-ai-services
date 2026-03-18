@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Menu, X, Zap, Lock } from 'lucide-react';
+import { Menu, X, Zap, Lock, Cpu } from 'lucide-react';
 import { Language } from '../types';
 import { TRANSLATIONS } from '../data/translations';
 
@@ -32,11 +32,16 @@ export const Navbar: React.FC<NavbarProps> = ({ lang, setLang, isAdmin, onLoginC
     <nav className={`fixed w-full z-40 transition-all duration-300 ${scrolled ? 'bg-nexus-dark/90 backdrop-blur-md border-b border-nexus-border py-3' : 'bg-transparent py-5'}`}>
       <div className="container mx-auto px-6 flex justify-between items-center">
         {/* Logo */}
-        <div className="flex items-center gap-2 cursor-pointer" onClick={() => scrollTo('hero')}>
-          <div className="bg-gradient-to-tr from-cyan-400 to-purple-500 p-2 rounded-lg">
-            <Zap className="text-white w-6 h-6" />
+        {/* Logo */}
+        <div className="flex items-center gap-3 cursor-pointer group" onClick={() => scrollTo('hero')}>
+          <div className="bg-gradient-to-tr from-blue-500 via-indigo-500 to-purple-600 p-2.5 rounded-xl shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform relative overflow-hidden">
+            <Cpu className="text-white w-6 h-6 relative z-10 animate-pulse" />
+            <div className="absolute inset-0 bg-white/20 animate-pulse-glow opacity-0 group-hover:opacity-100 transition-opacity"></div>
           </div>
-          <span className="text-xl font-bold text-white tracking-wide">AutoFlow</span>
+          <div className="flex flex-col">
+            <span className="text-xl font-black text-white tracking-tighter uppercase leading-none">QuickKit</span>
+            <span className="text-[10px] font-mono text-blue-400 font-bold tracking-[0.2em] uppercase">Global Systems</span>
+          </div>
         </div>
 
         {/* Desktop Menu */}
@@ -52,21 +57,7 @@ export const Navbar: React.FC<NavbarProps> = ({ lang, setLang, isAdmin, onLoginC
             {t.roi}
           </button>
 
-          {/* Language Toggle */}
-          <div className="flex bg-nexus-card rounded-full p-1 border border-nexus-border">
-            <button 
-              onClick={() => setLang('en')} 
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition ${lang === 'en' ? 'bg-slate-700 text-white' : 'text-slate-400'}`}
-            >
-              EN
-            </button>
-            <button 
-              onClick={() => setLang('hi')} 
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition ${lang === 'hi' ? 'bg-slate-700 text-white' : 'text-slate-400'}`}
-            >
-              HI
-            </button>
-          </div>
+
 
           <button 
             onClick={onLoginClick}
@@ -92,10 +83,7 @@ export const Navbar: React.FC<NavbarProps> = ({ lang, setLang, isAdmin, onLoginC
           <button onClick={onLoginClick} className="text-left text-slate-300 flex items-center gap-2">
             <Lock className="w-4 h-4" /> {t.login}
           </button>
-          <div className="flex gap-4 pt-4 border-t border-nexus-border">
-             <button onClick={() => setLang('en')} className={lang === 'en' ? 'text-white font-bold' : 'text-slate-500'}>English</button>
-             <button onClick={() => setLang('hi')} className={lang === 'hi' ? 'text-white font-bold' : 'text-slate-500'}>Hindi</button>
-          </div>
+
         </div>
       )}
     </nav>

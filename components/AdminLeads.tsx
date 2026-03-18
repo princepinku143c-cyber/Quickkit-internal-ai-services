@@ -1,38 +1,74 @@
 
 import React, { useEffect, useState } from 'react';
 import { LeadSubmission, LeadStatus } from '../types';
-import { Search, Download, Trash2, Phone, Mail, FileText, Eye, MoreHorizontal, Check, X, User, DollarSign, Calendar, MessageSquare, ShieldCheck, Clock } from 'lucide-react';
+import { collection, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
+import { Search, Download, Trash2, Phone, Mail, Eye, X, DollarSign, MessageSquare, ShieldCheck, Clock } from 'lucide-react';
 
 export const AdminLeads: React.FC = () => {
   const [leads, setLeads] = useState<LeadSubmission[]>([]);
   const [search, setSearch] = useState('');
   const [selectedLead, setSelectedLead] = useState<LeadSubmission | null>(null);
 
+  // Real-time Firebase sync
   useEffect(() => {
-    const data = localStorage.getItem('leads');
-    if (data) {
-        // Migration: Add status if missing
-        const parsed = JSON.parse(data).map((l: any) => ({
-            ...l,
-            status: l.status || 'NEW'
-        }));
+    // Try Firebase first
+    if (Object.keys(db).length > 0) {
+      const unsubscribe = onSnapshot(collection(db as any, 'leads'), (snapshot) => {
+        const firebaseLeads = snapshot.docs.map(d => ({ ...d.data(), _docId: d.id } as any));
+        const merged = firebaseLeads.map((l: any) => ({ ...l, status: l.status || 'NEW' }));
+        setLeads(merged);
+      });
+      return () => unsubscribe();
+    } else {
+      // Fallback to localStorage
+      const data = localStorage.getItem('leads');
+      if (data) {
+        const parsed = JSON.parse(data).map((l: any) => ({ ...l, status: l.status || 'NEW' }));
         setLeads(parsed);
+      }
     }
   }, []);
 
-  const updateStatus = (id: string, newStatus: LeadStatus) => {
+  const updateStatus = async (id: string, newStatus: LeadStatus) => {
       const updated = leads.map(l => l.id === id ? { ...l, status: newStatus } : l);
       setLeads(updated);
       localStorage.setItem('leads', JSON.stringify(updated));
+      // Firebase sync
+      const lead = leads.find(l => l.id === id) as any;
+      if (lead?._docId && Object.keys(db).length > 0) {
+        await updateDoc(doc(db as any, 'leads', lead._docId), { status: newStatus });
+      }
   };
 
-  const deleteLead = (id: string, e: React.MouseEvent) => {
+  const exportCSV = () => {
+      const headers = ['Name','Phone','Email','Business Type','Plan','Setup Cost','Monthly','ROI','Status','Date'];
+      const rows = leads.map(l => [
+        l.name, l.phone, l.email, l.businessType, l.plan,
+        l.aiQuote?.setupCost || '', l.aiQuote?.monthlyCost || '', l.aiQuote?.roiEstimate || '',
+        l.status || 'NEW',
+        new Date(l.submittedAt).toLocaleDateString()
+      ]);
+      const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `leads-${Date.now()}.csv`; a.click();
+      URL.revokeObjectURL(url);
+  };
+
+  const deleteLead = async (id: string, e: React.MouseEvent) => {
       e.stopPropagation();
       if(confirm('Are you sure you want to delete this lead?')) {
+        const lead = leads.find(l => l.id === id) as any;
         const updated = leads.filter(l => l.id !== id);
         setLeads(updated);
         localStorage.setItem('leads', JSON.stringify(updated));
         if (selectedLead?.id === id) setSelectedLead(null);
+        // Firebase sync
+        if (lead?._docId && Object.keys(db).length > 0) {
+          await deleteDoc(doc(db as any, 'leads', lead._docId));
+        }
       }
   };
 
@@ -71,8 +107,8 @@ export const AdminLeads: React.FC = () => {
                     className="bg-slate-900 border border-slate-800 rounded-lg pl-9 pr-4 py-2 text-sm text-white focus:border-orange-500 outline-none w-64"
                 />
             </div>
-            <button className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-sm font-bold rounded-lg flex items-center gap-2">
-                <Download className="w-4 h-4" /> CSV
+            <button onClick={exportCSV} className="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white text-sm font-bold rounded-lg flex items-center gap-2">
+                <Download className="w-4 h-4" /> Export CSV
             </button>
         </div>
       </div>
@@ -262,8 +298,10 @@ export const AdminLeads: React.FC = () => {
                   
                   {/* Footer Actions */}
                   <div className="p-6 border-t border-slate-800 bg-slate-900 flex justify-between items-center">
-                        <button className="px-4 py-2 bg-slate-800 hover:bg-red-900/20 text-red-400 text-sm font-bold rounded-lg border border-slate-700 hover:border-red-500/30 transition-colors">
-                            Reject Lead
+                        <button 
+                          onClick={() => { updateStatus(selectedLead.id, 'LOST'); setSelectedLead({...selectedLead, status: 'LOST'}); }}
+                          className="px-4 py-2 bg-slate-800 hover:bg-red-900/20 text-red-400 text-sm font-bold rounded-lg border border-slate-700 hover:border-red-500/30 transition-colors">
+                            Mark as Lost
                         </button>
                         <div className="flex gap-3">
                             <a href={`mailto:${selectedLead.email}`} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-lg border border-slate-700 transition-colors">

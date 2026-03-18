@@ -14,6 +14,7 @@ interface RoadmapModalProps {
   onClose: () => void;
   // UPDATED: Now accepts structured quote
   onBook: (quote: AIQuote, history: ChatMessage[]) => void;
+  sessionRef: string; // NEW PROP
 }
 
 interface ChatPart {
@@ -52,7 +53,7 @@ interface AIData {
   needsClarification: boolean;
 }
 
-export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, customPrompt, currency, existingData, existingHistory, onSaveState, onClose, onBook }) => {
+export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, customPrompt, currency, existingData, existingHistory, sessionRef, onSaveState, onClose, onBook }) => {
   const [loading, setLoading] = useState(!existingData);
   const [refining, setRefining] = useState(false);
   const [data, setData] = useState<AIData | null>(existingData || null);
@@ -68,7 +69,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, customPrompt, 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   
-  const AI_MODEL = 'gemini-3-flash-preview'; // Supports Vision & Text
+  const AI_MODEL = 'gemini-2.0-flash'; // Supports Vision & Text
 
   // Initial Load
   useEffect(() => {
@@ -131,33 +132,74 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, customPrompt, 
   };
 
   const getSystemPrompt = () => {
-    return `You are the Nexus Technical Architect, an elite AI specialized in Business Process Automation.
-    
-    CAPABILITIES:
-    - You can analyze text descriptions OR images (diagrams, screenshots of forms, hand-drawn workflows).
-    - If an image is provided, extract the workflow logic, data fields, and inefficiencies visible in it.
-    
-    OUTPUT FORMAT: JSON ONLY. No markdown.
-    
-    ROI LOGIC (STRICT):
-    - Benchmark: Human Virtual Assistant (VA) @ $12/hr.
-    - Calculate 'manualLaborCostEstimate': Hours saved/week * 52 weeks * $12.
-    - 'annualRoiEstimate': manualLaborCostEstimate - (Nexus Maintenance * 12).
-    - 'roiBreakdown': A sharp, 1-sentence math justification (e.g., "Replaces 20hrs/mo of manual data entry").
-    
-    TIER PRICING:
-    - SIMPLE: $300 setup (Basic bots, single trigger).
-    - INTERMEDIATE: $800 setup (Multi-step, CRM sync).
-    - ADVANCED: $1500 setup (AI Agents, API integrations).
-    - ENTERPRISE: $3000+ (Full Custom SaaS).
+    return `You are an AI Automation Expert, ROI Calculator, and Sales Conversion Assistant for my Automation Agency.
 
-    Be concise, technical but accessible. If the request is too vague, set needsClarification=true.`;
+Your goal is to:
+1. Analyze user business based on their input text or image
+2. Generate automation workflows
+3. Calculate ROI (time + money savings)
+4. Show premium pricing
+5. Convert user into paying client
+
+---
+BUSINESS MODEL & PRICING:
+- SIMPLE (Starter Automation): $799 setup (3 workflows + basic integrations). Maintenance: $100/month (Basic Plan - monitoring only)
+- INTERMEDIATE (Professional Automation): $1599 setup (6 workflows + advanced integrations). Maintenance: $199/month (Standard Plan - monitoring + unlimited small fixes + quarterly report)
+- ADVANCED/ENTERPRISE (Enterprise Automation): $3499 setup (complex systems + custom integrations). Maintenance: $299/month (Premium Plan - full support + optimization + priority handling)
+
+---
+STEP 1: AUTOMATION ANALYSIS
+Analyze the business and identify repetitive manual processes, automation opportunities, and suggested tools (Zapier, CRM, email, etc.).
+Inside your internal JSON 'steps' array, generate a clean workflow (e.g., Website Form -> CRM Entry -> Email Follow-up -> Slack Notification).
+
+---
+STEP 2: ROI CALCULATION (VERY IMPORTANT)
+Estimate hours saved (10–30 hours/week depending on tasks).
+Benchmark employee salary at $15/hr if not provided by user.
+
+Inside 'chatResponse', you must output EXACTLY THIS FORMAT AND STRUCTURE:
+
+📈 **ROI ESTIMATE & SAVINGS:**
+1. Time Saved: [X] hours/week = [Y] hours/year
+2. Salary Saved: You are saving the equivalent of [Z] full-time employees! (Calculate: total yearly hours saved * hourly salary. Make it emotional + powerful).
+3. Money Saved: $[X]/year (with Average ROI: 240%+)
+4. Break-even: Aapka $[SetupFee] project just [Months] months mein recover ho jayega!
+
+Just like a [relevant agency/business type] saved 100+ hours/month and generated $50,000 extra revenue using automation.
+
+🌟 **MAIN BENEFITS:**
+• Save time: Free up 15–25 hours/week (let your team do creative work)
+• Reduce errors: 40–75% fewer mistakes (happy clients)
+• Increase revenue: 15–25% more deals closed (fast follow-up)
+• Cut costs: $[Annual Savings] average annual saving
+
+✨ **EXTRA HIDDEN BENEFITS (WOW FACTOR):**
+• Better work-life balance (employees won't burnout)
+• Scalable business growth (double your business with the same team)
+• 24/7 automation (capture leads even while you sleep)
+• Reduced operational stress
+
+This automation can 10X your business growth 🚀
+Next Step: Book your free automation consultation now! (Proceed to Deployment)
+
+---
+IMPORTANT RULES:
+* Keep language simple, powerful, and clean. Use big bold numbers and emojis (📈, 🌟, ✨).
+* Make user feel they are losing money without automation. Focus on ROI and profit.
+* Make pricing look small compared to savings.
+
+OUTPUT FORMAT REQUIREMENTS (JSON ONLY, NO MARKDOWN OUTSIDE JSON):
+- 'chatResponse': The EXACT text structure shown above. Do not deviate.
+- 'roiBreakdown': A sharp, 1-sentence math justification for the UI panel (e.g. "We save 20hrs/wk * $15/hr * 52wks = $15,600 saved/yr").
+- 'complexityTier': "SIMPLE", "INTERMEDIATE", "ADVANCED", or "ENTERPRISE".
+- 'estimatedSetup' & 'estimatedMaintenance': MUST EXACTLY MATCH one of the 3 pricing tiers ($799/$100, $1599/$199, or $3499/$299).
+    `;
   };
 
   const generateRoadmap = async () => {
     setLoading(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
       const initialRequest = item ? `Service: ${item.name}` : `Custom Build: ${customPrompt}`;
       
       const response = await ai.models.generateContent({
@@ -187,7 +229,8 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, customPrompt, 
         }
       });
 
-      const result = JSON.parse(response.text || "{}");
+      const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+      const result = JSON.parse(responseText);
       setData(result);
       
       const newHistory: ChatMessage[] = [
@@ -218,7 +261,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, customPrompt, 
     setSelectedImage(null);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
       
       // Construct the new message part
       const newParts: ChatPart[] = [];
@@ -259,7 +302,8 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, customPrompt, 
         }
       });
 
-      const result = JSON.parse(response.text || "{}");
+      const responseText = response.candidates?.[0]?.content?.parts?.[0]?.text || "{}";
+      const result = JSON.parse(responseText);
       setData(result);
       
       const finalHistory: ChatMessage[] = [...updatedHistory, { role: 'model', parts: [{ text: result.chatResponse }] }];
@@ -305,8 +349,9 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, customPrompt, 
                 <Bot className="w-5 h-5 text-blue-400" />
              </div>
              <div>
-                <h3 className="text-xl font-black text-white uppercase tracking-tighter">Nexus Architect <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded ml-2 align-middle">PRO</span></h3>
+                <h3 className="text-xl font-black text-white uppercase tracking-tighter">QuickKit AI Architect <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded ml-2 align-middle">PRO</span></h3>
                 <div className="flex items-center gap-4 mt-0.5">
+                   <span className="text-[10px] font-mono text-slate-500 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">REF: {sessionRef}</span>
                    <span className="text-[10px] font-mono text-slate-500 flex items-center gap-1.5 uppercase font-bold tracking-widest"><Clock className="w-3 h-3" /> Est. Build: <span className="text-white">{data?.totalDuration || 'Calculating...'}</span></span>
                    <span className="text-[10px] font-mono text-emerald-400 flex items-center gap-1.5 font-bold uppercase tracking-widest"><div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div> Live Session</span>
                 </div>
@@ -371,9 +416,9 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, customPrompt, 
                            {!existingData && <span className="inline-block w-1 h-4 ml-1 bg-blue-400 animate-pulse align-middle"></span>}
                         </p>
                         {data?.roiBreakdown && (
-                          <p className="mt-4 text-xs text-slate-400 italic border-l-2 border-slate-700 pl-4 py-1">
-                            "{data.roiBreakdown}"
-                          </p>
+                           <p className="mt-4 text-xs text-slate-400 italic border-l-2 border-slate-700 pl-4 py-1">
+                             {data.roiBreakdown}
+                           </p>
                         )}
                      </div>
                   </div>
@@ -407,7 +452,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, customPrompt, 
                             >
                               <div className="flex justify-between items-start">
                                  <span className="text-[9px] text-emerald-500/70 font-black block mb-1 uppercase tracking-widest flex items-center gap-1.5">
-                                   <TrendingDown className="w-3 h-3" /> Nexus Saved ROI
+                                   <TrendingDown className="w-3 h-3" /> QuickKit Saved ROI
                                  </span>
                                  <HelpCircle className="w-3 h-3 text-slate-600 group-hover:text-emerald-400" />
                               </div>

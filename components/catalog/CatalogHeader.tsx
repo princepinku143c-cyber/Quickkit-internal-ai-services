@@ -16,8 +16,11 @@ export const CatalogHeader: React.FC<CatalogHeaderProps> = ({ searchQuery, setSe
         A La Carte Menu
       </div>
       <h2 className="text-3xl md:text-5xl font-bold text-white mb-4">Single Service Catalog</h2>
-      <p className="text-slate-400 max-w-2xl mx-auto mb-8">
+      <p className="text-slate-400 max-w-2xl mx-auto mb-4">
         Already have a system? Pick and choose <strong>individual automation modules</strong> to add to your business without buying a full monthly package.
+      </p>
+      <p className="text-slate-500 text-[10px] font-mono uppercase tracking-[0.2em] mb-8">
+        * API & Tool Costs (Zapier, OpenAI, etc.) Managed Separately by Client
       </p>
       
       {/* Controls */}
@@ -32,22 +35,6 @@ export const CatalogHeader: React.FC<CatalogHeaderProps> = ({ searchQuery, setSe
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
-        </div>
-
-        {/* Currency Toggle */}
-        <div className="flex items-center bg-slate-900 rounded-full p-1 border border-slate-700 shrink-0">
-          <button 
-            onClick={() => setCurrency('INR')}
-            className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${currency === 'INR' ? 'bg-cyan-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
-          >
-            ₹ INR
-          </button>
-          <button 
-            onClick={() => setCurrency('USD')}
-            className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${currency === 'USD' ? 'bg-cyan-600 text-white shadow-lg' : 'text-slate-400 hover:text-white'}`}
-          >
-            $ USD
-          </button>
         </div>
       </div>
     </div>

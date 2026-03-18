@@ -71,17 +71,17 @@ export const Pricing: React.FC<PricingProps> = ({ lang }) => {
            <div className="flex-1">
               <h4 className="text-xl font-bold text-white mb-2 underline decoration-blue-500 underline-offset-4">Managed Service Protocols</h4>
               <p className="text-slate-400 text-sm leading-relaxed mb-4">
-                Our agency operates on a <strong>28-day maintenance cycle</strong>. This includes real-time workflow monitoring, security patching for account changes, and account efficiency updates. 
+                Our agency operates on a <strong>28-day maintenance cycle</strong>. We offer flexible support packages depending on your business needs. 
               </p>
               <div className="flex flex-wrap gap-4">
                  <div className="bg-nexus-dark px-3 py-1.5 rounded-lg border border-nexus-border text-[10px] font-mono text-slate-300">
-                    MAINTENANCE &lt; $1K: <span className="text-white">$100</span>
+                    BASIC (Monitoring): <span className="text-white">$100/mo</span>
                  </div>
                  <div className="bg-nexus-dark px-3 py-1.5 rounded-lg border border-nexus-border text-[10px] font-mono text-slate-300">
-                    MAINTENANCE &gt; $1K: <span className="text-white">10% SETUP</span>
+                    STANDARD (+ Fixes): <span className="text-white">$199/mo</span>
                  </div>
-                 <div className="bg-nexus-dark px-3 py-1.5 rounded-lg border border-red-500/20 text-[10px] font-mono text-red-400">
-                    API COSTS: CLIENT MANAGED
+                 <div className="bg-nexus-dark px-3 py-1.5 rounded-lg border border-blue-500/30 text-[10px] font-mono text-blue-400">
+                    PREMIUM (+ Optimize): <span className="text-white">$299/mo</span>
                  </div>
               </div>
            </div>

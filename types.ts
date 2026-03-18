@@ -141,11 +141,10 @@ export interface LeadSubmission {
 export interface ServiceItem {
   id: number;
   name: string;
-  setupINR: number;
-  monthlyINR: number;
   setupUSD: number;
   monthlyUSD: number;
   categoryId?: string;
+  description?: string;
 }
 
 export interface CatalogCategory {

@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { generateSessionId } from './lib/utils';
 import { Language, UserProfile, TriggerRequest, ExecutionLog, Currency, ServiceItem, PlanTier, AIQuote } from './types';
 
 // Landing Page Components
@@ -34,6 +35,8 @@ const App: React.FC = () => {
   const [cachedRoadmap, setCachedRoadmap] = useState<{data: any, history: any[]} | null>(null);
   // NEW: Store previous state to allow "Back" navigation
   const [resumeArchitect, setResumeArchitect] = useState<{prompt?: string, item?: ServiceItem} | null>(null);
+  // NEW: Store a unique session reference for this blueprint interaction
+  const [sessionRef, setSessionRef] = useState<string>('');
 
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [leadFormNotes, setLeadFormNotes] = useState('');
@@ -48,6 +51,7 @@ const App: React.FC = () => {
     // Only clear cache if it's a completely NEW request from the Hero input
     if (prompt !== architectPrompt) {
         setCachedRoadmap(null);
+        setSessionRef(generateSessionId()); // Generate new ID for new session
     }
     setArchitectPrompt(prompt);
   };
@@ -55,6 +59,7 @@ const App: React.FC = () => {
   const handleCatalogSelect = (item: ServiceItem) => {
       // Clear cache for new catalog item selection
       setCachedRoadmap(null);
+      setSessionRef(generateSessionId()); // Generate new ID for new session
       setSelectedCatalogItem(item);
   }
 
@@ -71,8 +76,8 @@ const App: React.FC = () => {
     setCurrentAIQuote(quote); // Store the locked quote
     
     // Stringify history for the notes field so the admin/team can see the whole conversation
-    const historyText = history.map(h => `${h.role === 'user' ? 'CLIENT' : 'ARCHITECT'}: ${h.parts[0].text}`).join('\n\n');
-    setLeadFormNotes(`--- ARCHITECT CONVERSATION LOG ---\n${historyText}`);
+    const historyText = history.map(h => `${h.role === 'user' ? 'CLIENT' : 'ARCHITECT'}: ${h.parts[0]?.text || '[Image]'} \n`).join('\n');
+    setLeadFormNotes(`--- REF: ${sessionRef} ---\n\n--- ARCHITECT LOG ---\n${historyText}`);
     setShowLeadForm(true);
   };
 
@@ -89,7 +94,7 @@ const App: React.FC = () => {
   const handleLogin = () => {
     setUser({
         uid: 'admin-master',
-        email: 'admin@nexusstream.io',
+        email: 'admin@autoflow.ai',
         displayName: 'System Admin',
         role: 'admin',
         credits: 4250,
@@ -146,7 +151,8 @@ const App: React.FC = () => {
       {/* Footer */}
       <footer className="bg-nexus-card border-t border-nexus-border py-12">
         <div className="container mx-auto px-6 text-center text-slate-500">
-          <p>&copy; {new Date().getFullYear()} NexusStream. All rights reserved.</p>
+          <p className="text-sm font-mono tracking-widest uppercase mb-4 text-slate-600 font-black">Powered by Zapier AI Engines</p>
+          <p>&copy; {new Date().getFullYear()} QuickKit Global AI. All rights reserved.</p>
         </div>
       </footer>
 
@@ -159,6 +165,7 @@ const App: React.FC = () => {
            // Pass cached data if available
            existingData={cachedRoadmap?.data}
            existingHistory={cachedRoadmap?.history}
+           sessionRef={sessionRef} // NEW PROP
            // Save data back to App state
            onSaveState={(data, history) => setCachedRoadmap({ data, history })}
            onClose={() => { 

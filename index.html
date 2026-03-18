@@ -4,35 +4,57 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AutoFlow | AI Automation SaaS</title>
+    <title>QuickKit Global | Premium AI Automation Agency</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <script>
       tailwind.config = {
         darkMode: 'class',
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Inter', 'sans-serif'],
+              sans: ['Outfit', 'sans-serif'],
               mono: ['JetBrains Mono', 'monospace'],
             },
             colors: {
               nexus: {
-                dark: '#0B0F19',
-                card: '#111827',
-                border: '#1F2937',
-                accent: '#3B82F6',
-                success: '#10B981',
-                error: '#EF4444',
-                glass: 'rgba(17, 24, 39, 0.7)',
+                dark: '#030712',
+                card: '#0f172a',
+                border: '#1e293b',
+                accent: '#3b82f6',
+                success: '#10b981',
+                error: '#ef4444',
+                glass: 'rgba(15, 23, 42, 0.65)',
               }
             },
             animation: {
-              'fade-in': 'fadeIn 0.5s ease-out',
+              'fade-in': 'fadeIn 0.5s ease-out forwards',
+              'pulse-glow': 'pulseGlow 2s infinite ease-in-out',
+              'float': 'float 4s infinite ease-in-out',
+              'border-glow': 'borderGlow 3s infinite linear',
+              'slide-up': 'slideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards',
             },
             keyframes: {
               fadeIn: {
                 '0%': { opacity: '0', transform: 'translateY(10px)' },
+                '100%': { opacity: '1', transform: 'translateY(0)' },
+              },
+              pulseGlow: {
+                '0%, 100%': { opacity: '0.4', filter: 'blur(8px)' },
+                '50%': { opacity: '0.8', filter: 'blur(16px)' },
+              },
+              float: {
+                '0%, 100%': { transform: 'translateY(0)' },
+                '50%': { transform: 'translateY(-10px)' },
+              },
+              borderGlow: {
+                '0%': { 'border-color': '#3b82f6' },
+                '33%': { 'border-color': '#8b5cf6' },
+                '66%': { 'border-color': '#10b981' },
+                '100%': { 'border-color': '#3b82f6' },
+              },
+              slideUp: {
+                '0%': { opacity: '0', transform: 'translateY(20px)' },
                 '100%': { opacity: '1', transform: 'translateY(0)' },
               }
             }
@@ -42,52 +64,49 @@
     </script>
     <style>
       body {
-        background-color: #0B0F19;
-        color: #F3F4F6;
+        background-color: #030712;
+        color: #f1f5f9;
+        -webkit-font-smoothing: antialiased;
       }
-      .glass-panel {
-        background: rgba(17, 24, 39, 0.6);
-        backdrop-filter: blur(12px);
-        -webkit-backdrop-filter: blur(12px);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+      .glass-card {
+        background: rgba(15, 23, 42, 0.4);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       }
-      .gradient-border {
+      .glass-card:hover {
+        background: rgba(15, 23, 42, 0.6);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        box-shadow: 0 0 30px rgba(59, 130, 246, 0.1);
+        transform: translateY(-4px);
+      }
+      .cyber-glow {
         position: relative;
-        background: #111827;
-        background-clip: padding-box;
-        border: 1px solid transparent;
-        border-radius: 0.75rem;
+        overflow: hidden;
       }
-      .gradient-border::before {
+      .cyber-glow::after {
         content: '';
         position: absolute;
-        top: 0; right: 0; bottom: 0; left: 0;
-        z-index: -1;
-        margin: -1px;
-        border-radius: inherit;
-        background: linear-gradient(to right, #3B82F6, #10B981);
-        opacity: 0.3;
+        top: -50%; left: -50%;
+        width: 200%; height: 200%;
+        background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 60%);
+        animation: pulseGlow 4s infinite linear;
+        pointer-events: none;
       }
-      /* Custom Scrollbar */
-      ::-webkit-scrollbar { width: 6px; }
-      ::-webkit-scrollbar-track { background: #0B0F19; }
-      ::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
-      ::-webkit-scrollbar-thumb:hover { background: #4B5563; }
+      /* Animated Background Grid */
+      .bg-grid {
+        background-image: radial-gradient(rgba(59, 130, 246, 0.1) 1px, transparent 1px);
+        background-size: 40px 40px;
+        mask-image: radial-gradient(ellipse 80% 50% at 50% 0%, black, transparent);
+      }
+      ::-webkit-scrollbar { width: 4px; }
+      ::-webkit-scrollbar-track { background: #030712; }
+      ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 20px; }
+      ::-webkit-scrollbar-thumb:hover { background: #334155; }
     </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
-    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "@google/genai": "https://esm.sh/@google/genai@^1.38.0",
-    "firebase/": "https://esm.sh/firebase@^12.8.0/"
-  }
-}
-</script>
 </head>
   <body>
     <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
   </body>
 </html>

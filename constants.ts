@@ -1,58 +1,55 @@
 
 import { PlanTier } from './types';
 
-export const APP_NAME = "NexusStream";
-export const APP_VERSION = "OS 3.0.4";
-export const CONTACT_EMAIL = "hq@nexusstream.io";
-export const WHATSAPP_NUMBER = "15550123456"; 
-export const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycby-nexus-stream-deployment/exec";
+export const APP_NAME = "QuickKit Global";
+export const APP_VERSION = "v5.0.0-PRO";
+export const CONTACT_EMAIL = "princepinku143c@gmail.com";
+export const WHATSAPP_NUMBER = "918260485230"; 
 
 // Agency Delivery Promises - Speed Optimized
 export const DELIVERY_STANDARD = "3 Days";
 export const DELIVERY_COMPLEX = "5 Days Max";
 
-// Global Maintenance Logic (Refined)
+// Global Maintenance Logic
 export const BASE_MAINTENANCE = 100;
-export const VARIABLE_MAINTENANCE_THRESHOLD = 1100; // From $1100 onwards, 10% rule applies
-export const VARIABLE_MAINTENANCE_RATE = 0.10;
 
 export const PLANS = {
   [PlanTier.STARTER]: {
     name: "Starter Bridge",
     bestFor: "Small Businesses & Startups",
     priceMonth: 100,
-    priceSetup: 500,
+    priceSetup: 799,
     features: [
       "AI Architect Roadmap Build",
-      "Account Efficiency+ Monitoring",
+      "Basic Zapier Monitoring",
       "3-Day Rapid Deployment",
-      "Updates & Maintenance Included",
+      "Official Gmail Support",
       "Excludes Third-party API keys"
     ]
   },
   [PlanTier.PRO]: {
     name: "Pro Automation Suite",
     bestFor: "Scaling Teams",
-    priceMonth: 150, 
-    priceSetup: 1500,
+    priceMonth: 199, 
+    priceSetup: 1599,
     features: [
-      "Complex Multi-app Workflows",
-      "Dedicated Solution Architect",
-      "Priority Account Efficiency+",
+      "Standard Zapier Monitoring",
+      "Unlimited Small Script Fixes",
+      "Quarterly Strategy Report",
       "3-Day Delivery Guarantee",
-      "24/7 Security Patching"
+      "Priority Gmail Support (24hr)"
     ]
   },
   [PlanTier.BUSINESS]: {
     name: "Nexus Enterprise OS",
     bestFor: "Full Infrastructure Ownership",
-    priceMonth: 2000, 
-    priceSetup: 0,
+    priceMonth: 299, 
+    priceSetup: 3499,
     features: [
-      "Private n8n Infrastructure",
+      "Full Premium Optimization",
+      "Managed Zapier/Make Hub",
       "Unlimited Internal AI Tools",
       "5-Day Max Full-Scale Build",
-      "Zero Setup Fee (Subscription)",
       "Weekly Efficiency Audits"
     ]
   }

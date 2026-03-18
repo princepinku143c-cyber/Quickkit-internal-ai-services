@@ -1,8 +1,10 @@
 
 import React, { useState, useEffect } from 'react';
+import { collection, addDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { X, CheckCircle, Loader2, Building2, User, Phone, FileText, Mail, Lock, ShieldCheck, Zap, ArrowLeft } from 'lucide-react';
 import { PlanTier, Language, LeadSubmission, AIQuote } from '../types';
-import { WHATSAPP_NUMBER, GOOGLE_SCRIPT_URL } from '../constants';
+import { WHATSAPP_NUMBER, CONTACT_EMAIL } from '../constants';
 import { TRANSLATIONS } from '../data/translations';
 
 interface Props {
@@ -53,30 +55,33 @@ export const LeadForm: React.FC<Props> = ({ lang, close, onBack, initialData, pr
     const existing = JSON.parse(localStorage.getItem('leads') || '[]');
     localStorage.setItem('leads', JSON.stringify([...existing, newLead]));
 
-    // Send to Google Sheet
+    // Send to Firebase CRM
     try {
-      await fetch(GOOGLE_SCRIPT_URL, {
-        method: "POST",
-        mode: "no-cors",
-        headers: { "Content-Type": "text/plain" },
-        body: JSON.stringify(newLead)
-      });
+      if (Object.keys(db).length > 0) {
+          await addDoc(collection(db as any, 'leads'), newLead);
+          console.log("🔥 Blueprint safely stored in Firebase.");
+      } else {
+          console.warn("Firebase not configured. Storing locally for demo purposes.");
+      }
     } catch (err) {
-      console.error("Failed to send to sheet", err);
+      console.error("Failed to save lead to Firebase", err);
     }
 
     setIsSending(false);
     setSubmitted(true);
   };
 
-  const getWhatsAppLink = () => {
-    let msg = t.whatsapp_text + ` (Name: ${formData.name}).`;
-    if (aiFinancials) {
-        msg += `\n\nLOCKED QUOTE:\nSetup: $${aiFinancials.setupCost}\nMonthly: $${aiFinancials.monthlyCost}\nROI: $${aiFinancials.roiEstimate}/yr`;
-    }
-    msg += `\n\nDETAILS:\n${formData.notes.substring(0, 100)}...`;
+  const getEmailLink = () => {
+    const subject = `AI Automation System Deployment - ${formData.businessType}`;
+    let body = `Hello Architect,\n\nI want to initialize my automation deployment.\n\nPROJECT DETAILS:\n- Name: ${formData.name}\n- Industry: ${formData.businessType}\n- Phone: ${formData.phone}\n\n`;
     
-    return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+    if (aiFinancials) {
+        body += `LOCKED AI BLUEPRINT:\n- Setup Cost: $${aiFinancials.setupCost}\n- Monthly Maint: $${aiFinancials.monthlyCost}\n- Estimated ROI: $${aiFinancials.roiEstimate}/year\n\n`;
+    }
+    
+    body += `ADDITIONAL NOTES:\n${formData.notes}\n\nSENT FROM AUTOFLOW GLOBAL AI ARCHITECT`;
+    
+    return `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
   return (
@@ -167,11 +172,10 @@ export const LeadForm: React.FC<Props> = ({ lang, close, onBack, initialData, pr
 
               {/* Phone */}
               <div className="group">
-                <label className="text-xs text-slate-500 font-bold ml-1 mb-1 block uppercase">Phone / WhatsApp</label>
+                <label className="text-xs text-slate-500 font-bold ml-1 mb-1 block uppercase">Direct Contact Number</label>
                 <div className="relative">
                     <Phone className="absolute left-3 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
                     <input 
-                    required
                     type="tel"
                     placeholder="e.g. +1 555-0123"
                     className="w-full bg-slate-800 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-white focus:border-cyan-500 outline-none transition-all focus:ring-1 focus:ring-cyan-500/50"
@@ -248,12 +252,10 @@ export const LeadForm: React.FC<Props> = ({ lang, close, onBack, initialData, pr
             <p className="text-slate-400 mb-8 text-lg">Your request has been sent to our team. We will analyze your needs and contact you shortly.</p>
             
             <a 
-              href={getWhatsAppLink()} 
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block w-full py-4 bg-[#25D366] text-white font-bold rounded-xl hover:bg-[#128C7E] transition-all shadow-lg hover:shadow-green-500/20"
+              href={getEmailLink()} 
+              className="inline-flex items-center justify-center gap-2 w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-all shadow-lg hover:shadow-blue-500/20"
             >
-              Connect on WhatsApp (Optional)
+              <Mail className="w-5 h-5" /> Direct Email to Architect
             </a>
           </div>
         )}
