@@ -1,0 +1,2 @@
+origin	https://github.com/princepinku143c-cyber/Quickkit-internal-ai-services.git (fetch)
+origin	https://github.com/princepinku143c-cyber/Quickkit-internal-ai-services.git (push)

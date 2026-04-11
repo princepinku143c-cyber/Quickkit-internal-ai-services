@@ -1,6 +1,9 @@
 
 import React, { useState } from 'react';
-import { Zap, ArrowRight, Lock, ShieldCheck } from 'lucide-react';
+import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { auth, db, googleProvider } from '../lib/firebase';
+import { Zap, ArrowRight, Lock, ShieldCheck, Mail, Loader2 } from 'lucide-react';
 
 interface LoginProps {
   onLogin: () => void;
@@ -11,13 +14,52 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!auth || Object.keys(auth).length === 0) {
+        alert("Firebase is not connected. Use Fast Login.");
+        return;
+    }
     setLoading(true);
-    // Simulate Auth
-    setTimeout(() => {
-        onLogin();
-    }, 1000);
+    try {
+        await signInWithEmailAndPassword(auth as any, email, password);
+        // App.tsx auth listener handles redirect
+    } catch (error: any) {
+        alert("Login failed: " + error.message);
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    if (!auth || Object.keys(auth).length === 0) {
+        alert("Firebase is not connected. Use Fast Login.");
+        return;
+    }
+    setLoading(true);
+    try {
+        const result = await signInWithPopup(auth as any, googleProvider as any);
+        const user = result.user;
+        
+        // Ensure user document exists in firestore
+        if (Object.keys(db).length > 0) {
+            const userRef = doc(db as any, 'users', user.uid);
+            const userSnap = await getDoc(userRef);
+            if (!userSnap.exists()) {
+                await setDoc(userRef, {
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName,
+                    role: 'client',
+                    createdAt: new Date().toISOString()
+                });
+            }
+        }
+    } catch (error: any) {
+        alert("Google sign-in failed: " + error.message);
+    } finally {
+        setLoading(false);
+    }
   };
 
   return (
@@ -41,7 +83,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full bg-nexus-card border border-nexus-border rounded-lg px-4 py-3 text-white focus:border-blue-500 outline-none transition-colors"
-                        placeholder="admin@nexusstream.io"
+                        placeholder="admin@quickkit.online"
                     />
                 </div>
                 <div>
@@ -63,15 +105,31 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     disabled={loading}
                     className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 group"
                 >
-                    {loading ? 'Authenticating...' : (
-                        <>Sign In <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
+                    {loading ? <><Loader2 className="w-4 h-4 animate-spin"/> Authenticating...</> : (
+                        <>Sign In with Email <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
                     )}
+                </button>
+                
+                <div className="flex items-center gap-4 py-2">
+                   <div className="flex-1 h-px bg-slate-800"></div>
+                   <span className="text-xs text-slate-500 font-bold uppercase tracking-widest">or</span>
+                   <div className="flex-1 h-px bg-slate-800"></div>
+                </div>
+
+                <button 
+                    type="button" 
+                    onClick={handleGoogleSignIn}
+                    disabled={loading}
+                    className="w-full py-3 bg-white hover:bg-slate-100 text-slate-900 font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg"
+                >
+                   <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
+                   Sign In with Google
                 </button>
 
                 {/* BYPASS BUTTON */}
                 <button 
                     type="button"
-                    onClick={onLogin}
+                    onClick={() => onLogin()}
                     className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold rounded-lg transition-all flex items-center justify-center gap-2 border border-slate-700 hover:border-emerald-500/50"
                 >
                     <ShieldCheck className="w-4 h-4" /> Fast Login (Admin Bypass)

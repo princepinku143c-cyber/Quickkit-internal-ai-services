@@ -1,10 +1,10 @@
-
 import { PlanTier } from './types';
 
 export const APP_NAME = "QuickKit Global";
 export const APP_VERSION = "v5.0.0-PRO";
-export const CONTACT_EMAIL = "princepinku143c@gmail.com";
-export const WHATSAPP_NUMBER = "918260485230"; 
+export const CONTACT_EMAIL = "sales@quickkit.online";
+export const SUPPORT_EMAIL = "support@quickkit.online";
+export const WHATSAPP_NUMBER = "918260485230";
 
 // Agency Delivery Promises - Speed Optimized
 export const DELIVERY_STANDARD = "3 Days";
@@ -23,7 +23,7 @@ export const PLANS = {
       "AI Architect Roadmap Build",
       "Basic Zapier Monitoring",
       "3-Day Rapid Deployment",
-      "Official Gmail Support",
+      "Official Email Support",
       "Excludes Third-party API keys"
     ]
   },
@@ -37,7 +37,7 @@ export const PLANS = {
       "Unlimited Small Script Fixes",
       "Quarterly Strategy Report",
       "3-Day Delivery Guarantee",
-      "Priority Gmail Support (24hr)"
+      "Priority Email Support (24hr)"
     ]
   },
   [PlanTier.BUSINESS]: {

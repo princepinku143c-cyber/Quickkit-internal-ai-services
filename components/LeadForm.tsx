@@ -1,8 +1,9 @@
 
 import React, { useState, useEffect } from 'react';
-import { collection, addDoc } from 'firebase/firestore';
-import { db } from '../lib/firebase';
-import { X, CheckCircle, Loader2, Building2, User, Phone, FileText, Mail, Lock, ShieldCheck, Zap, ArrowLeft } from 'lucide-react';
+import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
+import { signInWithPopup } from 'firebase/auth';
+import { db, auth, googleProvider } from '../lib/firebase';
+import { X, CheckCircle, Loader2, Building2, User, Phone, FileText, Mail, Lock, ShieldCheck, ArrowLeft } from 'lucide-react';
 import { PlanTier, Language, LeadSubmission, AIQuote } from '../types';
 import { WHATSAPP_NUMBER, CONTACT_EMAIL } from '../constants';
 import { TRANSLATIONS } from '../data/translations';
@@ -69,6 +70,33 @@ export const LeadForm: React.FC<Props> = ({ lang, close, onBack, initialData, pr
 
     setIsSending(false);
     setSubmitted(true);
+  };
+
+  const handleGoogleAutofill = async () => {
+    try {
+        const result = await signInWithPopup(auth as any, googleProvider as any);
+        const user = result.user;
+        
+        setFormData(prev => ({
+            ...prev,
+            name: user.displayName || prev.name,
+            email: user.email || prev.email
+        }));
+
+        // Automatically store the user in firestore for future dashboard access
+        if (Object.keys(db).length > 0) {
+            await setDoc(doc(db as any, 'users', user.uid), {
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName,
+                role: 'client',
+                createdAt: new Date().toISOString()
+            }, { merge: true });
+        }
+
+    } catch (error) {
+        console.error("Google Sign-in failed:", error);
+    }
   };
 
   const getEmailLink = () => {
@@ -155,6 +183,22 @@ export const LeadForm: React.FC<Props> = ({ lang, close, onBack, initialData, pr
             )}
 
             <div className="space-y-4">
+              {/* Optional Google Login */}
+              <button 
+                type="button" 
+                onClick={handleGoogleAutofill}
+                className="w-full flex items-center justify-center gap-2 bg-white text-slate-800 py-3 rounded-xl font-bold text-sm hover:bg-slate-100 transition-colors shadow-sm"
+              >
+                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
+                Autofill with Google
+              </button>
+              
+              <div className="flex items-center gap-4 py-2">
+                 <div className="flex-1 h-px bg-slate-800"></div>
+                 <span className="text-xs text-slate-500 font-bold uppercase tracking-widest">or enter manually</span>
+                 <div className="flex-1 h-px bg-slate-800"></div>
+              </div>
+
               {/* Name */}
               <div className="group">
                 <label className="text-xs text-slate-500 font-bold ml-1 mb-1 block uppercase">Full Name</label>

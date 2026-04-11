@@ -15,6 +15,7 @@ interface RoadmapModalProps {
   // UPDATED: Now accepts structured quote
   onBook: (quote: AIQuote, history: ChatMessage[]) => void;
   sessionRef: string; // NEW PROP
+  isWidget?: boolean; // Renders as smaller floating widget instead of full modal
 }
 
 interface ChatPart {
@@ -53,7 +54,7 @@ interface AIData {
   needsClarification: boolean;
 }
 
-export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, customPrompt, currency, existingData, existingHistory, sessionRef, onSaveState, onClose, onBook }) => {
+export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, customPrompt, currency, existingData, existingHistory, sessionRef, isWidget, onSaveState, onClose, onBook }) => {
   const [loading, setLoading] = useState(!existingData);
   const [refining, setRefining] = useState(false);
   const [data, setData] = useState<AIData | null>(existingData || null);
@@ -69,7 +70,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, customPrompt, 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   
-  const AI_MODEL = 'gemini-2.0-flash'; // Supports Vision & Text
+  const AI_MODEL = 'gemini-2.5-flash-lite'; // Newest cheap/fast model
 
   // Initial Load
   useEffect(() => {
@@ -132,67 +133,38 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, customPrompt, 
   };
 
   const getSystemPrompt = () => {
-    return `You are an AI Automation Expert, ROI Calculator, and Sales Conversion Assistant for my Automation Agency.
+    // Differentiation: if customPrompt exists and item does not, it's a Custom Project Scoping request.
+    const isCustomProject = !item;
 
-Your goal is to:
-1. Analyze user business based on their input text or image
-2. Generate automation workflows
-3. Calculate ROI (time + money savings)
-4. Show premium pricing
-5. Convert user into paying client
+    return `You are Kelly, an AI Solutions Architect and expert Consultant for our Premium AI Automation Agency.
 
----
-BUSINESS MODEL & PRICING:
-- SIMPLE (Starter Automation): $799 setup (3 workflows + basic integrations). Maintenance: $100/month (Basic Plan - monitoring only)
-- INTERMEDIATE (Professional Automation): $1599 setup (6 workflows + advanced integrations). Maintenance: $199/month (Standard Plan - monitoring + unlimited small fixes + quarterly report)
-- ADVANCED/ENTERPRISE (Enterprise Automation): $3499 setup (complex systems + custom integrations). Maintenance: $299/month (Premium Plan - full support + optimization + priority handling)
+CRITICAL INSTRUCTIONS:
+1. TIMELINE: We run on the powerful "OpenClaw Framework". The total project deployment time is ALWAYS 2 to 4 DAYS maximum. NEVER predict weeks or months. 
+2. SPEED & CONCISENESS: Keep your 'chatResponse' extremely crispy, brief, and conversational (1-2 short sentences max). This ensures instant generation speed. Do NOT write paragraphs!
+3. ROLE: Ask 1 precise follow-up question per turn to gather requirements, acting as a professional tech consultant.
+4. When they give enough details, acknowledge it, give a final roadmap in 'steps' json, and say they can click "Finalize Architecture" to begin setup.
 
 ---
-STEP 1: AUTOMATION ANALYSIS
-Analyze the business and identify repetitive manual processes, automation opportunities, and suggested tools (Zapier, CRM, email, etc.).
-Inside your internal JSON 'steps' array, generate a clean workflow (e.g., Website Form -> CRM Entry -> Email Follow-up -> Slack Notification).
+BUSINESS MODEL & PRICING (USD):
+- SIMPLE (Starter): $799 setup. Maintenance: $100/month
+- INTERMEDIATE (Pro): $1599 setup. Maintenance: $199/month
+- ADVANCED/ENTERPRISE: $3499 setup. Maintenance: $299/month
 
----
-STEP 2: ROI CALCULATION (VERY IMPORTANT)
-Estimate hours saved (10–30 hours/week depending on tasks).
-Benchmark employee salary at $15/hr if not provided by user.
+${isCustomProject ? 'This is a Custom Project. Focus purely on understanding what they want to build and suggesting AI architectures (like OpenClaw + LLMs).' : 'This is a standard catalog service. You can mention the exact pricing tiers ABOVE if asked, but prioritize discussing the implementation and features first.'}
 
-Inside 'chatResponse', you must output EXACTLY THIS FORMAT AND STRUCTURE:
+YOUR CONVERSATION STYLE (chatResponse):
+- Provide quick, 1-2 line snappy conversational responses.
+- Use emojis naturally but sparingly (e.g., 🚀, 💡, ⚡).
+- DO NOT use rigid bolded formats in chat. Focus on normal chatting!
 
-📈 **ROI ESTIMATE & SAVINGS:**
-1. Time Saved: [X] hours/week = [Y] hours/year
-2. Salary Saved: You are saving the equivalent of [Z] full-time employees! (Calculate: total yearly hours saved * hourly salary. Make it emotional + powerful).
-3. Money Saved: $[X]/year (with Average ROI: 240%+)
-4. Break-even: Aapka $[SetupFee] project just [Months] months mein recover ho jayega!
-
-Just like a [relevant agency/business type] saved 100+ hours/month and generated $50,000 extra revenue using automation.
-
-🌟 **MAIN BENEFITS:**
-• Save time: Free up 15–25 hours/week (let your team do creative work)
-• Reduce errors: 40–75% fewer mistakes (happy clients)
-• Increase revenue: 15–25% more deals closed (fast follow-up)
-• Cut costs: $[Annual Savings] average annual saving
-
-✨ **EXTRA HIDDEN BENEFITS (WOW FACTOR):**
-• Better work-life balance (employees won't burnout)
-• Scalable business growth (double your business with the same team)
-• 24/7 automation (capture leads even while you sleep)
-• Reduced operational stress
-
-This automation can 10X your business growth 🚀
-Next Step: Book your free automation consultation now! (Proceed to Deployment)
-
----
-IMPORTANT RULES:
-* Keep language simple, powerful, and clean. Use big bold numbers and emojis (📈, 🌟, ✨).
-* Make user feel they are losing money without automation. Focus on ROI and profit.
-* Make pricing look small compared to savings.
-
-OUTPUT FORMAT REQUIREMENTS (JSON ONLY, NO MARKDOWN OUTSIDE JSON):
-- 'chatResponse': The EXACT text structure shown above. Do not deviate.
-- 'roiBreakdown': A sharp, 1-sentence math justification for the UI panel (e.g. "We save 20hrs/wk * $15/hr * 52wks = $15,600 saved/yr").
-- 'complexityTier': "SIMPLE", "INTERMEDIATE", "ADVANCED", or "ENTERPRISE".
-- 'estimatedSetup' & 'estimatedMaintenance': MUST EXACTLY MATCH one of the 3 pricing tiers ($799/$100, $1599/$199, or $3499/$299).
+JSON OUTPUT FORMAT REQUIREMENTS (NO MARKDOWN TEXT OUTSIDE THE JSON):
+- 'chatResponse': Your short 1-2 sentence conversational response to the user.
+- 'steps': Provide an adaptive 3-step technical workflow mimicking a real roadmap (e.g., Phase 1: Planning, Phase 2: OpenClaw Setup, Phase 3: Go-Live). Make sure step duration says something like '1 Day' or 'Hours'.
+- 'totalDuration': explicitly state something like "2-4 Days".
+- 'roiBreakdown': One punchy sentence on how this saves time/money.
+- 'complexityTier': "SIMPLE", "INTERMEDIATE", "ADVANCED", "ENTERPRISE", or "CUSTOM".
+- 'estimatedSetup' & 'estimatedMaintenance': Number matching the tier.
+- 'isCustomEstimate': true ONLY for custom project.
     `;
   };
 
@@ -223,6 +195,7 @@ OUTPUT FORMAT REQUIREMENTS (JSON ONLY, NO MARKDOWN OUTSIDE JSON):
                 complexityReason: { type: Type.STRING },
                 annualRoiEstimate: { type: Type.NUMBER },
                 roiBreakdown: { type: Type.STRING },
+                isCustomEstimate: { type: Type.BOOLEAN },
                 steps: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, description: { type: Type.STRING }, keyAction: { type: Type.STRING }, duration: { type: Type.STRING } } } }
               }
             }
@@ -242,7 +215,10 @@ OUTPUT FORMAT REQUIREMENTS (JSON ONLY, NO MARKDOWN OUTSIDE JSON):
 
     } catch (err) {
       console.error(err);
-      setDisplayText("Connection interrupted. Please try again.");
+      setChatHistory([
+        { role: 'user', parts: [{ text: initialRequest }] },
+        { role: 'model', parts: [{ text: "🚨 Connection Interrupted: Gemini API Key Limit Exceeded / Invalid. Please upgrade your key or check logs." }] }
+      ]);
     } finally {
       setLoading(false);
     }
@@ -296,6 +272,7 @@ OUTPUT FORMAT REQUIREMENTS (JSON ONLY, NO MARKDOWN OUTSIDE JSON):
                 complexityReason: { type: Type.STRING },
                 annualRoiEstimate: { type: Type.NUMBER },
                 roiBreakdown: { type: Type.STRING },
+                isCustomEstimate: { type: Type.BOOLEAN },
                 steps: { type: Type.ARRAY, items: { type: Type.OBJECT, properties: { title: { type: Type.STRING }, description: { type: Type.STRING }, keyAction: { type: Type.STRING }, duration: { type: Type.STRING } } } }
              }
           }
@@ -312,6 +289,7 @@ OUTPUT FORMAT REQUIREMENTS (JSON ONLY, NO MARKDOWN OUTSIDE JSON):
 
     } catch (err) {
       console.error("Refine Error", err);
+      setChatHistory(prev => [...prev, { role: 'model', parts: [{ text: "🚨 Network Error: Gemini quota exceeded during refinement." }] }]);
     } finally {
       setRefining(false);
     }
@@ -325,7 +303,8 @@ OUTPUT FORMAT REQUIREMENTS (JSON ONLY, NO MARKDOWN OUTSIDE JSON):
           monthlyCost: data.estimatedMaintenance,
           roiEstimate: data.annualRoiEstimate,
           buildTime: data.totalDuration,
-          generatedAt: new Date().toISOString()
+          generatedAt: new Date().toISOString(),
+          isCustomEstimate: data.isCustomEstimate
       };
 
       onBook(quote, chatHistory);
@@ -335,8 +314,143 @@ OUTPUT FORMAT REQUIREMENTS (JSON ONLY, NO MARKDOWN OUTSIDE JSON):
     if (tier === 'SIMPLE') return 'text-blue-400 border-blue-400/20 bg-blue-400/10';
     if (tier === 'INTERMEDIATE') return 'text-emerald-400 border-emerald-400/20 bg-emerald-400/10';
     if (tier === 'ADVANCED') return 'text-purple-400 border-purple-400/20 bg-purple-400/10';
+    if (tier === 'CUSTOM') return 'text-fuchsia-400 border-fuchsia-400/20 bg-fuchsia-400/10';
     return 'text-amber-400 border-amber-400/20 bg-amber-400/10';
   };
+
+  if (isWidget) {
+    return (
+      <div className="fixed bottom-24 right-6 z-[60] w-[400px] h-[600px] max-h-[80vh] bg-nexus-card border border-nexus-border rounded-2xl shadow-2xl flex flex-col overflow-hidden font-sans border-t-blue-500/30 animate-fade-in origin-bottom-right">
+        {/* Header */}
+        <div className="px-5 py-4 border-b border-nexus-border flex justify-between items-center bg-nexus-dark z-10 shrink-0 shadow-sm">
+          <div className="flex items-center gap-3">
+             <div className="p-2 bg-blue-500/10 rounded-xl border border-blue-500/20">
+                <Bot className="w-5 h-5 text-blue-400" />
+             </div>
+             <div>
+                <h3 className="text-base font-black text-white uppercase tracking-tighter">Kelly <span className="hidden sm:inline text-[10px] bg-blue-600 px-2 py-0.5 rounded ml-2">PRO</span></h3>
+                <div className="flex items-center gap-2 mt-0.5">
+                   <span className="text-[9px] font-mono text-emerald-400 flex items-center gap-1 font-bold uppercase tracking-widest"><div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div> Live</span>
+                </div>
+             </div>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-slate-800 rounded-full text-slate-500 hover:text-white transition-all"><X className="w-4 h-4" /></button>
+        </div>
+
+        {/* Content Area */}
+        <div ref={scrollRef} className="flex-1 overflow-y-auto custom-scrollbar p-5 bg-[#0D1117] scroll-smooth">
+          {loading ? (
+             <div className="h-full flex flex-col items-center justify-center pt-10">
+                <div className="relative mb-6">
+                    <div className="w-16 h-16 border-4 border-blue-500/20 border-t-blue-500 rounded-full animate-spin"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <Sparkles className="w-6 h-6 text-blue-400 animate-pulse" />
+                    </div>
+                </div>
+                <h2 className="text-xl font-black text-white uppercase tracking-tighter mb-2">Calculating...</h2>
+                <p className="font-mono text-blue-400 tracking-widest text-[10px] uppercase font-bold animate-pulse">Initializing Agent...</p>
+             </div>
+          ) : (
+            <div className="w-full space-y-6 pb-6 animate-fade-in">
+                
+                {chatHistory.length > 2 && data && data.steps && data.steps.length > 0 && (
+                  <div className="bg-slate-800/40 p-3 rounded-2xl border border-slate-700 mb-6 shadow-inner animate-fade-in border-l-4 border-l-blue-500">
+                      <h4 className="text-[10px] font-bold text-white mb-2 flex justify-between items-center uppercase font-mono tracking-widest">
+                         <span className="flex items-center gap-1.5"><Layers className="w-3 h-3 text-blue-400" /> Live Mini-Map</span>
+                         <span className="text-emerald-400">{data.totalDuration || '2-4 Days'}</span>
+                      </h4>
+                      <div className="space-y-2">
+                          {data.steps.slice(0,3).map((s, i) => (
+                             <div key={i} className="flex gap-2 text-[11px] bg-slate-900/50 p-2 rounded-lg">
+                                <div className="text-emerald-500 font-black shrink-0 mt-0.5"><div className="w-4 h-4 rounded-full bg-emerald-500/10 flex items-center justify-center text-[9px] border border-emerald-500/20">{i+1}</div></div>
+                                <div><span className="text-slate-200 font-bold block">{s.title}</span> <span className="text-slate-500 leading-tight block">{s.description} • {s.duration}</span></div>
+                             </div>
+                          ))}
+                      </div>
+                  </div>
+                )}
+
+                {chatHistory.map((msg, idx) => {
+                    let textToShow = msg.parts[0]?.text || '';
+                    if (idx === 0 && textToShow.startsWith('Custom Build:')) textToShow = textToShow.replace('Custom Build: ', '');
+                    if (idx === 0 && textToShow.startsWith('Service:')) textToShow = "I'm interested in the " + textToShow.replace('Service: ', '') + " service.";
+
+                    return (
+                        <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                            <div className={`max-w-[90%] p-4 rounded-2xl text-xs leading-relaxed ${
+                                msg.role === 'user' 
+                                ? 'bg-blue-600 text-white rounded-tr-none shadow-md' 
+                                : 'bg-nexus-card border border-nexus-border text-slate-300 rounded-tl-none shadow-lg'
+                            }`}>
+                                {msg.parts.map((part, pIdx) => (
+                                    <div key={pIdx}>
+                                        {part.inlineData && (
+                                            <img src={`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`} className="w-full rounded-lg mb-2 border border-slate-700 shadow-sm" />
+                                        )}
+                                        {part.text && (
+                                              <p className="whitespace-pre-wrap font-sans">
+                                                {idx === 0 ? textToShow : part.text}
+                                                {msg.role === 'model' && idx === chatHistory.length - 1 && !data && <span className="inline-block w-1.5 h-3.5 ml-1 bg-blue-400 animate-pulse align-middle"></span>}
+                                              </p>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })}
+                {refining && (
+                    <div className="flex justify-start">
+                        <div className="max-w-[80%] p-4 rounded-2xl bg-nexus-card border border-nexus-border text-slate-400 rounded-tl-none shadow-lg flex items-center gap-2">
+                            <div className="flex gap-1">
+                                <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce"></span>
+                                <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></span>
+                                <span className="w-1.5 h-1.5 bg-slate-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+            </div>
+          )}
+        </div>
+
+        {/* Footer Input Area */}
+        <div className="p-4 border-t border-nexus-border bg-nexus-dark z-20 shrink-0">
+           {!loading && (
+              <div className="space-y-3">
+                 <div className="relative">
+                    <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageSelect} className="hidden" />
+                    {selectedImage && (
+                        <div className="absolute bottom-full left-0 mb-2 flex items-center gap-2 bg-slate-800 p-2 rounded-lg border border-slate-700">
+                            <img src={`data:image/jpeg;base64,${selectedImage}`} alt="Preview" className="h-8 w-8 rounded object-cover" />
+                            <button onClick={() => setSelectedImage(null)} className="text-[10px] text-red-400 hover:text-red-300"><Trash2 className="w-3 h-3" /></button>
+                        </div>
+                    )}
+                    <input 
+                       value={userInput}
+                       onChange={(e) => setUserInput(e.target.value)}
+                       placeholder="Type your message..."
+                       className="w-full bg-nexus-card border border-nexus-border rounded-xl py-3 pl-10 pr-12 text-white focus:border-blue-500 outline-none text-xs placeholder:text-slate-600"
+                       onKeyPress={(e) => e.key === 'Enter' && handleRefine()}
+                    />
+                    <button onClick={() => fileInputRef.current?.click()} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-blue-400 transition">
+                       <ImageIcon className="w-4 h-4" />
+                    </button>
+                    <button onClick={handleRefine} disabled={!userInput.trim() && !selectedImage} className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-lg transition-colors">
+                       <Zap className="w-4 h-4" />
+                    </button>
+                 </div>
+                 {data && data.estimatedSetup > 0 && (
+                    <button onClick={handleProceedToBooking} className="w-full py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-lg transition-all flex items-center justify-center gap-2">
+                       <ShieldCheck className="w-4 h-4" /> Finalize Architecture
+                    </button>
+                 )}
+              </div>
+           )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-nexus-dark/95 backdrop-blur-xl overflow-y-auto">
@@ -349,7 +463,7 @@ OUTPUT FORMAT REQUIREMENTS (JSON ONLY, NO MARKDOWN OUTSIDE JSON):
                 <Bot className="w-5 h-5 text-blue-400" />
              </div>
              <div>
-                <h3 className="text-xl font-black text-white uppercase tracking-tighter">QuickKit AI Architect <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded ml-2 align-middle">PRO</span></h3>
+                <h3 className="text-xl font-black text-white uppercase tracking-tighter">Kelly <span className="text-[10px] text-slate-400 font-mono tracking-widest ml-2">AI Solutions Architect</span> <span className="text-[10px] bg-blue-600 text-white px-2 py-0.5 rounded ml-2 align-middle">PRO</span></h3>
                 <div className="flex items-center gap-4 mt-0.5">
                    <span className="text-[10px] font-mono text-slate-500 bg-slate-800 px-2 py-0.5 rounded border border-slate-700">REF: {sessionRef}</span>
                    <span className="text-[10px] font-mono text-slate-500 flex items-center gap-1.5 uppercase font-bold tracking-widest"><Clock className="w-3 h-3" /> Est. Build: <span className="text-white">{data?.totalDuration || 'Calculating...'}</span></span>
@@ -374,152 +488,61 @@ OUTPUT FORMAT REQUIREMENTS (JSON ONLY, NO MARKDOWN OUTSIDE JSON):
             </div>
           ) : (
             <div className="max-w-3xl mx-auto space-y-8 animate-fade-in pb-10">
-               
-               {/* Chat History (For Refinements) */}
-               {chatHistory.length > 2 && (
-                 <div className="space-y-4 mb-8 pb-8 border-b border-slate-800/50">
-                    {chatHistory.slice(2, -1).map((msg, idx) => (
-                        <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[80%] p-4 rounded-2xl text-xs leading-relaxed ${
-                                msg.role === 'user' 
-                                ? 'bg-slate-800 text-slate-300 rounded-tr-none' 
-                                : 'bg-blue-900/10 text-blue-200 rounded-tl-none border border-blue-500/10'
-                            }`}>
-                                {/* Render User Images if present */}
-                                {msg.parts.map((part, pIdx) => (
-                                    <div key={pIdx}>
-                                        {part.inlineData && (
-                                            <img 
-                                                src={`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`} 
-                                                alt="Uploaded context" 
-                                                className="w-full max-w-[200px] rounded-lg mb-2 border border-slate-700"
-                                            />
-                                        )}
-                                        {part.text && <p>{part.text}</p>}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-                 </div>
-               )}
+                      {/* Pure Chat Interface */}
+               <div className="space-y-6 mb-8 pb-8">
+                  {chatHistory.map((msg, idx) => {
+                      // Skip internal system-like prefixes if we want, or just show them.
+                      // The first message has the prompt (e.g. "Custom Build: ...")
+                      let textToShow = msg.parts[0]?.text || '';
+                      if (idx === 0 && textToShow.startsWith('Custom Build:')) {
+                           textToShow = textToShow.replace('Custom Build: ', '');
+                      }
+                      if (idx === 0 && textToShow.startsWith('Service:')) {
+                           textToShow = "I'm interested in the " + textToShow.replace('Service: ', '') + " service.";
+                      }
 
-               {/* Architect Insight Message (Main Output) */}
-               <div className="bg-blue-600/5 border border-blue-500/20 p-6 rounded-3xl relative shadow-lg overflow-hidden">
-                  <div className="flex gap-4 relative z-10">
-                     <div className="w-8 h-8 rounded-lg bg-blue-500/20 border border-blue-500/30 flex items-center justify-center text-blue-400 shrink-0">
-                        <Terminal className="w-4 h-4" />
-                     </div>
-                     <div className="flex-1">
-                        <p className="text-blue-100 text-lg leading-relaxed font-medium whitespace-pre-wrap">
-                           {displayText}
-                           {!existingData && <span className="inline-block w-1 h-4 ml-1 bg-blue-400 animate-pulse align-middle"></span>}
-                        </p>
-                        {data?.roiBreakdown && (
-                           <p className="mt-4 text-xs text-slate-400 italic border-l-2 border-slate-700 pl-4 py-1">
-                             {data.roiBreakdown}
-                           </p>
-                        )}
-                     </div>
-                  </div>
-               </div>
-
-               {!data?.needsClarification && (
-                 <div className="space-y-8 animate-fade-in-up">
-                    {/* Financial & ROI Breakdown */}
-                    <div className="bg-slate-900/50 border border-nexus-border p-6 rounded-[2rem]">
-                        <div className="flex justify-between items-center mb-6">
-                           <h2 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">Efficiency Audit</h2>
-                           <div className={`px-3 py-1 rounded-full border text-[9px] font-black uppercase tracking-widest ${getTierColor(data?.complexityTier || '')}`}>
-                              {data?.complexityTier} Plan
-                           </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                           {/* Human Cost Card */}
-                           <div className="bg-nexus-card/50 p-5 rounded-2xl border border-red-500/10 group cursor-help relative" title="Cost of a Human VA doing this work manually">
-                              <span className="text-[9px] text-slate-600 font-black block mb-1 uppercase tracking-widest flex items-center gap-1.5">
-                                <Users2 className="w-3 h-3 text-red-500" /> Manual Labor Cost
-                              </span>
-                              <span className="text-2xl font-black text-slate-300 line-through decoration-red-500/40">${data?.manualLaborCostEstimate?.toLocaleString()}</span>
-                              <p className="text-[9px] text-slate-500 mt-1 font-mono">ESTIMATED ANNUAL DRAIN</p>
-                           </div>
-
-                           {/* Net ROI Card */}
-                           <div 
-                              onClick={() => setShowBreakdown(!showBreakdown)}
-                              className="bg-emerald-500/5 p-5 rounded-2xl border border-emerald-500/20 group cursor-pointer hover:bg-emerald-500/10 transition-all"
-                            >
-                              <div className="flex justify-between items-start">
-                                 <span className="text-[9px] text-emerald-500/70 font-black block mb-1 uppercase tracking-widest flex items-center gap-1.5">
-                                   <TrendingDown className="w-3 h-3" /> QuickKit Saved ROI
-                                 </span>
-                                 <HelpCircle className="w-3 h-3 text-slate-600 group-hover:text-emerald-400" />
+                      return (
+                          <div key={idx} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                              <div className={`max-w-[85%] p-5 rounded-3xl text-sm leading-relaxed ${
+                                  msg.role === 'user' 
+                                  ? 'bg-blue-600 text-white rounded-tr-none shadow-md' 
+                                  : 'bg-nexus-card border border-nexus-border text-slate-300 rounded-tl-none shadow-lg'
+                              }`}>
+                                  {/* Render User Images if present */}
+                                  {msg.parts.map((part, pIdx) => (
+                                      <div key={pIdx}>
+                                          {part.inlineData && (
+                                              <img 
+                                                  src={`data:${part.inlineData.mimeType};base64,${part.inlineData.data}`} 
+                                                  alt="Uploaded context" 
+                                                  className="w-full max-w-[250px] rounded-xl mb-3 border border-slate-700 shadow-md"
+                                              />
+                                          )}
+                                          {part.text && (
+                                               <p className="whitespace-pre-wrap font-sans">
+                                                  {idx === 0 ? textToShow : part.text}
+                                                  {msg.role === 'model' && idx === chatHistory.length - 1 && !data && <span className="inline-block w-1.5 h-4 ml-1 bg-blue-400 animate-pulse align-middle"></span>}
+                                               </p>
+                                          )}
+                                      </div>
+                                  ))}
                               </div>
-                              <span className="text-2xl font-black text-emerald-400">${data?.annualRoiEstimate?.toLocaleString()} <span className="text-xs text-slate-500">/yr</span></span>
-                              <p className="text-[9px] text-emerald-500 font-mono mt-1 font-bold">NET PROFIT RECLAIMED</p>
-                           </div>
-                        </div>
-
-                        {/* Expandable Breakdown Details */}
-                        {showBreakdown && (
-                           <div className="mt-4 p-4 bg-nexus-dark border border-slate-800 rounded-xl animate-fade-in-up">
-                              <h4 className="text-[10px] font-black text-white uppercase tracking-widest mb-3 border-b border-slate-800 pb-2">How we save you ${data?.annualRoiEstimate.toLocaleString()}</h4>
-                              <div className="space-y-2">
-                                 <div className="flex justify-between text-xs">
-                                    <span className="text-slate-500">Manual Hours Saved</span>
-                                    <span className="text-white font-mono">{data?.efficiencySavedHours} hrs/week</span>
-                                 </div>
-                                 <div className="flex justify-between text-xs">
-                                    <span className="text-slate-500">Equivalent VA Salary ($12/hr)</span>
-                                    <span className="text-white font-mono">${data?.manualLaborCostEstimate.toLocaleString()}</span>
-                                 </div>
-                                 <div className="flex justify-between text-xs">
-                                    <span className="text-slate-500">Nexus Maintenance ($100/mo)</span>
-                                    <span className="text-red-400 font-mono">-${data?.estimatedMaintenance * 12}</span>
-                                 </div>
-                                 <div className="pt-2 border-t border-slate-800 flex justify-between text-sm">
-                                    <span className="text-emerald-400 font-black">Your Profit</span>
-                                    <span className="text-emerald-400 font-black text-lg">${data?.annualRoiEstimate.toLocaleString()}</span>
-                                 </div>
-                              </div>
-                           </div>
-                        )}
-                        
-                        <div className="mt-6 flex gap-4">
-                           <div className="flex-1 bg-nexus-dark/50 p-4 rounded-xl border border-nexus-border">
-                              <span className="text-[8px] text-slate-600 font-black block mb-1 uppercase tracking-widest">Initial Setup</span>
-                              <span className="text-xl font-bold text-white">${data?.estimatedSetup}</span>
-                           </div>
-                           <div className="flex-1 bg-nexus-dark/50 p-4 rounded-xl border border-nexus-border">
-                              <span className="text-[8px] text-slate-600 font-black block mb-1 uppercase tracking-widest">Monthly Maint.</span>
-                              <span className="text-xl font-bold text-blue-400">${data?.estimatedMaintenance}</span>
-                           </div>
-                        </div>
-                    </div>
-
-                    {/* Step Timeline */}
-                    <div className="space-y-4 relative pl-4">
-                       <div className="absolute left-6 top-4 bottom-4 w-px bg-slate-800"></div>
-                       {data?.steps.map((step, idx) => (
-                         <div key={idx} className="flex gap-6 group">
-                            <div className="shrink-0 relative">
-                               <div className="w-10 h-10 rounded-xl bg-nexus-card border border-slate-700 flex items-center justify-center text-slate-500 font-mono text-xs group-hover:border-blue-500 group-hover:text-white transition-all z-10 relative">
-                                  {idx + 1}
-                               </div>
-                            </div>
-                            <div className="flex-1 pb-8">
-                               <div className="flex justify-between items-center mb-1">
-                                  <h4 className="font-black text-white group-hover:text-blue-400 transition-colors uppercase tracking-tight text-xs">{step.title}</h4>
-                                  <span className="text-[8px] font-mono text-slate-600 bg-slate-800 px-2 py-0.5 rounded">{step.duration}</span>
-                               </div>
-                               <p className="text-slate-400 text-[11px] leading-relaxed line-clamp-2 group-hover:line-clamp-none transition-all">{step.description}</p>
-                            </div>
+                          </div>
+                      );
+                  })}
+                  {refining && (
+                     <div className="flex justify-start">
+                         <div className="max-w-[80%] p-5 rounded-3xl bg-nexus-card border border-nexus-border text-slate-400 rounded-tl-none shadow-lg flex items-center gap-3">
+                             <div className="flex gap-1">
+                                 <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce"></span>
+                                 <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></span>
+                                 <span className="w-2 h-2 bg-slate-500 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></span>
+                             </div>
+                             <span className="text-xs font-mono">Kelly is typing...</span>
                          </div>
-                       ))}
-                    </div>
-                 </div>
-               )}
+                     </div>
+                  )}
+               </div>
             </div>
           )}
         </div>
@@ -585,7 +608,7 @@ OUTPUT FORMAT REQUIREMENTS (JSON ONLY, NO MARKDOWN OUTSIDE JSON):
                        disabled={loading || refining || data?.needsClarification}
                        className="flex-1 py-4 bg-white text-nexus-dark font-black rounded-xl shadow-lg flex items-center justify-center gap-3 hover:bg-slate-200 transition-all active:scale-95 text-sm uppercase disabled:opacity-20"
                     >
-                       {data?.needsClarification ? "Architect Waiting..." : "PROCEED TO DEPLOYMENT"} <ChevronRight className="w-5 h-5" />
+                       {data?.needsClarification ? "Architect Waiting..." : data?.isCustomEstimate ? "REQUEST CUSTOM PROPOSAL" : "PROCEED TO DEPLOYMENT"} <ChevronRight className="w-5 h-5" />
                     </button>
                  </div>
               </div>

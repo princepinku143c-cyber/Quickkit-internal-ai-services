@@ -120,6 +120,7 @@ export interface AIQuote {
   roiEstimate: number;
   buildTime: string;
   generatedAt: string;
+  isCustomEstimate?: boolean;
 }
 
 export type LeadStatus = 'NEW' | 'CONTACTED' | 'NEGOTIATING' | 'WON' | 'LOST';
@@ -145,10 +146,17 @@ export interface ServiceItem {
   monthlyUSD: number;
   categoryId?: string;
   description?: string;
+  badge?: string;
+  outcome?: string;
+  actions?: string[];
+  handles?: string;
+  integrations?: string;
+  bestFor?: string;
 }
 
 export interface CatalogCategory {
   id: string;
   title: string;
+  description?: string;
   items: ServiceItem[];
 }

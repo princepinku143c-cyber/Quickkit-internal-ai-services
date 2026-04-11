@@ -1,6 +1,6 @@
 
 import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
+import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 // # PROJECT: Nexus Client Portal (Multi-Tenant CRM)
@@ -22,6 +22,7 @@ const app = Object.keys(firebaseConfig).length > 0 ? initializeApp(firebaseConfi
 
 export const auth = app ? getAuth(app) : {};
 export const db = app ? getFirestore(app) : {};
+export const googleProvider = new GoogleAuthProvider();
 
 /**
  * TRIGGER QUEUE SIMULATION

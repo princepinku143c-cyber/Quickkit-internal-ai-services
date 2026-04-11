@@ -1,5 +1,8 @@
 
 import React, { useState, useEffect } from 'react';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from './lib/firebase';
 import { generateSessionId } from './lib/utils';
 import { Language, UserProfile, TriggerRequest, ExecutionLog, Currency, ServiceItem, PlanTier, AIQuote } from './types';
 
@@ -7,29 +10,37 @@ import { Language, UserProfile, TriggerRequest, ExecutionLog, Currency, ServiceI
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { Services } from './components/Services';
-import { DemoPreview } from './components/DemoPreview';
+import { DemoBooking } from './components/DemoBooking';
 import { ROICalculator } from './components/ROICalculator';
+import { SystemArchitecture } from './components/SystemArchitecture';
 import { Pricing } from './components/Pricing';
 import { ServiceCatalog } from './components/ServiceCatalog';
+import { AIAgents } from './components/AIAgents';
 import { FloatingActions } from './components/FloatingActions';
 import { SmartBot } from './components/SmartBot';
 import { RoadmapModal } from './components/catalog/RoadmapModal';
 import { LeadForm } from './components/LeadForm';
 
+// NEW BLOCKS
+import { SocialProofBar } from './components/SocialProofBar';
+import { BusinessImpact } from './components/BusinessImpact';
+import { WhyQuickKit } from './components/WhyQuickKit';
+
+
 // Portals
 import { Login } from './components/Login';
 import { ClientPortal } from './components/ClientPortal';
 import { AdminPortal } from './components/AdminPortal';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 const App: React.FC = () => {
-  // Navigation State
-  const [view, setView] = useState<'landing' | 'crm'>('landing');
   const [lang, setLang] = useState<Language>('en');
 
   // AI Architect Modal State
   const [architectPrompt, setArchitectPrompt] = useState<string | null>(null);
   const [selectedCatalogItem, setSelectedCatalogItem] = useState<ServiceItem | null>(null);
+  const [isWidgetMode, setIsWidgetMode] = useState(false);
   
   // STATE LIFTING: Persist roadmap data until refresh
   const [cachedRoadmap, setCachedRoadmap] = useState<{data: any, history: any[]} | null>(null);
@@ -46,8 +57,48 @@ const App: React.FC = () => {
   // Auth State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
-  const handleLaunchArchitect = (prompt: string) => {
+  // Handle Real Firebase Auth State
+  useEffect(() => {
+    if (Object.keys(auth).length === 0) {
+       setAuthLoading(false); // Firebase not initialized
+       return;
+    }
+    const unsubscribe = onAuthStateChanged(auth as any, async (firebaseUser) => {
+        if (firebaseUser) {
+            let role: 'admin' | 'client' = 'client';
+            
+            // Try to fetch custom role from Firestore
+            if (Object.keys(db).length > 0) {
+                const userDoc = await getDoc(doc(db as any, 'users', firebaseUser.uid));
+                if (userDoc.exists() && userDoc.data().role) {
+                    role = userDoc.data().role as 'admin' | 'client';
+                }
+            }
+
+            setUser({
+                uid: firebaseUser.uid,
+                email: firebaseUser.email || '',
+                displayName: firebaseUser.displayName || 'User',
+                role,
+                credits: 0,
+                monthlyLimit: 0,
+                tier: 'STARTER'
+            });
+            setIsAuthenticated(true);
+        } else {
+            setUser(null);
+            setIsAuthenticated(false);
+        }
+        setAuthLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const handleLaunchArchitect = (prompt: string, isWidget: boolean = false) => {
+    setIsWidgetMode(isWidget);
     // Only clear cache if it's a completely NEW request from the Hero input
     if (prompt !== architectPrompt) {
         setCachedRoadmap(null);
@@ -57,6 +108,7 @@ const App: React.FC = () => {
   };
 
   const handleCatalogSelect = (item: ServiceItem) => {
+      setIsWidgetMode(false); // Catalog items always open full screen
       // Clear cache for new catalog item selection
       setCachedRoadmap(null);
       setSessionRef(generateSessionId()); // Generate new ID for new session
@@ -91,12 +143,13 @@ const App: React.FC = () => {
     }
   };
 
-  const handleLogin = () => {
+  // Kept handleLogin for the UI bypass during demo
+  const handleLogin = (demoRole: 'admin' | 'client' = 'admin') => {
     setUser({
-        uid: 'admin-master',
-        email: 'admin@autoflow.ai',
-        displayName: 'System Admin',
-        role: 'admin',
+        uid: 'demo-bypass',
+        email: `${demoRole}@quickkit.online`,
+        displayName: `System ${demoRole === 'admin' ? 'Admin' : 'Client'}`,
+        role: demoRole,
         credits: 4250,
         monthlyLimit: 5000,
         tier: 'BUSINESS'
@@ -104,55 +157,63 @@ const App: React.FC = () => {
     setIsAuthenticated(true);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (Object.keys(auth).length > 0) {
+        await signOut(auth as any);
+    }
     setIsAuthenticated(false);
     setUser(null);
-    setView('landing'); 
   };
 
-  if (view === 'crm') {
+  // Helper component to redirect unauthenticated users
+  const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
+    if (authLoading) return <div className="min-h-screen bg-nexus-dark flex items-center justify-center text-white">Loading...</div>;
+    
     if (!isAuthenticated || !user) {
       return (
         <div className="relative">
-          <button 
-            onClick={() => setView('landing')}
+          <a 
+            href="/"
             className="absolute top-6 left-6 z-50 flex items-center gap-2 px-4 py-2 bg-slate-800/50 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg transition-colors backdrop-blur-sm border border-slate-700"
           >
             <ArrowLeft className="w-4 h-4" /> Back to Home
-          </button>
+          </a>
           <Login onLogin={handleLogin} />
         </div>
       );
     }
-    if (user.role === 'admin') return <AdminPortal user={user} onLogout={handleLogout} />;
-    return <ClientPortal user={user} onLogout={handleLogout} />;
-  }
+    return children;
+  };
 
-  return (
-    <div className="bg-nexus-dark min-h-screen font-sans text-slate-100">
-      <Navbar 
-        lang={lang} 
-        setLang={setLang} 
-        isAdmin={false} 
-        onLoginClick={() => setView('crm')} 
-      />
-      
+  // Landing Page Block
+  const LandingView = () => (
+    <div className="bg-[#030712] min-h-screen font-sans text-slate-100">
+      <Navbar />
       <Hero lang={lang} onLaunchArchitect={handleLaunchArchitect} />
-      
+      <SocialProofBar />
       <Services lang={lang} />
-      <DemoPreview lang={lang} />
-      <ROICalculator lang={lang} />
-      <Pricing lang={lang} />
+      <AIAgents onSelectAgent={handleCatalogSelect} />
       <ServiceCatalog onSelectItem={handleCatalogSelect} />
+      <Pricing lang={lang} />
+      <DemoBooking onBookDemo={() => setShowLeadForm(true)} />
+      <SystemArchitecture />
+      <ROICalculator lang={lang} />
+      
+      <BusinessImpact />
+      <WhyQuickKit />
       
       <FloatingActions />
-      <SmartBot onOpenArchitect={() => handleLaunchArchitect('')} />
+      <SmartBot onOpenArchitect={() => handleLaunchArchitect('Hi Kelly! I want to explore automation.', true)} />
       
       {/* Footer */}
       <footer className="bg-nexus-card border-t border-nexus-border py-12">
         <div className="container mx-auto px-6 text-center text-slate-500">
           <p className="text-sm font-mono tracking-widest uppercase mb-4 text-slate-600 font-black">Powered by Zapier AI Engines</p>
-          <p>&copy; {new Date().getFullYear()} QuickKit Global AI. All rights reserved.</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-8 text-sm">
+            <a href="mailto:sales@quickkit.online" className="hover:text-blue-400 transition-colors">Sales: sales@quickkit.online</a>
+            <a href="mailto:support@quickkit.online" className="hover:text-emerald-400 transition-colors">Support: support@quickkit.online</a>
+          </div>
+          <p>&copy; {new Date().getFullYear()} QuickKit AI. All rights reserved.</p>
         </div>
       </footer>
 
@@ -162,14 +223,12 @@ const App: React.FC = () => {
            customPrompt={architectPrompt || undefined}
            item={selectedCatalogItem || undefined}
            currency="USD"
-           // Pass cached data if available
            existingData={cachedRoadmap?.data}
            existingHistory={cachedRoadmap?.history}
-           sessionRef={sessionRef} // NEW PROP
-           // Save data back to App state
+           sessionRef={sessionRef}
+           isWidget={isWidgetMode}
            onSaveState={(data, history) => setCachedRoadmap({ data, history })}
            onClose={() => { 
-             // Just close the modal, state remains in 'cachedRoadmap'
              setArchitectPrompt(null); 
              setSelectedCatalogItem(null); 
            }}
@@ -183,7 +242,7 @@ const App: React.FC = () => {
           lang={lang} 
           close={() => {
             setShowLeadForm(false);
-            setCurrentAIQuote(undefined); // Clear quote on close
+            setCurrentAIQuote(undefined);
             setLeadFormNotes('');
           }} 
           onBack={resumeArchitect ? handleBackFromForm : undefined}
@@ -192,11 +251,25 @@ const App: React.FC = () => {
             plan: PlanTier.STARTER 
           }}
           prefilledNotes={leadFormNotes}
-          // Pass the locked quote to the form
           aiFinancials={currentAIQuote}
         />
       )}
     </div>
+  );
+
+  return (
+    <Routes>
+      <Route path="/" element={<LandingView />} />
+      <Route path="/login" element={
+         isAuthenticated ? <Navigate to="/dashboard" /> : <ProtectedRoute><div /></ProtectedRoute>
+      } />
+      <Route path="/dashboard" element={
+         <ProtectedRoute>
+            {user?.role === 'admin' ? <AdminPortal user={user!} onLogout={handleLogout} /> : <ClientPortal user={user!} onLogout={handleLogout} />}
+         </ProtectedRoute>
+      } />
+      <Route path="*" element={<Navigate to="/" />} />
+    </Routes>
   );
 };
 
