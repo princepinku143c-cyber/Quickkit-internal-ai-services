@@ -42,7 +42,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center">
             <Zap className="text-white w-5 h-5 fill-current" />
           </div>
-          <span className="font-bold text-white tracking-wide text-lg">NexusStream</span>
+          <span className="font-bold text-white tracking-wide text-lg">Smart AI CRM</span>
         </div>
 
         <nav className="flex-1 p-4 space-y-2">
@@ -95,7 +95,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
             <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="text-slate-400">
               {isMobileMenuOpen ? <X /> : <Menu />}
             </button>
-            <span className="font-bold text-white">NexusStream</span>
+            <span className="font-bold text-white">Smart AI CRM</span>
           </div>
 
           <div className="hidden md:block">
@@ -122,7 +122,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
         {isMobileMenuOpen && (
            <div className="md:hidden fixed inset-0 z-50 bg-nexus-dark">
               <div className="p-6 flex justify-between items-center border-b border-nexus-border">
-                 <span className="font-bold text-white text-xl">NexusStream</span>
+                 <span className="font-bold text-white text-xl">Smart AI CRM</span>
                  <button onClick={() => setIsMobileMenuOpen(false)}><X className="text-white" /></button>
               </div>
               <div className="p-4 space-y-2">

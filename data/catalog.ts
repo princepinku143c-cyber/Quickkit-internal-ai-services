@@ -15,7 +15,7 @@ export const MASTER_CATALOG: CatalogCategory[] = [
         outcome: "Automates lead capture, enrichment, outreach, and CRM updates so your pipeline keeps moving.",
         actions: ["Lead sourcing and enrichment", "Personalized outreach triggers", "CRM sync and alert routing"],
         handles: "New lead data → qualify and enrich → CRM updated + team notified",
-        integrations: "HubSpot, Apollo, Clay, Gmail, Sheets",
+        integrations: "Smart AI CRM, Apollo, Clay, Gmail, Sheets",
         bestFor: "Agencies, consultants, B2B sales teams"
       },
       {
@@ -27,7 +27,7 @@ export const MASTER_CATALOG: CatalogCategory[] = [
         outcome: "Runs campaign sequences, follow-ups, and reporting without manual email management.",
         actions: ["Campaign and drip setup", "Behavior-based follow-ups", "Performance tracking and reporting"],
         handles: "Contact enters segment → email sequence starts → results tracked and optimized",
-        integrations: "Mailchimp, Klaviyo, HubSpot, ConvertKit, Gmail",
+        integrations: "Mailchimp, Klaviyo, Smart AI CRM, ConvertKit, Gmail",
         bestFor: "Brands, consultants, growth teams, e-commerce"
       },
       {
@@ -173,14 +173,14 @@ export const MASTER_CATALOG: CatalogCategory[] = [
     items: [
       {
         id: 13,
-        name: "CRM Automation (HubSpot)",
+        name: "CRM Automation (Smart AI CRM)",
         setupUSD: 1499,
         monthlyUSD: 399,
         badge: "CRM Automation",
         outcome: "Keeps your pipeline updated with automated follow-ups, assignments, and stage movement.",
         actions: ["Contact and pipeline sync", "Follow-up sequence triggers", "Task assignment and reporting"],
         handles: "Lead activity occurs → workflow runs → CRM, tasks, and reminders updated",
-        integrations: "HubSpot, Gmail, forms, calendars, Slack",
+        integrations: "Smart AI CRM, Gmail, forms, calendars, Slack",
         bestFor: "Sales teams, agencies, consultants, B2B ops"
       },
       {
@@ -235,7 +235,7 @@ export const MASTER_CATALOG: CatalogCategory[] = [
         outcome: "Gives decision-makers a clearer view of KPIs, anomalies, and future performance trends.",
         actions: ["Data aggregation and cleanup", "KPI and trend dashboarding", "Forecast and anomaly alerts"],
         handles: "Data pulled from sources → dashboard updates → insights and alerts delivered",
-        integrations: "Sheets, Looker Studio, HubSpot, Stripe, databases",
+        integrations: "Sheets, Looker Studio, Smart AI CRM, Stripe, databases",
         bestFor: "Founders, operators, finance teams, growth leaders"
       },
       {
@@ -259,7 +259,7 @@ export const MASTER_CATALOG: CatalogCategory[] = [
         outcome: "Moves leads through qualification and follow-up workflows with less manual sales coordination.",
         actions: ["Lead scoring and routing", "Outreach and meeting triggers", "Pipeline movement and reminders"],
         handles: "Lead enters system → qualification logic runs → next-step workflow triggered",
-        integrations: "HubSpot, Salesforce, Gmail, calendars, pipeline tools",
+        integrations: "Smart AI CRM, Salesforce, Gmail, calendars, pipeline tools",
         bestFor: "B2B sales teams, agencies, consultants, closers"
       },
       {
@@ -288,7 +288,7 @@ export const AI_AGENTS_CATALOG: ServiceItem[] = [
     outcome: "Finds, qualifies, and routes ready-to-contact prospects into your pipeline automatically.",
     actions: ["Lead sourcing and enrichment", "Personalized outreach sequences", "CRM sync with hot-lead alerts"],
     handles: "outbound prospecting, lead scoring, and pipeline entry",
-    integrations: "HubSpot, Apollo, Clay, Gmail, LinkedIn data tools",
+    integrations: "Smart AI CRM, Apollo, Clay, Gmail, LinkedIn data tools",
     bestFor: "agencies, consultants, B2B SaaS, service sales teams"
   },
   { 
@@ -312,7 +312,7 @@ export const AI_AGENTS_CATALOG: ServiceItem[] = [
     outcome: "Answers, qualifies, and converts inbound or outbound calls into booked opportunities.",
     actions: ["Real-time voice qualification", "Appointment booking and sync", "Post-call CRM updates"],
     handles: "sales calls, objection handling, and booking workflows",
-    integrations: "Twilio, HubSpot, Google Calendar, Salesforce, dialer tools",
+    integrations: "Twilio, Smart AI CRM, Google Calendar, Salesforce, dialer tools",
     bestFor: "clinics, agencies, local businesses, high-volume sales teams"
   },
   { 
@@ -324,7 +324,7 @@ export const AI_AGENTS_CATALOG: ServiceItem[] = [
     outcome: "Runs smarter email campaigns with less manual writing, testing, and follow-up work.",
     actions: ["Campaign and sequence drafting", "A/B test optimization", "Performance tracking and reporting"],
     handles: "drip flows, campaign launches, and response-based follow-up logic",
-    integrations: "Mailchimp, Klaviyo, HubSpot, Gmail, ConvertKit",
+    integrations: "Mailchimp, Klaviyo, Smart AI CRM, Gmail, ConvertKit",
     bestFor: "brands, e-commerce, consultants, growth teams"
   },
   { 
@@ -360,7 +360,7 @@ export const AI_AGENTS_CATALOG: ServiceItem[] = [
     outcome: "Turns disconnected business data into clear KPI visibility, trend analysis, and decision-ready reports.",
     actions: ["Cross-platform data collection", "KPI dashboard generation", "Forecasting and anomaly alerts"],
     handles: "reporting, trend monitoring, and performance summaries",
-    integrations: "Google Sheets, Looker Studio, HubSpot, Stripe, databases",
+    integrations: "Google Sheets, Looker Studio, Smart AI CRM, Stripe, databases",
     bestFor: "founders, operators, finance teams, growth managers"
   },
   { 
@@ -384,7 +384,7 @@ export const AI_AGENTS_CATALOG: ServiceItem[] = [
     outcome: "Moves qualified opportunities toward conversion with structured follow-up and deal progression support.",
     actions: ["Lead qualification checks", "Meeting and follow-up automation", "Deal risk monitoring"],
     handles: "pipeline movement, closing support, and next-step coordination",
-    integrations: "HubSpot, Salesforce, Gmail, Calendar, pipeline tools",
+    integrations: "Smart AI CRM, Salesforce, Gmail, Calendar, pipeline tools",
     bestFor: "B2B sales teams, agencies, service businesses"
   },
   { 
@@ -456,7 +456,7 @@ export const AI_AGENTS_CATALOG: ServiceItem[] = [
     outcome: "Delivers more targeted campaigns using customer behavior, segmentation, and dynamic messaging logic.",
     actions: ["Audience segmentation", "Behavior-based messaging", "Conversion-focused offer targeting"],
     handles: "personalized campaign logic and customer-level targeting flows",
-    integrations: "Klaviyo, Meta Ads, HubSpot, CRM tools, analytics platforms",
+    integrations: "Klaviyo, Meta Ads, Smart AI CRM, CRM tools, analytics platforms",
     bestFor: "brands, retention teams, growth marketers, e-commerce"
   },
   { 

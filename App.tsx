@@ -144,7 +144,7 @@ const App: React.FC = () => {
   };
 
   // Kept handleLogin for the UI bypass during demo
-  const handleLogin = (demoRole: 'admin' | 'client' = 'admin') => {
+  const handleLogin = (demoRole: 'admin' | 'client' = 'client') => {
     setUser({
         uid: 'demo-bypass',
         email: `${demoRole}@quickkit.online`,

@@ -39,7 +39,7 @@ export const DemoBooking: React.FC<DemoBookingProps> = ({ onBookDemo }) => {
                    </div>
                    <div>
                      <h4 className="text-white font-bold text-lg mb-1">Live Backend Walkthrough</h4>
-                     <p className="text-sm text-slate-400 leading-relaxed">Watch as <span className="text-white font-bold">Nimoclaw</span> assigns tasks and <span className="text-white font-bold">OpenClaw</span> executes them inside <span className="text-white font-bold">HubSpot</span>.</p>
+                     <p className="text-sm text-slate-400 leading-relaxed">Watch as <span className="text-white font-bold">Nimoclaw</span> assigns tasks and <span className="text-white font-bold">OpenClaw</span> executes them inside <span className="text-white font-bold">Smart AI CRM</span>.</p>
                    </div>
                  </li>
                  <li className="flex items-start gap-4">

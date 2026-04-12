@@ -17,6 +17,7 @@ export interface UserProfile {
   credits: number;
   monthlyLimit: number;
   tier: 'FREE' | 'PRO' | 'BUSINESS';
+  currentBusinessId?: string;
   // Config Bridge
   settings?: ClientSettings;
 }

@@ -50,7 +50,7 @@ export const Hero: React.FC<HeroProps> = ({ lang, onLaunchArchitect }) => {
         </h1>
         
         <p className="text-lg md:text-xl text-slate-400 max-w-4xl mx-auto mb-12 font-sans leading-relaxed animate-slide-up [animation-delay:200ms]">
-          Automate sales, support, marketing, and operations with intelligent systems powered by <span className="text-white font-bold">Nimoclaw</span>, <span className="text-white font-bold">OpenClaw</span>, and <span className="text-white font-bold">HubSpot</span>. Save time, reduce manual dependency, and scale with confidence.
+          Automate sales, support, marketing, and operations with intelligent systems powered by <span className="text-white font-bold">Nimoclaw</span>, <span className="text-white font-bold">OpenClaw</span>, and <span className="text-white font-bold">Smart AI CRM</span>. Save time, reduce manual dependency, and scale with confidence.
         </p>
 
         {/* AI Architect Command Center */}

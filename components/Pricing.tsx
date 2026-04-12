@@ -78,7 +78,7 @@ export const Pricing: React.FC<PricingProps> = ({ lang }) => {
               </p>
               <div className="flex flex-wrap gap-3">
                  <div className="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-mono text-slate-500">API Charges (OpenAI/Gemini)</div>
-                 <div className="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-mono text-slate-500">HubSpot / CRM Subscriptions</div>
+                 <div className="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-mono text-slate-500">Smart AI CRM Subscriptions</div>
                  <div className="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-mono text-slate-500">Twilio / WhatsApp Charges</div>
                  <div className="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-mono text-slate-500">Email Platforms (GWorkspace)</div>
                  <div className="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 text-xs font-mono text-slate-500">VPS/Hosting (If needed)</div>

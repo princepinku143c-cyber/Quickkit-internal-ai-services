@@ -3,15 +3,15 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// # PROJECT: Nexus Client Portal (Multi-Tenant CRM)
-// SINGLE DATABASE SOURCE: This app connects to the existing NexusStream Firebase project.
+// # PROJECT: Smart AI CRM (Multi-Tenant CRM)
+// SINGLE DATABASE SOURCE: This app connects to the ai-crm-system Firebase project.
 // SHARED CONFIG: Use ONE firebaseConfig for the entire app.
 
 const firebaseConfig = {
   apiKey: "AIzaSyC0c0orE9oK7JZMwswRviBB0cWdnVnwdD4",
-  authDomain: "nexusstream-3a734.firebaseapp.com",
-  projectId: "nexusstream-3a734",
-  storageBucket: "nexusstream-3a734.firebasestorage.app",
+  authDomain: "ai-crm-system.firebaseapp.com",
+  projectId: "ai-crm-system",
+  storageBucket: "ai-crm-system.firebasestorage.app",
   messagingSenderId: "639362646888",
   appId: "1:639362646888:web:5a917cd44032eb5989ccdd",
   measurementId: "G-HD73Q2TQHW"

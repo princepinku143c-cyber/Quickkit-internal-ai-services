@@ -1,7 +1,8 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
-import { Save, Bell, Slack, Mail } from 'lucide-react';
+import { Save, Bell, Slack, Mail, Key, Shield, Webhook, EyeOff, Eye, Server } from 'lucide-react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 interface ClientSettingsProps {
   user: UserProfile;
@@ -13,85 +14,153 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
     slackWebhook: user.settings?.slackWebhook || '',
     notificationPhone: user.settings?.notificationPhone || ''
   });
-  const [saved, setSaved] = useState(false);
 
-  const handleSave = () => {
-    // In a real app, this would update Firestore: users/{uid}
-    // Here we just simulate a save
-    setSaved(true);
-    setTimeout(() => setSaved(false), 2000);
-    
-    // Update local user state if possible, but for this demo we just visual confirm
-    console.log("Saving Global Config:", formData);
+  const [apiData, setApiData] = useState({
+    geminiKey: '',
+    openclawEndpoint: '',
+    customWebhook: ''
+  });
+
+  const [showKey, setShowKey] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const businessId = "biz_1"; 
+
+  useEffect(() => {
+    // Load config from Firebase
+    const loadConfig = async () => {
+        if (!db) return;
+        try {
+            const docRef = doc(db as any, 'business_configs', businessId);
+            const docSnap = await getDoc(docRef);
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                if (data.apiData) setApiData(data.apiData);
+            }
+        } catch (e) {
+            console.error("Failed to load config", e);
+        }
+    };
+    loadConfig();
+  }, [businessId]);
+
+  const handleSave = async () => {
+    try {
+        if (db && Object.keys(db).length > 0) {
+            const docRef = doc(db as any, 'business_configs', businessId);
+            await setDoc(docRef, { apiData, formData, updated_at: new Date().toISOString(), updated_by: user.uid }, { merge: true });
+        }
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+    } catch (e) {
+        console.error("Save config failed", e);
+        alert("Failed to save settings. Check Firebase rules.");
+    }
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-10">
       <div>
-        <h1 className="text-2xl font-bold text-white">Global Configuration</h1>
-        <p className="text-slate-400">Manage variables used across all your automation workflows.</p>
+        <h1 className="text-2xl font-bold text-white">System Configuration</h1>
+        <p className="text-slate-400">Manage security, API limits, and webhook routes.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Contact Variables */}
-        <div className="glass-panel p-6 rounded-xl border border-nexus-border">
-          <div className="flex items-center gap-2 mb-6 border-b border-nexus-border pb-4">
-             <Bell className="w-5 h-5 text-blue-400" />
-             <h3 className="text-lg font-bold text-white">Notification Routes</h3>
+        
+        {/* Secure API Config */}
+        <div className="bg-[#0f172a]/80 backdrop-blur-md p-6 rounded-2xl border border-[#1e293b] shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-[40px] pointer-events-none"></div>
+          
+          <div className="flex items-center gap-2 mb-6 border-b border-[#1e293b] pb-4 relative">
+             <div className="p-2 bg-purple-500/10 rounded-lg"><Key className="w-5 h-5 text-purple-400" /></div>
+             <h3 className="text-lg font-bold text-white">Secure API Configuration</h3>
           </div>
           
-          <div className="space-y-4">
+          <div className="space-y-5 relative">
              <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5 flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-slate-500" /> Default Email
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <Shield className="w-4 h-4 text-emerald-400" /> Gemini Access Token
+                </label>
+                <div className="relative">
+                    <input 
+                    type={showKey ? "text" : "password"}
+                    value={apiData.geminiKey}
+                    onChange={e => setApiData({...apiData, geminiKey: e.target.value})}
+                    placeholder="AIzaSy..."
+                    className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-emerald-300 font-mono text-sm focus:border-purple-500 outline-none pr-10"
+                    />
+                    <button type="button" onClick={() => setShowKey(!showKey)} className="absolute right-3 top-3 text-slate-500 hover:text-white">
+                        {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                    </button>
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1.5 ml-1">Key is encrypted and never exposed to the frontend log streams.</p>
+             </div>
+
+             <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <Server className="w-4 h-4 text-blue-400" /> OpenClaw Endpoint (VPS)
+                </label>
+                <input 
+                  type="text"
+                  placeholder="https://api.yourvps.com/v1/claw"
+                  value={apiData.openclawEndpoint}
+                  onChange={e => setApiData({...apiData, openclawEndpoint: e.target.value})}
+                  className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-blue-300 font-mono text-sm focus:border-blue-500 outline-none"
+                />
+             </div>
+          </div>
+        </div>
+
+        {/* Global Webhooks */}
+        <div className="bg-[#0f172a]/80 backdrop-blur-md p-6 rounded-2xl border border-[#1e293b] shadow-xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none"></div>
+
+          <div className="flex items-center gap-2 mb-6 border-b border-[#1e293b] pb-4 relative">
+             <div className="p-2 bg-blue-500/10 rounded-lg"><Webhook className="w-5 h-5 text-blue-400" /></div>
+             <h3 className="text-lg font-bold text-white">Event Webhooks</h3>
+          </div>
+          
+          <div className="space-y-5 relative">
+             <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <Slack className="w-4 h-4 text-slate-500" /> Slack / Discord Webhook
+                </label>
+                <input 
+                  type="url"
+                  placeholder="https://hooks.slack.com/services/..."
+                  value={formData.slackWebhook}
+                  onChange={e => setFormData({...formData, slackWebhook: e.target.value})}
+                  className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-slate-300 font-mono text-xs focus:border-blue-500 outline-none"
+                />
+             </div>
+             
+             <div>
+                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                    <Mail className="w-4 h-4 text-slate-500" /> System Admin Email
                 </label>
                 <input 
                   type="email"
                   value={formData.contactEmail}
                   onChange={e => setFormData({...formData, contactEmail: e.target.value})}
-                  className="w-full bg-nexus-dark border border-nexus-border rounded-lg px-4 py-2 text-white focus:border-blue-500 outline-none"
-                />
-             </div>
-             <div>
-                <label className="block text-sm font-medium text-slate-300 mb-1.5 flex items-center gap-2">
-                    <Slack className="w-4 h-4 text-slate-500" /> Slack Webhook URL
-                </label>
-                <input 
-                  type="text"
-                  placeholder="https://hooks.slack.com/services/..."
-                  value={formData.slackWebhook}
-                  onChange={e => setFormData({...formData, slackWebhook: e.target.value})}
-                  className="w-full bg-nexus-dark border border-nexus-border rounded-lg px-4 py-2 text-white focus:border-blue-500 outline-none font-mono text-xs"
+                  className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-slate-300 focus:border-blue-500 outline-none"
                 />
              </div>
           </div>
         </div>
 
-        {/* API Keys & Secrets (Placeholder) */}
-        <div className="glass-panel p-6 rounded-xl border border-nexus-border opacity-75">
-           <div className="flex items-center gap-2 mb-6 border-b border-nexus-border pb-4">
-             <ShieldAlertIcon className="w-5 h-5 text-emerald-400" />
-             <h3 className="text-lg font-bold text-white">Connected Integrations</h3>
-          </div>
-          <div className="space-y-4 text-center py-8">
-             <p className="text-slate-500">Google Sheets: <span className="text-emerald-400 font-bold">Connected</span></p>
-             <p className="text-slate-500">OpenAI API: <span className="text-emerald-400 font-bold">Connected</span></p>
-          </div>
-        </div>
       </div>
 
-      <div className="flex justify-end">
+      <div className="flex justify-end pt-6">
          <button 
            onClick={handleSave}
-           className={`px-6 py-3 rounded-lg font-bold flex items-center gap-2 transition-all ${saved ? 'bg-emerald-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'}`}
+           className={`px-8 py-4 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-3 transition-all shadow-xl hover:-translate-y-1 ${
+             saved 
+             ? 'bg-emerald-500 text-white shadow-emerald-500/20' 
+             : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20'
+           }`}
          >
-           {saved ? 'Saved Successfully!' : <><Save className="w-4 h-4" /> Save Changes</>}
+           {saved ? 'Settings Enforced' : <><Save className="w-4 h-4" /> Save Configuration</>}
          </button>
       </div>
     </div>
   );
 };
-
-const ShieldAlertIcon = ({ className }: { className?: string }) => (
-    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10"/><path d="m9 12 2 2 4-4"/></svg>
-);

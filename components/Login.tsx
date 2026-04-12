@@ -70,7 +70,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-emerald-500 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-blue-500/20">
                 <Zap className="text-white w-7 h-7 fill-current" />
             </div>
-            <h1 className="text-3xl font-bold text-white tracking-tight">NexusStream</h1>
+            <h1 className="text-3xl font-bold text-white tracking-tight">Smart AI CRM</h1>
             <p className="text-slate-500 mt-2">Sign in to your client portal</p>
         </div>
 
@@ -132,7 +132,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     onClick={() => onLogin()}
                     className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold rounded-lg transition-all flex items-center justify-center gap-2 border border-slate-700 hover:border-emerald-500/50"
                 >
-                    <ShieldCheck className="w-4 h-4" /> Fast Login (Admin Bypass)
+                    <ShieldCheck className="w-4 h-4" /> Fast Login (Bypass to CRM)
                 </button>
             </form>
             

@@ -18,12 +18,12 @@ export const SystemArchitecture: React.FC = () => {
 
         {/* Backend Tech Stack */}
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-8 mb-24">
-           {/* HubSpot */}
+           {/* Smart AI CRM */}
            <div className="flex-1 bg-slate-900 border border-slate-800 p-8 rounded-[2rem] hover:border-orange-500/50 transition-colors group">
               <div className="flex items-center gap-4 mb-6">
                  <div className="p-4 bg-orange-500/10 rounded-2xl border border-orange-500/20 group-hover:scale-105 transition-transform"><Database className="w-8 h-8 text-orange-400" /></div>
                  <div>
-                    <h3 className="text-2xl font-black text-white">HubSpot</h3>
+                    <h3 className="text-2xl font-black text-white">Smart AI CRM</h3>
                     <span className="text-xs font-bold text-slate-500 uppercase tracking-widest block mt-1">(CRM LAYER)</span>
                  </div>
               </div>
@@ -81,7 +81,7 @@ export const SystemArchitecture: React.FC = () => {
               <div className="bg-slate-900 p-6 rounded-2xl border border-orange-500/20 relative z-10 mt-6 lg:mt-0">
                  <div className="w-12 h-12 bg-orange-500/10 rounded-full mx-auto flex items-center justify-center mb-4 border border-orange-500/30 font-black text-orange-400">2</div>
                  <h4 className="text-white font-bold mb-2">Data Sync</h4>
-                 <p className="text-sm text-slate-400">Data directly into HubSpot CRM.</p>
+                 <p className="text-sm text-slate-400">Data directly into Smart AI CRM CRM.</p>
               </div>
               <div className="bg-slate-900 p-6 rounded-2xl border border-purple-500/20 relative z-10 mt-6 lg:mt-0">
                  <div className="w-12 h-12 bg-purple-500/10 rounded-full mx-auto flex items-center justify-center mb-4 border border-purple-500/30 font-black text-purple-400">3</div>
