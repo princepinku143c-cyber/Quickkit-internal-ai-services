@@ -114,15 +114,15 @@ export const Hero: React.FC<HeroProps> = ({ lang, onLaunchArchitect }) => {
              <Layers className="w-3.5 h-3.5" /> Or Explore Service Catalog <ChevronDown className="w-3 h-3 group-hover:translate-y-1 transition-transform" />
            </button>
 
-           <div className="flex justify-center gap-8 mt-4 border-t border-nexus-border/30 pt-8 w-full max-w-xl">
-             <div className="flex items-center gap-2 text-[10px] font-mono text-slate-500 uppercase tracking-widest">
-                <ShieldCheck className="w-3 h-3 text-emerald-500" /> Enterprise Encrypted
+           <div className="flex flex-wrap justify-center gap-6 mt-4 border-t border-nexus-border/30 pt-8 w-full max-w-2xl">
+             <div className="flex items-center gap-2 text-[10px] font-mono text-slate-500 uppercase tracking-widest px-3 py-1.5 bg-slate-900/50 border border-slate-800 rounded-md">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" /> AES-256 Encrypted
              </div>
-             <div className="flex items-center gap-2 text-[10px] font-mono text-slate-500 uppercase tracking-widest">
-                <Cpu className="w-3 h-3 text-blue-500" /> 24/7 Monitoring
+             <div className="flex items-center gap-2 text-[10px] font-mono text-slate-500 uppercase tracking-widest px-3 py-1.5 bg-slate-900/50 border border-slate-800 rounded-md">
+                <Cpu className="w-3.5 h-3.5 text-blue-500" /> SOC2 Compliant Infra
              </div>
-             <div className="flex items-center gap-2 text-[10px] font-mono text-slate-500 uppercase tracking-widest">
-                <Zap className="w-3 h-3 text-amber-500" /> 3 Day Delivery
+             <div className="flex items-center gap-2 text-[10px] font-mono text-slate-500 uppercase tracking-widest px-3 py-1.5 bg-slate-900/50 border border-slate-800 rounded-md">
+                <Zap className="w-3.5 h-3.5 text-amber-500" /> 15ms Avg Latency
              </div>
            </div>
         </div>

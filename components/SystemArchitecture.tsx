@@ -40,13 +40,13 @@ export const SystemArchitecture: React.FC = () => {
                  <div className="p-4 bg-purple-500/10 rounded-2xl border border-purple-500/20 group-hover:scale-105 transition-transform"><BrainCircuit className="w-8 h-8 text-purple-400" /></div>
                  <div>
                     <h3 className="text-2xl font-black text-white">Nimoclaw</h3>
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest block mt-1">(ORCHESTRATOR)</span>
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest block mt-1">(LOGIC ORCHESTRATOR)</span>
                  </div>
               </div>
-              <ul className="space-y-3 text-slate-400">
-                 <li className="flex items-center gap-2"><ArrowRight className="w-4 h-4 text-purple-400"/> Decides Next Actions</li>
-                 <li className="flex items-center gap-2"><ArrowRight className="w-4 h-4 text-purple-400"/> Routes Triggers & Data</li>
-                 <li className="flex items-center gap-2"><ArrowRight className="w-4 h-4 text-purple-400"/> Assigns Specialized Agents</li>
+              <ul className="space-y-3 text-slate-400 text-sm">
+                 <li className="flex items-start gap-2"><ArrowRight className="w-4 h-4 text-purple-400 mt-0.5 shrink-0"/> Semantic Routing Engine</li>
+                 <li className="flex items-start gap-2"><ArrowRight className="w-4 h-4 text-purple-400 mt-0.5 shrink-0"/> Continuous Context Evaluation</li>
+                 <li className="flex items-start gap-2"><ArrowRight className="w-4 h-4 text-purple-400 mt-0.5 shrink-0"/> Dynamic Agent Allocation</li>
               </ul>
            </div>
 
@@ -56,13 +56,13 @@ export const SystemArchitecture: React.FC = () => {
                  <div className="p-4 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 group-hover:scale-105 transition-transform"><Terminal className="w-8 h-8 text-emerald-400" /></div>
                  <div>
                     <h3 className="text-2xl font-black text-white">OpenClaw</h3>
-                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest block mt-1">(EXECUTION)</span>
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-widest block mt-1">(ACTION RUNTIME)</span>
                  </div>
               </div>
-              <ul className="space-y-3 text-slate-400">
-                 <li className="flex items-center gap-2"><ArrowRight className="w-4 h-4 text-emerald-400"/> Executes Multi-Step API Calls</li>
-                 <li className="flex items-center gap-2"><ArrowRight className="w-4 h-4 text-emerald-400"/> AI Code Automation Run</li>
-                 <li className="flex items-center gap-2"><ArrowRight className="w-4 h-4 text-emerald-400"/> Heavy Output Generation</li>
+              <ul className="space-y-3 text-slate-400 text-sm">
+                 <li className="flex items-start gap-2"><ArrowRight className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0"/> Parallel API Execution</li>
+                 <li className="flex items-start gap-2"><ArrowRight className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0"/> Secure Code Sandbox</li>
+                 <li className="flex items-start gap-2"><ArrowRight className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0"/> High-load Data Transformations</li>
               </ul>
            </div>
         </div>

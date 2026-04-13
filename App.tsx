@@ -25,12 +25,14 @@ import { LeadForm } from './components/LeadForm';
 import { SocialProofBar } from './components/SocialProofBar';
 import { BusinessImpact } from './components/BusinessImpact';
 import { WhyQuickKit } from './components/WhyQuickKit';
+import { Testimonials } from './components/Testimonials';
 
 
 // Portals
 import { Login } from './components/Login';
 import { ClientPortal } from './components/ClientPortal';
 import { AdminPortal } from './components/AdminPortal';
+import { LegalModal, LegalDocType } from './components/LegalModal';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
@@ -53,6 +55,8 @@ const App: React.FC = () => {
   const [leadFormNotes, setLeadFormNotes] = useState('');
   // NEW: State to hold locked AI Quote
   const [currentAIQuote, setCurrentAIQuote] = useState<AIQuote | undefined>(undefined);
+  // NEW: State for Legal Modals
+  const [activeLegalModal, setActiveLegalModal] = useState<LegalDocType>(null);
 
   // Auth State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -192,6 +196,7 @@ const App: React.FC = () => {
       <Hero lang={lang} onLaunchArchitect={handleLaunchArchitect} />
       <SocialProofBar />
       <Services lang={lang} />
+      <Testimonials />
       <AIAgents onSelectAgent={handleCatalogSelect} />
       <ServiceCatalog onSelectItem={handleCatalogSelect} />
       <Pricing lang={lang} />
@@ -208,10 +213,22 @@ const App: React.FC = () => {
       {/* Footer */}
       <footer className="bg-nexus-card border-t border-nexus-border py-12">
         <div className="container mx-auto px-6 text-center text-slate-500">
-          <p className="text-sm font-mono tracking-widest uppercase mb-4 text-slate-600 font-black">Powered by Zapier AI Engines</p>
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-8 text-sm">
+          <p className="text-sm font-mono tracking-widest uppercase mb-4 text-slate-600 font-black">Built with Advanced Agentic Architecture</p>
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-6 text-sm">
             <a href="mailto:sales@quickkit.online" className="hover:text-blue-400 transition-colors">Sales: sales@quickkit.online</a>
             <a href="mailto:support@quickkit.online" className="hover:text-emerald-400 transition-colors">Support: support@quickkit.online</a>
+          </div>
+          
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mb-8 text-xs font-bold text-slate-600 uppercase tracking-wider">
+             <button onClick={() => setActiveLegalModal('privacy')} className="hover:text-blue-400 transition-colors">Privacy Policy</button>
+             <span className="hidden sm:inline w-1 h-1 bg-slate-700 rounded-full"></span>
+             <button onClick={() => setActiveLegalModal('terms')} className="hover:text-blue-400 transition-colors">Terms of Service</button>
+             <span className="hidden sm:inline w-1 h-1 bg-slate-700 rounded-full"></span>
+             <button onClick={() => setActiveLegalModal('refund')} className="hover:text-amber-400 transition-colors">Refund Policy</button>
+          </div>
+          
+          <div className="text-xs text-slate-700 max-w-2xl mx-auto mb-6 leading-relaxed">
+             QuickKit AI opertates globally via a remote network of AI engineers. We do not maintain a physical storefront to ensure overhead remains low and savings are passed to our Enterprise clients.
           </div>
           <p>&copy; {new Date().getFullYear()} QuickKit AI. All rights reserved.</p>
         </div>
@@ -254,6 +271,12 @@ const App: React.FC = () => {
           aiFinancials={currentAIQuote}
         />
       )}
+
+      {/* Legal Modal */}
+      <LegalModal 
+        type={activeLegalModal} 
+        onClose={() => setActiveLegalModal(null)} 
+      />
     </div>
   );
 

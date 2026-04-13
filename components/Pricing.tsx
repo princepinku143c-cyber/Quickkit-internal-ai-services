@@ -40,24 +40,45 @@ export const Pricing: React.FC<PricingProps> = ({ lang }) => {
               </div>
             </div>
 
-            {/* Right: Value */}
+            {/* Right: Value & Delivery Strategy */}
             <div className="md:w-7/12 p-8 md:p-12 flex flex-col justify-center">
-              <div className="bg-emerald-500/10 border border-emerald-500/20 p-6 rounded-2xl mb-8 flex flex-col items-start gap-4">
+              <div className="bg-emerald-500/10 border border-emerald-500/20 p-6 rounded-2xl mb-8 flex flex-col items-start gap-4 hover:border-emerald-500/40 transition-colors">
                  <div className="flex items-center gap-3 w-full">
                     <ShieldCheck className="w-8 h-8 text-emerald-400 shrink-0" />
-                    <h4 className="text-emerald-400 font-black text-xl mb-1 uppercase tracking-widest">Risk-Free Onboarding</h4>
+                    <h4 className="text-emerald-400 font-black text-xl lg:text-2xl mb-1 uppercase tracking-widest">3-Step Zero-Friction Delivery</h4>
                  </div>
-                 <div className="space-y-2 mt-2">
-                    <p className="text-lg text-white font-bold inline-flex items-center gap-2"><Check className="text-emerald-400 w-5 h-5"/> First 30 days FREE support & optimization included</p>
-                    <p className="text-sm text-slate-400">We set everything up for you, manage it, and optimize it continuously. No risk, just results.</p>
+                 <div className="space-y-4 mt-2 w-full">
+                    <div className="flex items-start gap-3">
+                       <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 border border-emerald-500/30">1</div>
+                       <div>
+                         <p className="text-sm text-white font-bold">Build & Demo (No Cost)</p>
+                         <p className="text-xs text-slate-400">We custom build your AI architecture and demonstrate it live.</p>
+                       </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                       <div className="w-6 h-6 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 border border-emerald-500/30">2</div>
+                       <div>
+                         <p className="text-sm text-white font-bold">Approval & Payment</p>
+                         <p className="text-xs text-slate-400">You only pay if you are 100% satisfied with the live proof of concept.</p>
+                       </div>
+                    </div>
+                    <div className="flex items-start gap-3">
+                       <div className="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 border border-blue-500/30">3</div>
+                       <div>
+                         <p className="text-sm text-white font-bold">Handover & Dashboard Access</p>
+                         <p className="text-xs text-slate-400">You receive full access to the <span className="text-blue-400 font-bold">Smart AI CRM</span>.</p>
+                       </div>
+                    </div>
                  </div>
               </div>
 
-              <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-4">What's Included Monthly:</h4>
-              <ul className="space-y-3 mb-8">
-                {["24/7 Monitoring & Uptime", "Proactive Bug Fixing", "Minor Flow Updates & Tweaks", "Continuous AI Agent Tuning", "Priority Email Support"].map((feat, i) => (
-                  <li key={i} className="flex items-center gap-3 text-slate-300">
-                    <Check className="w-5 h-5 text-blue-400 shrink-0" />
+              <h4 className="text-sm font-bold text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                 <Zap className="w-4 h-4 text-amber-400" /> First Month Maintenance Included:
+              </h4>
+              <ul className="space-y-3 mb-6">
+                {["Full Smart AI CRM Dashboard Integration", "1 Month Free 24/7 Monitoring & Tuning", "Proactive Bug Catching & Edge Case Fixing", "Priority Technical Adjustments"].map((feat, i) => (
+                  <li key={i} className="flex items-center gap-3 text-slate-300 text-sm">
+                    <Check className="w-4 h-4 text-emerald-400 shrink-0" />
                     <span className="text-md">{feat}</span>
                   </li>
                 ))}
