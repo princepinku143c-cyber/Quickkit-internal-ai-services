@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from './lib/firebase';
 import { generateSessionId } from './lib/utils';
 import { Language, UserProfile, TriggerRequest, ExecutionLog, Currency, ServiceItem, PlanTier, AIQuote } from './types';
@@ -74,11 +74,35 @@ const App: React.FC = () => {
         if (firebaseUser) {
             let role: 'admin' | 'client' = 'client';
             
+            // OWNER EMAILS that always get admin access
+            const ADMIN_EMAILS = ['princepinku143c@gmail.com'];
+            
             // Try to fetch custom role from Firestore
             if (Object.keys(db).length > 0) {
-                const userDoc = await getDoc(doc(db as any, 'users', firebaseUser.uid));
+                const userDocRef = doc(db as any, 'users', firebaseUser.uid);
+                const userDoc = await getDoc(userDocRef);
                 if (userDoc.exists() && userDoc.data().role) {
                     role = userDoc.data().role as 'admin' | 'client';
+                } else {
+                    // Auto-assign admin to owner emails, create doc if missing
+                    if (ADMIN_EMAILS.includes(firebaseUser.email || '')) {
+                        role = 'admin';
+                        // Write admin role to Firestore so it persists
+                        await setDoc(userDocRef, { 
+                            role: 'admin', 
+                            email: firebaseUser.email,
+                            displayName: firebaseUser.displayName,
+                            createdAt: new Date().toISOString()
+                        }, { merge: true });
+                    } else {
+                        // Write client role for new users
+                        await setDoc(userDocRef, { 
+                            role: 'client', 
+                            email: firebaseUser.email,
+                            displayName: firebaseUser.displayName,
+                            createdAt: new Date().toISOString()
+                        }, { merge: true });
+                    }
                 }
             }
 

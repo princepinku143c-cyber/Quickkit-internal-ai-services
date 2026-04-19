@@ -33,13 +33,17 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
+  // SECURITY: Settings tab is ADMIN-ONLY. Clients never see private API keys.
+  const isAdmin = user.role === 'admin';
+
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'terminal', label: 'AI Agent', icon: Terminal },
     { id: 'workflows', label: 'Legacy Workflows', icon: Zap },
     { id: 'data', label: 'Data & Results', icon: Database },
     { id: 'billing', label: 'Billing', icon: CreditCard },
-    { id: 'settings', label: 'Settings', icon: Settings },
+    // Settings is only injected into the nav for admin users
+    ...(isAdmin ? [{ id: 'settings', label: 'Settings', icon: Settings }] : []),
   ];
 
   return (

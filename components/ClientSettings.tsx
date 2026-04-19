@@ -9,6 +9,17 @@ interface ClientSettingsProps {
 }
 
 export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
+  // SECURITY: Hard block — component does nothing and fires NO Firebase reads for non-admins
+  if (user.role !== 'admin') {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] gap-4 text-center">
+        <div className="text-5xl">🔒</div>
+        <h2 className="text-xl font-bold text-white">Access Restricted</h2>
+        <p className="text-slate-500 max-w-sm">Only workspace administrators can manage system configurations.</p>
+      </div>
+    );
+  }
+
   const [formData, setFormData] = useState({
     contactEmail: user.settings?.contactEmail || user.email,
     slackWebhook: user.settings?.slackWebhook || '',
@@ -26,7 +37,7 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
   const businessId = "biz_1"; 
 
   useEffect(() => {
-    // Load config from Firebase
+    // Load config from Firebase — only reaches here because admin check passed above
     const loadConfig = async () => {
         if (!db) return;
         try {
@@ -57,8 +68,9 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
         setErrorMsg("OpenClaw Endpoint Token seems too short or invalid.");
         return;
     }
-    if (apiData.geminiKey && !apiData.geminiKey.startsWith('sk_') && !apiData.geminiKey.startsWith('AIza')) {
-        setErrorMsg("API Key must start with 'sk_' or 'AIza'.");
+    // Accept OpenRouter (sk-or-v1-), Gemini (AIza), or generic secret keys (sk_)
+    if (apiData.geminiKey && !apiData.geminiKey.startsWith('sk-or-v1-') && !apiData.geminiKey.startsWith('sk_') && !apiData.geminiKey.startsWith('AIza')) {
+        setErrorMsg("API Key must start with 'sk-or-v1-' (OpenRouter), 'AIza' (Gemini), or 'sk_'.");
         return;
     }
 
