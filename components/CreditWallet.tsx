@@ -9,15 +9,21 @@ interface CreditWalletProps {
 
 export const CreditWallet: React.FC<CreditWalletProps> = ({ user }) => {
   const [showTopUp, setShowTopUp] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoError, setPromoError] = useState(false);
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [bonusCredits, setBonusCredits] = useState(0);
+  
+  const currentCredits = user.credits + bonusCredits;
   
   // Logic: Calculate Percentage
-  const percentage = Math.min((user.credits / user.monthlyLimit) * 100, 100);
+  const percentage = Math.min((currentCredits / user.monthlyLimit) * 100, 100);
   
   // Logic: Color Determination
   let colorClass = 'bg-emerald-500';
   let textColorClass = 'text-emerald-400';
   
-  if (user.credits === 0) {
+  if (currentCredits === 0) {
     colorClass = 'bg-red-500';
     textColorClass = 'text-red-400';
   } else if (percentage < 20) {
@@ -42,10 +48,10 @@ export const CreditWallet: React.FC<CreditWalletProps> = ({ user }) => {
       {/* Balance Display */}
       <div className="mb-3">
          <div className="flex items-baseline gap-1">
-             <span className="text-2xl font-bold text-white">{user.credits.toLocaleString()}</span>
+             <span className="text-2xl font-bold text-white">{currentCredits.toLocaleString()}</span>
              <span className="text-xs text-slate-500">/ {user.monthlyLimit.toLocaleString()}</span>
          </div>
-         {user.credits === 0 && (
+         {currentCredits === 0 && (
              <div className="flex items-center gap-1 text-red-400 text-xs font-bold mt-1">
                  <AlertCircle className="w-3 h-3" /> Workflow Paused
              </div>
@@ -86,6 +92,43 @@ export const CreditWallet: React.FC<CreditWalletProps> = ({ user }) => {
                 <span className="font-bold text-white relative z-10">$40</span>
                 <div className="absolute inset-0 bg-white/10 skew-x-12 -translate-x-full hover:translate-x-full transition-transform duration-700"></div>
             </button>
+            
+            {/* Promo Code Section */}
+            {!promoApplied && (
+              <div className="pt-2 border-t border-slate-700/50 mt-2">
+                <div className="flex gap-2">
+                   <input 
+                      type="text" 
+                      placeholder="Promo Code" 
+                      value={promoCode}
+                      onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(false); }}
+                      className={`w-full bg-slate-900 border ${promoError ? 'border-red-500' : 'border-slate-700'} rounded text-xs px-2 py-1.5 focus:outline-none text-white`}
+                   />
+                   <button 
+                      onClick={() => {
+                        if (promoCode === 'NEW2000') {
+                           setBonusCredits(2000);
+                           setPromoApplied(true);
+                           setPromoError(false);
+                        } else {
+                           setPromoError(true);
+                        }
+                      }}
+                      className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors"
+                   >
+                     Apply
+                   </button>
+                </div>
+                {promoError && <p className="text-[10px] text-red-400 mt-1">Invalid promo code</p>}
+              </div>
+            )}
+            
+            {promoApplied && (
+               <div className="mt-2 text-center p-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded text-emerald-400 text-[10px] font-bold tracking-widest">
+                  PROMO CODE APPLIED! +2000 CR 🚀
+               </div>
+            )}
+
             <button 
                 onClick={() => setShowTopUp(false)}
                 className="w-full text-[10px] text-slate-500 hover:text-slate-300 mt-1"

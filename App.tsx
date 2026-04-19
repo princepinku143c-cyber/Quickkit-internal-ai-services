@@ -87,8 +87,8 @@ const App: React.FC = () => {
                 email: firebaseUser.email || '',
                 displayName: firebaseUser.displayName || 'User',
                 role,
-                credits: 0,
-                monthlyLimit: 0,
+                credits: 500,
+                monthlyLimit: 5000,
                 tier: 'STARTER'
             });
             setIsAuthenticated(true);
