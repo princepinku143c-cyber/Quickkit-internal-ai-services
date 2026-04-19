@@ -138,18 +138,6 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
           </div>
           
           <div className="space-y-5 relative">
-             <div>
-                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <Webhook className="w-4 h-4 text-slate-500" /> Telegram Bot Token (Webhook)
-                </label>
-                <input 
-                type="text" 
-                placeholder="8336665877:AA..."
-                value={apiData.customWebhook}
-                onChange={e => setApiData({...apiData, customWebhook: e.target.value})}
-                className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-slate-300 font-mono text-xs focus:border-blue-500 outline-none"
-                />
-             </div>
              
              <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
