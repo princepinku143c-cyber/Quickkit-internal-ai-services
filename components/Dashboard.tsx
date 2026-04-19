@@ -17,10 +17,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [demoMode, setDemoMode] = useState(false);
   const [commandInput, setCommandInput] = useState('');
 
-  // Per user instruction:
-  // "Filter all data by business_id = 'biz_1'"
-  const businessId = "biz_1"; 
-
   useEffect(() => {
     if (demoMode) return; // Do not fetch from Firebase if in demo mode
 
@@ -30,17 +26,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     }
 
     try {
-      const qAgents = query(collection(db as any, 'agents'), where('business_id', '==', businessId), where('user_id', '==', user.uid));
+      const qAgents = query(collection(db as any, 'agents'), where('user_id', '==', user.uid));
       const unSubAgents = onSnapshot(qAgents, (snapshot) => {
         setAgents(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
       }, (err) => console.warn("Agents error:", err));
 
-      const qTasks = query(collection(db as any, 'tasks'), where('business_id', '==', businessId), where('user_id', '==', user.uid));
+      const qTasks = query(collection(db as any, 'tasks'), where('user_id', '==', user.uid));
       const unSubTasks = onSnapshot(qTasks, (snapshot) => {
         setTasks(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
       }, (err) => console.warn("Tasks error:", err));
 
-      const qLogs = query(collection(db as any, 'logs'), where('business_id', '==', businessId), where('user_id', '==', user.uid));
+      const qLogs = query(collection(db as any, 'logs'), where('user_id', '==', user.uid));
       const unSubLogs = onSnapshot(qLogs, (snapshot) => {
         setLogs(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
       }, (err) => console.warn("Logs error:", err));
@@ -54,7 +50,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       console.error("Firebase setup error:", e);
       setIsFirebaseConnected(false);
     }
-  }, [businessId, demoMode]);
+  }, [demoMode, user.uid]);
 
   const toggleDemoMode = () => {
     if (!demoMode) {
