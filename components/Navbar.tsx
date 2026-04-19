@@ -58,12 +58,12 @@ export const Navbar: React.FC = () => {
             All Systems Operational
           </div>
 
-          <button 
-            onClick={() => scrollTo('contact')} 
-            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-sm transition-all shadow-[0_0_20px_rgba(37,99,235,0.2)] ml-2"
+          <a 
+            href="mailto:sales@quickkit.online"
+            className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-black text-sm transition-all shadow-[0_0_20px_rgba(37,99,235,0.2)] ml-2 inline-flex items-center justify-center cursor-pointer"
           >
             Contact
-          </button>
+          </a>
         </div>
 
         {/* Mobile Toggle */}
@@ -82,7 +82,7 @@ export const Navbar: React.FC = () => {
           <button onClick={() => scrollTo('demo')} className="text-left text-lg font-bold text-slate-300">Demo</button>
           <button onClick={() => scrollTo('roi')} className="text-left text-lg font-bold text-slate-300">ROI Calculator</button>
           <Link to="/login" onClick={() => setIsOpen(false)} className="text-left text-lg font-bold text-blue-400 border-t border-slate-800 pt-4">Client Portal</Link>
-          <button onClick={() => scrollTo('contact')} className="text-left text-lg font-black text-blue-600">Contact</button>
+          <button onClick={() => { setIsOpen(false); window.location.href = "mailto:sales@quickkit.online"; }} className="text-left text-lg font-black text-blue-600">Contact</button>
         </div>
       )}
     </nav>

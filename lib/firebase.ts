@@ -8,13 +8,13 @@ import { getFirestore } from "firebase/firestore";
 // SHARED CONFIG: Use ONE firebaseConfig for the entire app.
 
 const firebaseConfig = {
-  apiKey: "AIzaSyC0c0orE9oK7JZMwswRviBB0cWdnVnwdD4",
-  authDomain: "ai-crm-system.firebaseapp.com",
-  projectId: "ai-crm-system",
-  storageBucket: "ai-crm-system.firebasestorage.app",
-  messagingSenderId: "639362646888",
-  appId: "1:639362646888:web:5a917cd44032eb5989ccdd",
-  measurementId: "G-HD73Q2TQHW"
+  apiKey: "AIzaSyDysmepgTK_Uj4Q1_5O4xbo7mjFwSum410",
+  authDomain: "ai-crm-system-d28ef.firebaseapp.com",
+  projectId: "ai-crm-system-d28ef",
+  storageBucket: "ai-crm-system-d28ef.firebasestorage.app",
+  messagingSenderId: "849924322329",
+  appId: "1:849924322329:web:de81e33ecf3b2b26aa6688",
+  measurementId: "G-NJCV2Z3HEW"
 };
 
 // Initialize Firebase only if config is present (prevents crash in demo mode)

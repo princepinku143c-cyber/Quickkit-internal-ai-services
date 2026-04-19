@@ -524,26 +524,26 @@ export const AI_AGENTS_CATALOG: ServiceItem[] = [
 export const BUNDLE_CATALOG: ServiceItem[] = [
   { 
     id: 301, 
-    name: "Starter Pack", 
-    setupUSD: 2999, 
-    monthlyUSD: 699, 
-    badge: "Best for early-stage teams",
-    description: "Best for early-stage teams that want lead capture, email, and messaging automation in one connected setup." 
+    name: "Basic Package (Chat Assistant)", 
+    setupUSD: 599, 
+    monthlyUSD: 199, 
+    badge: "Start with AI",
+    description: "Start with OpenClaw. Automate customer support, email drafts, and lead qualification with Gemini 2.0 Flash." 
   },
   { 
     id: 302, 
-    name: "Growth Pack", 
-    setupUSD: 5499, 
-    monthlyUSD: 1199, 
-    badge: "Best for growing businesses",
-    description: "Best for businesses that want stronger acquisition systems with SEO, analytics, and paid campaign automation." 
+    name: "Advanced Package (Business Pro)", 
+    setupUSD: 799, 
+    monthlyUSD: 299, 
+    badge: "Train your AI",
+    description: "OpenClaw + ChromaDB. Let AI remember PDFs, integrate with Slack/WhatsApp, and track real-time tokens." 
   },
   { 
     id: 303, 
-    name: "Full Automation Pack", 
-    setupUSD: 12999, 
-    monthlyUSD: 2499, 
-    badge: "Best for scaling operations",
-    description: "Best for businesses ready to automate operations across sales, support, content, e-commerce, and admin." 
+    name: "Full Automation (The AI Employee)", 
+    setupUSD: 1299, 
+    monthlyUSD: 499, 
+    badge: "Replace Manual Work",
+    description: "Paperclip Browser Automation + CRM Auto-Login. End-to-end execution on a high-performance VPS." 
   }
 ];

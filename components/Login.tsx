@@ -126,14 +126,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
                    Sign In with Google
                 </button>
 
-                {/* BYPASS BUTTON */}
-                <button 
-                    type="button"
-                    onClick={() => onLogin()}
-                    className="w-full py-3 bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold rounded-lg transition-all flex items-center justify-center gap-2 border border-slate-700 hover:border-emerald-500/50"
-                >
-                    <ShieldCheck className="w-4 h-4" /> Fast Login (Bypass to CRM)
-                </button>
+                {/* Bypass removed for production */}
             </form>
             
             <div className="mt-6 text-center text-xs text-slate-500">

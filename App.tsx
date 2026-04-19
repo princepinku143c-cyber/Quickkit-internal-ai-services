@@ -35,6 +35,7 @@ import { AdminPortal } from './components/AdminPortal';
 import { LegalModal, LegalDocType } from './components/LegalModal';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { GlobalLoader } from './components/GlobalLoader';
 
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('en');
@@ -171,7 +172,7 @@ const App: React.FC = () => {
 
   // Helper component to redirect unauthenticated users
   const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-    if (authLoading) return <div className="min-h-screen bg-nexus-dark flex items-center justify-center text-white">Loading...</div>;
+    if (authLoading) return <GlobalLoader message="Authenticating Secure Session..." />;
     
     if (!isAuthenticated || !user) {
       return (

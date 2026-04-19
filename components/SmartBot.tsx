@@ -19,7 +19,7 @@ export const SmartBot: React.FC<SmartBotProps> = ({ onOpenArchitect }) => {
             <Bot className="w-6 h-6" />
             <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-slate-900"></span>
          </div>
-         <span className="font-bold text-sm hidden group-hover:block whitespace-nowrap text-white pr-2">
+         <span className="font-bold text-sm max-w-0 opacity-0 group-hover:max-w-[150px] group-hover:opacity-100 group-hover:ml-2 transition-all duration-300 overflow-hidden whitespace-nowrap text-white pr-2">
             Chat with Kelly
          </span>
        </button>
