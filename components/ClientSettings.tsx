@@ -96,21 +96,21 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
           <div className="space-y-5 relative">
              <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-emerald-400" /> Gemini Access Token
+                    <Shield className="w-4 h-4 text-emerald-400" /> AI Provider Key (OpenRouter)
                 </label>
                 <div className="relative">
                     <input 
                     type={showKey ? "text" : "password"}
                     value={apiData.geminiKey}
                     onChange={e => setApiData({...apiData, geminiKey: e.target.value})}
-                    placeholder="AIzaSy..."
+                    placeholder="sk-or-v1-..."
                     className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-emerald-300 font-mono text-sm focus:border-purple-500 outline-none pr-10"
                     />
                     <button type="button" onClick={() => setShowKey(!showKey)} className="absolute right-3 top-3 text-slate-500 hover:text-white">
                         {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </button>
                 </div>
-                <p className="text-[10px] text-slate-500 mt-1.5 ml-1">Key is encrypted and never exposed to the frontend log streams.</p>
+                <p className="text-[10px] text-slate-500 mt-1.5 ml-1">Get your key at <a href="https://openrouter.ai/keys" target="_blank" rel="noopener" className="text-blue-400 hover:underline">openrouter.ai/keys</a> — Supports 200+ AI models.</p>
              </div>
 
              <div>
