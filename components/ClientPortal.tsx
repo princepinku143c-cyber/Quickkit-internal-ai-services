@@ -7,6 +7,7 @@ import { Workflows } from './Workflows';
 import { DataView } from './DataView';
 import { Billing } from './Billing';
 import { ClientSettings } from './ClientSettings';
+import { AITerminal } from './AITerminal';
 
 interface ClientPortalProps {
   user: UserProfile;
@@ -24,6 +25,7 @@ export const ClientPortal: React.FC<ClientPortalProps> = ({ user, onLogout }) =>
       onLogout={onLogout}
     >
       {activeTab === 'dashboard' && <Dashboard user={user} />}
+      {activeTab === 'terminal' && <AITerminal user={user} />}
       {activeTab === 'workflows' && <Workflows user={user} />}
       {activeTab === 'data' && <DataView user={user} />}
       {activeTab === 'billing' && <Billing user={user} />}

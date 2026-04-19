@@ -16,9 +16,9 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
   });
 
   const [apiData, setApiData] = useState({
-    geminiKey: '',
-    openclawEndpoint: '',
-    customWebhook: ''
+    geminiKey: 'sk_936c1c038a5f9c485db92a6506cf2ccff43aaa3769280eb1',
+    openclawEndpoint: '3e1804fdba03f9f74c18a0d28f00e40322c7b5c78ef6dd10',
+    customWebhook: '8336665877:AAGMwuTF5bKl5Bpy_A6d8tMUQbEnfdZOnLo'
   });
 
   const [showKey, setShowKey] = useState(false);
@@ -43,7 +43,25 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
     loadConfig();
   }, [businessId]);
 
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   const handleSave = async () => {
+    setErrorMsg(null);
+    
+    // Strict Input Validation for Enterprise Strength
+    if (apiData.customWebhook && !/^[0-9]{8,10}:[a-zA-Z0-9_-]{35}$/.test(apiData.customWebhook)) {
+        setErrorMsg("Invalid Telegram Bot Token format.");
+        return;
+    }
+    if (apiData.openclawEndpoint && apiData.openclawEndpoint.length < 20) {
+        setErrorMsg("OpenClaw Endpoint Token seems too short or invalid.");
+        return;
+    }
+    if (apiData.geminiKey && !apiData.geminiKey.startsWith('sk_') && !apiData.geminiKey.startsWith('AIza')) {
+        setErrorMsg("API Key must start with 'sk_' or 'AIza'.");
+        return;
+    }
+
     try {
         if (db && Object.keys(db).length > 0) {
             const docRef = doc(db as any, 'business_configs', businessId);
@@ -53,7 +71,7 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
         setTimeout(() => setSaved(false), 2000);
     } catch (e) {
         console.error("Save config failed", e);
-        alert("Failed to save settings. Check Firebase rules.");
+        setErrorMsg("Failed to save settings. Check Firebase rules.");
     }
   };
 
@@ -122,14 +140,14 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
           <div className="space-y-5 relative">
              <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-                    <Slack className="w-4 h-4 text-slate-500" /> Slack / Discord Webhook
+                    <Webhook className="w-4 h-4 text-slate-500" /> Telegram Bot Token (Webhook)
                 </label>
                 <input 
-                  type="url"
-                  placeholder="https://hooks.slack.com/services/..."
-                  value={formData.slackWebhook}
-                  onChange={e => setFormData({...formData, slackWebhook: e.target.value})}
-                  className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-slate-300 font-mono text-xs focus:border-blue-500 outline-none"
+                type="text" 
+                placeholder="8336665877:AA..."
+                value={apiData.customWebhook}
+                onChange={e => setApiData({...apiData, customWebhook: e.target.value})}
+                className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-slate-300 font-mono text-xs focus:border-blue-500 outline-none"
                 />
              </div>
              
@@ -149,17 +167,22 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
 
       </div>
 
-      <div className="flex justify-end pt-6">
-         <button 
-           onClick={handleSave}
-           className={`px-8 py-4 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-3 transition-all shadow-xl hover:-translate-y-1 ${
-             saved 
-             ? 'bg-emerald-500 text-white shadow-emerald-500/20' 
-             : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20'
-           }`}
-         >
-           {saved ? 'Settings Enforced' : <><Save className="w-4 h-4" /> Save Configuration</>}
-         </button>
+      <div className="flex flex-col items-end pt-6 gap-3">
+        {errorMsg && (
+          <div className="text-red-400 bg-red-500/10 border border-red-500/20 px-4 py-2 rounded-lg text-xs font-bold animate-pulse">
+             ⚠️ {errorMsg}
+          </div>
+        )}
+        <button 
+          onClick={handleSave}
+          className={`px-8 py-4 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-3 transition-all shadow-xl hover:-translate-y-1 ${
+            saved 
+            ? 'bg-emerald-500 text-white shadow-emerald-500/20' 
+            : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20'
+          }`}
+        >
+          {saved ? 'Settings Enforced' : <><Save className="w-4 h-4" /> Save Configuration</>}
+        </button>
       </div>
     </div>
   );

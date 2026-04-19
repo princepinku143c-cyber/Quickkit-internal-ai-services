@@ -8,6 +8,7 @@ import {
   Settings, 
   LogOut, 
   Bell,
+  Terminal,
   Menu,
   X
 } from 'lucide-react';
@@ -34,7 +35,8 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'workflows', label: 'Workflows', icon: Zap },
+    { id: 'terminal', label: 'AI Agent', icon: Terminal },
+    { id: 'workflows', label: 'Legacy Workflows', icon: Zap },
     { id: 'data', label: 'Data & Results', icon: Database },
     { id: 'billing', label: 'Billing', icon: CreditCard },
     { id: 'settings', label: 'Settings', icon: Settings },
