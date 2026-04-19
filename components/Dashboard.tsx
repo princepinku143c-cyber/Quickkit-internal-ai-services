@@ -97,7 +97,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       await addDoc(collection(db as any, 'tasks'), {
         agent_id: 'System',
         user_id: user.uid,
-        business_id: businessId,
         type: 'Fast Execution',
         status: 'pending',
         result: 'Awaiting agent allocation...',
@@ -117,7 +116,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         await addDoc(collection(db as any, 'logs'), {
             agent_id: 'USER',
             user_id: user.uid,
-            business_id: businessId,
             action: `> ${commandInput}`,
             time: new Date().toLocaleTimeString()
         });
