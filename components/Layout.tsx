@@ -24,6 +24,13 @@ interface LayoutProps {
 
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [bonusRefresh, setBonusRefresh] = React.useState(0);
+
+  React.useEffect(() => {
+    const handleStorage = () => setBonusRefresh(prev => prev + 1);
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -107,7 +114,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
             {/* Topbar Credit Badge (Simplified) */}
             <div className="hidden md:flex items-center gap-2 bg-nexus-card border border-nexus-border px-3 py-1.5 rounded-full">
                 <Zap className="w-3 h-3 text-emerald-400" />
-                <span className="text-sm font-bold text-white">{user.credits.toLocaleString()}</span>
+                <span className="text-sm font-bold text-white">{(user.credits + (Number(localStorage.getItem('bonusCredits')) || 0)).toLocaleString()}</span>
                 <span className="text-xs text-slate-500">Credits</span>
             </div>
 
@@ -138,7 +145,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
                 
                 {/* Mobile Credit Display */}
                 <div className="px-4 py-4">
-                    <p className="text-slate-400 mb-2">Credits: <span className="text-white font-bold">{user.credits}</span> / {user.monthlyLimit}</p>
+                    <p className="text-slate-400 mb-2">Credits: <span className="text-white font-bold">{(user.credits + (Number(localStorage.getItem('bonusCredits')) || 0)).toLocaleString()}</span> / {user.monthlyLimit}</p>
                 </div>
 
                 <button onClick={onLogout} className="w-full flex items-center gap-3 px-4 py-4 text-red-400 mt-8">

@@ -110,6 +110,8 @@ export const CreditWallet: React.FC<CreditWalletProps> = ({ user }) => {
                            setBonusCredits(2000);
                            setPromoApplied(true);
                            setPromoError(false);
+                           localStorage.setItem('bonusCredits', '2000');
+                           window.dispatchEvent(new Event('storage')); // Force update
                         } else {
                            setPromoError(true);
                         }
