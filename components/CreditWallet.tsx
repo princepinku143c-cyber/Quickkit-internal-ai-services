@@ -7,12 +7,20 @@ interface CreditWalletProps {
   user: UserProfile;
 }
 
+// Hash comparison so promo code is never visible in source
+const hashCode = async (str: string): Promise<string> => {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+};
+// SHA-256 hash of 'NEW2000'
+const VALID_PROMO_HASH = 'ea8905488bf75ea7dffc6cc9622159bfaa749001d38eed44edd2f21bf6925d08';
+
 export const CreditWallet: React.FC<CreditWalletProps> = ({ user }) => {
   const [showTopUp, setShowTopUp] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   const [promoError, setPromoError] = useState(false);
-  const [promoApplied, setPromoApplied] = useState(false);
-  const [bonusCredits, setBonusCredits] = useState(0);
+  const [promoApplied, setPromoApplied] = useState(() => localStorage.getItem('promoApplied') === 'true');
+  const [bonusCredits, setBonusCredits] = useState(() => Number(localStorage.getItem('bonusCredits')) || 0);
   
   const currentCredits = user.credits + bonusCredits;
   
@@ -105,13 +113,15 @@ export const CreditWallet: React.FC<CreditWalletProps> = ({ user }) => {
                       className={`w-full bg-slate-900 border ${promoError ? 'border-red-500' : 'border-slate-700'} rounded text-xs px-2 py-1.5 focus:outline-none text-white`}
                    />
                    <button 
-                      onClick={() => {
-                        if (promoCode === 'NEW2000') {
+                      onClick={async () => {
+                        const inputHash = await hashCode(promoCode);
+                        if (inputHash === VALID_PROMO_HASH) {
                            setBonusCredits(2000);
                            setPromoApplied(true);
                            setPromoError(false);
                            localStorage.setItem('bonusCredits', '2000');
-                           window.dispatchEvent(new Event('storage')); // Force update
+                           localStorage.setItem('promoApplied', 'true');
+                           window.dispatchEvent(new Event('storage'));
                         } else {
                            setPromoError(true);
                         }

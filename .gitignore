@@ -25,3 +25,7 @@ dist-ssr
 .vercel
 .env*.local
 .env
+
+# Operational files
+*.txt
+!README.md

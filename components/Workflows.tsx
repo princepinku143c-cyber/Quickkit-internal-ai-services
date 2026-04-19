@@ -16,8 +16,8 @@ export const Workflows: React.FC<WorkflowsProps> = ({ user }) => {
 
   // FETCH: Get projects where userId == currentUser.uid AND public_form_enabled == true
   const myProjects = useMemo(() => {
-    return MOCK_PROJECTS.filter(p => p.userId === user.uid && p.public_form_enabled);
-  }, [user.uid]);
+    return MOCK_PROJECTS.filter(p => p.public_form_enabled);
+  }, []);
 
   const icons = {
     Users: <Users className="w-6 h-6" />,

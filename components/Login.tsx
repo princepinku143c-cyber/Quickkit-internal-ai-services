@@ -5,19 +5,16 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db, googleProvider } from '../lib/firebase';
 import { Zap, ArrowRight, Lock, ShieldCheck, Mail, Loader2 } from 'lucide-react';
 
-interface LoginProps {
-  onLogin: () => void;
-}
-
-export const Login: React.FC<LoginProps> = ({ onLogin }) => {
+export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!auth || Object.keys(auth).length === 0) {
-        alert("Firebase is not connected. Use Fast Login.");
+        setError("Authentication system is initializing. Please retry.");
         return;
     }
     setLoading(true);
@@ -25,7 +22,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         await signInWithEmailAndPassword(auth as any, email, password);
         // App.tsx auth listener handles redirect
     } catch (error: any) {
-        alert("Login failed: " + error.message);
+        setError(error.message || "Login failed. Please check your credentials.");
     } finally {
         setLoading(false);
     }
@@ -33,7 +30,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
   const handleGoogleSignIn = async () => {
     if (!auth || Object.keys(auth).length === 0) {
-        alert("Firebase is not connected. Use Fast Login.");
+        setError("Authentication system is initializing. Please retry.");
         return;
     }
     setLoading(true);
@@ -56,7 +53,7 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
             }
         }
     } catch (error: any) {
-        alert("Google sign-in failed: " + error.message);
+        setError(error.message || "Google sign-in failed. Please try again.");
     } finally {
         setLoading(false);
     }
@@ -75,6 +72,11 @@ export const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </div>
 
         <div className="glass-panel p-8 rounded-2xl border border-nexus-border shadow-2xl">
+            {error && (
+              <div className="mb-4 p-3 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 text-sm font-medium animate-pulse">
+                ⚠️ {error}
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-5">
                 <div>
                     <label className="block text-sm font-medium text-slate-300 mb-1.5">Email Address</label>

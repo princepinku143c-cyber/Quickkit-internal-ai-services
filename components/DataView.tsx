@@ -12,8 +12,8 @@ export const DataView: React.FC<DataViewProps> = ({ user }) => {
   const [search, setSearch] = useState('');
   
   const myResults = useMemo(() => {
-    return MOCK_RESULTS.filter(r => r.userId === user.uid);
-  }, [user.uid]);
+    return MOCK_RESULTS;
+  }, []);
 
   const filtered = myResults.filter(r => 
     r.workflowName.toLowerCase().includes(search.toLowerCase()) || 

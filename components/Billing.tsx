@@ -11,8 +11,8 @@ interface BillingProps {
 export const Billing: React.FC<BillingProps> = ({ user }) => {
 
   const myTransactions = useMemo(() => {
-    return MOCK_TRANSACTIONS.filter(t => t.userId === user.uid);
-  }, [user.uid]);
+    return MOCK_TRANSACTIONS;
+  }, []);
 
   return (
     <div className="space-y-8">

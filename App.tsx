@@ -148,19 +148,7 @@ const App: React.FC = () => {
     }
   };
 
-  // Kept handleLogin for the UI bypass during demo
-  const handleLogin = (demoRole: 'admin' | 'client' = 'client') => {
-    setUser({
-        uid: 'demo-bypass',
-        email: `${demoRole}@quickkit.online`,
-        displayName: `System ${demoRole === 'admin' ? 'Admin' : 'Client'}`,
-        role: demoRole,
-        credits: 4250,
-        monthlyLimit: 5000,
-        tier: 'BUSINESS'
-    });
-    setIsAuthenticated(true);
-  };
+  // Production: No demo bypass. Auth handled entirely by Firebase onAuthStateChanged.
 
   const handleLogout = async () => {
     if (Object.keys(auth).length > 0) {
@@ -183,7 +171,7 @@ const App: React.FC = () => {
           >
             <ArrowLeft className="w-4 h-4" /> Back to Home
           </a>
-          <Login onLogin={handleLogin} />
+          <Login />
         </div>
       );
     }
@@ -229,7 +217,7 @@ const App: React.FC = () => {
           </div>
           
           <div className="text-xs text-slate-700 max-w-2xl mx-auto mb-6 leading-relaxed">
-             QuickKit AI opertates globally via a remote network of AI engineers. We do not maintain a physical storefront to ensure overhead remains low and savings are passed to our Enterprise clients.
+             QuickKit AI operates globally via a remote network of AI engineers. We do not maintain a physical storefront to ensure overhead remains low and savings are passed to our Enterprise clients.
           </div>
           <p>&copy; {new Date().getFullYear()} QuickKit AI. All rights reserved.</p>
         </div>

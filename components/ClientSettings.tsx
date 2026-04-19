@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
-import { Save, Bell, Slack, Mail, Key, Shield, Webhook, EyeOff, Eye, Server } from 'lucide-react';
+import { Save, Bell, Mail, Key, Shield, Webhook, EyeOff, Eye, Server } from 'lucide-react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
@@ -16,9 +16,9 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
   });
 
   const [apiData, setApiData] = useState({
-    geminiKey: 'sk_936c1c038a5f9c485db92a6506cf2ccff43aaa3769280eb1',
-    openclawEndpoint: '3e1804fdba03f9f74c18a0d28f00e40322c7b5c78ef6dd10',
-    customWebhook: '8336665877:AAGMwuTF5bKl5Bpy_A6d8tMUQbEnfdZOnLo'
+    geminiKey: '',
+    openclawEndpoint: '',
+    customWebhook: ''
   });
 
   const [showKey, setShowKey] = useState(false);
