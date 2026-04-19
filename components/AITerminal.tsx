@@ -103,20 +103,17 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Load API key from Firebase — only admin-configured key is used
+  // Load API key from per-user Firebase settings
   useEffect(() => {
     const loadKey = async () => {
-      // Only load the shared API key from admin's config
-      // Non-admins CAN use the AI agent but only via the admin-configured key
-      if (!db || Object.keys(db).length === 0) return;
+      if (!db || Object.keys(db).length === 0 || !user.uid) return;
       try {
-        const docRef = doc(db as any, 'business_configs', 'biz_1');
+        const docRef = doc(db as any, 'users', user.uid, 'private', 'settings');
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
-          // Only load key if it's a properly formatted OpenRouter key
-          if (data.apiData?.geminiKey && data.apiData.geminiKey.startsWith('sk-or-v1-')) {
-            setApiKey(data.apiData.geminiKey);
+          if (data.apiKey) {
+            setApiKey(data.apiKey);
             return;
           }
         }
@@ -126,7 +123,7 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
       setKeyError(true);
     };
     loadKey();
-  }, []);
+  }, [user.uid]);
 
   // Fetch models list from OpenRouter
   const fetchModels = useCallback(async () => {

@@ -29,14 +29,7 @@ export const ClientPortal: React.FC<ClientPortalProps> = ({ user, onLogout }) =>
       {activeTab === 'workflows' && <Workflows user={user} />}
       {activeTab === 'data' && <DataView user={user} />}
       {activeTab === 'billing' && <Billing user={user} />}
-      {activeTab === 'settings' && user.role === 'admin' && <ClientSettings user={user} />}
-      {activeTab === 'settings' && user.role !== 'admin' && (
-        <div className="flex flex-col items-center justify-center h-[60vh] gap-4 text-center">
-          <div className="text-5xl">🔒</div>
-          <h2 className="text-xl font-bold text-white">Access Restricted</h2>
-          <p className="text-slate-500 max-w-sm">This section is only accessible to workspace administrators. Contact your admin for assistance.</p>
-        </div>
-      )}
+      {activeTab === 'settings' && <ClientSettings user={user} />}
     </Layout>
   );
 };
