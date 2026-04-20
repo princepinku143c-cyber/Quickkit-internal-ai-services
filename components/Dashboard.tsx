@@ -164,7 +164,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             <div className="flex items-center gap-3">
               <div className="flex flex-col items-end">
                   <span className="text-[10px] uppercase tracking-widest font-bold text-slate-500">Workspace</span>
-                  <span className="text-white font-mono font-bold">{businessId}</span>
+                  <span className="text-white font-mono font-bold">Personal Workspace</span>
               </div>
               <div className="h-8 w-px bg-slate-700/50"></div>
               <button 
@@ -362,7 +362,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 border border-emerald-500"></div>
              </div>
              <h3 className="text-emerald-500/80 font-mono font-bold uppercase tracking-widest text-[9px] ml-2 flex items-center gap-2">
-                <Terminal className="w-3 h-3" /> Command Console / {businessId}
+                <Terminal className="w-3 h-3" /> Command Console
              </h3>
           </div>
           <div className="p-5 flex-1 overflow-y-auto font-mono text-[11px] leading-relaxed custom-scrollbar flex flex-col">
