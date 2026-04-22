@@ -85,7 +85,7 @@ export const Login: React.FC = () => {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         className="w-full bg-nexus-card border border-nexus-border rounded-lg px-4 py-3 text-white focus:border-blue-500 outline-none transition-colors"
-                        placeholder="admin@quickkit.online"
+                        placeholder="admin@quickkitai.com"
                     />
                 </div>
                 <div>

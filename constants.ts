@@ -2,8 +2,8 @@ import { PlanTier } from './types';
 
 export const APP_NAME = "QuickKit Global";
 export const APP_VERSION = "v5.0.0-PRO";
-export const CONTACT_EMAIL = "sales@quickkit.online";
-export const SUPPORT_EMAIL = "support@quickkit.online";
+export const CONTACT_EMAIL = "sales@quickkitai.com";
+export const SUPPORT_EMAIL = "support@quickkitai.com";
 export const WHATSAPP_NUMBER = "918260485230";
 
 // Agency Delivery Promises - Speed Optimized

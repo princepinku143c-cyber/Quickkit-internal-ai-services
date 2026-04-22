@@ -1,8 +1,8 @@
 
-import React, { useState, useMemo } from 'react';
-import { MOCK_RESULTS } from '../lib/mockData';
-import { Download, Search, Filter } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Download, Search, Filter, Loader2 } from 'lucide-react';
 import { UserProfile } from '../types';
+import { apiCall } from '../lib/api';
 
 interface DataViewProps {
   user: UserProfile;
@@ -10,14 +10,39 @@ interface DataViewProps {
 
 export const DataView: React.FC<DataViewProps> = ({ user }) => {
   const [search, setSearch] = useState('');
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   
-  const myResults = useMemo(() => {
-    return MOCK_RESULTS;
+  useEffect(() => {
+    const fetchData = async () => {
+        try {
+            setError(null);
+            const data = await apiCall('/api/logs');
+            setLogs(data || []);
+        } catch (e: any) {
+            console.error('Failed to fetch logs:', e);
+            let msg = e.message || 'Failed to sync logs from cloud.';
+            if (msg.toLowerCase().includes('index')) {
+                msg = "Firestore Index Required: Please visit the Firebase Console and create a composite index for 'execution_logs' (user, timestamp).";
+            }
+            setError(msg);
+        } finally {
+            setLoading(false);
+        }
+    };
+    
+    fetchData();
+    
+    // Auto-refresh logs every 5 seconds for LIVE system monitoring
+    const poller = setInterval(fetchData, 5000);
+    
+    return () => clearInterval(poller);
   }, []);
 
-  const filtered = myResults.filter(r => 
-    r.workflowName.toLowerCase().includes(search.toLowerCase()) || 
-    r.inputSummary.toLowerCase().includes(search.toLowerCase())
+  const filtered = logs.filter(r => 
+    (r.command || '').toLowerCase().includes(search.toLowerCase()) || 
+    (r.outputPreview || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -58,26 +83,44 @@ export const DataView: React.FC<DataViewProps> = ({ user }) => {
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-nexus-border">
-                    {filtered.length === 0 ? (
+                    {loading ? (
+                        <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-500">
+                            <Loader2 className="w-6 h-6 animate-spin mx-auto mb-2 text-blue-500" />
+                            Loading execution log records...
+                        </td></tr>
+                    ) : error ? (
+                        <tr><td colSpan={6} className="px-6 py-12 text-center">
+                            <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-lg inline-block text-sm">
+                                ⚠️ {error} <br/>
+                                <span className="text-xs opacity-70 mt-1 block">Check Firebase Console Indexes if this persists.</span>
+                            </div>
+                        </td></tr>
+                    ) : filtered.length === 0 ? (
                         <tr><td colSpan={6} className="px-6 py-12 text-center text-slate-500">No data found.</td></tr>
                     ) : (
                         filtered.map((row) => (
                             <tr key={row.id} className="hover:bg-nexus-card/30 transition-colors">
                                 <td className="px-6 py-4">
-                                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
-                                        {row.status}
+                                    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold ${
+                                        row.status === 'success' 
+                                        ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' 
+                                        : 'bg-red-500/10 text-red-400 border border-red-500/20'
+                                    }`}>
+                                        <span className={`w-1.5 h-1.5 rounded-full ${row.status === 'success' ? 'bg-emerald-400' : 'bg-red-400'}`}></span>
+                                        {row.status.toUpperCase()}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4">
-                                    <p className="text-white font-medium">{row.workflowName}</p>
-                                    <p className="text-xs text-slate-500">{row.date}</p>
+                                    <p className="text-white font-mono text-sm leading-none mb-1">{row.command}</p>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                                        {row.timestamp ? (typeof row.timestamp === 'string' ? row.timestamp : new Date(row.timestamp.seconds * 1000).toLocaleString()) : 'N/A'}
+                                    </p>
                                 </td>
-                                <td className="px-6 py-4 text-slate-300 font-mono text-xs">{row.inputSummary}</td>
-                                <td className="px-6 py-4 text-slate-400 text-sm max-w-xs truncate" title={row.outputResult}>
-                                    {row.outputResult}
+                                <td className="px-6 py-4 text-slate-300 font-mono text-xs">{row.role || 'CLIENT'}</td>
+                                <td className="px-6 py-4 text-slate-400 text-sm max-w-xs truncate" title={row.outputPreview}>
+                                    {row.outputPreview}
                                 </td>
-                                <td className="px-6 py-4 text-slate-500 text-sm">{row.duration}</td>
+                                <td className="px-6 py-4 text-slate-500 text-sm">{row.durationMs ? `${row.durationMs}ms` : '-'}</td>
                                 <td className="px-6 py-4 text-right">
                                     <button className="text-blue-400 hover:text-blue-300 p-2 hover:bg-blue-500/10 rounded-lg transition-colors">
                                         <Download className="w-4 h-4" />

@@ -1,11 +1,21 @@
 import { GoogleGenAI, Type } from "@google/genai";
+import admin from './_lib/firebaseAdmin';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ message: 'Method Not Allowed' });
   }
 
+  // 1. SECURE ENDPOINT: Check Firebase Session
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'Unauthorized' });
+  }
+
   try {
+    const idToken = authHeader.split('Bearer ')[1];
+    await admin.auth().verifyIdToken(idToken);
+    
     const { history, customPrompt, item } = req.body;
     
     // We expect the API key to be set in the Vercel Environment Variables

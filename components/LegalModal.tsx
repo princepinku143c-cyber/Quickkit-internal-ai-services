@@ -20,7 +20,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose }) => {
           <p><strong>1. Information Collection</strong><br/>We strictly collect only the information necessary to provide and manage our AI automation services, including contact details and business logic required for the Smart AI CRM.</p>
           <p><strong>2. Data Usage & Protection</strong><br/>Your data is processed using AES-256 encryption. We do not sell your personal or corporate data to third parties under any circumstances. Data routed through Nimoclaw and OpenClaw is sanitized and handled in encrypted sandboxes.</p>
           <p><strong>3. Third-Party Integrations</strong><br/>Our services integrate with authorized third parties (like Google Workspace or HubSpot). You are subject to their respective privacy policies regarding data stored natively within those applications.</p>
-          <p><strong>4. Contact</strong><br/>For data removal or inquiries, contact privacy@quickkit.online.</p>
+          <p><strong>4. Contact</strong><br/>For data removal or inquiries, contact privacy@quickkitai.com.</p>
         </div>
       )
     },

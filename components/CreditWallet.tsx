@@ -1,28 +1,22 @@
 
 import React, { useState } from 'react';
-import { Zap, Plus, AlertCircle, CreditCard } from 'lucide-react';
+import { Zap, Plus, AlertCircle, CreditCard, Loader2 } from 'lucide-react';
 import { UserProfile } from '../types';
+import { apiCall } from '../lib/api';
 
 interface CreditWalletProps {
   user: UserProfile;
 }
 
-// Hash comparison so promo code is never visible in source
-const hashCode = async (str: string): Promise<string> => {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
-  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
-};
-// SHA-256 hash of 'NEW2000'
-const VALID_PROMO_HASH = 'ea8905488bf75ea7dffc6cc9622159bfaa749001d38eed44edd2f21bf6925d08';
+
 
 export const CreditWallet: React.FC<CreditWalletProps> = ({ user }) => {
   const [showTopUp, setShowTopUp] = useState(false);
   const [promoCode, setPromoCode] = useState('');
-  const [promoError, setPromoError] = useState(false);
-  const [promoApplied, setPromoApplied] = useState(() => localStorage.getItem('promoApplied') === 'true');
-  const [bonusCredits, setBonusCredits] = useState(() => Number(localStorage.getItem('bonusCredits')) || 0);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [promoLoading, setPromoLoading] = useState(false);
   
-  const currentCredits = user.credits + bonusCredits;
+  const currentCredits = user.credits;
   
   // Logic: Calculate Percentage
   const percentage = Math.min((currentCredits / user.monthlyLimit) * 100, 100);
@@ -31,13 +25,28 @@ export const CreditWallet: React.FC<CreditWalletProps> = ({ user }) => {
   let colorClass = 'bg-emerald-500';
   let textColorClass = 'text-emerald-400';
   
-  if (currentCredits === 0) {
+  if (currentCredits <= 0) {
     colorClass = 'bg-red-500';
     textColorClass = 'text-red-400';
   } else if (percentage < 20) {
     colorClass = 'bg-amber-500';
     textColorClass = 'text-amber-400';
   }
+
+  const handleApplyPromo = async () => {
+    if (!promoCode) return;
+    setPromoLoading(true);
+    setPromoError(null);
+    try {
+        await apiCall('/api/promo', { code: promoCode });
+        setPromoCode('');
+        alert('🚀 Promo applied successfully! Credits added.');
+    } catch (e: any) {
+        setPromoError(e.message || 'Invalid code');
+    } finally {
+        setPromoLoading(false);
+    }
+  };
 
   const handleTopUp = (amount: number, price: number) => {
     // In real app: Redirect to Stripe Checkout
@@ -102,44 +111,26 @@ export const CreditWallet: React.FC<CreditWalletProps> = ({ user }) => {
             </button>
             
             {/* Promo Code Section */}
-            {!promoApplied && (
-              <div className="pt-2 border-t border-slate-700/50 mt-2">
-                <div className="flex gap-2">
-                   <input 
-                      type="text" 
-                      placeholder="Promo Code" 
-                      value={promoCode}
-                      onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(false); }}
-                      className={`w-full bg-slate-900 border ${promoError ? 'border-red-500' : 'border-slate-700'} rounded text-xs px-2 py-1.5 focus:outline-none text-white`}
-                   />
-                   <button 
-                      onClick={async () => {
-                        const inputHash = await hashCode(promoCode);
-                        if (inputHash === VALID_PROMO_HASH) {
-                           setBonusCredits(2000);
-                           setPromoApplied(true);
-                           setPromoError(false);
-                           localStorage.setItem('bonusCredits', '2000');
-                           localStorage.setItem('promoApplied', 'true');
-                           window.dispatchEvent(new Event('storage'));
-                        } else {
-                           setPromoError(true);
-                        }
-                      }}
-                      className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors"
-                   >
-                     Apply
-                   </button>
-                </div>
-                {promoError && <p className="text-[10px] text-red-400 mt-1">Invalid promo code</p>}
+            <div className="pt-2 border-t border-slate-700/50 mt-2">
+              <div className="flex gap-2">
+                 <input 
+                    type="text" 
+                    placeholder="Promo Code" 
+                    value={promoCode}
+                    disabled={promoLoading}
+                    onChange={(e) => { setPromoCode(e.target.value.toUpperCase()); setPromoError(null); }}
+                    className={`w-full bg-slate-900 border ${promoError ? 'border-red-500' : 'border-slate-700'} rounded text-xs px-2 py-1.5 focus:outline-none text-white`}
+                 />
+                 <button 
+                    disabled={promoLoading || !promoCode}
+                    onClick={handleApplyPromo}
+                    className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded text-xs font-bold transition-colors disabled:opacity-50"
+                 >
+                   {promoLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Apply'}
+                 </button>
               </div>
-            )}
-            
-            {promoApplied && (
-               <div className="mt-2 text-center p-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded text-emerald-400 text-[10px] font-bold tracking-widest">
-                  PROMO CODE APPLIED! +2000 CR 🚀
-               </div>
-            )}
+              {promoError && <p className="text-[10px] text-red-400 mt-1">{promoError}</p>}
+            </div>
 
             <button 
                 onClick={() => setShowTopUp(false)}

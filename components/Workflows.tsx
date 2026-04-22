@@ -1,22 +1,33 @@
 
-import React, { useState, useMemo } from 'react';
-import { MOCK_PROJECTS } from '../lib/mockData';
-import { Project, UserProfile, TriggerRequest } from '../types';
+import React, { useState, useEffect } from 'react';
+import { Project, UserProfile } from '../types';
 import { Play, Users, FileText, BarChart, X, Loader2, CheckCircle, Zap, Shield } from 'lucide-react';
+import { apiCall } from '../lib/api';
 
 interface WorkflowsProps {
   user: UserProfile;
 }
 
 export const Workflows: React.FC<WorkflowsProps> = ({ user }) => {
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [formData, setFormData] = useState<Record<string, string>>({});
   const [executing, setExecuting] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // FETCH: Get projects where userId == currentUser.uid AND public_form_enabled == true
-  const myProjects = useMemo(() => {
-    return MOCK_PROJECTS.filter(p => p.public_form_enabled);
+  useEffect(() => {
+    const fetchProjects = async () => {
+        try {
+            const data = await apiCall('/api/workflows');
+            setProjects(data || []);
+        } catch (e) {
+            console.error('Failed to load workflows:', e);
+        } finally {
+            setLoading(false);
+        }
+    };
+    fetchProjects();
   }, []);
 
   const icons = {
@@ -37,26 +48,18 @@ export const Workflows: React.FC<WorkflowsProps> = ({ user }) => {
     if (!selectedProject) return;
     setExecuting(true);
     
-    // ACTION: ADD document to 'trigger_queue' in LocalStorage (Simulating Firebase)
-    const newRequest: TriggerRequest = {
-        id: `req-${Date.now()}`,
-        projectId: selectedProject.id,
-        projectName: selectedProject.name,
-        userId: user.uid,
-        payload: formData,
-        status: "PENDING",
-        createdAt: new Date().toISOString(),
-        cost: Math.floor(Math.random() * 20) + 5 // Random cost between 5-25 credits
-    };
-
-    const existingQueue = JSON.parse(localStorage.getItem('trigger_queue') || '[]');
-    localStorage.setItem('trigger_queue', JSON.stringify([...existingQueue, newRequest]));
-
-    // Simulate Network Delay (Just for UI feedback, the Worker handles the real logic)
-    await new Promise(r => setTimeout(r, 800));
-
-    setExecuting(false);
-    setSuccess(true);
+    try {
+        await apiCall('/api/trigger', {
+            projectId: selectedProject.id,
+            payload: formData
+        });
+        setSuccess(true);
+    } catch (e: any) {
+        console.error('Execution failed:', e);
+        alert(e.message || 'Workflow execution failed.');
+    } finally {
+        setExecuting(false);
+    }
   };
 
   return (
@@ -67,20 +70,25 @@ export const Workflows: React.FC<WorkflowsProps> = ({ user }) => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {myProjects.length === 0 ? (
+        {loading ? (
+            <div className="col-span-full py-24 text-center">
+                <Loader2 className="w-10 h-10 animate-spin text-blue-500 mx-auto mb-4" />
+                <p className="text-slate-400 font-medium">Synchronizing Workflows from Engine...</p>
+            </div>
+        ) : projects.length === 0 ? (
             <div className="col-span-full py-12 text-center border border-dashed border-slate-800 rounded-xl">
                 <p className="text-slate-500">No active workflows found for your account.</p>
                 <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Create New Workflow</button>
             </div>
         ) : (
-            myProjects.map((project) => (
+            projects.map((project) => (
                 <div key={project.id} className="glass-panel p-6 rounded-xl border border-nexus-border hover:border-blue-500/30 transition-all hover:-translate-y-1">
                     <div className="flex justify-between items-start mb-4">
                         <div className="p-3 rounded-lg bg-nexus-card border border-nexus-border text-blue-400">
                             {icons[project.icon as keyof typeof icons] || <Zap />}
                         </div>
                         <span className="px-2 py-1 bg-emerald-500/10 text-emerald-400 text-xs font-bold rounded border border-emerald-500/20">
-                            READY
+                            {project.status || 'READY'}
                         </span>
                     </div>
                     <h3 className="text-lg font-bold text-white mb-2">{project.name}</h3>

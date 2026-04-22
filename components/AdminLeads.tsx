@@ -3,12 +3,13 @@ import React, { useEffect, useState } from 'react';
 import { LeadSubmission, LeadStatus } from '../types';
 import { collection, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Search, Download, Trash2, Phone, Mail, Eye, X, DollarSign, MessageSquare, ShieldCheck, Clock } from 'lucide-react';
+import { Search, Download, Trash2, Phone, Mail, Eye, X, DollarSign, MessageSquare, ShieldCheck, Clock, Sparkles } from 'lucide-react';
 
 export const AdminLeads: React.FC = () => {
   const [leads, setLeads] = useState<LeadSubmission[]>([]);
   const [search, setSearch] = useState('');
   const [selectedLead, setSelectedLead] = useState<LeadSubmission | null>(null);
+  const [showReplyTemplate, setShowReplyTemplate] = useState(false);
 
   // Real-time Firebase sync
   useEffect(() => {
@@ -20,20 +21,12 @@ export const AdminLeads: React.FC = () => {
         setLeads(merged);
       });
       return () => unsubscribe();
-    } else {
-      // Fallback to localStorage
-      const data = localStorage.getItem('leads');
-      if (data) {
-        const parsed = JSON.parse(data).map((l: any) => ({ ...l, status: l.status || 'NEW' }));
-        setLeads(parsed);
-      }
     }
   }, []);
 
   const updateStatus = async (id: string, newStatus: LeadStatus) => {
       const updated = leads.map(l => l.id === id ? { ...l, status: newStatus } : l);
       setLeads(updated);
-      localStorage.setItem('leads', JSON.stringify(updated));
       // Firebase sync
       const lead = leads.find(l => l.id === id) as any;
       if (lead?._docId && Object.keys(db).length > 0) {
@@ -63,7 +56,6 @@ export const AdminLeads: React.FC = () => {
         const lead = leads.find(l => l.id === id) as any;
         const updated = leads.filter(l => l.id !== id);
         setLeads(updated);
-        localStorage.setItem('leads', JSON.stringify(updated));
         if (selectedLead?.id === id) setSelectedLead(null);
         // Firebase sync
         if (lead?._docId && Object.keys(db).length > 0) {
@@ -304,15 +296,72 @@ export const AdminLeads: React.FC = () => {
                             Mark as Lost
                         </button>
                         <div className="flex gap-3">
+                            <button 
+                                onClick={() => setShowReplyTemplate(true)}
+                                className="px-4 py-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 text-sm font-bold rounded-lg border border-blue-500/30 transition-colors flex items-center gap-2"
+                            >
+                                <Sparkles className="w-4 h-4" /> Generate Reply
+                            </button>
                             <a href={`mailto:${selectedLead.email}`} className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-lg border border-slate-700 transition-colors">
                                 Send Email
-                            </a>
-                            <a href={`https://wa.me/${selectedLead.phone.replace(/\D/g,'')}`} target="_blank" className="px-6 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-lg shadow-lg shadow-emerald-600/20 transition-colors">
-                                Chat on WhatsApp
                             </a>
                         </div>
                   </div>
               </div>
+
+              {/* REPLY TEMPLATE MODAL */}
+              {showReplyTemplate && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center p-6">
+                    <div className="absolute inset-0 bg-black/40 backdrop-blur-md" onClick={() => setShowReplyTemplate(false)}></div>
+                    <div className="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl shadow-3xl overflow-hidden animate-slide-up">
+                        <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-950">
+                            <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                                <Sparkles className="w-4 h-4 text-blue-400" /> Sales Follow-up Template
+                            </h3>
+                            <button onClick={() => setShowReplyTemplate(false)} className="text-slate-500 hover:text-white">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-6">
+                            <p className="text-xs text-slate-500 uppercase tracking-widest font-bold mb-3">Professional Proposal Response:</p>
+                            <div className="bg-slate-950 border border-slate-800 rounded-xl p-6 text-sm text-slate-300 font-sans leading-relaxed select-all cursor-pointer group relative">
+                                <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-blue-500 text-white text-[10px] px-2 py-1 rounded">Click to Copy</div>
+                                <p>Subject: Architecture Proposal for {selectedLead.businessType} — QuickKit AI</p>
+                                <br/>
+                                <p>Hi {selectedLead.name},</p>
+                                <br/>
+                                <p>I've reviewed the AI Architect roadmap for your business. Based on your requirements, we can deploy the <strong> {selectedLead.aiQuote ? 'Custom Automation Stack' : selectedLead.plan}</strong> within 3-5 business days.</p>
+                                <br/>
+                                {selectedLead.aiQuote ? (
+                                    <>
+                                        <p>Your custom quote includes:</p>
+                                        <p>• One-time implementation: ${selectedLead.aiQuote.setupCost}</p>
+                                        <p>• Monthly maintenance: ${selectedLead.aiQuote.monthlyCost}</p>
+                                        <p>• Estimated annual ROI: ${selectedLead.aiQuote.roiEstimate.toLocaleString()}</p>
+                                        <br/>
+                                    </>
+                                ) : (
+                                    <p>Your {selectedLead.plan} is ready for implementation at our standard rates.</p>
+                                )}
+                                <p>Would you like to hop on a quick 10-minute demo call tomorrow to finalize the deployment steps?</p>
+                                <br/>
+                                <p>Best regards,</p>
+                                <p>QuickKit Sales Team</p>
+                            </div>
+                            <button 
+                                onClick={() => {
+                                    const text = `Subject: Architecture Proposal for ${selectedLead.businessType} — QuickKit AI\n\nHi ${selectedLead.name},\n\nI've reviewed the AI Architect roadmap for your business. Based on your requirements, we can deploy the ${selectedLead.aiQuote ? 'Custom Automation Stack' : selectedLead.plan} within 3-5 business days.\n\n${selectedLead.aiQuote ? `Your custom quote includes:\n• One-time implementation: $${selectedLead.aiQuote.setupCost}\n• Monthly maintenance: $${selectedLead.aiQuote.monthlyCost}\n• Estimated annual ROI: $${selectedLead.aiQuote.roiEstimate.toLocaleString()}\n\n` : ''}Would you like to hop on a quick 10-minute demo call tomorrow to finalize the deployment steps?\n\nBest regards,\nQuickKit Sales Team`;
+                                    navigator.clipboard.writeText(text);
+                                    alert('Template copied to clipboard!');
+                                }}
+                                className="w-full mt-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-xl shadow-blue-600/20"
+                            >
+                                Copy Template
+                            </button>
+                        </div>
+                    </div>
+                </div>
+              )}
           </div>
       )}
       <style>{`

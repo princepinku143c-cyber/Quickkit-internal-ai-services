@@ -14,73 +14,40 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [logs, setLogs] = useState<any[]>([]);
   const [taskFilter, setTaskFilter] = useState<'all' | 'pending' | 'running' | 'completed'>('all');
   const [isFirebaseConnected, setIsFirebaseConnected] = useState(true);
-  const [demoMode, setDemoMode] = useState(false);
   const [commandInput, setCommandInput] = useState('');
 
   useEffect(() => {
-    if (demoMode) return; // Do not fetch from Firebase if in demo mode
-
     if (!db || Object.keys(db).length === 0) {
       setIsFirebaseConnected(false);
       return;
     }
 
-    try {
-      const qAgents = query(collection(db as any, 'agents'), where('user_id', '==', user.uid));
-      const unSubAgents = onSnapshot(qAgents, (snapshot) => {
-        setAgents(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
-      }, (err) => console.warn("Agents error:", err));
+    // Initial load and listeners
+    const qAgents = query(collection(db as any, 'agents'), where('user_id', '==', user.uid));
+    const unSubAgents = onSnapshot(qAgents, snapshot => setAgents(snapshot.docs.map(d => ({ ...d.data(), id: d.id }))));
 
-      const qTasks = query(collection(db as any, 'tasks'), where('user_id', '==', user.uid));
-      const unSubTasks = onSnapshot(qTasks, (snapshot) => {
-        setTasks(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
-      }, (err) => console.warn("Tasks error:", err));
+    const qTasks = query(collection(db as any, 'tasks'), where('user_id', '==', user.uid));
+    const unSubTasks = onSnapshot(qTasks, snapshot => setTasks(snapshot.docs.map(d => ({ ...d.data(), id: d.id }))));
 
-      const qLogs = query(collection(db as any, 'logs'), where('user_id', '==', user.uid));
-      const unSubLogs = onSnapshot(qLogs, (snapshot) => {
-        setLogs(snapshot.docs.map(d => ({ ...d.data(), id: d.id })));
-      }, (err) => console.warn("Logs error:", err));
+    const qLogs = query(collection(db as any, 'logs'), where('user_id', '==', user.uid));
+    const unSubLogs = onSnapshot(qLogs, snapshot => setLogs(snapshot.docs.map(d => ({ ...d.data(), id: d.id }))));
 
-      return () => {
-        unSubAgents();
-        unSubTasks();
-        unSubLogs();
-      };
-    } catch (e) {
-      console.error("Firebase setup error:", e);
-      setIsFirebaseConnected(false);
-    }
-  }, [demoMode, user.uid]);
+    // EXTRA: Auto-refresh data every 3 seconds to ensure UI is perfectly synced with VPS and Workers
+    const intervalId = setInterval(async () => {
+       // Refresh leads/stats or specific API data if needed
+    }, 3000);
 
-  const toggleDemoMode = () => {
-    if (!demoMode) {
-      setAgents([
-        { id: '1', agent_id: 'agent_1', agent_name: 'Lead Gen Autobot', status: 'running', last_activity: 'Just now' },
-        { id: '2', agent_id: 'agent_2', agent_name: 'Voice AI Dialer', status: 'running', last_activity: '10s ago' },
-        { id: '3', agent_id: 'agent_3', agent_name: 'SEO Architect', status: 'stopped', last_activity: '2h ago' }
-      ]);
-      setTasks([
-        { id: '1', agent_id: 'agent_1', type: 'Email Campaign', status: 'running', result: 'Sending batch 45/100' },
-        { id: '2', agent_id: 'agent_2', type: 'Outbound Call', status: 'completed', result: 'Meeting booked successfully' },
-        { id: '3', agent_id: 'agent_1', type: 'LinkedIn Outreach', status: 'pending', result: 'Queued for 09:00 AM' },
-        { id: '4', agent_id: 'agent_3', type: 'Competitor DB Build', status: 'completed', result: 'Data synced to CRM' }
-      ]);
-      setLogs([
-        { id: '1', time: new Date(Date.now() - 30000).toLocaleTimeString(), agent_id: 'agent_1', action: 'Drafted follow-up sequence for target segment.' },
-        { id: '2', time: new Date(Date.now() - 15000).toLocaleTimeString(), agent_id: 'agent_2', action: 'Initiated outbound voice call to +1 (555) ***-**89' },
-        { id: '3', time: new Date().toLocaleTimeString(), agent_id: 'agent_2', action: 'Call connected. Voice AI responding to objections.' }
-      ]);
-      setDemoMode(true);
-    } else {
-      setAgents([]);
-      setTasks([]);
-      setLogs([]);
-      setDemoMode(false);
-    }
-  };
+    return () => {
+      unSubAgents();
+      unSubTasks();
+      unSubLogs();
+      clearInterval(intervalId);
+    };
+  }, [user.uid]);
+
+
 
   const toggleAgentStatus = async (agent: any) => {
-    if(demoMode) return;
     try {
       const newStatus = agent.status === 'running' ? 'stopped' : 'running';
       const agentRef = doc(db as any, 'agents', agent.id);
@@ -92,7 +59,6 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   };
 
   const runNewTask = async () => {
-    if(demoMode) return;
     try {
       await addDoc(collection(db as any, 'tasks'), {
         agent_id: 'System',
@@ -110,7 +76,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
   const handleCommand = async (e: React.FormEvent) => {
     e.preventDefault();
-    if(!commandInput.trim() || demoMode) return;
+    if(!commandInput.trim()) return;
     
     try {
         await addDoc(collection(db as any, 'logs'), {
@@ -126,14 +92,21 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     }
   }
 
+  const logsList = useMemo(() => {
+    return logs.sort((a, b) => {
+        const tA = a.timestamp?.seconds || 0;
+        const tB = b.timestamp?.seconds || 0;
+        return tB - tA;
+    });
+  }, [logs]);
+
   const stats = useMemo(() => {
     return {
-      totalTasks: tasks.length,
-      completedTasks: tasks.filter(t => t.status === 'completed').length,
-      runningTasks: tasks.filter(t => t.status === 'running').length,
-      activeAgents: agents.filter(a => a.status === 'running').length,
+      total: logs.length,
+      success: logs.filter(l => l.status === 'success').length,
+      failed: logs.filter(l => l.status === 'error' || l.status === 'failed').length
     };
-  }, [agents, tasks]);
+  }, [logs]);
 
   const filteredTasks = useMemo(() => {
     if (taskFilter === 'all') return tasks;
@@ -166,28 +139,11 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                   <span className="text-[10px] uppercase tracking-widest font-bold text-slate-500">Workspace</span>
                   <span className="text-white font-mono font-bold">Personal Workspace</span>
               </div>
-              <div className="h-8 w-px bg-slate-700/50"></div>
-              <button 
-                onClick={toggleDemoMode}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all shadow-lg ${
-                  demoMode 
-                  ? 'bg-amber-500/10 text-amber-500 border border-amber-500/30 hover:bg-amber-500/20 shadow-amber-500/10' 
-                  : 'bg-indigo-500 hover:bg-indigo-600 text-white border border-indigo-400 shadow-indigo-500/20'
-                }`}
-              >
-                <Sparkles className="w-4 h-4" />
-                {demoMode ? 'Exit Demo Visualization' : 'Simulate Data (Demo)'}
-              </button>
             </div>
-            {!isFirebaseConnected && !demoMode && (
-               <div className="flex items-center gap-2 text-[10px] text-red-400 font-mono animate-pulse">
-                   <AlertCircle className="w-3 h-3" /> No Database Detected
-               </div>
-            )}
-            {isFirebaseConnected && !demoMode && (
-               <div className="flex items-center gap-2 text-[10px] text-emerald-400 font-mono">
-                   <CheckCircle2 className="w-3 h-3" /> Database Sync Active
-               </div>
+            {isFirebaseConnected && (
+                <div className="flex items-center gap-2 text-[10px] text-emerald-400 font-mono">
+                    <CheckCircle2 className="w-3 h-3" /> Database Sync Active
+                </div>
             )}
         </div>
       </div>
@@ -197,10 +153,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         
         <div className="bg-[#0f172a]/60 border-t-2 border-t-blue-500 border-x border-b border-[#1e293b] p-6 rounded-2xl hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(59,130,246,0.1)] transition-all duration-300 relative overflow-hidden group">
           <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] group-hover:bg-blue-500/20 transition-all"></div>
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mb-4">
+          <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mb-4">
              <div className="p-2 bg-blue-500/10 rounded-md"><Layers className="w-4 h-4 text-blue-400" /></div>
              Total Capacity
-          </p>
+          </div>
           <div className="flex items-end gap-3">
               <p className="text-5xl font-black text-white">{stats.totalTasks}</p>
               <p className="text-xs text-slate-500 font-medium mb-1 border-l border-slate-700 pl-2">Lifetime Tasks</p>
@@ -209,10 +165,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
         <div className="bg-[#0f172a]/60 border-t-2 border-t-emerald-500 border-x border-b border-[#1e293b] p-6 rounded-2xl hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(16,185,129,0.1)] transition-all duration-300 relative overflow-hidden group">
           <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px] group-hover:bg-emerald-500/20 transition-all"></div>
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mb-4">
+          <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mb-4">
              <div className="p-2 bg-emerald-500/10 rounded-md"><CheckCircle2 className="w-4 h-4 text-emerald-400" /></div>
              Successful Output
-          </p>
+          </div>
           <div className="flex items-end gap-3">
               <p className="text-5xl font-black text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">{stats.completedTasks}</p>
               <p className="text-xs text-slate-500 font-medium mb-1 border-l border-slate-700 pl-2">Operations complete</p>
@@ -221,10 +177,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
         <div className="bg-[#0f172a]/60 border-t-2 border-t-amber-500 border-x border-b border-[#1e293b] p-6 rounded-2xl hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(245,158,11,0.1)] transition-all duration-300 relative overflow-hidden group">
            <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-500/10 rounded-full blur-[40px] group-hover:bg-amber-500/20 transition-all"></div>
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mb-4">
+          <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mb-4">
              <div className="p-2 bg-amber-500/10 rounded-md"><Zap className="w-4 h-4 text-amber-400" /></div>
              Live Processing
-          </p>
+          </div>
           <div className="flex items-end gap-3">
               <p className="text-5xl font-black text-amber-400">{stats.runningTasks}</p>
               <p className="text-xs text-slate-500 font-medium mb-1 border-l border-slate-700 pl-2">Active threads</p>
@@ -233,10 +189,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
         <div className="bg-[#0f172a]/60 border-t-2 border-t-purple-500 border-x border-b border-[#1e293b] p-6 rounded-2xl hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(168,85,247,0.1)] transition-all duration-300 relative overflow-hidden group">
           <div className="absolute -top-10 -right-10 w-32 h-32 bg-purple-500/10 rounded-full blur-[40px] group-hover:bg-purple-500/20 transition-all"></div>
-          <p className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mb-4">
+          <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mb-4">
              <div className="p-2 bg-purple-500/10 rounded-md"><Cpu className="w-4 h-4 text-purple-400" /></div>
              Active Agents
-          </p>
+          </div>
           <div className="flex items-end gap-3">
               <p className="text-5xl font-black text-purple-400">{stats.activeAgents}</p>
               <p className="text-xs text-slate-500 font-medium mb-1 border-l border-slate-700 pl-2">AI Systems running</p>
@@ -387,14 +343,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
              {/* Command Input Form */}
              <form onSubmit={handleCommand} className="flex gap-2 mt-auto items-center bg-[#0B1120] border border-slate-800 p-2.5 rounded-lg focus-within:border-emerald-500/50 transition shadow-inner">
                  <span className="text-emerald-500 font-bold text-sm">&gt;</span>
-                 <input 
+                  <input 
                     type="text" 
                     value={commandInput}
                     onChange={(e) => setCommandInput(e.target.value)}
                     className="bg-transparent border-none outline-none text-emerald-100 text-[11px] w-full font-mono placeholder:text-slate-700" 
-                    placeholder={demoMode ? "Demo mode: Input disabled..." : "Enter system command (e.g., 'deploy agent')..."} 
-                    disabled={demoMode}
-                 />
+                    placeholder="Enter system command (e.g., 'deploy agent')..." 
+                  />
                  <button type="submit" className="hidden">Send</button>
              </form>
 

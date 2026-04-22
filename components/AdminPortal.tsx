@@ -4,6 +4,8 @@ import { UserProfile, LeadSubmission } from '../types';
 import { AdminLayout } from './AdminLayout';
 import { AdminLeads } from './AdminLeads';
 import { Activity, DollarSign, Users, TrendingUp } from 'lucide-react';
+import { collection, onSnapshot, query } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 
 interface AdminPortalProps {
   user: UserProfile;
@@ -42,16 +44,15 @@ const AdminDashboardOverview: React.FC = () => {
         totalLeads: 0,
         potentialMRR: 0,
         potentialSetup: 0,
-        activeWorkflows: 854 // Mock for now
+        activeWorkflows: 0
     });
 
     useEffect(() => {
-        const data = localStorage.getItem('leads');
-        if (data) {
-            const leads: LeadSubmission[] = JSON.parse(data);
-            const totalLeads = leads.length;
-            
-            // Calculate Pipeline Value
+        if (Object.keys(db).length === 0) return;
+
+        // Listen to Leads for Pipeline Stats
+        const unsubscribeLeads = onSnapshot(collection(db as any, 'leads'), (snapshot) => {
+            const leads = snapshot.docs.map(d => d.data() as LeadSubmission);
             let mrr = 0;
             let setup = 0;
 
@@ -60,20 +61,32 @@ const AdminDashboardOverview: React.FC = () => {
                     mrr += l.aiQuote.monthlyCost;
                     setup += l.aiQuote.setupCost;
                 } else {
-                    // Estimate for standard plans
                     if (l.plan.includes('Starter')) { mrr += 100; setup += 500; }
                     if (l.plan.includes('Pro')) { mrr += 150; setup += 1500; }
                     if (l.plan.includes('Business')) { mrr += 2000; }
                 }
             });
 
-            setStats({
-                totalLeads,
+            setStats(prev => ({
+                ...prev,
+                totalLeads: leads.length,
                 potentialMRR: mrr,
-                potentialSetup: setup,
-                activeWorkflows: 854
-            });
-        }
+                potentialSetup: setup
+            }));
+        });
+
+        // Listen to global agents for active units
+        const unsubscribeAgents = onSnapshot(collection(db as any, 'agents'), (snapshot) => {
+            setStats(prev => ({
+                ...prev,
+                activeWorkflows: snapshot.size
+            }));
+        });
+
+        return () => {
+            unsubscribeLeads();
+            unsubscribeAgents();
+        };
     }, []);
 
     return (

@@ -72,7 +72,7 @@ export const WhyQuickKit: React.FC = () => {
 
           <div className="flex flex-col gap-4 w-full md:w-auto relative z-10 text-center">
             <a 
-              href="mailto:sales@quickkit.online?subject=I%20want%20to%20learn%20about%20AI%20Automation&body=Hi%20QuickKit%20Team%2C%0A%0AI%20want%20to%20learn%20how%20AI%20automation%20can%20help%20my%20business.%0A%0AMy%20business%20is%20about%3A%20%0A%0AThanks!" 
+              href="mailto:sales@quickkitai.com?subject=I%20want%20to%20learn%20about%20AI%20Automation&body=Hi%20QuickKit%20Team%2C%0A%0AI%20want%20to%20learn%20how%20AI%20automation%20can%20help%20my%20business.%0A%0AMy%20business%20is%20about%3A%20%0A%0AThanks!" 
               className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(37,99,235,0.4)]"
             >
               <Mail size={20} />

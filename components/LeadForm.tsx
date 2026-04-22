@@ -52,20 +52,22 @@ export const LeadForm: React.FC<Props> = ({ lang, close, onBack, initialData, pr
       aiQuote: aiFinancials // Attach the locked quote object securely
     };
 
-    // Save locally
-    const existing = JSON.parse(localStorage.getItem('leads') || '[]');
-    localStorage.setItem('leads', JSON.stringify([...existing, newLead]));
-
     // Send to Firebase CRM
     try {
       if (Object.keys(db).length > 0) {
           await addDoc(collection(db as any, 'leads'), newLead);
           console.log("🔥 Blueprint safely stored in Firebase.");
       } else {
-          console.warn("Firebase not configured. Storing locally for demo purposes.");
+          console.error("Firebase not configured. Deployment aborted.");
+          alert("Connection error. Please try again later.");
+          setIsSending(false);
+          return;
       }
     } catch (err) {
       console.error("Failed to save lead to Firebase", err);
+      alert("Submission failed. Check your connection.");
+      setIsSending(false);
+      return;
     }
 
     setIsSending(false);

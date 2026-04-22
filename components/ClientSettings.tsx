@@ -3,6 +3,7 @@ import { UserProfile } from '../types';
 import { Save, Mail, Key, Shield, EyeOff, Eye, Server, Lock } from 'lucide-react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { apiCall } from '../lib/api';
 
 interface ClientSettingsProps {
   user: UserProfile;
@@ -196,8 +197,7 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
                <p className="text-[10px] text-slate-500">Write-Only: Saved values are hidden for security.</p>
              </div>
           </div>
-          
-          <div className="space-y-5 relative">
+                   <div className="space-y-5 relative">
              <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
                     <div className="flex items-center gap-2"><Server className="w-4 h-4 text-amber-500/70" /> OpenClaw Endpoint</div>
@@ -224,6 +224,36 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
                   onChange={e => setApiData({...apiData, vpsToken: e.target.value})}
                   className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-emerald-300 font-mono text-sm focus:border-emerald-500 outline-none"
                 />
+             </div>
+
+             <div className="flex items-center justify-between pt-2">
+                <button 
+                  type="button"
+                  onClick={async () => {
+                      try {
+                          const endpoint = apiData.vpsEndpoint || '';
+                          const token = apiData.vpsToken || '';
+                          if (!endpoint) { alert("Enter an endpoint first!"); return; }
+                          
+                          const res = await apiCall('/api/test-vps', { endpoint, token });
+                          if (res.status === 'online') {
+                             alert(`✅ Connection Success! VPS is online.`);
+                          } else {
+                             alert(`❌ Connection Failed: ${res.reason || res.error || 'Offline'}`);
+                          }
+                      } catch(e: any) {
+                          alert(`❌ Error: ${e.message}`);
+                      }
+                  }}
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-700"
+                >
+                  Test Connection
+                </button>
+                <div className="text-xs font-mono">
+                   Status: <span className={savedStatus.hasVpsEndpoint ? "text-emerald-400 font-bold" : "text-amber-400"}>
+                     {savedStatus.hasVpsEndpoint ? '✅ Connected' : '❌ Not Configured'}
+                   </span>
+                </div>
              </div>
 
              <div className="bg-[#0B1120] border border-[#1e293b] p-3 rounded-lg mt-4">

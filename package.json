@@ -11,7 +11,9 @@
   "dependencies": {
     "@google/genai": "^1.38.0",
     "firebase": "^12.8.0",
+    "firebase-admin": "^13.8.0",
     "lucide-react": "^0.562.0",
+    "puppeteer": "^24.41.0",
     "react": "^19.2.3",
     "react-calendly": "^4.4.0",
     "react-dom": "^19.2.3",

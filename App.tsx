@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, onSnapshot } from 'firebase/firestore';
 import { auth, db } from './lib/firebase';
 import { generateSessionId } from './lib/utils';
 import { Language, UserProfile, TriggerRequest, ExecutionLog, Currency, ServiceItem, PlanTier, AIQuote } from './types';
@@ -65,41 +65,53 @@ const App: React.FC = () => {
   const [authLoading, setAuthLoading] = useState(true);
 
   // Handle Real Firebase Auth State
-  useEffect(() => {
-    if (Object.keys(auth).length === 0) {
-       setAuthLoading(false); // Firebase not initialized
-       return;
-    }
+    let unSubMeta: any = null;
+
     const unsubscribe = onAuthStateChanged(auth as any, async (firebaseUser) => {
         if (firebaseUser) {
-            let role: 'admin' | 'client' = 'client';
-            
-            // Try to fetch custom role from Firestore
-            if (Object.keys(db).length > 0) {
-                const userDoc = await getDoc(doc(db as any, 'users', firebaseUser.uid));
-                if (userDoc.exists() && userDoc.data().role) {
-                    role = userDoc.data().role as 'admin' | 'client';
-                }
-            }
-
-            setUser({
-                uid: firebaseUser.uid,
-                email: firebaseUser.email || '',
-                displayName: firebaseUser.displayName || 'User',
-                role,
-                credits: 500,
-                monthlyLimit: 5000,
-                tier: 'STARTER'
+            // Real-time metadata sync (credits, role, tier)
+            const userRef = doc(db as any, 'users', firebaseUser.uid);
+            unSubMeta = onSnapshot(userRef, (snap) => {
+                const data = snap.data();
+                setUser({
+                    uid: firebaseUser.uid,
+                    email: firebaseUser.email || '',
+                    displayName: firebaseUser.displayName || data?.displayName || 'User',
+                    role: data?.role || 'client',
+                    credits: data?.credits ?? 0,
+                    monthlyLimit: data?.monthlyLimit ?? 1000,
+                    tier: data?.tier ?? 'STARTER'
+                });
+                setIsAuthenticated(true);
+                setAuthLoading(false);
+            }, (err) => {
+                console.error("User metadata sync failed:", err);
+                // Fallback basic user if fail
+                setUser({
+                    uid: firebaseUser.uid,
+                    email: firebaseUser.email || '',
+                    displayName: firebaseUser.displayName || 'User',
+                    role: 'client',
+                    credits: 0,
+                    monthlyLimit: 1000,
+                    tier: 'FREE'
+                });
+                setIsAuthenticated(true);
+                setAuthLoading(false);
             });
-            setIsAuthenticated(true);
+
         } else {
+            if (unSubMeta) unSubMeta();
             setUser(null);
             setIsAuthenticated(false);
+            setAuthLoading(false);
         }
-        setAuthLoading(false);
     });
 
-    return () => unsubscribe();
+    return () => {
+        unsubscribe();
+        if (unSubMeta) unSubMeta();
+    };
   }, []);
 
   const handleLaunchArchitect = (prompt: string, isWidget: boolean = false) => {
@@ -204,8 +216,8 @@ const App: React.FC = () => {
         <div className="container mx-auto px-6 text-center text-slate-500">
           <p className="text-sm font-mono tracking-widest uppercase mb-4 text-slate-600 font-black">Built with Advanced Agentic Architecture</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-6 text-sm">
-            <a href="mailto:sales@quickkit.online" className="hover:text-blue-400 transition-colors">Sales: sales@quickkit.online</a>
-            <a href="mailto:support@quickkit.online" className="hover:text-emerald-400 transition-colors">Support: support@quickkit.online</a>
+            <a href="mailto:sales@quickkitai.com" className="hover:text-blue-400 transition-colors">Sales: sales@quickkitai.com</a>
+            <a href="mailto:support@quickkitai.com" className="hover:text-emerald-400 transition-colors">Support: support@quickkitai.com</a>
           </div>
           
           <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 mb-8 text-xs font-bold text-slate-600 uppercase tracking-wider">

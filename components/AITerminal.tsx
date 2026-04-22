@@ -1,19 +1,24 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { UserProfile } from '../types';
-import { Terminal, Send, Loader2, Bot, Shield, Zap, Trash2, AlertTriangle, ChevronDown, Sparkles, DollarSign, RefreshCw } from 'lucide-react';
-import { db } from '../lib/firebase';
+import { Terminal, Send, Loader2, Bot, Shield, Zap, Server, Trash2, AlertTriangle, ChevronDown, Sparkles, DollarSign, RefreshCw } from 'lucide-react';
+import { db, auth } from '../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
+import { apiCall } from '../lib/api';
 
 interface AITerminalProps {
   user: UserProfile;
 }
 
 interface LogEntry {
+  id?: string;
   role: 'system' | 'user' | 'agent' | 'error';
   text: string;
   time: string;
   model?: string;
   cost?: number;
+  cmdPreview?: string;
+  cmdStatus?: 'pending' | 'running' | 'success' | 'failed' | 'blocked';
+  cmdResult?: string;
 }
 
 interface ModelInfo {
@@ -23,16 +28,17 @@ interface ModelInfo {
   context_length: number;
 }
 
-const SYSTEM_PERSONA = `You are "QuickKit Agent", a Senior AI Infrastructure Specialist working inside an enterprise CRM platform. You help business owners automate operations.
+const SYSTEM_PERSONA = `You are "QuickKit Agent", an advanced AI Operating System working inside an enterprise CRM with direct VPS execution privileges.
 
 RULES:
 - Answer in a professional but friendly tone.
-- If a user asks to run a server command, describe what the script would do step by step.
-- If a user asks about credits/billing, explain QuickKit pricing.
-- Keep answers concise (max 4-5 sentences unless the user asks for detail).
-- You can help with: lead generation, email campaigns, data scraping strategy, CRM setup, VPS health checks, API integrations, workflow automation.
-- If you don't know something, say so honestly.
-- Format important points with bullet points or numbered lists when appropriate.`;
+- If a user asks to run a server command (e.g. "restart server", "check uptime", "list files", "deploy app"), you MUST put the EXACT corresponding linux command inside <command></command> tags.
+- Example: "Here is the command to restart the server: <command>pm2 restart all</command>"
+- Keep answers concise (max 2-3 sentences).
+- If you don't know something, say so honestly.`;
+
+const ALLOWED_COMMANDS = ["ls", "pwd", "whoami", "uptime", "df", "free", "pm2", "top", "cat", "echo"];
+const BLOCKED_COMMANDS = ["rm -rf", "shutdown", "reboot", "mkfs", "dd", "chmod -R 777", "chown -R"];
 
 const STORAGE_KEY = 'ai_terminal_logs';
 const MODEL_STORAGE_KEY = 'ai_terminal_model';
@@ -159,8 +165,86 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
 
   useEffect(() => { fetchModels(); }, [fetchModels]);
 
-  const addLog = (entry: Omit<LogEntry, 'time'>) => {
-    setLogs(prev => [...prev, { ...entry, time: new Date().toLocaleTimeString() }]);
+  const addLog = (entry: Omit<LogEntry, 'time' | 'id'>) => {
+    const id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
+    setLogs(prev => [...prev, { ...entry, time: new Date().toLocaleTimeString(), id }]);
+  };
+
+  const updateLog = (id: string, updates: Partial<LogEntry>) => {
+    setLogs(prev => prev.map(log => log.id === id ? { ...log, ...updates } : log));
+  };
+
+  const validateCommand = (cmd: string) => {
+    let safe = true;
+    let blockedReason = '';
+
+    for (const bad of BLOCKED_COMMANDS) {
+      if (cmd.includes(bad)) {
+         safe = false;
+         blockedReason = `Dangerous command blocked (${bad})`;
+         break;
+      }
+    }
+    
+    if (safe) {
+      let isAllowed = false;
+      for (const allowed of ALLOWED_COMMANDS) {
+        if (cmd.trim().startsWith(allowed)) {
+           isAllowed = true;
+           break;
+        }
+      }
+      if (!isAllowed) {
+         safe = false;
+         blockedReason = `Command not in whitelist (${cmd.split(' ')[0]}). Cannot execute.`;
+      }
+    }
+    return { safe, blockedReason };
+  };
+
+  const handleExecute = async (logId: string, cmd: string) => {
+    const currentBonus = Number(localStorage.getItem('bonusCredits')) || 0;
+    if (user.credits + currentBonus < 10) {
+      updateLog(logId, { cmdStatus: 'failed', cmdResult: 'Insufficient credits. VPS execution requires 10 credits.' });
+      return;
+    }
+
+    if (!db || !user.uid) return;
+    
+    updateLog(logId, { cmdStatus: 'running' });
+
+    try {
+        const docRef = doc(db as any, 'users', user.uid, 'private', 'settings');
+        const docSnap = await getDoc(docRef);
+        let endpoint = '', token = '';
+        if (docSnap.exists()) {
+             const d = docSnap.data();
+             endpoint = d.vpsEndpoint;
+             token = d.vpsToken;
+        }
+
+        if (!endpoint || !token) {
+             updateLog(logId, { cmdStatus: 'failed', cmdResult: 'VPS Endpoint or Token not configured in Settings.' });
+             return;
+        }
+
+        const data = await apiCall('/api/execute', { 
+            command: cmd, 
+            devEndpoint: endpoint, // Fallback if server ENV is missing
+            devToken: token 
+        }).catch((e: any) => {
+            updateLog(logId, { cmdStatus: 'failed', cmdResult: e.message || 'Execution Error.' });
+            return null;
+        });
+        
+        if (!data) return;
+
+        const out = data.output || data.message || JSON.stringify(data);
+
+        updateLog(logId, { cmdStatus: 'success', cmdResult: out });
+    } catch(err: any) {
+        updateLog(logId, { cmdStatus: 'failed', cmdResult: err.message || 'Execution error.' });
+    }
   };
 
   const clearHistory = () => {
@@ -233,7 +317,7 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${apiKey}`,
-          'HTTP-Referer': 'https://quickkit.online',
+          'HTTP-Referer': 'https://quickkitai.com',
           'X-Title': 'QuickKit AI CRM'
         },
         body: JSON.stringify({
@@ -261,8 +345,26 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
         return;
       }
 
-      const reply = data.choices?.[0]?.message?.content || 'No response generated.';
+      let reply = data.choices?.[0]?.message?.content || 'No response generated.';
       
+      let cmdPreview: string | undefined = undefined;
+      let cmdStatus: LogEntry['cmdStatus'] = undefined;
+      let cmdResult: string | undefined = undefined;
+
+      const cmdMatch = reply.match(/<command>([\s\S]*?)<\/command>/i);
+      if (cmdMatch && cmdMatch[1]) {
+         cmdPreview = cmdMatch[1].trim();
+         const validation = validateCommand(cmdPreview);
+         if (!validation.safe) {
+             cmdStatus = 'blocked';
+             cmdResult = validation.blockedReason;
+         } else {
+             cmdStatus = 'pending';
+         }
+         reply = reply.replace(/<command>[\s\S]*?<\/command>/ig, '').trim();
+         if (!reply) reply = "Command generated for review:";
+      }
+
       // Extract cost from response
       const queryCost = data.usage 
         ? (Number(data.usage.prompt_tokens || 0) * parseFloat(models.find(m => m.id === activeModel)?.pricing.prompt || '0') +
@@ -271,17 +373,21 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
 
       setTotalSessionCost(prev => prev + queryCost);
 
-      // Deduct CRM credits
-      if (currentBonus >= 5) {
-        localStorage.setItem('bonusCredits', String(currentBonus - 5));
+      // Dynamic CRM credits: 2 for normal chat, 5 if command generated
+      const creditCost = cmdPreview ? 5 : 2;
+      if (currentBonus >= creditCost) {
+        localStorage.setItem('bonusCredits', String(currentBonus - creditCost));
         window.dispatchEvent(new Event('storage'));
       }
 
       addLog({ 
         role: 'agent', 
-        text: reply, 
-        model: activeModel,
-        cost: queryCost
+        text: reply,
+        cmdPreview,
+        cmdStatus,
+        cmdResult,
+        cost: queryCost,
+        model: activeModel
       });
 
     } catch (err: any) {
@@ -304,7 +410,7 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
       <div className="flex-none flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-white flex items-center gap-2.5">
-              <div className="p-1.5 bg-blue-500/10 rounded-lg"><Terminal className="text-blue-500 w-4 h-4" /></div> AI Agent
+              <span className="p-1.5 bg-blue-500/10 rounded-lg inline-flex"><Terminal className="text-blue-500 w-4 h-4" /></span> AI Agent
               <span className="text-[10px] font-mono text-slate-600 bg-slate-800/50 px-2 py-0.5 rounded">OpenRouter</span>
           </h1>
         </div>
@@ -451,6 +557,41 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
                         </div>
                       </div>
                       <div className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap break-words">{log.text}</div>
+                      
+                      {/* Command Preview UI */}
+                      {log.cmdPreview && (
+                        <div className="mt-3 bg-[#050810] border border-[#1e293b] rounded-lg overflow-hidden shadow-inner">
+                           <div className="bg-[#0B1120] px-3 py-1.5 flex justify-between items-center text-[10px] font-bold text-slate-400">
+                             <span>Suggested Command</span>
+                             {log.cmdStatus === 'blocked' && <span className="text-red-400 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/> BLOCKED</span>}
+                           </div>
+                           <div className="p-3 text-emerald-400 font-mono text-[11px] overflow-x-auto">
+                              $ {log.cmdPreview}
+                           </div>
+                           
+                           {log.cmdStatus === 'pending' && (
+                              <div className="p-2.5 bg-[#0B1120]/50 flex gap-2 justify-end border-t border-[#1e293b]">
+                                 <button onClick={() => updateLog(log.id!, { cmdStatus: 'failed', cmdResult: 'Cancelled by user.' })} className="px-3 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all">Cancel</button>
+                                 <button onClick={() => handleExecute(log.id!, log.cmdPreview!)} className="px-3 py-1.5 rounded-md text-xs font-bold bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-all border border-amber-500/30 flex items-center gap-1.5 shadow-sm active:scale-95">
+                                    <Terminal className="w-3 h-3"/> Execute (10 Credits)
+                                 </button>
+                              </div>
+                           )}
+
+                           {log.cmdStatus === 'running' && (
+                              <div className="p-3 bg-amber-500/5 border-t border-amber-500/10 flex items-center gap-2 text-amber-400 text-[11px] font-mono">
+                                 <Loader2 className="w-3.5 h-3.5 animate-spin"/> [Running on VPS...]
+                              </div>
+                           )}
+
+                           {(log.cmdStatus === 'success' || log.cmdStatus === 'failed' || log.cmdStatus === 'blocked') && log.cmdResult && (
+                              <div className={`p-3 border-t font-mono text-[11px] whitespace-pre-wrap overflow-x-auto max-h-48 custom-scrollbar ${log.cmdStatus === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' : 'bg-red-500/10 border-red-500/20 text-red-300'}`}>
+                                  {log.cmdStatus === 'success' ? <span className="font-bold">[SUCCESS]</span> : <span className="font-bold">[ERROR]</span>}
+                                  <br/>{log.cmdResult}
+                              </div>
+                           )}
+                        </div>
+                      )}
                     </div>
                  )}
                  {log.role === 'error' && (
@@ -495,8 +636,12 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
                  {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </button>
            </div>
-           <div className="flex items-center justify-between mt-1.5 px-1">
-              <span className="text-[10px] text-slate-600">5 CRM credits/query</span>
+           <div className="flex items-center justify-between mt-1.5 px-2">
+              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-2">
+                  <span className="flex items-center gap-1"><Bot className="w-3 h-3 text-blue-400"/> Chat: <span className="text-emerald-400">2cr</span></span> | 
+                  <span className="flex items-center gap-1"><Terminal className="w-3 h-3 text-purple-400"/> Command: <span className="text-emerald-400">5cr</span></span> | 
+                  <span className="flex items-center gap-1"><Server className="w-3 h-3 text-amber-400"/> VPS Execute: <span className="text-emerald-400">10cr</span></span>
+              </span>
               <span className="text-[10px] text-slate-600">Memory: 12 messages</span>
            </div>
         </form>
