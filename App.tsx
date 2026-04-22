@@ -84,22 +84,24 @@ const App: React.FC = () => {
       if (firebaseUser) {
         const userRef = doc(db as any, 'users', firebaseUser.uid);
         
-        // 🚨 500 CREDIT ONBOARDING (FRONTEND FALLBACK)
-        const checkNewUser = async () => {
+        // 🚨 500 CREDIT ONBOARDING & RESET (FOR ALL USERS)
+        const checkUserCredits = async () => {
           const snap = await getDoc(userRef);
-          if (!snap.exists()) {
+          const data = snap.data();
+          
+          if (!snap.exists() || !data || data.credits === undefined || data.credits <= 0) {
              await setDoc(userRef, {
                uid: firebaseUser.uid,
                email: firebaseUser.email,
                displayName: firebaseUser.displayName || 'Operator',
-               credits: 500,
+               credits: 500, // FORCE 500 FOR ALL ACCOUNTS TO TEST
                plan: 'free',
-               role: 'client',
-               createdAt: new Date().toISOString()
+               role: data?.role || 'client',
+               createdAt: data?.createdAt || new Date().toISOString()
              }, { merge: true });
           }
         };
-        checkNewUser();
+        checkUserCredits();
 
         unSubMeta = onSnapshot(userRef, (snap) => {
           const data = snap.data();
