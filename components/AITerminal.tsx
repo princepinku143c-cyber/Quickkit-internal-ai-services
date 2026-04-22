@@ -37,13 +37,9 @@ RULES:
 - Keep answers concise (max 2-3 sentences).
 - If you don't know something, say so honestly.`;
 
-const ALLOWED_COMMANDS = ["ls", "pwd", "whoami", "uptime", "df", "free", "pm2", "top", "cat", "echo"];
-const BLOCKED_COMMANDS = ["rm -rf", "shutdown", "reboot", "mkfs", "dd", "chmod -R 777", "chown -R"];
-
 const STORAGE_KEY = 'ai_terminal_logs';
 const MODEL_STORAGE_KEY = 'ai_terminal_model';
 
-// Curated popular models
 const POPULAR_MODELS = [
   'google/gemini-2.0-flash-001',
   'google/gemini-2.5-flash-preview',
@@ -56,6 +52,7 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [selectedModel, setSelectedModel] = useState<string>('google/gemini-2.0-flash-001');
+  const [apiKey, setApiKey] = useState<string>(''); // LOADED FROM DB
   const [models, setModels] = useState<ModelInfo[]>([]);
   const [popularModels, setPopularModels] = useState<ModelInfo[]>([]);
   const [otherModels, setOtherModels] = useState<ModelInfo[]>([]);
@@ -65,6 +62,7 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // 1. Initial Logs
     const saved = localStorage.getItem(STORAGE_KEY);
     if (saved) {
       try {
@@ -81,11 +79,34 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
       }]);
     }
 
+    // 2. Load Selected Model
     const savedModel = localStorage.getItem(MODEL_STORAGE_KEY);
     if (savedModel) setSelectedModel(savedModel);
 
+    // 3. Fetch Models List
     fetchModels();
-  }, []);
+
+    // 4. LOAD SETTINGS (CRITICAL FIX)
+    const loadSettings = async () => {
+        try {
+            const docRef = doc(db as any, 'users', user.uid, 'private', 'settings');
+            const snap = await getDoc(docRef);
+            if (snap.exists()) {
+                const data = snap.data();
+                if (data.openrouterApiKey) {
+                    setApiKey(data.openrouterApiKey);
+                } else {
+                    console.warn("API Key found but field 'openrouterApiKey' is missing in subcollection.");
+                }
+            } else {
+                console.warn("No private settings found for this user.");
+            }
+        } catch (e) {
+            console.error("Failed to load settings in Terminal:", e);
+        }
+    };
+    loadSettings();
+  }, [user.uid]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
@@ -148,6 +169,16 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
     e.preventDefault();
     if (!input.trim() || isProcessing) return;
 
+    if (!apiKey) {
+        addLog({
+          role: 'error',
+          text: 'OpenRouter API Key missing. Please set it in Settings → AI Provider Key.',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
+        setKeyError(true);
+        return;
+    }
+
     const userMsg = input.trim();
     setInput('');
     addLog({
@@ -157,31 +188,16 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
     });
 
     setIsProcessing(true);
+    setKeyError(false);
+    
     try {
-      // 1. Get Settings
-      const userRef = doc(db as any, 'users', user.uid);
-      const userSnap = await getDoc(userRef);
-      const settings = userSnap.data()?.settings || {};
-      const apiKey = settings.openRouterKey || '';
-
-      if (!apiKey) {
-        setKeyError(true);
-        addLog({
-          role: 'error',
-          text: 'OpenRouter API Key missing. Please set it in Settings.',
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        });
-        setIsProcessing(false);
-        return;
-      }
-
-      // 2. Prepare Context
+      // Prepare Context
       const history = logs.slice(-12).map(l => ({
         role: l.role === 'user' ? 'user' : 'assistant',
         content: l.text
       }));
 
-      // 3. Call AI
+      // Call AI
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
@@ -205,10 +221,8 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
       if (data.error) throw new Error(data.error.message || 'AI request failed');
 
       const text = data.choices[0].message.content;
-      const usage = data.usage;
       const cost = data.usage?.total_cost || 0;
 
-      // Extract command if present
       const cmdMatch = text.match(/<command>([\s\S]*?)<\/command>/);
       const cmdPreview = cmdMatch ? cmdMatch[1].trim() : undefined;
 
@@ -263,7 +277,6 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
 
           {showModelPicker && (
             <div className="absolute top-full left-0 mt-2 w-72 bg-[#020617] border border-[#1e293b] rounded-2xl shadow-2xl z-50 overflow-hidden py-1">
-              {/* Popular Models */}
               {popularModels.length > 0 && (
                 <>
                   <div className="px-3 py-2 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[#0a0f1c]">Recommended</div>
@@ -274,20 +287,15 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
                       className={`w-full text-left px-3 py-2 text-xs flex items-center justify-between hover:bg-blue-500/10 transition-colors ${selectedModel === m.id ? 'bg-blue-500/10 text-blue-400' : 'text-slate-300'}`}
                     >
                       <span className="truncate max-w-[200px]">{m.name}</span>
-                      <span className={`text-[10px] shrink-0 ml-2 ${parseFloat(m.pricing.prompt) === 0 ? 'text-emerald-400 font-bold' : 'text-slate-500'}`}>
-                        {parseFloat(m.pricing.prompt) === 0 ? 'FREE' : `$${(parseFloat(m.pricing.prompt) * 1e6).toFixed(2)}/M`}
-                      </span>
                     </button>
                   ))}
                 </>
               )}
-
-              {/* All Other Models */}
               {otherModels.length > 0 && (
                 <>
                   <div className="px-3 py-1.5 text-[10px] font-bold text-slate-600 uppercase tracking-widest bg-[#0a0f1c] flex items-center justify-between">
-                    <span>All Models ({otherModels.length})</span>
-                    <button onClick={(e) => { e.stopPropagation(); fetchModels(); }} className="text-blue-400 hover:text-blue-300">
+                    <span>All Models</span>
+                    <button onClick={(e) => { e.stopPropagation(); fetchModels(); }}>
                       <RefreshCw className={`w-3 h-3 ${modelsLoading ? 'animate-spin' : ''}`} />
                     </button>
                   </div>
@@ -298,9 +306,6 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
                       className={`w-full text-left px-3 py-1.5 text-[10px] flex items-center justify-between hover:bg-blue-500/10 transition-colors ${selectedModel === m.id ? 'bg-blue-500/10 text-blue-400' : 'text-slate-400'}`}
                     >
                       <span className="truncate max-w-[200px]">{m.name}</span>
-                      <span className="text-slate-600 shrink-0 ml-2">
-                        {parseFloat(m.pricing.prompt) === 0 ? 'FREE' : `$${(parseFloat(m.pricing.prompt) * 1e6).toFixed(1)}/M`}
-                      </span>
                     </button>
                   ))}
                 </>
@@ -308,13 +313,11 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
             </div>
           )}
         </div>
-
         <span className="text-[10px] text-slate-600">
           {models.length > 0 ? `${models.length} models available` : modelsLoading ? 'Loading models...' : ''}
         </span>
       </div>
 
-      {/* Key Error */}
       {keyError && (
         <div className="flex-none flex items-center gap-3 p-2.5 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-400 text-xs font-medium">
           <AlertTriangle className="w-4 h-4 shrink-0" />
@@ -322,9 +325,7 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
         </div>
       )}
 
-      {/* Terminal Window */}
       <div className="flex-1 bg-black/60 rounded-2xl border border-[#1e293b] shadow-xl overflow-hidden flex flex-col font-mono text-sm relative min-h-0">
-        {/* Header Bar */}
         <div className="flex items-center gap-2 px-4 py-1.5 bg-[#0B1120] border-b border-[#1e293b]">
             <div className="flex gap-1.5">
                <div className="w-2.5 h-2.5 rounded-full bg-red-500/80"></div>
@@ -332,11 +333,10 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80"></div>
             </div>
             <div className="flex-1 text-center text-[10px] text-slate-600 uppercase tracking-widest font-bold">
-               quickkit-agent@{selectedModel === 'auto' ? 'auto' : (selectedModel.split('/').pop() || 'openrouter')}
+               quickkit-agent@{selectedModel.split('/').pop() || 'openrouter'}
             </div>
         </div>
 
-        {/* Chat Window */}
         <div className="flex-1 p-4 overflow-y-auto space-y-3">
            {logs?.map((log, idx) => (
                <div key={log.id || idx} className="flex gap-2.5 animate-fade-in">
@@ -361,46 +361,31 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
                           </div>
                           <div className="flex items-center gap-2">
                             {log.model && <span className="text-[9px] text-slate-600 font-normal">{log.model.split('/').pop()}</span>}
-                            {log.cost !== undefined && log.cost > 0 && (
-                              <span className="text-[9px] text-emerald-500/70 bg-emerald-500/5 px-1.5 py-0.5 rounded">
-                                ${log.cost.toFixed(6)}
-                              </span>
-                            )}
-                            {log.cost === 0 && <span className="text-[9px] text-emerald-400 font-bold">FREE</span>}
+                            {log.cost !== undefined && log.cost > 0 && <span className="text-[9px] text-emerald-500/70 bg-emerald-500/5 px-1.5 py-0.5 rounded">${log.cost.toFixed(6)}</span>}
                           </div>
                         </div>
                         <div className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap break-words">{log.text}</div>
-                        
-                        {/* Command Preview UI */}
                         {log.cmdPreview && (
                           <div className="mt-3 bg-[#050810] border border-[#1e293b] rounded-lg overflow-hidden shadow-inner">
                              <div className="bg-[#0B1120] px-3 py-1.5 flex justify-between items-center text-[10px] font-bold text-slate-400">
                                <span>Suggested Command</span>
                                {log.cmdStatus === 'blocked' && <span className="text-red-400 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/> BLOCKED</span>}
                              </div>
-                             <div className="p-3 text-emerald-400 font-mono text-[11px] overflow-x-auto">
-                                $ {log.cmdPreview}
-                             </div>
-                             
+                             <div className="p-3 text-emerald-400 font-mono text-[11px] overflow-x-auto">$ {log.cmdPreview}</div>
                              {log.cmdStatus === 'pending' && (
                                 <div className="p-2.5 bg-[#0B1120]/50 flex gap-2 justify-end border-t border-[#1e293b]">
-                                   <button onClick={() => updateLog(log.id!, { cmdStatus: 'failed', cmdResult: 'Cancelled by user.' })} className="px-3 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all">Cancel</button>
+                                   <button onClick={() => updateLog(log.id!, { cmdStatus: 'failed', cmdResult: 'Cancelled.' })} className="px-3 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all">Cancel</button>
                                    <button onClick={() => handleExecute(log.id!, log.cmdPreview!)} className="px-3 py-1.5 rounded-md text-xs font-bold bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-all border border-amber-500/30 flex items-center gap-1.5 shadow-sm active:scale-95">
                                       <Terminal className="w-3 h-3"/> Execute (10 Credits)
                                    </button>
                                 </div>
                              )}
-
                              {log.cmdStatus === 'running' && (
-                                <div className="p-3 bg-amber-500/5 border-t border-amber-500/10 flex items-center gap-2 text-amber-400 text-[11px] font-mono">
-                                   <Loader2 className="w-3.5 h-3.5 animate-spin"/> [Running on VPS...]
-                                </div>
+                                <div className="p-3 bg-amber-500/5 border-t border-amber-500/10 flex items-center gap-2 text-amber-400 text-[11px] font-mono"><Loader2 className="w-3.5 h-3.5 animate-spin"/> [Running on VPS...]</div>
                              )}
-
-                             {(log.cmdStatus === 'success' || log.cmdStatus === 'failed' || log.cmdStatus === 'blocked') && log.cmdResult && (
-                                <div className={`p-3 border-t font-mono text-[11px] whitespace-pre-wrap overflow-x-auto max-h-48 custom-scrollbar ${log.cmdStatus === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' : 'bg-red-500/10 border-red-500/20 text-red-300'}`}>
-                                    {log.cmdStatus === 'success' ? <span className="font-bold">[SUCCESS]</span> : <span className="font-bold">[ERROR]</span>}
-                                    <br/>{log.cmdResult}
+                             {(log.cmdStatus === 'success' || log.cmdStatus === 'failed') && log.cmdResult && (
+                                <div className={`p-3 border-t font-mono text-[11px] whitespace-pre-wrap overflow-x-auto max-h-48 custom-scrollbar ${log.cmdStatus === 'success' ? 'bg-emerald-500/10 text-emerald-300' : 'bg-red-500/10 text-red-300'}`}>
+                                    {log.cmdStatus === 'success' ? <span className="font-bold">[SUCCESS]</span> : <span className="font-bold">[ERROR]</span>}<br/>{log.cmdResult}
                                 </div>
                              )}
                           </div>
@@ -408,10 +393,8 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
                       </div>
                    )}
                    {log.role === 'error' && (
-                      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-2.5 mt-1">
-                        <div className="flex items-center gap-2 text-red-400 font-bold text-xs">
-                          <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {log.text}
-                        </div>
+                      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-2.5 mt-1 text-red-400 font-bold text-xs flex items-center gap-2">
+                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {log.text}
                       </div>
                    )}
                  </div>
@@ -429,7 +412,6 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
            <div ref={logsEndRef} />
         </div>
 
-        {/* Input */}
         <form onSubmit={handleSend} className="p-3 bg-[#0B1120] border-t border-[#1e293b]">
            <div className="relative flex items-center">
               <Zap className="absolute left-3 w-4 h-4 text-blue-500" />
@@ -441,21 +423,16 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
                 placeholder="Ask anything... 'Set up lead gen', 'Explain billing', 'Help me automate'"
                 className="w-full bg-[#0f172a] text-white border border-[#1e293b] rounded-xl pl-10 pr-12 py-3 focus:outline-none focus:border-blue-500 transition-colors disabled:opacity-50 text-sm"
               />
-              <button 
-                type="submit" 
-                disabled={isProcessing || !input.trim()}
-                className="absolute right-2 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 disabled:bg-slate-700 disabled:text-slate-500 transition-colors"
-              >
+              <button type="submit" disabled={isProcessing || !input.trim()} className="absolute right-2 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-colors">
                  {isProcessing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
               </button>
            </div>
-           <div className="flex items-center justify-between mt-1.5 px-2">
-              <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider flex items-center gap-2">
+           <div className="flex items-center justify-between mt-1.5 px-2 text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+              <span className="flex items-center gap-2">
                   <span className="flex items-center gap-1"><Bot className="w-3 h-3 text-blue-400"/> Chat: <span className="text-emerald-400">2cr</span></span> | 
-                  <span className="flex items-center gap-1"><Terminal className="w-3 h-3 text-purple-400"/> Command: <span className="text-emerald-400">5cr</span></span> | 
-                  <span className="flex items-center gap-1"><Server className="w-3 h-3 text-amber-400"/> VPS Execute: <span className="text-emerald-400">10cr</span></span>
+                  <span className="flex items-center gap-1"><Terminal className="w-3 h-3 text-purple-400"/> Command: <span className="text-emerald-400">5cr</span></span>
               </span>
-              <span className="text-[10px] text-slate-600">Memory: 12 messages</span>
+              <span>Memory: 12 messages</span>
            </div>
         </form>
       </div>

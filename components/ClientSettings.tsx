@@ -21,11 +21,11 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
   });
 
   const [savedStatus, setSavedStatus] = useState({
+    hasApiKey: false,
     hasVpsEndpoint: false,
     hasVpsToken: false
   });
 
-  const [showKey, setShowKey] = useState(false);
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,10 +42,8 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
             const docSnap = await getDoc(docRef);
             if (docSnap.exists()) {
                 const data = docSnap.data();
-                if (data.apiKey) setApiData(prev => ({ ...prev, geminiKey: data.apiKey }));
+                if (data.openrouterApiKey) setSavedStatus(prev => ({ ...prev, hasApiKey: true }));
                 if (data.contactEmail) setFormData({ contactEmail: data.contactEmail });
-                
-                // Write-only logic: If data exists in DB, mark as saved, but don't populate input
                 if (data.vpsEndpoint) setSavedStatus(prev => ({ ...prev, hasVpsEndpoint: true }));
                 if (data.vpsToken) setSavedStatus(prev => ({ ...prev, hasVpsToken: true }));
             }
@@ -60,6 +58,7 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
   const handleSave = async () => {
     setErrorMsg(null);
     
+    // Validate API key only if it's being updated (is not empty)
     if (apiData.geminiKey && apiData.geminiKey.length < 10) {
         setErrorMsg("API Key is too short. Please paste your full OpenRouter key.");
         return;
@@ -68,12 +67,15 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
     try {
         if (db && Object.keys(db).length > 0) {
             const updates: any = {
-              apiKey: apiData.geminiKey,
               contactEmail: formData.contactEmail,
               updated_at: new Date().toISOString()
             };
 
-            // Only update VPS details if the user actually typed something new
+            // Only update keys if actually typed
+            if (apiData.geminiKey) {
+                updates.openrouterApiKey = apiData.geminiKey;
+                setSavedStatus(prev => ({ ...prev, hasApiKey: true }));
+            }
             if (apiData.vpsEndpoint) {
                 updates.vpsEndpoint = apiData.vpsEndpoint;
                 setSavedStatus(prev => ({ ...prev, hasVpsEndpoint: true }));
@@ -86,8 +88,8 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
             const docRef = doc(db as any, 'users', user.uid, 'private', 'settings');
             await setDoc(docRef, updates, { merge: true });
 
-            // Clear the local state so the inputs become empty again (Write-Only policy)
-            setApiData(prev => ({ ...prev, vpsEndpoint: '', vpsToken: '' }));
+            // Clear inputs (Write-Only)
+            setApiData({ geminiKey: '', vpsEndpoint: '', vpsToken: '' });
         }
         setSaved(true);
         setTimeout(() => setSaved(false), 2500);
@@ -114,18 +116,20 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
-        {/* Core Settings Column */}
         <div className="space-y-8">
           {/* AI Provider Key */}
           <div className="bg-[#0f172a]/80 backdrop-blur-md p-6 rounded-2xl border border-[#1e293b] shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-[40px] pointer-events-none"></div>
             
-            <div className="flex items-center gap-2 mb-6 border-b border-[#1e293b] pb-4 relative">
-               <div className="p-2 bg-purple-500/10 rounded-lg"><Key className="w-5 h-5 text-purple-400" /></div>
-               <div>
-                 <h3 className="text-lg font-bold text-white">AI Provider Key</h3>
-                 <p className="text-[10px] text-slate-500">Private — encrypted and stored per-user.</p>
+            <div className="flex items-center justify-between mb-6 border-b border-[#1e293b] pb-4 relative">
+               <div className="flex items-center gap-2">
+                 <div className="p-2 bg-purple-500/10 rounded-lg"><Key className="w-5 h-5 text-purple-400" /></div>
+                 <div>
+                   <h3 className="text-lg font-bold text-white">AI Provider Key</h3>
+                   <p className="text-[10px] text-slate-500">Private — masked after save.</p>
+                 </div>
                </div>
+               {savedStatus.hasApiKey && <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded-md border border-emerald-500/20">LOCKED ✓</span>}
             </div>
             
             <div className="space-y-5 relative">
@@ -135,15 +139,16 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
                   </label>
                   <div className="relative">
                       <input 
-                      type={showKey ? "text" : "password"}
-                      value={apiData.geminiKey}
-                      onChange={e => setApiData({...apiData, geminiKey: e.target.value})}
-                      placeholder="sk-or-v1-..."
-                      className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-emerald-300 font-mono text-sm focus:border-purple-500 outline-none pr-10"
+                        type="password"
+                        value={apiData.geminiKey || (savedStatus.hasApiKey ? "****************" : "")}
+                        onChange={e => setApiData({...apiData, geminiKey: e.target.value})}
+                        onFocus={(e) => { if (savedStatus.hasApiKey && !apiData.geminiKey) e.target.value = ''; }}
+                        placeholder={savedStatus.hasApiKey ? "Saved Securely (Type to overwrite)" : "sk-or-v1-..."}
+                        className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-emerald-300 font-mono text-sm focus:border-purple-500 outline-none pr-10"
                       />
-                      <button type="button" onClick={() => setShowKey(!showKey)} className="absolute right-3 top-3 text-slate-500 hover:text-white">
-                          {showKey ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
+                      <div className="absolute right-3 top-3 text-slate-500">
+                          <Lock className="w-4 h-4" />
+                      </div>
                   </div>
                   <p className="text-[10px] text-slate-500 mt-1.5 ml-1">Get your key at <a href="https://openrouter.ai/keys" target="_blank" rel="noopener" className="text-blue-400 hover:underline">openrouter.ai/keys</a></p>
                </div>
@@ -153,12 +158,10 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
           {/* Account Info */}
           <div className="bg-[#0f172a]/80 backdrop-blur-md p-6 rounded-2xl border border-[#1e293b] shadow-xl relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] pointer-events-none"></div>
-
             <div className="flex items-center gap-2 mb-6 border-b border-[#1e293b] pb-4 relative">
                <div className="p-2 bg-blue-500/10 rounded-lg"><Mail className="w-5 h-5 text-blue-400" /></div>
                <h3 className="text-lg font-bold text-white">Account</h3>
             </div>
-            
             <div className="space-y-5 relative">
                <div>
                   <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-2">
@@ -171,33 +174,28 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
                     className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-slate-300 focus:border-blue-500 outline-none"
                   />
                </div>
-               
                <div className="pt-2 border-t border-[#1e293b]">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-500">User ID</span>
                     <span className="text-slate-600 font-mono text-[10px]">{user.uid.slice(0, 12)}...</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs mt-2">
-                    <span className="text-slate-500">Account Tier</span>
-                    <span className="text-blue-400 font-bold">{user.tier || 'STARTER'}</span>
                   </div>
                </div>
             </div>
           </div>
         </div>
 
-        {/* Server & Infrastructure Column */}
         <div className="bg-[#0f172a]/80 backdrop-blur-md p-6 rounded-2xl border border-[#1e293b] shadow-xl relative overflow-hidden h-fit">
           <div className="absolute top-0 right-0 w-32 h-32 bg-amber-500/10 rounded-full blur-[40px] pointer-events-none"></div>
-
-          <div className="flex items-center gap-2 mb-6 border-b border-[#1e293b] pb-4 relative">
-             <div className="p-2 bg-amber-500/10 rounded-lg"><Server className="w-5 h-5 text-amber-500" /></div>
-             <div>
-               <h3 className="text-lg font-bold text-white">VPS Configuration</h3>
-               <p className="text-[10px] text-slate-500">Write-Only: Saved values are hidden for security.</p>
+          <div className="flex items-center justify-between mb-6 border-b border-[#1e293b] pb-4 relative">
+             <div className="flex items-center gap-2">
+               <div className="p-2 bg-amber-500/10 rounded-lg"><Server className="w-5 h-5 text-amber-500" /></div>
+               <div>
+                 <h3 className="text-lg font-bold text-white">VPS Configuration</h3>
+                 <p className="text-[10px] text-slate-500">Write-Only: Saved values are hidden.</p>
+               </div>
              </div>
           </div>
-                   <div className="space-y-5 relative">
+          <div className="space-y-5 relative">
              <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
                     <div className="flex items-center gap-2"><Server className="w-4 h-4 text-amber-500/70" /> OpenClaw Endpoint</div>
@@ -211,7 +209,6 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
                   className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-amber-300/80 font-mono text-sm focus:border-amber-500 outline-none"
                 />
              </div>
-
              <div>
                 <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center justify-between">
                     <div className="flex items-center gap-2"><Lock className="w-4 h-4 text-emerald-500/70" /> VPS Auth Token</div>
@@ -225,62 +222,37 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
                   className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-emerald-300 font-mono text-sm focus:border-emerald-500 outline-none"
                 />
              </div>
-
              <div className="flex items-center justify-between pt-2">
                 <button 
                   type="button"
                   onClick={async () => {
-                      try {
-                          const endpoint = apiData.vpsEndpoint || '';
-                          const token = apiData.vpsToken || '';
-                          if (!endpoint) { alert("Enter an endpoint first!"); return; }
-                          
-                          const res = await apiCall('/api/test-vps', { endpoint, token });
-                          if (res.status === 'online') {
-                             alert(`✅ Connection Success! VPS is online.`);
-                          } else {
-                             alert(`❌ Connection Failed: ${res.reason || res.error || 'Offline'}`);
-                          }
-                      } catch(e: any) {
-                          alert(`❌ Error: ${e.message}`);
-                      }
+                      const endpoint = apiData.vpsEndpoint || '';
+                      if (!endpoint) { alert("Enter an endpoint!"); return; }
+                      const res = await apiCall('/api/test-vps', { endpoint, token: apiData.vpsToken || '' });
+                      alert(res.status === 'online' ? '✅ VPS Online' : '❌ Failed');
                   }}
-                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg transition-colors border border-slate-700"
+                  className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg border border-slate-700"
                 >
                   Test Connection
                 </button>
                 <div className="text-xs font-mono">
-                   Status: <span className={savedStatus.hasVpsEndpoint ? "text-emerald-400 font-bold" : "text-amber-400"}>
-                     {savedStatus.hasVpsEndpoint ? '✅ Connected' : '❌ Not Configured'}
+                   Status: <span className={savedStatus.hasVpsEndpoint ? "text-emerald-400" : "text-amber-400"}>
+                     {savedStatus.hasVpsEndpoint ? '✅ Connected' : '❌ Disconnected'}
                    </span>
                 </div>
              </div>
-
-             <div className="bg-[#0B1120] border border-[#1e293b] p-3 rounded-lg mt-4">
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  <strong className="text-amber-500">Security Note:</strong> Your server details operate on a strict <strong>Write-Only</strong> policy. Once saved, they are never exposed to the frontend browser interface again. To update, simply enter a new value.
-                </p>
-             </div>
           </div>
         </div>
-
       </div>
 
       <div className="flex flex-col items-end pt-6 gap-3">
-        {errorMsg && (
-          <div className="text-red-400 bg-red-500/10 border border-red-500/20 px-4 py-2 rounded-lg text-xs font-bold animate-pulse">
-             ⚠️ {errorMsg}
-          </div>
-        )}
         <button 
           onClick={handleSave}
-          className={`px-8 py-4 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-3 transition-all shadow-xl hover:-translate-y-1 ${
-            saved 
-            ? 'bg-emerald-500 text-white shadow-emerald-500/20' 
-            : 'bg-blue-600 hover:bg-blue-500 text-white shadow-blue-500/20'
+          className={`px-8 py-4 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-3 transition-all ${
+            saved ? 'bg-emerald-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'
           }`}
         >
-          {saved ? '✓ Saved Successfully' : <><Save className="w-4 h-4" /> Save Configuration</>}
+          {saved ? '✓ Saved' : <><Save className="w-4 h-4" /> Save Configuration</>}
         </button>
       </div>
     </div>
