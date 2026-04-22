@@ -34,6 +34,32 @@ import { AdminPortal } from './components/AdminPortal';
 import { LegalModal, LegalDocType } from './components/LegalModal';
 import { GlobalLoader } from './components/GlobalLoader';
 
+// 🚨 STEP 1 — GLOBAL CRASH STOP (MUST APPLY)
+class ErrorBoundary extends React.Component<any, any> {
+  constructor(props:any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error:any) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error:any, info:any) {
+    console.error("GLOBAL ERROR:", error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{color: "white", padding: 20, backgroundColor: "#030712", height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <h2 style={{ color: '#ef4444' }}>⚠️ App Crashed</h2>
+          <pre style={{ backgroundColor: '#0f172a', padding: '1rem', borderRadius: '0.5rem', color: '#fca5a5' }}>{String(this.state.error)}</pre>
+          <button onClick={() => window.location.reload()} style={{ marginTop: '1rem', padding: '0.5rem 1rem', backgroundColor: '#3b82f6', color: 'white', borderRadius: '0.25rem', border: 'none' }}>Reload</button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('en');
   const [architectPrompt, setArchitectPrompt] = useState<string | null>(null);
@@ -190,56 +216,19 @@ const App: React.FC = () => {
   );
 
   return (
-    <Routes>
-      <Route path="/" element={<LandingView />} />
-      <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
-      <Route path="/dashboard" element={
-        isAuthenticated ? (
-          user?.role === 'admin' ? <AdminPortal user={user!} onLogout={handleLogout} /> : <ClientPortal user={user!} onLogout={handleLogout} />
-        ) : <Navigate to="/login" />
-      } />
-      <Route path="*" element={<Navigate to="/" />} />
-    </Routes>
+    <ErrorBoundary>
+      <Routes>
+        <Route path="/" element={<LandingView />} />
+        <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
+        <Route path="/dashboard" element={
+          isAuthenticated ? (
+            user?.role === 'admin' ? <AdminPortal user={user!} onLogout={handleLogout} /> : <ClientPortal user={user!} onLogout={handleLogout} />
+          ) : <Navigate to="/login" />
+        } />
+        <Route path="*" element={<Navigate to="/" />} />
+      </Routes>
+    </ErrorBoundary>
   );
 };
 
-
-class GlobalErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
-  constructor(props: any) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-  static getDerivedStateFromError(error: Error) {
-    return { hasError: true, error };
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-screen bg-[#030712] flex items-center justify-center p-6 text-white font-sans">
-          <div className="text-center space-y-4">
-            <h1 className="text-3xl font-black text-red-500">SYSTEM CRASH</h1>
-            <p className="text-slate-400">The AI kernel encountered an error during render.</p>
-            <pre className="p-4 bg-slate-900 border border-slate-800 rounded-xl text-[10px] text-red-400/70 overflow-auto max-w-lg">
-                {this.state.error?.message}
-            </pre>
-            <button 
-                onClick={() => window.location.assign('/')}
-                className="px-6 py-2 bg-blue-600 rounded-lg font-bold"
-            >
-                Restart System
-            </button>
-          </div>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
-
-const AppWrapper: React.FC = () => (
-    <GlobalErrorBoundary>
-        <App />
-    </GlobalErrorBoundary>
-);
-
-export default AppWrapper;
+export default App;

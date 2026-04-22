@@ -238,6 +238,15 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
     return id.split('/').pop()?.toUpperCase() || id;
   };
 
+  if (!logs || !Array.isArray(logs)) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full text-slate-700 bg-[#030712] p-8 space-y-4">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+        <p className="text-xs uppercase tracking-widest font-black text-slate-500">Initializing Terminal Logs...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full space-y-4">
       {/* Model Selector Bar */}
@@ -329,13 +338,7 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
 
         {/* Chat Window */}
         <div className="flex-1 p-4 overflow-y-auto space-y-3">
-           {!Array.isArray(logs) || logs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-slate-700 opacity-30 space-y-2">
-                 <Terminal className="w-8 h-8" />
-                 <p className="text-[10px] uppercase tracking-widest font-black">AI Terminal Core Live</p>
-              </div>
-           ) : (
-             logs.map((log, idx) => (
+           {logs?.map((log, idx) => (
                <div key={log.id || idx} className="flex gap-2.5 animate-fade-in">
                  <span className="text-slate-700 shrink-0 text-[9px] mt-1 w-12 hidden sm:block">{log.time}</span>
                  <div className="flex-1 min-w-0">
@@ -413,8 +416,7 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
                    )}
                  </div>
                </div>
-             ))
-           )}
+           ))}
            {isProcessing && (
              <div className="flex gap-2.5 items-center pt-1">
                  <span className="w-12 hidden sm:block"></span>
