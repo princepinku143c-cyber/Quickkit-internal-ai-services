@@ -1,4 +1,5 @@
 import React from 'react';
+console.log("🚀 [AGENTIC OS] System Initializing...");
 import ReactDOM from 'react-dom/client';
 import App from './App';
 
