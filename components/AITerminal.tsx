@@ -43,418 +43,222 @@ const BLOCKED_COMMANDS = ["rm -rf", "shutdown", "reboot", "mkfs", "dd", "chmod -
 const STORAGE_KEY = 'ai_terminal_logs';
 const MODEL_STORAGE_KEY = 'ai_terminal_model';
 
-// Curated popular models (shown first in dropdown)
+// Curated popular models
 const POPULAR_MODELS = [
   'google/gemini-2.0-flash-001',
   'google/gemini-2.5-flash-preview',
   'openai/gpt-4o-mini',
-  'openai/gpt-4o',
-  'anthropic/claude-3.5-haiku',
-  'anthropic/claude-3.5-sonnet',
-  'meta-llama/llama-3.1-8b-instruct:free',
-  'mistralai/mistral-small-3.1-24b-instruct:free',
-  'deepseek/deepseek-chat-v3-0324:free',
-  'qwen/qwen3-8b:free',
+  'meta-llama/llama-3.3-70b-instruct'
 ];
 
 export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
   const [input, setInput] = useState('');
+  const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [apiKey, setApiKey] = useState<string | null>(null);
-  const [keyError, setKeyError] = useState(false);
-  const [selectedModel, setSelectedModel] = useState(() => localStorage.getItem(MODEL_STORAGE_KEY) || 'auto');
+  const [selectedModel, setSelectedModel] = useState<string>('google/gemini-2.0-flash-001');
   const [models, setModels] = useState<ModelInfo[]>([]);
+  const [popularModels, setPopularModels] = useState<ModelInfo[]>([]);
+  const [otherModels, setOtherModels] = useState<ModelInfo[]>([]);
   const [modelsLoading, setModelsLoading] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
-  const [totalSessionCost, setTotalSessionCost] = useState(0);
+  const [keyError, setKeyError] = useState(false);
   const logsEndRef = useRef<HTMLDivElement>(null);
-  const modelPickerRef = useRef<HTMLDivElement>(null);
 
-  // Load chat history from localStorage
-  const [logs, setLogs] = useState<LogEntry[]>(() => {
-    try {
-      const saved = localStorage.getItem(`${STORAGE_KEY}_${user.uid}`);
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return [{
-      role: 'system' as const,
-      text: 'QuickKit Agent v3.0 (OpenRouter) online. 200+ AI models available. Type any instruction.',
-      time: new Date().toLocaleTimeString()
-    }];
-  });
-
-  // Save logs on change
   useEffect(() => {
-    localStorage.setItem(`${STORAGE_KEY}_${user.uid}`, JSON.stringify(logs.slice(-100))); // Keep last 100
-  }, [logs, user.uid]);
-
-  // Save selected model
-  useEffect(() => {
-    localStorage.setItem(MODEL_STORAGE_KEY, selectedModel);
-  }, [selectedModel]);
-
-  // Auto-scroll
-  useEffect(() => {
-    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [logs]);
-
-  // Close model picker on outside click
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (modelPickerRef.current && !modelPickerRef.current.contains(e.target as Node)) {
-        setShowModelPicker(false);
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      try {
+        setLogs(JSON.parse(saved));
+      } catch (e) {
+        setLogs([]);
       }
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    } else {
+      setLogs([{
+        id: 'init',
+        role: 'system',
+        text: 'QuickKit AI OS initialized. Ready for command input.',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      }]);
+    }
+
+    const savedModel = localStorage.getItem(MODEL_STORAGE_KEY);
+    if (savedModel) setSelectedModel(savedModel);
+
+    fetchModels();
   }, []);
 
-  // Load API key from per-user Firebase settings
   useEffect(() => {
-    const loadKey = async () => {
-      if (!db || Object.keys(db).length === 0 || !user.uid) return;
-      try {
-        const docRef = doc(db as any, 'users', user.uid, 'private', 'settings');
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (data.apiKey) {
-            setApiKey(data.apiKey);
-            return;
-          }
-        }
-      } catch (e) {
-        console.warn("Failed to load API key:", e);
-      }
-      setKeyError(true);
-    };
-    loadKey();
-  }, [user.uid]);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(logs));
+    localStorage.setItem(MODEL_STORAGE_KEY, selectedModel);
+    scrollToBottom();
+  }, [logs, selectedModel]);
 
-  // Fetch models list from OpenRouter
-  const fetchModels = useCallback(async () => {
+  const scrollToBottom = () => {
+    logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const fetchModels = async () => {
     setModelsLoading(true);
+    setKeyError(false);
     try {
       const res = await fetch('https://openrouter.ai/api/v1/models');
       const data = await res.json();
       if (data.data) {
-        const parsed: ModelInfo[] = data.data
-          .filter((m: any) => m.id && m.pricing)
-          .map((m: any) => ({
-            id: m.id,
-            name: m.name || m.id,
-            pricing: m.pricing || { prompt: '0', completion: '0' },
-            context_length: m.context_length || 4096
-          }))
-          .sort((a: ModelInfo, b: ModelInfo) => {
-            // Popular models first
-            const aPopular = POPULAR_MODELS.indexOf(a.id);
-            const bPopular = POPULAR_MODELS.indexOf(b.id);
-            if (aPopular !== -1 && bPopular !== -1) return aPopular - bPopular;
-            if (aPopular !== -1) return -1;
-            if (bPopular !== -1) return 1;
-            return a.name.localeCompare(b.name);
-          });
-        setModels(parsed);
+        const all: ModelInfo[] = data.data;
+        const pop = all.filter(m => POPULAR_MODELS.includes(m.id));
+        const rest = all.filter(m => !POPULAR_MODELS.includes(m.id));
+        setModels(all);
+        setPopularModels(pop);
+        setOtherModels(rest);
       }
     } catch (e) {
-      console.warn("Failed to fetch models:", e);
+      console.error("Failed to fetch models:", e);
+    } finally {
+      setModelsLoading(false);
     }
-    setModelsLoading(false);
-  }, []);
-
-  useEffect(() => { fetchModels(); }, [fetchModels]);
-
-  const addLog = (entry: Omit<LogEntry, 'time' | 'id'>) => {
-    const id = Date.now().toString() + Math.random().toString(36).substr(2, 5);
-    setLogs(prev => [...prev, { ...entry, time: new Date().toLocaleTimeString(), id }]);
   };
 
   const updateLog = (id: string, updates: Partial<LogEntry>) => {
     setLogs(prev => prev.map(log => log.id === id ? { ...log, ...updates } : log));
   };
 
-  const validateCommand = (cmd: string) => {
-    let safe = true;
-    let blockedReason = '';
-
-    for (const bad of BLOCKED_COMMANDS) {
-      if (cmd.includes(bad)) {
-         safe = false;
-         blockedReason = `Dangerous command blocked (${bad})`;
-         break;
-      }
-    }
-    
-    if (safe) {
-      let isAllowed = false;
-      for (const allowed of ALLOWED_COMMANDS) {
-        if (cmd.trim().startsWith(allowed)) {
-           isAllowed = true;
-           break;
-        }
-      }
-      if (!isAllowed) {
-         safe = false;
-         blockedReason = `Command not in whitelist (${cmd.split(' ')[0]}). Cannot execute.`;
-      }
-    }
-    return { safe, blockedReason };
+  const addLog = (entry: LogEntry) => {
+    setLogs(prev => [...prev, { ...entry, id: entry.id || Math.random().toString(36).substr(2, 9) }]);
   };
 
-  const handleExecute = async (logId: string, cmd: string) => {
-    const currentBonus = Number(localStorage.getItem('bonusCredits')) || 0;
-    if (user.credits + currentBonus < 10) {
-      updateLog(logId, { cmdStatus: 'failed', cmdResult: 'Insufficient credits. VPS execution requires 10 credits.' });
-      return;
-    }
-
-    if (!db || !user.uid) return;
-    
+  const handleExecute = async (logId: string, command: string) => {
     updateLog(logId, { cmdStatus: 'running' });
-
     try {
-        const docRef = doc(db as any, 'users', user.uid, 'private', 'settings');
-        const docSnap = await getDoc(docRef);
-        let endpoint = '', token = '';
-        if (docSnap.exists()) {
-             const d = docSnap.data();
-             endpoint = d.vpsEndpoint;
-             token = d.vpsToken;
-        }
-
-        if (!endpoint || !token) {
-             updateLog(logId, { cmdStatus: 'failed', cmdResult: 'VPS Endpoint or Token not configured in Settings.' });
-             return;
-        }
-
-        const data = await apiCall('/api/execute', { 
-            command: cmd, 
-            devEndpoint: endpoint, // Fallback if server ENV is missing
-            devToken: token 
-        }).catch((e: any) => {
-            updateLog(logId, { cmdStatus: 'failed', cmdResult: e.message || 'Execution Error.' });
-            return null;
-        });
-        
-        if (!data) return;
-
-        const out = data.output || data.message || JSON.stringify(data);
-
-        updateLog(logId, { cmdStatus: 'success', cmdResult: out });
-    } catch(err: any) {
-        updateLog(logId, { cmdStatus: 'failed', cmdResult: err.message || 'Execution error.' });
+      const res = await apiCall('/api/execute', { command });
+      updateLog(logId, { 
+        cmdStatus: 'success', 
+        cmdResult: res.output || 'Success (No output)' 
+      });
+      addLog({
+        role: 'system',
+        text: `Command executed successfully. 10 credits deducted.`,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+    } catch (e: any) {
+      updateLog(logId, { cmdStatus: 'failed', cmdResult: e.message });
     }
-  };
-
-  const clearHistory = () => {
-    setLogs([{
-      role: 'system',
-      text: 'Chat history cleared. QuickKit Agent ready.',
-      time: new Date().toLocaleTimeString()
-    }]);
-    setTotalSessionCost(0);
-  };
-
-  const getAutoModel = (): string => {
-    return 'google/gemini-2.0-flash-001'; // Cheapest smart model
-  };
-
-  const getModelDisplayName = (id: string): string => {
-    if (id === 'auto') return '⚡ Auto';
-    const m = models.find(m => m.id === id);
-    return m?.name || id.split('/').pop() || id;
-  };
-
-  const getModelPrice = (id: string): string => {
-    const m = models.find(m => m.id === id);
-    if (!m) return '';
-    const promptCost = parseFloat(m.pricing.prompt) * 1000000;
-    if (promptCost === 0) return 'FREE';
-    return `$${promptCost.toFixed(2)}/M`;
   };
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isProcessing) return;
 
-    const command = input.trim();
+    const userMsg = input.trim();
     setInput('');
-    addLog({ role: 'user', text: command });
+    addLog({
+      role: 'user',
+      text: userMsg,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    });
+
     setIsProcessing(true);
-
-    // Credit check
-    const currentBonus = Number(localStorage.getItem('bonusCredits')) || 0;
-    if (user.credits + currentBonus < 5) {
-      addLog({ role: 'error', text: 'Insufficient credits (need 5). Top up your Credit Wallet.' });
-      setIsProcessing(false);
-      return;
-    }
-
-    if (!apiKey) {
-      addLog({ role: 'error', text: 'No API key configured. Go to Settings → AI Provider Key (OpenRouter) to add your key.' });
-      setIsProcessing(false);
-      return;
-    }
-
-    const activeModel = selectedModel === 'auto' ? getAutoModel() : selectedModel;
-
     try {
-      // Build conversation context (last 12 messages)
-      const recentLogs = logs.filter(l => l.role === 'user' || l.role === 'agent').slice(-12);
-      const messages = [
-        { role: 'system', content: SYSTEM_PERSONA },
-        ...recentLogs.map(l => ({
-          role: l.role === 'user' ? 'user' : 'assistant',
-          content: l.text
-        })),
-        { role: 'user', content: command }
-      ];
+      // 1. Get Settings
+      const userRef = doc(db as any, 'users', user.uid);
+      const userSnap = await getDoc(userRef);
+      const settings = userSnap.data()?.settings || {};
+      const apiKey = settings.openRouterKey || '';
 
-      // Call OpenRouter API
-      const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`,
-          'HTTP-Referer': 'https://quickkitai.com',
-          'X-Title': 'QuickKit AI CRM'
-        },
-        body: JSON.stringify({
-          model: activeModel,
-          messages,
-          max_tokens: 1024,
-          temperature: 0.7
-        })
-      });
-
-      const data = await res.json();
-
-      if (data.error) {
-        const errMsg = data.error.message || JSON.stringify(data.error);
-        if (errMsg.includes('rate') || errMsg.includes('429')) {
-          addLog({ role: 'error', text: 'Rate limited. Wait a moment and try again.' });
-        } else if (errMsg.includes('key') || errMsg.includes('auth') || errMsg.includes('401')) {
-          addLog({ role: 'error', text: 'Invalid API Key. Update it in Settings → AI Provider Key.' });
-        } else if (errMsg.includes('insufficient') || errMsg.includes('credits') || errMsg.includes('balance')) {
-          addLog({ role: 'error', text: 'OpenRouter balance exhausted. Add funds at openrouter.ai/credits' });
-        } else {
-          addLog({ role: 'error', text: `API Error: ${errMsg}` });
-        }
+      if (!apiKey) {
+        setKeyError(true);
+        addLog({
+          role: 'error',
+          text: 'OpenRouter API Key missing. Please set it in Settings.',
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        });
         setIsProcessing(false);
         return;
       }
 
-      let reply = data.choices?.[0]?.message?.content || 'No response generated.';
-      
-      let cmdPreview: string | undefined = undefined;
-      let cmdStatus: LogEntry['cmdStatus'] = undefined;
-      let cmdResult: string | undefined = undefined;
+      // 2. Prepare Context
+      const history = logs.slice(-12).map(l => ({
+        role: l.role === 'user' ? 'user' : 'assistant',
+        content: l.text
+      }));
 
-      const cmdMatch = reply.match(/<command>([\s\S]*?)<\/command>/i);
-      if (cmdMatch && cmdMatch[1]) {
-         cmdPreview = cmdMatch[1].trim();
-         const validation = validateCommand(cmdPreview);
-         if (!validation.safe) {
-             cmdStatus = 'blocked';
-             cmdResult = validation.blockedReason;
-         } else {
-             cmdStatus = 'pending';
-         }
-         reply = reply.replace(/<command>[\s\S]*?<\/command>/ig, '').trim();
-         if (!reply) reply = "Command generated for review:";
-      }
-
-      // Extract cost from response
-      const queryCost = data.usage 
-        ? (Number(data.usage.prompt_tokens || 0) * parseFloat(models.find(m => m.id === activeModel)?.pricing.prompt || '0') +
-           Number(data.usage.completion_tokens || 0) * parseFloat(models.find(m => m.id === activeModel)?.pricing.completion || '0'))
-        : 0;
-
-      setTotalSessionCost(prev => prev + queryCost);
-
-      // Dynamic CRM credits: 2 for normal chat, 5 if command generated
-      const creditCost = cmdPreview ? 5 : 2;
-      if (currentBonus >= creditCost) {
-        localStorage.setItem('bonusCredits', String(currentBonus - creditCost));
-        window.dispatchEvent(new Event('storage'));
-      }
-
-      addLog({ 
-        role: 'agent', 
-        text: reply,
-        cmdPreview,
-        cmdStatus,
-        cmdResult,
-        cost: queryCost,
-        model: activeModel
+      // 3. Call AI
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "HTTP-Referer": "https://quickkitai.com",
+          "X-Title": "QuickKit AI",
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          model: selectedModel,
+          messages: [
+            { role: "system", content: SYSTEM_PERSONA },
+            ...history,
+            { role: "user", content: userMsg }
+          ],
+          temperature: 0.7
+        })
       });
 
-    } catch (err: any) {
-      if (err?.message?.includes('fetch') || err?.message?.includes('network') || err?.message?.includes('Failed')) {
-        addLog({ role: 'error', text: 'Network error. Check your internet connection.' });
-      } else {
-        addLog({ role: 'error', text: `Error: ${err.message || 'Unknown error'}` });
-      }
-    }
+      const data = await response.json();
+      if (data.error) throw new Error(data.error.message || 'AI request failed');
 
-    setIsProcessing(false);
+      const text = data.choices[0].message.content;
+      const usage = data.usage;
+      const cost = data.usage?.total_cost || 0;
+
+      // Extract command if present
+      const cmdMatch = text.match(/<command>([\s\S]*?)<\/command>/);
+      const cmdPreview = cmdMatch ? cmdMatch[1].trim() : undefined;
+
+      addLog({
+        role: 'agent',
+        text: text.replace(/<command>[\s\S]*?<\/command>/g, '').trim() || (cmdPreview ? `Command suggested: ${cmdPreview}` : ''),
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        model: data.model,
+        cost: cost,
+        cmdPreview,
+        cmdStatus: cmdPreview ? 'pending' : undefined
+      });
+
+    } catch (e: any) {
+      addLog({
+        role: 'error',
+        text: `AI Error: ${e.message}`,
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
-  const popularModelsFiltered = models.filter(m => POPULAR_MODELS.includes(m.id));
-  const otherModels = models.filter(m => !POPULAR_MODELS.includes(m.id));
+  const getModelDisplayName = (id: string) => {
+    if (id === 'auto') return 'Auto Strategy';
+    return id.split('/').pop()?.toUpperCase() || id;
+  };
 
   return (
-    <div className="space-y-3 max-w-5xl mx-auto h-[calc(100vh-140px)] flex flex-col pt-4">
-      {/* Header */}
-      <div className="flex-none flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-white flex items-center gap-2.5">
-              <span className="p-1.5 bg-blue-500/10 rounded-lg inline-flex"><Terminal className="text-blue-500 w-4 h-4" /></span> AI Agent
-              <span className="text-[10px] font-mono text-slate-600 bg-slate-800/50 px-2 py-0.5 rounded">OpenRouter</span>
-          </h1>
-        </div>
-        <div className="flex items-center gap-2">
-          {totalSessionCost > 0 && (
-            <span className="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/20">
-              <DollarSign className="w-3 h-3 inline" /> Session: ${totalSessionCost.toFixed(6)}
-            </span>
-          )}
-          <button onClick={clearHistory} className="flex items-center gap-1.5 px-2.5 py-1.5 text-[10px] font-bold text-slate-500 hover:text-red-400 bg-slate-800/50 hover:bg-red-500/10 border border-slate-700 hover:border-red-500/30 rounded-lg transition-all">
-            <Trash2 className="w-3 h-3" /> Clear
-          </button>
-        </div>
-      </div>
-
+    <div className="flex flex-col h-full space-y-4">
       {/* Model Selector Bar */}
-      <div className="flex-none flex items-center gap-2 flex-wrap">
-        <div className="relative" ref={modelPickerRef}>
-          <button
+      <div className="flex items-center justify-between pb-2 border-b border-[#1e293b]">
+        <div className="relative">
+          <button 
             onClick={() => setShowModelPicker(!showModelPicker)}
-            className="flex items-center gap-2 px-3 py-2 text-xs font-bold bg-[#0f172a] border border-[#1e293b] hover:border-blue-500/40 rounded-xl text-slate-300 transition-all"
+            className="flex items-center gap-2 px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 rounded-xl hover:bg-blue-500/20 transition-all group"
           >
-            <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-            {getModelDisplayName(selectedModel)}
-            {selectedModel !== 'auto' && <span className="text-emerald-400 text-[10px]">{getModelPrice(selectedModel)}</span>}
-            <ChevronDown className="w-3 h-3 text-slate-500" />
+            <Sparkles className="w-4 h-4 text-blue-400" />
+            <span className="text-xs font-bold text-blue-100">{getModelDisplayName(selectedModel)}</span>
+            <ChevronDown className={`w-3 h-3 text-blue-400 transition-transform ${showModelPicker ? 'rotate-180' : ''}`} />
           </button>
 
           {showModelPicker && (
-            <div className="absolute top-full mt-1 left-0 z-50 w-80 max-h-80 overflow-y-auto bg-[#0B1120] border border-[#1e293b] rounded-xl shadow-2xl">
-              {/* Auto Option */}
-              <button
-                onClick={() => { setSelectedModel('auto'); setShowModelPicker(false); }}
-                className={`w-full text-left px-3 py-2.5 text-xs flex items-center justify-between hover:bg-blue-500/10 transition-colors border-b border-[#1e293b] ${selectedModel === 'auto' ? 'bg-blue-500/10 text-blue-400' : 'text-slate-300'}`}
-              >
-                <span className="flex items-center gap-2"><Zap className="w-3 h-3 text-amber-400" /> ⚡ Auto (Best value)</span>
-                <span className="text-[10px] text-emerald-400">Gemini Flash</span>
-              </button>
-
+            <div className="absolute top-full left-0 mt-2 w-72 bg-[#020617] border border-[#1e293b] rounded-2xl shadow-2xl z-50 overflow-hidden py-1">
               {/* Popular Models */}
-              {popularModelsFiltered.length > 0 && (
+              {popularModels.length > 0 && (
                 <>
-                  <div className="px-3 py-1.5 text-[10px] font-bold text-slate-600 uppercase tracking-widest bg-[#0a0f1c]">Popular Models</div>
-                  {popularModelsFiltered.map(m => (
+                  <div className="px-3 py-2 text-[10px] font-black text-slate-500 uppercase tracking-widest bg-[#0a0f1c]">Recommended</div>
+                  {popularModels.map(m => (
                     <button
                       key={m.id}
                       onClick={() => { setSelectedModel(m.id); setShowModelPicker(false); }}
@@ -525,85 +329,92 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
 
         {/* Chat Window */}
         <div className="flex-1 p-4 overflow-y-auto space-y-3">
-           {logs.map((log, idx) => (
-             <div key={idx} className="flex gap-2.5 animate-fade-in">
-               <span className="text-slate-700 shrink-0 text-[9px] mt-1 w-12 hidden sm:block">{log.time}</span>
-               <div className="flex-1 min-w-0">
-                 {log.role === 'user' && (
-                    <div className="flex gap-2">
-                       <span className="text-emerald-400 font-bold shrink-0 text-xs">YOU →</span> 
-                       <span className="text-blue-300 break-words">{log.text}</span>
-                    </div>
-                 )}
-                 {log.role === 'system' && (
-                    <div className="flex items-start gap-2 text-slate-500 text-xs">
-                      <Shield className="w-3 h-3 shrink-0 mt-0.5" /> <span>{log.text}</span>
-                    </div>
-                 )}
-                 {log.role === 'agent' && (
-                    <div className="bg-purple-500/5 border border-purple-500/10 rounded-xl p-3 mt-1">
-                      <div className="flex items-center justify-between mb-1.5">
-                        <div className="flex items-center gap-2 text-purple-400 font-bold text-[10px]">
-                          <Bot className="w-3 h-3" /> QuickKit Agent
+           {!Array.isArray(logs) || logs.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full text-slate-700 opacity-30 space-y-2">
+                 <Terminal className="w-8 h-8" />
+                 <p className="text-[10px] uppercase tracking-widest font-black">AI Terminal Core Live</p>
+              </div>
+           ) : (
+             logs.map((log, idx) => (
+               <div key={log.id || idx} className="flex gap-2.5 animate-fade-in">
+                 <span className="text-slate-700 shrink-0 text-[9px] mt-1 w-12 hidden sm:block">{log.time}</span>
+                 <div className="flex-1 min-w-0">
+                   {log.role === 'user' && (
+                      <div className="flex gap-2">
+                         <span className="text-emerald-400 font-bold shrink-0 text-xs">YOU →</span> 
+                         <span className="text-blue-300 break-words">{log.text}</span>
+                      </div>
+                   )}
+                   {log.role === 'system' && (
+                      <div className="flex items-start gap-2 text-slate-500 text-xs">
+                        <Shield className="w-3 h-3 shrink-0 mt-0.5" /> <span>{log.text}</span>
+                      </div>
+                   )}
+                   {log.role === 'agent' && (
+                      <div className="bg-purple-500/5 border border-purple-500/10 rounded-xl p-3 mt-1">
+                        <div className="flex items-center justify-between mb-1.5">
+                          <div className="flex items-center gap-2 text-purple-400 font-bold text-[10px]">
+                            <Bot className="w-3 h-3" /> QuickKit Agent
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {log.model && <span className="text-[9px] text-slate-600 font-normal">{log.model.split('/').pop()}</span>}
+                            {log.cost !== undefined && log.cost > 0 && (
+                              <span className="text-[9px] text-emerald-500/70 bg-emerald-500/5 px-1.5 py-0.5 rounded">
+                                ${log.cost.toFixed(6)}
+                              </span>
+                            )}
+                            {log.cost === 0 && <span className="text-[9px] text-emerald-400 font-bold">FREE</span>}
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          {log.model && <span className="text-[9px] text-slate-600 font-normal">{log.model.split('/').pop()}</span>}
-                          {log.cost !== undefined && log.cost > 0 && (
-                            <span className="text-[9px] text-emerald-500/70 bg-emerald-500/5 px-1.5 py-0.5 rounded">
-                              ${log.cost.toFixed(6)}
-                            </span>
-                          )}
-                          {log.cost === 0 && <span className="text-[9px] text-emerald-400 font-bold">FREE</span>}
+                        <div className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap break-words">{log.text}</div>
+                        
+                        {/* Command Preview UI */}
+                        {log.cmdPreview && (
+                          <div className="mt-3 bg-[#050810] border border-[#1e293b] rounded-lg overflow-hidden shadow-inner">
+                             <div className="bg-[#0B1120] px-3 py-1.5 flex justify-between items-center text-[10px] font-bold text-slate-400">
+                               <span>Suggested Command</span>
+                               {log.cmdStatus === 'blocked' && <span className="text-red-400 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/> BLOCKED</span>}
+                             </div>
+                             <div className="p-3 text-emerald-400 font-mono text-[11px] overflow-x-auto">
+                                $ {log.cmdPreview}
+                             </div>
+                             
+                             {log.cmdStatus === 'pending' && (
+                                <div className="p-2.5 bg-[#0B1120]/50 flex gap-2 justify-end border-t border-[#1e293b]">
+                                   <button onClick={() => updateLog(log.id!, { cmdStatus: 'failed', cmdResult: 'Cancelled by user.' })} className="px-3 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all">Cancel</button>
+                                   <button onClick={() => handleExecute(log.id!, log.cmdPreview!)} className="px-3 py-1.5 rounded-md text-xs font-bold bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-all border border-amber-500/30 flex items-center gap-1.5 shadow-sm active:scale-95">
+                                      <Terminal className="w-3 h-3"/> Execute (10 Credits)
+                                   </button>
+                                </div>
+                             )}
+
+                             {log.cmdStatus === 'running' && (
+                                <div className="p-3 bg-amber-500/5 border-t border-amber-500/10 flex items-center gap-2 text-amber-400 text-[11px] font-mono">
+                                   <Loader2 className="w-3.5 h-3.5 animate-spin"/> [Running on VPS...]
+                                </div>
+                             )}
+
+                             {(log.cmdStatus === 'success' || log.cmdStatus === 'failed' || log.cmdStatus === 'blocked') && log.cmdResult && (
+                                <div className={`p-3 border-t font-mono text-[11px] whitespace-pre-wrap overflow-x-auto max-h-48 custom-scrollbar ${log.cmdStatus === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' : 'bg-red-500/10 border-red-500/20 text-red-300'}`}>
+                                    {log.cmdStatus === 'success' ? <span className="font-bold">[SUCCESS]</span> : <span className="font-bold">[ERROR]</span>}
+                                    <br/>{log.cmdResult}
+                                </div>
+                             )}
+                          </div>
+                        )}
+                      </div>
+                   )}
+                   {log.role === 'error' && (
+                      <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-2.5 mt-1">
+                        <div className="flex items-center gap-2 text-red-400 font-bold text-xs">
+                          <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {log.text}
                         </div>
                       </div>
-                      <div className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap break-words">{log.text}</div>
-                      
-                      {/* Command Preview UI */}
-                      {log.cmdPreview && (
-                        <div className="mt-3 bg-[#050810] border border-[#1e293b] rounded-lg overflow-hidden shadow-inner">
-                           <div className="bg-[#0B1120] px-3 py-1.5 flex justify-between items-center text-[10px] font-bold text-slate-400">
-                             <span>Suggested Command</span>
-                             {log.cmdStatus === 'blocked' && <span className="text-red-400 flex items-center gap-1"><AlertTriangle className="w-3 h-3"/> BLOCKED</span>}
-                           </div>
-                           <div className="p-3 text-emerald-400 font-mono text-[11px] overflow-x-auto">
-                              $ {log.cmdPreview}
-                           </div>
-                           
-                           {log.cmdStatus === 'pending' && (
-                              <div className="p-2.5 bg-[#0B1120]/50 flex gap-2 justify-end border-t border-[#1e293b]">
-                                 <button onClick={() => updateLog(log.id!, { cmdStatus: 'failed', cmdResult: 'Cancelled by user.' })} className="px-3 py-1.5 rounded-md text-xs font-bold text-slate-400 hover:text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all">Cancel</button>
-                                 <button onClick={() => handleExecute(log.id!, log.cmdPreview!)} className="px-3 py-1.5 rounded-md text-xs font-bold bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 transition-all border border-amber-500/30 flex items-center gap-1.5 shadow-sm active:scale-95">
-                                    <Terminal className="w-3 h-3"/> Execute (10 Credits)
-                                 </button>
-                              </div>
-                           )}
-
-                           {log.cmdStatus === 'running' && (
-                              <div className="p-3 bg-amber-500/5 border-t border-amber-500/10 flex items-center gap-2 text-amber-400 text-[11px] font-mono">
-                                 <Loader2 className="w-3.5 h-3.5 animate-spin"/> [Running on VPS...]
-                              </div>
-                           )}
-
-                           {(log.cmdStatus === 'success' || log.cmdStatus === 'failed' || log.cmdStatus === 'blocked') && log.cmdResult && (
-                              <div className={`p-3 border-t font-mono text-[11px] whitespace-pre-wrap overflow-x-auto max-h-48 custom-scrollbar ${log.cmdStatus === 'success' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' : 'bg-red-500/10 border-red-500/20 text-red-300'}`}>
-                                  {log.cmdStatus === 'success' ? <span className="font-bold">[SUCCESS]</span> : <span className="font-bold">[ERROR]</span>}
-                                  <br/>{log.cmdResult}
-                              </div>
-                           )}
-                        </div>
-                      )}
-                    </div>
-                 )}
-                 {log.role === 'error' && (
-                    <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-2.5 mt-1">
-                      <div className="flex items-center gap-2 text-red-400 font-bold text-xs">
-                        <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {log.text}
-                      </div>
-                    </div>
-                 )}
+                   )}
+                 </div>
                </div>
-             </div>
-           ))}
+             ))
+           )}
            {isProcessing && (
              <div className="flex gap-2.5 items-center pt-1">
                  <span className="w-12 hidden sm:block"></span>

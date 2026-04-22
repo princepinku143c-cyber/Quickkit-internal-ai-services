@@ -203,4 +203,43 @@ const App: React.FC = () => {
   );
 };
 
-export default App;
+
+class GlobalErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-[#030712] flex items-center justify-center p-6 text-white font-sans">
+          <div className="text-center space-y-4">
+            <h1 className="text-3xl font-black text-red-500">SYSTEM CRASH</h1>
+            <p className="text-slate-400">The AI kernel encountered an error during render.</p>
+            <pre className="p-4 bg-slate-900 border border-slate-800 rounded-xl text-[10px] text-red-400/70 overflow-auto max-w-lg">
+                {this.state.error?.message}
+            </pre>
+            <button 
+                onClick={() => window.location.assign('/')}
+                className="px-6 py-2 bg-blue-600 rounded-lg font-bold"
+            >
+                Restart System
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+const AppWrapper: React.FC = () => (
+    <GlobalErrorBoundary>
+        <App />
+    </GlobalErrorBoundary>
+);
+
+export default AppWrapper;
