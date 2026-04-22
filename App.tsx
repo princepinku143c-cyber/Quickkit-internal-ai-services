@@ -65,6 +65,7 @@ const App: React.FC = () => {
   const [authLoading, setAuthLoading] = useState(true);
 
   // Handle Real Firebase Auth State
+  useEffect(() => {
     let unSubMeta: any = null;
 
     const unsubscribe = onAuthStateChanged(auth as any, async (firebaseUser) => {

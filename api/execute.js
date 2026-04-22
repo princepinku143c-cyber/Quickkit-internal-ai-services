@@ -1,4 +1,5 @@
 import admin from './_lib/firebaseAdmin';
+import fetch from 'node-fetch';
 
 const ALLOWED = ["ls", "uptime", "df", "whoami", "pwd"];
 
