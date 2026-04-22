@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from './lib/firebase';
 import { generateSessionId } from './lib/utils';
 import { Language, UserProfile, ServiceItem, PlanTier, AIQuote } from './types';
@@ -83,6 +83,24 @@ const App: React.FC = () => {
     const unsubscribe = onAuthStateChanged(auth as any, async (firebaseUser) => {
       if (firebaseUser) {
         const userRef = doc(db as any, 'users', firebaseUser.uid);
+        
+        // 🚨 500 CREDIT ONBOARDING (FRONTEND FALLBACK)
+        const checkNewUser = async () => {
+          const snap = await getDoc(userRef);
+          if (!snap.exists()) {
+             await setDoc(userRef, {
+               uid: firebaseUser.uid,
+               email: firebaseUser.email,
+               displayName: firebaseUser.displayName || 'Operator',
+               credits: 500,
+               plan: 'free',
+               role: 'client',
+               createdAt: new Date().toISOString()
+             }, { merge: true });
+          }
+        };
+        checkNewUser();
+
         unSubMeta = onSnapshot(userRef, (snap) => {
           const data = snap.data();
           setUser({
