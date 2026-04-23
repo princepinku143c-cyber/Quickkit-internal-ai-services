@@ -5,7 +5,7 @@ import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from './lib/firebase';
 import { generateSessionId } from './lib/utils';
 import { Language, UserProfile, ServiceItem, PlanTier, AIQuote } from './types';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 
 // Landing Page Components
