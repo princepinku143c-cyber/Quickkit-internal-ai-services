@@ -6,39 +6,32 @@ import { getPayPalAccessToken, BASE_URL } from "../lib/paypalAdmin.js";
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
 
-  // 1. Mandatory Security Check
+  // 1. Mandatory Security Check (Firebase ID Token)
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ message: "Unauthorized: Missing Session Token" });
   
   const { amount, projectName } = req.body;
 
-  // 2. Strict Amount Validation
-  const validAmount = Number(amount);
-  if (isNaN(validAmount) || validAmount <= 0) {
-    return res.status(400).json({ message: "Invalid amount verification failed." });
-  }
-
   try {
-    // 3. Verify Identity before Triggering Payment
+    // 2. Verify Identity
     const idToken = authHeader.split('Bearer ')[1];
     await admin.auth().verifyIdToken(idToken);
 
     const accessToken = await getPayPalAccessToken();
 
-    // 4. Create Order with Advanced Metadata
+    // 3. Create Order
     const response = await fetch(`${BASE_URL}/v2/checkout/orders`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${accessToken}`,
-        "Prefer": "return=representation"
+        "Authorization": `Bearer ${accessToken}`
       },
       body: JSON.stringify({
         intent: "CAPTURE",
         purchase_units: [{
           amount: {
             currency_code: "USD",
-            value: validAmount.toFixed(2) // Ensure 2 decimal places
+            value: Number(amount).toFixed(2)
           },
           description: `QuickKit AI Deployment: ${projectName || 'Custom AI Agent'}`
         }]
@@ -46,11 +39,7 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-    
-    if (data.error || !data.id) {
-       console.error("PayPal API Error:", data);
-       throw new Error("Failed to initialize PayPal order.");
-    }
+    if (data.error || !data.id) throw new Error(data.error_description || "PayPal order creation failed.");
 
     res.status(200).json(data);
 

@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db } from './lib/firebase';
@@ -21,7 +22,7 @@ import { AIAgents } from './components/AIAgents';
 import { FloatingActions } from './components/FloatingActions';
 import { SmartBot } from './components/SmartBot';
 import { RoadmapModal } from './components/catalog/RoadmapModal';
-import { PrivacyPolicy, TermsAndConditions, RefundPolicy } from './components/legal/LegalPages';
+import { LegalPages } from './components/legal/LegalPages';
 import { LeadForm } from './components/LeadForm';
 import { SocialProofBar } from './components/SocialProofBar';
 import { BusinessImpact } from './components/BusinessImpact';
@@ -242,21 +243,23 @@ const App: React.FC = () => {
   );
 
   return (
-    <ErrorBoundary>
-      <Routes>
-        <Route path="/" element={<LandingView />} />
-        <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
+    <PayPalScriptProvider options={{ "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "sb" }}>
+      <ErrorBoundary>
+        <Routes>
+          <Route path="/" element={<LandingView />} />
+          <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
           <Route path="/dashboard" element={
-          isAuthenticated ? (
-            user?.role === 'admin' ? <AdminPortal user={user!} onLogout={handleLogout} /> : <ClientPortal user={user!} onLogout={handleLogout} />
-          ) : <Navigate to="/login" />
-        } />
-        <Route path="/privacy" element={<PrivacyPolicy />} />
-        <Route path="/terms" element={<TermsAndConditions />} />
-        <Route path="/refund" element={<RefundPolicy />} />
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
-    </ErrorBoundary>
+            isAuthenticated ? (
+              user?.role === 'admin' ? <AdminPortal user={user!} onLogout={handleLogout} /> : <ClientPortal user={user!} onLogout={handleLogout} />
+            ) : <Navigate to="/login" />
+          } />
+          <Route path="/privacy" element={<LegalPages />} />
+          <Route path="/terms" element={<LegalPages />} />
+          <Route path="/refund" element={<LegalPages />} />
+          <Route path="*" element={<Navigate to="/" />} />
+        </Routes>
+      </ErrorBoundary>
+    </PayPalScriptProvider>
   );
 };
 
