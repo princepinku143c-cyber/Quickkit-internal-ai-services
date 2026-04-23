@@ -202,10 +202,10 @@ const App: React.FC = () => {
             <span>Sales: sales@quickkitai.com</span>
             <span>Support: support@quickkitai.com</span>
           </div>
-          <div className="flex flex-wrap justify-center gap-6 mb-8 text-[10px] font-black uppercase tracking-widest text-slate-600">
-            <Link to="/privacy" className="hover:text-blue-400 transition-colors">Privacy Policy</Link>
-            <Link to="/terms" className="hover:text-blue-400 transition-colors">Terms of Service</Link>
-            <Link to="/refund" className="hover:text-blue-400 transition-colors">Refund Policy</Link>
+          <div className="flex flex-wrap justify-center gap-6 mb-8 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">
+            <Link to="/privacy" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Terms of Service</Link>
+            <Link to="/refund" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Refund Policy</Link>
           </div>
           <p>&copy; {new Date().getFullYear()} QuickKit AI. All rights reserved.</p>
         </div>
