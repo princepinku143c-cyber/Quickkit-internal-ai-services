@@ -57,6 +57,30 @@ export const LeadForm: React.FC<Props> = ({ lang, close, onBack, initialData, pr
       if (Object.keys(db).length > 0) {
           await addDoc(collection(db as any, 'leads'), newLead);
           console.log("🔥 Blueprint safely stored in Firebase.");
+
+          // 🚨 TRIGGER ACTUAL DEPLOYMENT API IF QUOTE EXISTS
+          if (aiFinancials) {
+              try {
+                  const currentUser = auth.currentUser;
+                  if (currentUser) {
+                      const idToken = await currentUser.getIdToken();
+                      await fetch('/api/deploy-agent', {
+                          method: 'POST',
+                          headers: {
+                              'Content-Type': 'application/json',
+                              'Authorization': `Bearer ${idToken}`
+                          },
+                          body: JSON.stringify({
+                             agentId: formData.businessType,
+                             details: newLead
+                          })
+                      });
+                  }
+              } catch (e) {
+                  console.warn("API Deployment signal failed - background only", e);
+              }
+          }
+
       } else {
           console.error("Firebase not configured. Deployment aborted.");
           alert("Connection error. Please try again later.");
