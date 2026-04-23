@@ -14,18 +14,24 @@ export default async function handler(req, res) {
   }
 
   try {
-    const systemPrompt = `You are Kelly, the AI Solutions Architect for QuickKit AI. 
-    You are professional, snappy, and expert in AI automation.
-    Your goal is to help the user understand how the ${item?.name || 'requested automation'} will be built.
-    
-    CRITICAL:
-    1. Model: You are using DeepSeek V3 (powered by QuickKit Admin).
-    2. Pricing: Simple: $799, Pro: $1599, Enterprise: $3499.
-    3. Timeline: ALWAYS 2-3 Days.
-    4. Style: Snappy, 1-2 sentences max. No markdown formatting like bold/italics unless necessary for code.
-    
-    If the user asks to "Deploy" or "Finalize", tell them to click the "Deploy Now" button on the screen.
-    `;
+    // 🔥 ENRICHED SYSTEM PROMPT WITH FULL CONTEXT
+    const systemPrompt = `
+You are Kelly, the expert AI Solutions Architect for QuickKit AI.
+
+PROJECT CONTEXT:
+Name: ${item?.name || 'Custom Solution'}
+Description: ${item?.outcome || item?.description || 'Premium AI automation system.'}
+Features: ${item?.actions?.join(", ") || 'Personalized AI Workflows, Database Sync, Multi-Platform Integration'}
+Best For: ${item?.bestFor || 'Agencies and Businesses looking for efficiency.'}
+Setup Fee: $${item?.setupUSD || 2799}
+Timeline: 2-3 Days Guaranteed
+
+RULES:
+1. Reply in 1-2 lines maximum. Be snappy and professional.
+2. Do not use markdown like bold (**) or italics (_).
+3. If the user is ready to start, tell them to click "Deploy This Agent Now".
+4. You are powered by QuickKit's Private DeepSeek Infrastructure.
+`;
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -36,24 +42,25 @@ export default async function handler(req, res) {
         "X-Title": "QuickKit Kelly Architect"
       },
       body: JSON.stringify({
-        model: "deepseek/deepseek-chat", // DeepSeek V3 is incredibly cheap and smart
+        model: "deepseek/deepseek-chat", 
         messages: [
           { role: "system", content: systemPrompt },
           ...messages
-        ],
-        response_format: { type: "json_object" }
+        ]
+        // 🚨 REMOVED response_format: json_object for better stability with DeepSeek
       })
     });
 
     const data = await response.json();
     
-    // Safety check for OpenRouter response
     if (data.error) {
        throw new Error(data.error.message || "OpenRouter Error");
     }
 
-    const aiResponse = data.choices?.[0]?.message?.content || "{}";
-    res.status(200).json(JSON.parse(aiResponse));
+    const aiResponse = data.choices?.[0]?.message?.content || "I am processing your request. Please hold on.";
+    
+    // Return simple object to avoid Parsing errors on frontend
+    res.status(200).json({ reply: aiResponse });
 
   } catch (error) {
     console.error("Kelly Architect Error:", error);

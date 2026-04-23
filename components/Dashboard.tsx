@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect } from 'react';
-import { Activity, CheckCircle2, Server, Bot, Layers, CheckSquare, Clock, Terminal, AlertCircle, Zap, Cpu, Fingerprint, Sparkles, Database, Play, Square, Plus } from 'lucide-react';
+import { Activity, CheckCircle2, Server, Bot, Layers, CheckSquare, Clock, Terminal, AlertCircle, Zap, Cpu, Fingerprint, Sparkles, Database, Play, Square, Plus, ShieldCheck } from 'lucide-react';
 import { UserProfile } from '../types';
 import { collection, query, where, onSnapshot, doc, updateDoc, addDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -126,11 +126,13 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
              <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
              <span className="text-[10px] font-bold uppercase tracking-widest text-blue-400">Live Operating System</span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-purple-400 flex items-center gap-4">
-             <Fingerprint className="w-10 h-10 text-blue-500" /> 
-             Smart AI CRM
+          <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white flex flex-wrap items-center gap-4">
+             <Fingerprint className="w-10 h-10 text-blue-500 shrink-0" /> 
+             Welcome, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-600 to-purple-500">{user.displayName || 'Nexus Operator'}</span>
           </h1>
-          <p className="text-slate-400 font-medium text-sm mt-2 ml-1">Enterprise-grade multi-agent operations command center.</p>
+          <p className="text-slate-400 font-medium text-xs mt-3 ml-1 flex items-center gap-2 uppercase tracking-widest">
+            <ShieldCheck className="w-4 h-4 text-emerald-500" /> QuickKit Global OS <span className="text-slate-600">|</span> Node ID: QK-{user.uid.slice(0,6)}
+          </p>
         </div>
 
         <div className="flex flex-col items-end gap-3 mt-6 md:mt-0 relative z-10 w-full md:w-auto">

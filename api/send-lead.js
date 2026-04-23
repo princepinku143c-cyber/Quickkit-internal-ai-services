@@ -6,28 +6,33 @@ export default async function handler(req, res) {
 
   const { name, email, phone, businessName, requirement, projectName, price } = req.body;
 
+  // 🚨 VALIDATION: Ensure critical fields are present
+  if (!name || !email || !phone) {
+    return res.status(400).json({ message: "Operator verification failed: Missing required contact fields." });
+  }
+
   try {
-    // 1. Save to CRM (Firebase)
+    // 1. Transactional Save to CRM (Firebase)
     await admin.firestore().collection('leads').add({
       name,
       email,
       phone,
-      businessName,
-      requirement,
+      businessName: businessName || 'Generic Operation',
+      requirement: requirement || 'Standard Global Deployment',
       projectName,
-      price,
+      price: price || 0,
       status: 'NEW',
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      source: 'Agent-Deployment-Form'
+      source: 'Internal-Agent-Studio'
     });
 
-    // 2. Here you would normally send an email via Nodemailer/SendGrid
-    // console.log("New Lead Received:", { name, email, projectName });
-
-    res.status(200).json({ success: true, message: "Request received! Our team will contact you within 24 hours." });
+    res.status(200).json({ 
+      success: true, 
+      message: "✅ Deployment Blueprint Received. Our lead architect will contact you within 24 hours." 
+    });
 
   } catch (error) {
     console.error("Lead submission error:", error);
-    res.status(500).json({ message: "Internal server error. Please try again." });
+    res.status(500).json({ message: "Internal server error. Transmission failed." });
   }
 }

@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Zap, Bot, Clock, FileCheck, RefreshCw, MessageSquare, Terminal, ChevronRight, ShieldCheck, Layers, Sparkles, TrendingDown, Users2, HelpCircle, Paperclip, Image as ImageIcon, Trash2, Cpu, CheckCircle, Smartphone, Globe, Code, Box, Loader2, Mail, Phone, Building2, User, FileText } from 'lucide-react';
+import { X, Zap, Bot, Clock, FileCheck, RefreshCw, MessageSquare, Terminal, ChevronRight, ShieldCheck, Layers, Sparkles, TrendingDown, Users2, HelpCircle, Paperclip, Image as ImageIcon, Trash2, Cpu, CheckCircle, Smartphone, Globe, Code, Box, Loader2, Mail, Phone, Building2, User, FileText, CreditCard, DollarSign, Wallet, Shield } from 'lucide-react';
 import { ServiceItem, Currency, AIQuote } from '../../types';
 import { auth } from '../../lib/firebase';
 
@@ -18,14 +18,14 @@ interface RoadmapModalProps {
 
 export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onClose, sessionRef }) => {
   const [activeTab, setActiveTab] = useState<'blueprint' | 'chat'>('blueprint');
+  const [view, setView] = useState<'studio' | 'form' | 'payment' | 'tracking'>('studio');
   const [chatHistory, setChatHistory] = useState<any[]>([
     { role: 'model', content: `Hello! I'm Kelly. I've prepared the architectural blueprint for the ${item?.name || 'requested automation'}. You can review the technical specs on the left or ask me anything!` }
   ]);
   const [userInput, setUserInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [showDeploymentForm, setShowDeploymentForm] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
-  const [deployed, setDeployed] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -65,7 +65,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
       });
 
       const data = await res.json();
-      setChatHistory(prev => [...prev, { role: 'model', content: data.chatResponse || data.message || "I'm here to help!" }]);
+      setChatHistory(prev => [...prev, { role: 'model', content: data.reply || data.message || "I'm here to help!" }]);
     } catch (err) {
       setChatHistory(prev => [...prev, { role: 'model', content: "🚨 Connection interrupted. Please try again." }]);
     } finally {
@@ -89,7 +89,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
       });
 
       if (res.ok) {
-        setDeployed(true);
+        setView('payment');
       }
     } catch (err) {
         alert("Submission failed. Please check your connection.");
@@ -98,10 +98,37 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
     }
   };
 
-  // Static Data Extraction
-  const features = item?.actions || ["Automated Workflows", "Real-time Monitoring", "Secure Data Encryption", "Custom Integrations"];
-  const useCases = item?.bestFor?.split(', ') || ["Enterprise Ops", "Direct-to-Consumer", "Marketing Agencies"];
   const setupFee = item?.setupUSD || 2799;
+  const advanceAmount = Math.round(setupFee * 0.1);
+
+  const handlePayAdvance = async () => {
+    setPaymentLoading(true);
+    try {
+      const currentUser = auth.currentUser;
+      if (!currentUser) throw new Error("User must be logged in.");
+      const idToken = await currentUser.getIdToken();
+
+      const res = await fetch('/api/create-paypal-order', {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${idToken}`
+        },
+        body: JSON.stringify({ 
+          amount: advanceAmount,
+          projectName: item?.name || 'Custom Solution'
+        })
+      });
+      const order = await res.json();
+      if (order.links) {
+        window.location.href = order.links.find((l: any) => l.rel === 'approve').href;
+      }
+    } catch (e) {
+      alert("Payment initiation failed.");
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#030712]/95 backdrop-blur-xl">
@@ -114,7 +141,9 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                     <Bot className="w-6 h-6" />
                 </div>
                 <div>
-                    <h3 className="text-xl font-black text-white tracking-tight uppercase">Kelly Architecture Studio</h3>
+                    <h3 className="text-xl font-black text-white tracking-tight uppercase">
+                        {view === 'payment' ? 'Project Settlement' : view === 'tracking' ? 'Project Dashboard' : 'Kelly Architecture Studio'}
+                    </h3>
                     <div className="flex items-center gap-3 mt-1">
                         <span className="text-[10px] font-mono text-slate-500 tracking-widest uppercase bg-slate-800 px-2 py-0.5 rounded">ID: {sessionRef.slice(0,8)}</span>
                         <span className="text-[10px] font-mono text-emerald-400 font-bold uppercase flex items-center gap-1"><div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></div> Live Consultant</span>
@@ -124,7 +153,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
             <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-slate-500 transition-colors"><X className="w-6 h-6" /></button>
         </div>
 
-        {!showDeploymentForm ? (
+        {view === 'studio' && (
           <div className="flex-1 flex overflow-hidden">
             {/* Left: Professional Blueprint */}
             <div className="w-full md:w-[500px] border-r border-slate-800 bg-slate-950/40 p-10 overflow-y-auto custom-scrollbar">
@@ -148,36 +177,9 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                         </div>
                     </div>
 
-                    <div className="space-y-6">
-                        <div className="flex items-center gap-3">
-                            <div className="h-px flex-1 bg-slate-800"></div>
-                            <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Capabilities</span>
-                            <div className="h-px flex-1 bg-slate-800"></div>
-                        </div>
-                        <div className="grid grid-cols-1 gap-3">
-                            {features.map((feature, i) => (
-                                <div key={i} className="flex items-start gap-4 bg-slate-900/40 p-4 rounded-2xl border border-slate-800/50 hover:bg-slate-900 transition-colors">
-                                    <div className="w-6 h-6 rounded-lg bg-blue-500/10 border border-blue-500/20 text-blue-400 flex items-center justify-center shrink-0 mt-0.5">
-                                        <CheckCircle className="w-3.5 h-3.5" />
-                                    </div>
-                                    <span className="text-xs font-bold text-slate-200">{feature}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="space-y-4">
-                        <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest block pl-1">Primary Use Cases</span>
-                        <div className="flex flex-wrap gap-2">
-                            {useCases.map((u, i) => (
-                                <span key={i} className="px-3 py-1.5 bg-slate-800/50 border border-slate-700 rounded-full text-[10px] font-bold text-slate-400 uppercase tracking-tight">{u}</span>
-                            ))}
-                        </div>
-                    </div>
-
                     <div className="pt-10 border-t border-slate-800">
                         <button 
-                          onClick={() => setShowDeploymentForm(true)}
+                          onClick={() => setView('form')}
                           className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl shadow-2xl shadow-blue-600/30 transition-all flex items-center justify-center gap-3 uppercase text-sm tracking-[0.1em] active:scale-[0.98]"
                         >
                            <Zap className="w-5 h-5 fill-current" /> Deploy This Agent Now
@@ -186,13 +188,8 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                 </div>
             </div>
 
-            {/* Right: Live Consultation Chat (DeepSeek Powered) */}
+            {/* Right: Live Consultation Chat */}
             <div className="flex-1 flex flex-col bg-slate-900/10">
-                <div className="px-8 py-3 bg-slate-900/30 border-b border-slate-800 flex justify-between items-center shrink-0">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
-                        <MessageSquare className="w-3 h-3" /> Live Consultant Thread
-                    </span>
-                </div>
                 <div ref={scrollRef} className="flex-1 p-8 overflow-y-auto space-y-6 custom-scrollbar">
                     {chatHistory.map((msg, i) => (
                         <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'} animate-fade-in`}>
@@ -205,20 +202,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                             </div>
                         </div>
                     ))}
-                    {isTyping && (
-                        <div className="flex justify-start animate-pulse">
-                            <div className="bg-slate-800 border border-slate-700 p-5 rounded-3xl rounded-tl-none flex items-center gap-3">
-                                <div className="flex gap-1.5">
-                                    <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce"></span>
-                                    <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:0.2s]"></span>
-                                    <span className="w-1.5 h-1.5 bg-blue-400 rounded-full animate-bounce [animation-delay:0.4s]"></span>
-                                </div>
-                                <span className="text-[11px] text-slate-500 font-mono font-bold uppercase tracking-widest">Kelly is typing...</span>
-                            </div>
-                        </div>
-                    )}
                 </div>
-
                 <div className="p-6 border-t border-slate-800 bg-slate-900/50">
                     <form onSubmit={handleChat} className="relative">
                         <input 
@@ -227,147 +211,138 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                             placeholder="Ask Kelly about this architecture..."
                             className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 pl-6 pr-16 text-white focus:outline-none focus:border-blue-500 transition-colors font-medium"
                         />
-                        <button type="submit" disabled={!userInput.trim() || isTyping} className="absolute right-2 top-2 p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-all disabled:opacity-50">
+                        <button type="submit" disabled={!userInput.trim() || isTyping} className="absolute right-2 top-2 p-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-all">
                             <Zap className="w-5 h-5" />
                         </button>
                     </form>
                 </div>
             </div>
           </div>
-        ) : (
-          <div className="flex-1 overflow-y-auto p-12 bg-slate-950/50 custom-scrollbar">
-            {!deployed ? (
-              <div className="max-w-2xl mx-auto">
-                <div className="text-center mb-10">
-                    <div className="w-16 h-16 bg-blue-600/20 text-blue-400 rounded-2xl flex items-center justify-center mx-auto mb-6 border border-blue-500/20">
-                        <Smartphone className="w-8 h-8" />
-                    </div>
-                    <h2 className="text-3xl font-black text-white uppercase tracking-tight mb-3">Finalize Deployment</h2>
-                    <p className="text-slate-400 font-medium">Verify your business details to initiate the ${item?.name || 'requested'} system.</p>
-                </div>
+        )}
 
+        {view === 'form' && (
+          <div className="flex-1 overflow-y-auto p-12 bg-slate-950/50 custom-scrollbar">
+              <div className="max-w-2xl mx-auto">
+                <h2 className="text-3xl font-black text-white uppercase tracking-tight mb-8 text-center">Verify Operator Details</h2>
                 <form onSubmit={handleFormSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Full Operator Name</label>
-                        <div className="relative">
-                            <User className="absolute left-4 top-4 w-5 h-5 text-slate-600" />
-                            <input 
-                                required
-                                placeholder="e.g. John Carter"
-                                className="w-full bg-slate-900 border border-slate-800 rounded-xl py-4 pl-12 pr-4 text-white focus:border-blue-500 outline-none transition-all"
-                                value={formData.name}
-                                onChange={e => setFormData({...formData, name: e.target.value})}
-                            />
-                        </div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Operator Name</label>
+                        <input required className="w-full bg-slate-900 border border-slate-800 rounded-xl py-4 px-6 text-white" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Business Identity</label>
-                        <div className="relative">
-                            <Building2 className="absolute left-4 top-4 w-5 h-5 text-slate-600" />
-                            <input 
-                                required
-                                placeholder="e.g. Acme Logistics"
-                                className="w-full bg-slate-900 border border-slate-800 rounded-xl py-4 pl-12 pr-4 text-white focus:border-blue-500 outline-none transition-all"
-                                value={formData.businessName}
-                                onChange={e => setFormData({...formData, businessName: e.target.value})}
-                            />
-                        </div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Business Name</label>
+                        <input required className="w-full bg-slate-900 border border-slate-800 rounded-xl py-4 px-6 text-white" value={formData.businessName} onChange={e => setFormData({...formData, businessName: e.target.value})} />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Email Destination</label>
-                        <div className="relative">
-                            <Mail className="absolute left-4 top-4 w-5 h-5 text-slate-600" />
-                            <input 
-                                required
-                                type="email"
-                                placeholder="e.g. operations@acme.com"
-                                className="w-full bg-slate-900 border border-slate-800 rounded-xl py-4 pl-12 pr-4 text-white focus:border-blue-500 outline-none transition-all"
-                                value={formData.email}
-                                onChange={e => setFormData({...formData, email: e.target.value})}
-                            />
-                        </div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Email</label>
+                        <input required type="email" className="w-full bg-slate-900 border border-slate-800 rounded-xl py-4 px-6 text-white" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
                     </div>
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Direct Contact</label>
-                        <div className="relative">
-                            <Phone className="absolute left-4 top-4 w-5 h-5 text-slate-600" />
-                            <input 
-                                required
-                                placeholder="e.g. +1 555-0123"
-                                className="w-full bg-slate-900 border border-slate-800 rounded-xl py-4 pl-12 pr-4 text-white focus:border-blue-500 outline-none transition-all"
-                                value={formData.phone}
-                                onChange={e => setFormData({...formData, phone: e.target.value})}
-                            />
-                        </div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Phone</label>
+                        <input required className="w-full bg-slate-900 border border-slate-800 rounded-xl py-4 px-6 text-white" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
                     </div>
                     <div className="md:col-span-2 space-y-2">
-                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Core Requirements</label>
-                        <div className="relative">
-                            <FileText className="absolute left-4 top-4 w-5 h-5 text-slate-600" />
-                            <textarea 
-                                required
-                                rows={4}
-                                placeholder="Describe any specific needs for this deployment..."
-                                className="w-full bg-slate-900 border border-slate-800 rounded-xl py-4 pl-12 pr-4 text-white focus:border-blue-500 outline-none transition-all resize-none"
-                                value={formData.requirement}
-                                onChange={e => setFormData({...formData, requirement: e.target.value})}
-                            />
-                        </div>
+                        <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest pl-1">Requirements</label>
+                        <textarea rows={4} className="w-full bg-slate-900 border border-slate-800 rounded-xl py-4 px-6 text-white resize-none" value={formData.requirement} onChange={e => setFormData({...formData, requirement: e.target.value})} />
                     </div>
-
                     <div className="md:col-span-2 pt-6">
-                        <button 
-                            type="submit" 
-                            disabled={isDeploying}
-                            className="w-full py-5 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 uppercase text-sm tracking-widest disabled:opacity-50"
-                        >
-                            {isDeploying ? <Loader2 className="w-5 h-5 animate-spin" /> : <><RocketIcon className="w-5 h-5" /> Submit Deployment Request</>}
+                        <button type="submit" disabled={isDeploying} className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl flex items-center justify-center gap-3 uppercase text-sm tracking-widest">
+                            {isDeploying ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verify and Continue"}
                         </button>
-                        
-                        {/* Trust Messages */}
-                        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div className="flex items-center gap-3 text-[10px] text-slate-500 font-bold uppercase tracking-tight">
-                                <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> 2-3 Days Guaranteed Delivery
-                            </div>
-                            <div className="flex items-center gap-3 text-[10px] text-slate-500 font-bold uppercase tracking-tight">
-                                <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Live Demo Video Call Included
-                            </div>
-                            <div className="flex items-center gap-3 text-[10px] text-slate-500 font-bold uppercase tracking-tight">
-                                <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> Zero Payment Until Confirmation
-                            </div>
-                            <div className="flex items-center gap-3 text-[10px] text-slate-500 font-bold uppercase tracking-tight">
-                                <CheckCircle className="w-3.5 h-3.5 text-emerald-500" /> 24/7 Human-Led Assistance
-                            </div>
-                        </div>
                     </div>
                 </form>
               </div>
-            ) : (
-                <div className="h-full flex flex-col items-center justify-center text-center animate-fade-in-up">
-                    <div className="w-24 h-24 bg-emerald-500/20 text-emerald-500 rounded-[2rem] flex items-center justify-center mb-8 border border-emerald-500/20 shadow-2xl">
-                        <CheckCircle className="w-12 h-12" />
-                    </div>
-                    <h2 className="text-4xl font-black text-white uppercase tracking-tight mb-4">Request Sent Successfully!</h2>
-                    <p className="text-lg text-slate-400 font-medium max-w-lg mb-10 leading-relaxed">Your deployment signal has been received. Our lead architect will review the specs and contact you within the next 24 hours.</p>
-                    <div className="flex gap-4">
-                        <button onClick={onClose} className="px-10 py-5 bg-slate-800 hover:bg-slate-700 text-white font-black rounded-2xl flex items-center gap-3 uppercase text-xs tracking-widest transition-all">
-                            Back to Dashboard
-                        </button>
-                    </div>
-                </div>
-            )}
           </div>
         )}
+
+        {view === 'payment' && (
+          <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+             {/* Left: Invoice Summary */}
+             <div className="flex-1 p-12 overflow-y-auto custom-scrollbar bg-slate-950/30">
+                <div className="max-w-md mx-auto space-y-8 animate-fade-in">
+                    <div className="space-y-2">
+                        <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] block">Invoice Summary</span>
+                        <h2 className="text-4xl font-black text-white slashed-zero">${setupFee.toLocaleString()}</h2>
+                        <p className="text-xs text-slate-500 font-bold uppercase tracking-widest">Global AI Deployment: {item?.name}</p>
+                    </div>
+
+                    <div className="p-6 bg-slate-900/50 border border-slate-800 rounded-3xl space-y-6">
+                        <div className="flex justify-between items-center">
+                            <span className="text-sm font-bold text-slate-400">Advance (10% Required)</span>
+                            <span className="text-xl font-black text-white">${advanceAmount.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center text-xs border-t border-slate-800 pt-4">
+                            <span className="text-slate-500">Remaining Balance</span>
+                            <span className="text-slate-400 font-mono">${(setupFee - advanceAmount).toLocaleString()}</span>
+                        </div>
+                        <div className="text-[10px] text-emerald-400 font-bold uppercase tracking-widest text-center mt-2">
+                            Pay advance to initiate development
+                        </div>
+                    </div>
+
+                    <div className="space-y-4">
+                        <button onClick={handlePayAdvance} disabled={paymentLoading} className="w-full py-5 bg-[#0070ba] text-white font-black rounded-2xl flex items-center justify-center gap-4 hover:bg-[#004b7c] transition-all disabled:opacity-50 text-sm italic">
+                            {paymentLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CreditCard className="w-5 h-5" /> PayPal Advance</>}
+                        </button>
+                        <div className="relative py-4">
+                            <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-800"></div></div>
+                            <div className="relative flex justify-center text-[10px] uppercase font-black text-slate-600 bg-[#080c14] px-4">or pay via crypto</div>
+                        </div>
+                        <div className="p-5 bg-slate-900/30 border border-slate-800 rounded-2xl flex items-center gap-4">
+                           <Wallet className="w-6 h-6 text-amber-500" />
+                           <div className="flex-1">
+                              <p className="text-[10px] font-black text-slate-200 uppercase mb-1">USDT (TRC20) Advance</p>
+                              <p className="text-[9px] font-mono text-slate-500">TX7j...W9kL (Click to Copy)</p>
+                           </div>
+                           <ChevronRight className="w-4 h-4 text-slate-600" />
+                        </div>
+                    </div>
+                </div>
+             </div>
+
+             {/* Right: Terms & Conditions */}
+             <div className="w-full md:w-[400px] bg-slate-900/40 p-10 border-l border-slate-800 overflow-y-auto custom-scrollbar">
+                <div className="space-y-8 animate-fade-in">
+                    <div className="flex items-center gap-3 text-blue-400">
+                        <Shield className="w-5 h-5" />
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em]">Terms of Service</span>
+                    </div>
+                    
+                    <div className="space-y-6 text-[11px] leading-relaxed text-slate-400 font-medium">
+                        <section>
+                            <h5 className="text-white font-black uppercase tracking-widest mb-2">Payment Terms</h5>
+                            <ul className="space-y-2 list-disc pl-4 marker:text-blue-500">
+                                <li>We require a 10% advance payment to initiate your project.</li>
+                                <li>Remaining balance is payable after demo and before final delivery.</li>
+                                <li>Project delivery timeline: 2–3 working days.</li>
+                            </ul>
+                        </section>
+                        <section>
+                            <h5 className="text-white font-black uppercase tracking-widest mb-2">Customization</h5>
+                            <p>Any additional features requested after initial scope may incur extra charges. Final pricing adjustments will be communicated via email.</p>
+                        </section>
+                        <section>
+                            <h5 className="text-white font-black uppercase tracking-widest mb-2">Trust & Delivery</h5>
+                            <p>You will receive a live demo before final payment. Full system access will be provided after complete payment.</p>
+                        </section>
+                        <section className="p-3 bg-red-500/5 border border-red-500/10 rounded-xl">
+                            <h5 className="text-red-400 font-black uppercase tracking-widest mb-2">Refund Policy</h5>
+                            <p>Advance payment is non-refundable once development has started.</p>
+                        </section>
+                    </div>
+                    
+                    <div className="pt-6 border-t border-slate-800">
+                        <div className="flex items-center gap-3 bg-emerald-500/5 p-4 rounded-xl border border-emerald-500/10">
+                            <CheckCircle className="w-5 h-5 text-emerald-500" />
+                            <span className="text-[10px] text-emerald-400 font-black uppercase leading-tight">Secure Transaction Guaranteed by QuickKit Global</span>
+                        </div>
+                    </div>
+                </div>
+             </div>
+          </div>
+        )}
+
       </div>
     </div>
   );
 };
-
-const RocketIcon = ({ className }: { className?: string }) => (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className}>
-        <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/>
-        <path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/>
-        <path d="m9 12 2.5 2.5"/>
-        <path d="M12 21a9 9 0 0 0 9-9"/>
-    </svg>
-);
