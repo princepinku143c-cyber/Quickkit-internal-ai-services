@@ -284,6 +284,9 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                         <button onClick={handlePayAdvance} disabled={paymentLoading} className="w-full py-5 bg-[#0070ba] text-white font-black rounded-2xl flex items-center justify-center gap-4 hover:bg-[#004b7c] transition-all disabled:opacity-50 text-sm italic">
                             {paymentLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CreditCard className="w-5 h-5" /> PayPal Advance</>}
                         </button>
+                        <p className="text-[10px] text-center text-slate-500 font-bold uppercase tracking-tight">
+                            You can pay via PayPal or directly using your debit/credit card (no PayPal account required).
+                        </p>
                         <div className="relative py-4">
                             <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-800"></div></div>
                             <div className="relative flex justify-center text-[10px] uppercase font-black text-slate-600 bg-[#080c14] px-4">or pay via crypto</div>

@@ -21,6 +21,7 @@ import { AIAgents } from './components/AIAgents';
 import { FloatingActions } from './components/FloatingActions';
 import { SmartBot } from './components/SmartBot';
 import { RoadmapModal } from './components/catalog/RoadmapModal';
+import { PrivacyPolicy, TermsAndConditions, RefundPolicy } from './components/legal/LegalPages';
 import { LeadForm } from './components/LeadForm';
 import { SocialProofBar } from './components/SocialProofBar';
 import { BusinessImpact } from './components/BusinessImpact';
@@ -201,6 +202,11 @@ const App: React.FC = () => {
             <span>Sales: sales@quickkitai.com</span>
             <span>Support: support@quickkitai.com</span>
           </div>
+          <div className="flex flex-wrap justify-center gap-6 mb-8 text-[10px] font-black uppercase tracking-widest text-slate-600">
+            <Link to="/privacy" className="hover:text-blue-400 transition-colors">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-blue-400 transition-colors">Terms of Service</Link>
+            <Link to="/refund" className="hover:text-blue-400 transition-colors">Refund Policy</Link>
+          </div>
           <p>&copy; {new Date().getFullYear()} QuickKit AI. All rights reserved.</p>
         </div>
       </footer>
@@ -240,11 +246,14 @@ const App: React.FC = () => {
       <Routes>
         <Route path="/" element={<LandingView />} />
         <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
-        <Route path="/dashboard" element={
+          <Route path="/dashboard" element={
           isAuthenticated ? (
             user?.role === 'admin' ? <AdminPortal user={user!} onLogout={handleLogout} /> : <ClientPortal user={user!} onLogout={handleLogout} />
           ) : <Navigate to="/login" />
         } />
+        <Route path="/privacy" element={<PrivacyPolicy />} />
+        <Route path="/terms" element={<TermsAndConditions />} />
+        <Route path="/refund" element={<RefundPolicy />} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </ErrorBoundary>
