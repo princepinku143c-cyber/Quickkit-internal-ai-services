@@ -1,7 +1,7 @@
 
 import fetch from "node-fetch";
-import admin from "../lib/firebaseAdmin";
-import { getPayPalAccessToken, BASE_URL } from "../lib/paypalAdmin";
+import admin from "../lib/firebaseAdmin.js";
+import { getPayPalAccessToken, BASE_URL } from "../lib/paypalAdmin.js";
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });

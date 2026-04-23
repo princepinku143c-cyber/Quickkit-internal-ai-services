@@ -1,5 +1,5 @@
-
-import admin from '../lib/firebaseAdmin';
+import admin from '../lib/firebaseAdmin.js';
+import { getPayPalAccessToken, BASE_URL } from '../lib/paypalAdmin.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
