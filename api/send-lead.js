@@ -1,4 +1,4 @@
-import admin from '../lib/firebaseAdmin.js';
+import admin from './_lib/firebaseAdmin.js';
 import { getPayPalAccessToken, BASE_URL } from '../lib/paypalAdmin.js';
 
 export default async function handler(req, res) {

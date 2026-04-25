@@ -1,5 +1,5 @@
 
-import admin from '../lib/firebaseAdmin.js';
+import admin from './_lib/firebaseAdmin.js';
 import fetch from 'node-fetch';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_ADMIN_KEY;
