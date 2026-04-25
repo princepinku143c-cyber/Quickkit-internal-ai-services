@@ -16,17 +16,9 @@ export const Login: React.FC = () => {
   const navigate = useNavigate();
 
   React.useEffect(() => {
-    // Push current state to block immediate back
-    window.history.pushState(null, '', window.location.href);
-
-    const handlePopState = () => {
-      // Hardware back button should go home, not back to landing which might loop
-      navigate('/', { replace: true });
-    };
-
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, [navigate]);
+    // Basic Title sync
+    document.title = isLogin ? "Login | QuickKit AI" : "Signup | QuickKit AI";
+  }, [isLogin]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

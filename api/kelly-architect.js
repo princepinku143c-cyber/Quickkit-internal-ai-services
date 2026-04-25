@@ -73,69 +73,51 @@ export default async function handler(req, res) {
     }
   }
 
-  // 3. AI ORCHESTRATION FALLBACK
-  if (!OPENROUTER_API_KEY) return res.status(503).json({ message: "System busy. Try again in 3 seconds." });
+  // 3. AI ORCHESTRATION (STABLE)
+  const OPENROUTER_ADMIN_KEY = process.env.OPENROUTER_ADMIN_KEY;
+  if (!OPENROUTER_ADMIN_KEY) return res.status(500).json({ message: "Intelligence Node Offline. Admin config required." });
 
-  const safeHistory = (history || []).slice(-10).map(m => ({
-    role: m.role === "model" || m.role === "assistant" ? "assistant" : "user",
+  const messagesSafe = (history || []).slice(-10).map(m => ({
+    role: m.role === 'assistant' || m.role === 'model' ? 'assistant' : 'user',
     content: String(m.content || '').slice(0, 500)
   }));
 
-  let aiReply = null;
-  let usedModel = null;
-
-  for (const model of MODELS) {
-    try {
-      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-          "Content-Type": "application/json",
-          "HTTP-Referer": "https://quickkit-crm.com",
-          "X-Title": "QuickKit AI"
-        },
-        body: JSON.stringify({
-          model,
-          messages: [{ role: "system", content: SYSTEM_PROMPT }, ...safeHistory, { role: "user", content: message }],
-          temperature: 0.6, // Slightly lower for more direct answers
-          max_tokens: 800
-        })
-      });
-
-      const data = await response.json();
-      if (!data.error && data.choices?.[0]?.message?.content) {
-        aiReply = data.choices[0].message.content;
-        usedModel = model;
-        break;
-      }
-    } catch (err) {}
-  }
-
-  if (!aiReply) {
-    return res.status(502).json({ message: "System busy. Try again in 3 seconds." });
-  }
-
-  // 4. COST-EFFICIENT LOGGING & BILLING
   try {
-    // 30% Probability Logging to save Firestore write costs
-    if (Math.random() < 0.3) {
-      await admin.firestore().collection('logs').add({
-          userId: userId || 'GUEST',
-          model: usedModel,
-          timestamp: admin.firestore.FieldValue.serverTimestamp(),
-          type: 'architect-chat'
-      });
-    }
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${OPENROUTER_ADMIN_KEY}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://quickkitai.com",
+        "X-Title": "QuickKit AI"
+      },
+      body: JSON.stringify({
+        model: "deepseek/deepseek-chat",
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          ...messagesSafe,
+          { role: "user", content: message }
+        ],
+        max_tokens: 400,
+        temperature: 0.7
+      })
+    });
 
+    const data = await response.json();
+    const aiReply = data.choices?.[0]?.message?.content || "Neural link stable. I am ready for architectural scoping.";
+
+    // Simple Billing
     if (userId && !isGuest) {
       await admin.firestore().collection('users').doc(userId).update({
         credits: admin.firestore.FieldValue.increment(-1),
         lastAiInteraction: admin.firestore.FieldValue.serverTimestamp()
       });
     }
-  } catch (error) {
-    console.error("Post-processing failed:", error);
-  }
 
-  return res.status(200).json({ reply: aiReply });
+    return res.status(200).json({ reply: aiReply });
+
+  } catch (error) {
+    console.error("KELLY_CRASH:", error);
+    return res.status(502).json({ message: "Neural link timeout. Please retry." });
+  }
 }

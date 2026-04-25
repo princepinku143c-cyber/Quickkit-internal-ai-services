@@ -77,9 +77,9 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
         },
         body: JSON.stringify({
           message: userMsg,
-          history: chatHistory.map(m => ({
-            role: m.role,
-            content: m.content
+          history: (Array.isArray(chatHistory) ? chatHistory : []).map(m => ({
+            role: m.role || 'user',
+            content: m.content || ''
           }))
         })
       });
@@ -229,7 +229,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
 
 
                 <div ref={scrollRef} className="flex-1 p-10 overflow-y-auto space-y-8 custom-scrollbar">
-                    {chatHistory.map((msg, i) => (
+                    {(Array.isArray(chatHistory) ? chatHistory : []).map((msg, i) => (
                         <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
                             <div className={`max-w-[80%] p-6 rounded-[2rem] text-sm font-medium ${msg.role === 'user' ? 'bg-blue-600 shadow-xl text-white rounded-tr-none' : 'bg-slate-900/60 border border-white/5 text-slate-300 rounded-tl-none'}`}>
                                 {msg.content}
