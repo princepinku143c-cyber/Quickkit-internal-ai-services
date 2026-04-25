@@ -40,6 +40,13 @@ export const AdminLeads: React.FC = () => {
         alert("🚨 Target UID Missing: This operator must sign in/be invited first.");
         return;
     }
+    
+    // Safety Lock: Prevent duplicate builds
+    if (lead.status === 'WON') {
+        alert("This lead is already initialized as a Project.");
+        return;
+    }
+
     if (!confirm(`🚀 Initialize Build Queue for ${lead.name}?`)) return;
 
     try {

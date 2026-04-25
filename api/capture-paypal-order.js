@@ -53,9 +53,11 @@ export default async function handler(req, res) {
     }
 
     // 4. Amount Scrutiny
-    const capturedAmount = Number(data.purchase_units[0].payments.captures[0].amount.value);
-    if (Math.abs(capturedAmount - result.expectedAmount) > 1) {
-        throw new Error(`Financial Discrepancy: Captured $${capturedAmount} vs Expected $${result.expectedAmount}`);
+    const capturedAmount = data.purchase_units[0].payments.captures[0].amount.value;
+    const expectedAmount = (result.expectedAmount).toFixed(2);
+
+    if (capturedAmount !== expectedAmount) {
+        throw new Error(`Financial Discrepancy: Captured $${capturedAmount} vs Expected $${expectedAmount}`);
     }
 
     // 5. ATOMIC BATCH COMMIT
