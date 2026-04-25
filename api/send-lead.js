@@ -4,35 +4,49 @@ import { getPayPalAccessToken, BASE_URL } from '../lib/paypalAdmin.js';
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
 
+  console.log("🚀 [LEAD_CAPTURE] Incoming Payload:", req.body);
+
   const { name, email, phone, businessName, requirement, projectName, price } = req.body;
 
-  // 🚨 VALIDATION: Ensure critical fields are present
+  // 1. ENVIRONMENT AUDIT
+  if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_PRIVATE_KEY) {
+    console.error("🚨 [CONFIG_ERROR] Firebase Environment Variables Missing on Vercel!");
+    return res.status(500).json({ message: "Infrastructure mismatch. Backend config incomplete." });
+  }
+
+  // 2. VALIDATION
   if (!name || !email || !phone) {
-    return res.status(400).json({ message: "Operator verification failed: Missing required contact fields." });
+    console.warn("⚠️ [VALIDATION_FAIL] Missing required fields:", { name, email, phone });
+    return res.status(400).json({ message: "Verification failed: Contact fields are mandatory." });
   }
 
   try {
-    // 1. Transactional Save to CRM (Firebase)
-    await admin.firestore().collection('leads').add({
+    // 3. STORAGE
+    const result = await admin.firestore().collection('leads').add({
       name,
       email,
       phone,
-      businessName: businessName || 'Generic Operation',
-      requirement: requirement || 'Standard Global Deployment',
-      projectName,
+      businessName: businessName || 'Custom Build',
+      requirement: requirement || 'AI Scoping',
+      projectName: projectName || 'General Request',
       price: price || 0,
       status: 'NEW',
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
-      source: 'Internal-Agent-Studio'
+      source: 'QuickKit-Market-Shell'
     });
 
-    res.status(200).json({ 
+    console.log("✅ [SUCCESS] Lead stored with ID:", result.id);
+
+    return res.status(200).json({ 
       success: true, 
-      message: "✅ Deployment Blueprint Received. Our lead architect will contact you within 24 hours." 
+      message: "✅ Transmission Successful. Lead indexed." 
     });
 
   } catch (error) {
-    console.error("Lead submission error:", error);
-    res.status(500).json({ message: "Internal server error. Transmission failed." });
+    console.error("🔥 [CRASH] Lead submission failed FULL:", error);
+    return res.status(500).json({ 
+      message: "Internal Cluster Error.",
+      details: error.message 
+    });
   }
 }

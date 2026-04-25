@@ -332,7 +332,7 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
         </div>
 
         <div className="flex-1 p-4 overflow-y-auto space-y-3">
-           {logs?.map((log, idx) => (
+           {(Array.isArray(logs) ? logs : []).map((log, idx) => (
                <div key={log.id || idx} className="flex gap-2.5 animate-fade-in">
                  <span className="text-slate-700 shrink-0 text-[10px] mt-1 w-12 hidden sm:block">{log.time}</span>
                  <div className="flex-1 min-w-0">

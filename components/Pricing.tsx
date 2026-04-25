@@ -15,8 +15,8 @@ export const Pricing: React.FC<PricingProps> = ({ lang }) => {
             <Zap className="w-3 h-3" /> Transparent Pricing
           </div>
           <h2 className="text-4xl md:text-6xl font-black text-white mb-6">Simple, Predictable Tiers</h2>
-          <p className="text-slate-400 text-lg">
-            Choose the level of intelligence your business needs. One-time setup fee + flexible monthly retainer.
+          <p className="text-slate-400 text-lg max-w-2xl mx-auto">
+            Stop paying $1,000+ monthly purely for automation logic. QuickKit provides <span className="text-blue-400 font-bold">Done-For-You Agents</span> at 1/10th the cost of legacy platforms.
           </p>
         </div>
         
@@ -36,8 +36,9 @@ export const Pricing: React.FC<PricingProps> = ({ lang }) => {
                    <span className="text-2xl text-slate-500 font-bold">-</span>
                    <span className="text-4xl font-black text-white">$599</span>
                 </div>
-                <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mt-2 border-b border-slate-800 pb-4">One-time Build Fee</p>
-             </div>
+                 <p className="text-[10px] uppercase tracking-widest text-slate-500 font-bold mt-2 border-b border-slate-800 pb-4">One-time Build Fee</p>
+                 <div className="mt-2 text-[10px] font-black text-emerald-500/80 uppercase tracking-tighter">Save 90% vs Zapier Enterprise</div>
+              </div>
              
              <div className="flex-1 space-y-6">
                 <div>

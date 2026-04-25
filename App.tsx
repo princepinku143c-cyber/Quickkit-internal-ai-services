@@ -8,6 +8,7 @@ import { generateSessionId } from './lib/utils';
 import { Language, UserProfile, ServiceItem, PlanTier, AIQuote } from './types';
 import { Routes, Route, Navigate, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
+import { Helmet } from 'react-helmet-async';
 
 // Landing Page Components
 import { Navbar } from './components/Navbar';
@@ -28,6 +29,7 @@ import { SocialProofBar } from './components/SocialProofBar';
 import { BusinessImpact } from './components/BusinessImpact';
 import { WhyQuickKit } from './components/WhyQuickKit';
 import { Testimonials } from './components/Testimonials';
+import { ComparisonTable } from './components/ComparisonTable';
 
 // Portals
 import { Login } from './components/Login';
@@ -180,8 +182,15 @@ const App: React.FC = () => {
 
   const LandingView = () => (
     <div className="bg-[#030712] min-h-screen font-sans text-slate-100 selection:bg-blue-500/30">
+      <Helmet>
+        <title>QuickKit AI | Premium AI Automation Agency & Zapier Alternative</title>
+        <meta name="description" content="Deploy high-performance AI agents and custom automation workflows in 3 days. The elite AI automation agency for businesses scaling beyond simple Zapier scripts." />
+        <meta name="keywords" content="AI Automation Agency, Zapier Alternative, Make Alternative, AI Agents for Business, Custom AI Solutions" />
+        <link rel="canonical" href="https://quickkitai.com" />
+      </Helmet>
       <Navbar />
       <Hero lang={lang} onLaunchArchitect={handleLaunchArchitect} />
+      <ComparisonTable />
       <SocialProofBar />
       <Services lang={lang} />
       <Testimonials />
@@ -214,16 +223,14 @@ const App: React.FC = () => {
 
       {(architectPrompt || selectedCatalogItem) && (
         <RoadmapModal 
-          customPrompt={architectPrompt || undefined} 
           item={selectedCatalogItem || undefined} 
           currency="USD"
+          onClose={() => { setArchitectPrompt(null); setSelectedCatalogItem(null); }}
+          sessionRef={sessionRef}
+          onSaveState={(data, history) => setCachedRoadmap({ data, history })}
+          onBook={handleFinalBook}
           existingData={cachedRoadmap?.data}
           existingHistory={cachedRoadmap?.history}
-          sessionRef={sessionRef}
-          isWidget={isWidgetMode}
-          onSaveState={(data, history) => setCachedRoadmap({ data, history })}
-          onClose={() => { setArchitectPrompt(null); setSelectedCatalogItem(null); }}
-          onBook={handleFinalBook}
         />
       )}
 
@@ -235,6 +242,10 @@ const App: React.FC = () => {
           initialData={{ bizType: currentAIQuote ? 'AI Architect Custom Build' : '', plan: PlanTier.STARTER }}
           prefilledNotes={leadFormNotes}
           aiFinancials={currentAIQuote}
+          onVerified={(data) => {
+             // If they verify from the general lead form, we could redirect to dashboard
+             console.log("Lead Verified:", data);
+          }}
         />
       )}
 

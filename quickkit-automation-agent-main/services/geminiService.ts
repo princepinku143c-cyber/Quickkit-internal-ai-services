@@ -155,7 +155,7 @@ export const analyzeWorkflow = async (
     }
 
     const response = await callAIWithTimeout<GenerateContentResponse>(() => ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-2.0-flash',
         contents: `WORKFLOW_GRAPH:\n${graphJson}`,
         config: { systemInstruction: systemPrompt }
     }), 12000);

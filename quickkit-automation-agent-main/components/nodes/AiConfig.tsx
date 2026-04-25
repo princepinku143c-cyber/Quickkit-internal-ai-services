@@ -104,8 +104,8 @@ const AiConfig: React.FC<AiConfigProps> = ({ subtype, config, onChange }) => {
                         value={config.model || AI_MODELS.RUNTIME} 
                         onChange={(v: string) => onChange('model', v)} 
                         options={[
-                            { label: 'Gemini 3 Flash (Fast & Cheap)', value: 'gemini-3-flash-preview' }, 
-                            { label: 'Gemini 3 Pro (High Quality)', value: 'gemini-3-pro-preview' }
+                            { label: 'Gemini 2.0 Flash (Fast & Cheap)', value: 'gemini-2.0-flash' }, 
+                            { label: 'Gemini 2.0 Pro (High Quality)', value: 'gemini-2.0-pro-exp' }
                         ]} 
                     />
                 </CollapsibleSection>

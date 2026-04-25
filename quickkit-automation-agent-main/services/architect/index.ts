@@ -14,7 +14,7 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
  */
 export const processArchitectRequest = async (prompt: string, currentNexuses: any[], currentSynapses: any[], context?: string): Promise<ArchitectResponse> => {
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.0-flash",
     contents: `You are the NexusStream Architect. 
     Current Workflow: ${JSON.stringify({ nexuses: currentNexuses, synapses: currentSynapses })}
     Context: ${context || 'None'}
@@ -107,7 +107,7 @@ export const processArchitectRequest = async (prompt: string, currentNexuses: an
  */
 export const analyzeWorkflow = async (intent: string, nexuses: any[], synapses: any[]): Promise<string> => {
   const response = await ai.models.generateContent({
-    model: "gemini-3-flash-preview",
+    model: "gemini-2.0-flash",
     contents: `Analyze this automation workflow with intent: ${intent}
     Nodes: ${JSON.stringify(nexuses)}
     Connections: ${JSON.stringify(synapses)}`,

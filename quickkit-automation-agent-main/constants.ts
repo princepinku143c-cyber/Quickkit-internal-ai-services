@@ -26,7 +26,7 @@ export const PAYPAL_PLAN_IDS = {
 // 🔥 AI MODEL STRATEGY (BUDGET OPTIMIZED)
 export const AI_MODELS = {
   ARCHITECT: 'gemini-3-pro-preview',      // High Intelligence (Planning & Reasoning) - Higher Cost
-  RUNTIME: 'gemini-3-flash-preview',      // High Speed (Execution & Agents) - Low Cost
+  RUNTIME: 'gemini-2.0-flash',      // High Speed (Execution & Agents) - Low Cost
   VISION: 'gemini-3-pro-image-preview',   // Visual Tasks
   VIDEO: 'veo-3.1-fast-generate-preview'  // Video Gen
 };

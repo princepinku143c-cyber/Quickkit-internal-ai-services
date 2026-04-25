@@ -1,15 +1,32 @@
 
 import React, { useState } from 'react';
-import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithPopup, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { useNavigate } from 'react-router-dom';
 import { auth, db, googleProvider } from '../lib/firebase';
-import { Zap, ArrowRight, Lock, ShieldCheck, Mail, Loader2 } from 'lucide-react';
+import { Zap, ArrowRight, Lock, ShieldCheck, Mail, Loader2, Home } from 'lucide-react';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const navigate = useNavigate();
+
+  React.useEffect(() => {
+    // Push current state to block immediate back
+    window.history.pushState(null, '', window.location.href);
+
+    const handlePopState = () => {
+      // Hardware back button should go home, not back to landing which might loop
+      navigate('/', { replace: true });
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,11 +35,27 @@ export const Login: React.FC = () => {
         return;
     }
     setLoading(true);
+    setError(null);
     try {
-        await signInWithEmailAndPassword(auth as any, email, password);
-        // App.tsx auth listener handles redirect
+        if (isLogin) {
+            await signInWithEmailAndPassword(auth as any, email, password);
+        } else {
+            const userCredential = await createUserWithEmailAndPassword(auth as any, email, password);
+            await updateProfile(userCredential.user, { displayName: name });
+            
+            // Sync with Firestore
+            if (Object.keys(db).length > 0) {
+                await setDoc(doc(db as any, 'users', userCredential.user.uid), {
+                    uid: userCredential.user.uid,
+                    email: userCredential.user.email,
+                    displayName: name,
+                    role: 'client',
+                    createdAt: new Date().toISOString()
+                });
+            }
+        }
     } catch (error: any) {
-        setError(error.message || "Login failed. Please check your credentials.");
+        setError(error.message || "Authentication failed. Please check your credentials.");
     } finally {
         setLoading(false);
     }
@@ -68,7 +101,7 @@ export const Login: React.FC = () => {
                 <Zap className="text-white w-7 h-7 fill-current" />
             </div>
             <h1 className="text-3xl font-bold text-white tracking-tight">Smart AI CRM</h1>
-            <p className="text-slate-500 mt-2">Sign in to your client portal</p>
+            <p className="text-slate-500 mt-2">{isLogin ? 'Sign in to your client portal' : 'Create your operator account'}</p>
         </div>
 
         <div className="glass-panel p-8 rounded-2xl border border-nexus-border shadow-2xl">
@@ -78,6 +111,19 @@ export const Login: React.FC = () => {
               </div>
             )}
             <form onSubmit={handleSubmit} className="space-y-5">
+                {!isLogin && (
+                    <div className="animate-fade-in-up">
+                        <label className="block text-sm font-medium text-slate-300 mb-1.5">Full Name</label>
+                        <input 
+                            required
+                            type="text" 
+                            value={name}
+                            onChange={(e) => setName(e.target.value)}
+                            className="w-full bg-nexus-card border border-nexus-border rounded-lg px-4 py-3 text-white focus:border-blue-500 outline-none transition-colors"
+                            placeholder="John Doe"
+                        />
+                    </div>
+                )}
                 <div>
                     <label className="block text-sm font-medium text-slate-300 mb-1.5">Email Address</label>
                     <input 
@@ -108,7 +154,7 @@ export const Login: React.FC = () => {
                     className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 group"
                 >
                     {loading ? <><Loader2 className="w-4 h-4 animate-spin"/> Authenticating...</> : (
-                        <>Sign In with Email <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
+                        <>{isLogin ? 'Sign In with Email' : 'Create Account'} <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" /></>
                     )}
                 </button>
                 
@@ -125,14 +171,26 @@ export const Login: React.FC = () => {
                     className="w-full py-3 bg-white hover:bg-slate-100 text-slate-900 font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg"
                 >
                    <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
-                   Sign In with Google
+                   Continue with Google
                 </button>
 
                 {/* Bypass removed for production */}
             </form>
             
-            <div className="mt-6 text-center text-xs text-slate-500">
-                <p>Protected by Enterprise Grade Encryption</p>
+            <div className="mt-6 text-center text-xs text-slate-500 space-y-4">
+                <p>
+                    {isLogin ? "Don't have an account?" : "Already have an account?"}
+                    <span 
+                        onClick={() => setIsLogin(!isLogin)} 
+                        className="text-blue-400 cursor-pointer ml-1 font-bold hover:underline"
+                    >
+                        {isLogin ? 'Create Account' : 'Sign In'}
+                    </span>
+                </p>
+                <div className="flex items-center justify-center gap-2 opacity-50">
+                    <ShieldCheck className="w-3 h-3" />
+                    <p>Enterprise Grade Encryption Active</p>
+                </div>
             </div>
         </div>
 

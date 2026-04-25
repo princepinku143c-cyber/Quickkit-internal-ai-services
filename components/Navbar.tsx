@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Menu, X, Cpu } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Logo } from './Logo';
 
 export const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -21,33 +22,8 @@ export const Navbar: React.FC = () => {
   return (
     <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#030712]/90 backdrop-blur-md border-b border-slate-800 py-4' : 'bg-transparent py-6'}`}>
       <div className="container mx-auto px-6 flex justify-between items-center">
-        {/* Logo */}
-        <div className="flex items-center gap-4 cursor-pointer group" onClick={() => scrollTo('hero')}>
-          <div className="relative flex-shrink-0 group-hover:scale-110 transition-all duration-500">
-            {/* Soft Glow Background */}
-            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl blur-md opacity-25 group-hover:opacity-60 transition-opacity"></div>
-            
-            <div className="relative w-10 h-10 bg-slate-900 rounded-xl border border-white/10 flex items-center justify-center overflow-hidden">
-              <svg width="40" height="40" viewBox="0 0 40 40" fill="none" className="z-10">
-                  <rect width="40" height="40" rx="10" fill="url(#premiumGrad)"/>
-                  {/* AI Neural Symbol */}
-                  <circle cx="20" cy="20" r="4" fill="white" fillOpacity="0.9"/>
-                  <path d="M20 12V16M20 24V28M12 20H16M24 20H28M14.5 14.5L17 17M23 23L25.5 25.5M14.5 25.5L17 23M23 17L25.5 14.5" stroke="white" strokeWidth="2" strokeLinecap="round" strokeOpacity="0.8"/>
-                  <defs>
-                      <linearGradient id="premiumGrad" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
-                          <stop stopColor="#3b82f6"/>
-                          <stop offset="1" stopColor="#8b5cf6"/>
-                      </linearGradient>
-                  </defs>
-              </svg>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-2xl font-extrabold text-white tracking-[-0.03em] font-sans">QUICKKIT</span>
-            <div className="flex items-center justify-center px-1.5 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/30 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
-              <span className="text-[10px] font-black text-blue-400 tracking-wider">AI</span>
-            </div>
-          </div>
+        <div className="cursor-pointer" onClick={() => scrollTo('hero')}>
+          <Logo size={40} showText={true} />
         </div>
 
         {/* Desktop Menu */}
@@ -58,7 +34,7 @@ export const Navbar: React.FC = () => {
           <button onClick={() => scrollTo('pricing')} className="text-sm font-bold text-slate-300 hover:text-white transition">Pricing</button>
           <button onClick={() => scrollTo('demo')} className="text-sm font-bold text-slate-300 hover:text-white transition">Demo</button>
           <button onClick={() => scrollTo('roi')} className="text-sm font-bold text-slate-300 hover:text-white transition">ROI Calculator</button>
-          <Link to="/login" className="text-sm font-bold text-slate-300 hover:text-blue-400 transition ml-4">Client Portal</Link>
+          <Link to="/login" replace className="text-sm font-bold text-slate-300 hover:text-blue-400 transition ml-4">Client Portal</Link>
           
           <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 bg-emerald-500/10 border border-emerald-500/20 rounded-full text-[10px] font-mono text-emerald-400 uppercase tracking-widest font-bold ml-2">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
@@ -88,7 +64,7 @@ export const Navbar: React.FC = () => {
           <button onClick={() => scrollTo('pricing')} className="text-left text-lg font-bold text-slate-300">Pricing</button>
           <button onClick={() => scrollTo('demo')} className="text-left text-lg font-bold text-slate-300">Demo</button>
           <button onClick={() => scrollTo('roi')} className="text-left text-lg font-bold text-slate-300">ROI Calculator</button>
-          <Link to="/login" onClick={() => setIsOpen(false)} className="text-left text-lg font-bold text-blue-400 border-t border-slate-800 pt-4">Client Portal</Link>
+          <Link to="/login" replace onClick={() => setIsOpen(false)} className="text-left text-lg font-bold text-blue-400 border-t border-slate-800 pt-4">Client Portal</Link>
           <button onClick={() => { setIsOpen(false); window.location.href = "mailto:sales@quickkitai.com"; }} className="text-left text-lg font-black text-blue-600">Contact</button>
         </div>
       )}

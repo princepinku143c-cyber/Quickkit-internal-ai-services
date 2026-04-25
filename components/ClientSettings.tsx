@@ -228,8 +228,8 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
                   onClick={async () => {
                       const endpoint = apiData.vpsEndpoint || '';
                       if (!endpoint) { alert("Enter an endpoint!"); return; }
-                      const res = await apiCall('/api/test-vps', { endpoint, token: apiData.vpsToken || '' });
-                      alert(res.status === 'online' ? '✅ VPS Online' : '❌ Failed');
+                      const res = await apiCall('/api/vps/test-connection', { endpoint, token: apiData.vpsToken || '' });
+                      alert(res.status === 'CONNECTED' ? '✅ VPS Online' : `❌ Failed: ${res.error || 'Check endpoint URL'}`);
                   }}
                   className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold rounded-lg border border-slate-700"
                 >

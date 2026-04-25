@@ -46,11 +46,11 @@ export const Hero: React.FC<HeroProps> = ({ lang, onLaunchArchitect }) => {
            QUICKKIT GLOBAL AI
         </p>
         <h1 className="text-5xl md:text-8xl font-black mb-6 leading-tight tracking-tighter text-white animate-slide-up">
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-emerald-400">AI Agents</span> and Automation Workflows Built for Modern Business
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-emerald-400">The Premium AI</span> <br className="hidden md:block" /> Zapier Alternative
         </h1>
         
         <p className="text-lg md:text-xl text-slate-400 max-w-4xl mx-auto mb-12 font-sans leading-relaxed animate-slide-up [animation-delay:200ms]">
-          Automate sales, support, marketing, and operations with intelligent systems powered by <span className="text-white font-bold">Nimoclaw</span>, <span className="text-white font-bold">OpenClaw</span>, and <span className="text-white font-bold">Smart AI CRM</span>. Save time, reduce manual dependency, and scale with confidence.
+          Deploy intelligent AI agents and custom automation workflows in 2-3 days. <span className="text-white font-bold">QuickKit AI</span> provides the elite infrastructure for businesses scaling beyond simple scripts. Automate sales, support, and marketing with world-class security.
         </p>
 
         {/* AI Architect Command Center */}

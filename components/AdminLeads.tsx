@@ -3,7 +3,8 @@ import React, { useEffect, useState } from 'react';
 import { LeadSubmission, LeadStatus } from '../types';
 import { collection, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Search, Download, Trash2, Phone, Mail, Eye, X, DollarSign, MessageSquare, ShieldCheck, Clock, Sparkles } from 'lucide-react';
+import { Search, Download, Trash2, Phone, Mail, Eye, X, DollarSign, MessageSquare, ShieldCheck, Clock, Sparkles, PlusCircle } from 'lucide-react';
+import { addDoc } from 'firebase/firestore';
 
 export const AdminLeads: React.FC = () => {
   const [leads, setLeads] = useState<LeadSubmission[]>([]);
@@ -32,6 +33,32 @@ export const AdminLeads: React.FC = () => {
       if (lead?._docId && Object.keys(db).length > 0) {
         await updateDoc(doc(db as any, 'leads', lead._docId), { status: newStatus });
       }
+  };
+
+  const convertToProject = async (lead: LeadSubmission) => {
+    if (!lead.userId) {
+        alert("🚨 Target UID Missing: This operator must sign in/be invited first.");
+        return;
+    }
+    if (!confirm(`🚀 Initialize Build Queue for ${lead.name}?`)) return;
+
+    try {
+        await addDoc(collection(db as any, 'projects'), {
+            userId: lead.userId,
+            projectName: lead.businessType || "Custom AI Agent",
+            clientName: lead.name,
+            status: 'READY',
+            value: lead.aiQuote ? (lead.aiQuote.setupCost + lead.aiQuote.monthlyCost) : 2499,
+            createdAt: new Date().toISOString(),
+            logs: [{ time: new Date().toISOString(), msg: "Project Architected & Approved." }]
+        });
+        await updateStatus(lead.id, 'WON');
+        alert("✅ Project Initialized in Client Dashboard!");
+        setSelectedLead(null);
+    } catch (e) {
+        console.error(e);
+        alert("Failed to initialize project build.");
+    }
   };
 
   const exportCSV = () => {
@@ -119,7 +146,7 @@ export const AdminLeads: React.FC = () => {
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800">
-                    {filteredLeads.map((lead) => (
+                    {(Array.isArray(filteredLeads) ? filteredLeads : []).map((lead) => (
                         <tr 
                             key={lead.id} 
                             onClick={() => setSelectedLead(lead)}
@@ -289,13 +316,21 @@ export const AdminLeads: React.FC = () => {
                   </div>
                   
                   {/* Footer Actions */}
-                  <div className="p-6 border-t border-slate-800 bg-slate-900 flex justify-between items-center">
+                    <div className="p-6 border-t border-slate-800 bg-slate-900 flex justify-between items-center">
                         <button 
                           onClick={() => { updateStatus(selectedLead.id, 'LOST'); setSelectedLead({...selectedLead, status: 'LOST'}); }}
                           className="px-4 py-2 bg-slate-800 hover:bg-red-900/20 text-red-400 text-sm font-bold rounded-lg border border-slate-700 hover:border-red-500/30 transition-colors">
                             Mark as Lost
                         </button>
                         <div className="flex gap-3">
+                            {selectedLead.status !== 'WON' && (
+                                <button 
+                                    onClick={() => convertToProject(selectedLead)}
+                                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-black rounded-lg transition-all flex items-center gap-2 shadow-lg shadow-emerald-900/20"
+                                >
+                                    <PlusCircle className="w-4 h-4" /> Initiate Build
+                                </button>
+                            )}
                             <button 
                                 onClick={() => setShowReplyTemplate(true)}
                                 className="px-4 py-2 bg-blue-600/10 hover:bg-blue-600/20 text-blue-400 text-sm font-bold rounded-lg border border-blue-500/30 transition-colors flex items-center gap-2"

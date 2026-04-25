@@ -3,21 +3,27 @@ import React, { useState, useEffect } from 'react';
 import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
 import { signInWithPopup } from 'firebase/auth';
 import { db, auth, googleProvider } from '../lib/firebase';
-import { X, CheckCircle, Loader2, Building2, User, Phone, FileText, Mail, Lock, ShieldCheck, ArrowLeft } from 'lucide-react';
+import { X, CheckCircle, Loader2, Building2, User, FileText, Mail, Lock, ShieldCheck, ArrowLeft, Globe } from 'lucide-react';
 import { PlanTier, Language, LeadSubmission, AIQuote } from '../types';
-import { WHATSAPP_NUMBER, CONTACT_EMAIL } from '../constants';
+import { CONTACT_EMAIL } from '../constants';
 import { TRANSLATIONS } from '../data/translations';
+import { Logo } from './Logo';
+
+// NEW: Advanced Phone Input
+import PhoneInput from 'react-phone-input-2';
+import 'react-phone-input-2/lib/style.css';
 
 interface Props {
   lang: Language;
   close: () => void;
-  onBack?: () => void; // Optional Back Navigation
+  onBack?: () => void;
+  onVerified?: (data: any) => void; // Callback for success redirection
   initialData: { bizType: string; plan: PlanTier };
   prefilledNotes?: string;
-  aiFinancials?: AIQuote; // NEW: Read-only locked financial data
+  aiFinancials?: AIQuote;
 }
 
-export const LeadForm: React.FC<Props> = ({ lang, close, onBack, initialData, prefilledNotes = '', aiFinancials }) => {
+export const LeadForm: React.FC<Props> = ({ lang, close, onBack, onVerified, initialData, prefilledNotes = '', aiFinancials }) => {
   const t = TRANSLATIONS[lang].lead;
   const [submitted, setSubmitted] = useState(false);
   const [isSending, setIsSending] = useState(false);
@@ -27,7 +33,8 @@ export const LeadForm: React.FC<Props> = ({ lang, close, onBack, initialData, pr
     phone: '',
     email: '',
     businessType: initialData.bizType || '', 
-    notes: ''
+    notes: '',
+    country: ''
   });
 
   useEffect(() => {
@@ -38,298 +45,209 @@ export const LeadForm: React.FC<Props> = ({ lang, close, onBack, initialData, pr
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // VALIDATION
+    if (formData.phone.length < 10) {
+        alert("Please enter a valid phone number for operator verification.");
+        return;
+    }
+
     setIsSending(true);
     
-    const newLead: LeadSubmission = {
-      id: Date.now().toString(),
+    const newLead = {
       name: formData.name,
       phone: formData.phone,
       email: formData.email,
-      businessType: formData.businessType,
-      plan: initialData.plan,
-      submittedAt: new Date().toISOString(),
-      notes: formData.notes,
-      aiQuote: aiFinancials // Attach the locked quote object securely
+      businessName: formData.businessType,
+      projectName: formData.businessType,
+      requirement: formData.notes,
+      price: aiFinancials ? (aiFinancials.setupCost + aiFinancials.monthlyCost) : 0,
+      aiFinancials: aiFinancials,
+      userId: auth.currentUser?.uid || null
     };
 
-    // Send to Firebase CRM
     try {
-      if (Object.keys(db).length > 0) {
-          await addDoc(collection(db as any, 'leads'), newLead);
-          console.log("🔥 Blueprint safely stored in Firebase.");
+      // 1. Send to Backend API for Lead Processing & CRM Sync
+      const response = await fetch(`${window.location.origin}/api/send-lead`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newLead)
+      });
 
-          // 🚨 TRIGGER ACTUAL DEPLOYMENT API IF QUOTE EXISTS
-          if (aiFinancials) {
-              try {
-                  const currentUser = auth.currentUser;
-                  if (currentUser) {
-                      const idToken = await currentUser.getIdToken();
-                      await fetch('/api/deploy-agent', {
-                          method: 'POST',
-                          headers: {
-                              'Content-Type': 'application/json',
-                              'Authorization': `Bearer ${idToken}`
-                          },
-                          body: JSON.stringify({
-                             agentId: formData.businessType,
-                             details: newLead
-                          })
-                      });
-                  }
-              } catch (e) {
-                  console.warn("API Deployment signal failed - background only", e);
-              }
-          }
+      const result = await response.json();
 
-      } else {
-          console.error("Firebase not configured. Deployment aborted.");
-          alert("Connection error. Please try again later.");
-          setIsSending(false);
-          return;
+      if (!response.ok) {
+        throw new Error(result.message || result.details || "Transmission failed.");
       }
-    } catch (err) {
-      console.error("Failed to save lead to Firebase", err);
-      alert("Submission failed. Check your connection.");
-      setIsSending(false);
-      return;
-    }
 
-    setIsSending(false);
-    setSubmitted(true);
+      // 2. SUCCESS HANDLING
+      setIsSending(false);
+      setSubmitted(true);
+
+      // 🚨 REDIRECT LOGIC: If AI Blueprint exists, move to checkout
+      if (aiFinancials && onVerified) {
+          setTimeout(() => {
+              onVerified(newLead); // Trigger the checkout step in parent
+          }, 1500);
+      }
+
+    } catch (err: any) {
+      console.error("Submission error:", err);
+      alert(err.message || "Failed to sync with Command Center.");
+      setIsSending(false);
+    }
   };
 
   const handleGoogleAutofill = async () => {
     try {
         const result = await signInWithPopup(auth as any, googleProvider as any);
         const user = result.user;
-        
-        setFormData(prev => ({
-            ...prev,
-            name: user.displayName || prev.name,
-            email: user.email || prev.email
-        }));
-
-        // Automatically store the user in firestore for future dashboard access
-        if (Object.keys(db).length > 0) {
+        setFormData(prev => ({ ...prev, name: user.displayName || '', email: user.email || '' }));
+        if (db) {
             await setDoc(doc(db as any, 'users', user.uid), {
                 uid: user.uid,
                 email: user.email,
                 displayName: user.displayName,
                 role: 'client',
-                createdAt: new Date().toISOString()
+                updatedAt: new Date().toISOString()
             }, { merge: true });
         }
-
-    } catch (error) {
-        console.error("Google Sign-in failed:", error);
+    } catch (e) {
+        console.error("Google sync failed:", e);
     }
-  };
-
-  const getEmailLink = () => {
-    const subject = `AI Automation System Deployment - ${formData.businessType}`;
-    let body = `Hello Architect,\n\nI want to initialize my automation deployment.\n\nPROJECT DETAILS:\n- Name: ${formData.name}\n- Industry: ${formData.businessType}\n- Phone: ${formData.phone}\n\n`;
-    
-    if (aiFinancials) {
-        body += `LOCKED AI BLUEPRINT:\n- Setup Cost: $${aiFinancials.setupCost}\n- Monthly Maint: $${aiFinancials.monthlyCost}\n- Estimated ROI: $${aiFinancials.roiEstimate}/year\n\n`;
-    }
-    
-    body += `ADDITIONAL NOTES:\n${formData.notes}\n\nSENT FROM AUTOFLOW GLOBAL AI ARCHITECT`;
-    
-    return `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-      <div className="bg-slate-900 border border-slate-700 w-full max-w-lg rounded-2xl relative shadow-2xl animate-fade-in-up flex flex-col max-h-[90vh] overflow-y-auto custom-scrollbar">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
+      <div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl relative shadow-[0_0_50px_rgba(0,0,0,0.5)] animate-fade-in-up flex flex-col max-h-[90vh] overflow-y-auto custom-scrollbar">
         
-        {/* Navigation Controls */}
-        <div className="absolute top-4 left-4 right-4 flex justify-between z-10 pointer-events-none">
+        {/* Navigation */}
+        <div className="sticky top-0 bg-slate-900/80 backdrop-blur-md p-4 border-b border-slate-800 flex justify-between items-center z-20">
             {onBack ? (
-                <button 
-                  onClick={onBack} 
-                  className="pointer-events-auto p-2 bg-slate-800 hover:bg-slate-700 rounded-full text-slate-400 hover:text-white transition-colors border border-slate-700 hover:border-slate-500 shadow-lg"
-                  title="Go Back to Architect"
-                >
+                <button onClick={onBack} className="p-2 hover:bg-slate-800 rounded-full text-slate-400 hover:text-white transition-colors">
                   <ArrowLeft className="w-5 h-5" />
                 </button>
-            ) : <div></div>}
+            ) : <div className="w-9" />}
             
-            <button 
-              onClick={close} 
-              className="pointer-events-auto p-2 hover:bg-slate-800 rounded-full text-slate-500 hover:text-white transition-colors"
-            >
-              <X className="w-6 h-6" />
+            <h3 className="text-sm font-black text-white uppercase tracking-widest text-center">Operator Verification</h3>
+            
+            <button onClick={close} className="p-2 hover:bg-slate-800 rounded-full text-slate-500 hover:text-white transition-colors">
+              <X className="w-5 h-5" />
             </button>
         </div>
 
         {!submitted ? (
-          <form onSubmit={handleSubmit} className="p-8 space-y-6 mt-6">
-            <div className="text-center">
-              <h3 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-amber-200 to-yellow-500 mb-2">
-                {aiFinancials ? "Deploy Architecture" : t.title}
-              </h3>
-              <p className="text-slate-400 text-sm">{aiFinancials ? "Confirm your details to initiate this build." : "Fill in your details to start the automation process."}</p>
-              
-              {!aiFinancials && (
-                <div className="mt-4 inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800 border border-slate-700">
-                    <span className="text-slate-400 text-xs uppercase tracking-wider font-semibold">Selected Plan:</span>
-                    <span className="text-cyan-400 text-sm font-bold">{initialData.plan}</span>
-                </div>
-              )}
+          <form onSubmit={handleSubmit} className="p-8 space-y-8">
+            <div className="text-center flex flex-col items-center">
+              <Logo size={48} className="mb-6" />
+              <h2 className="text-3xl font-black text-white tracking-tighter mb-2 uppercase">Identify <span className="text-blue-500">yourself</span></h2>
+              <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">We need to verify the operator before initializing neural builds.</p>
             </div>
 
-            {/* AI LOCKED QUOTE SECTION - READ ONLY */}
+            {/* AI BLUEPRINT SUMMARY (LOCKED) */}
             {aiFinancials && (
-                <div className="bg-slate-950 border border-blue-500/30 rounded-xl p-4 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-2 bg-blue-500/10 rounded-bl-xl border-l border-b border-blue-500/20">
-                        <Lock className="w-4 h-4 text-blue-400" />
-                    </div>
-                    <h4 className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-3 flex items-center gap-2">
-                        <ShieldCheck className="w-4 h-4" /> Official Quote
-                    </h4>
-                    <div className="grid grid-cols-2 gap-4 mb-3">
-                        <div className="p-3 bg-slate-900 rounded-lg border border-slate-800">
-                            <span className="block text-[10px] text-slate-500 uppercase font-bold">Setup Cost</span>
-                            <span className="block text-xl font-bold text-white">${aiFinancials.setupCost.toLocaleString()}</span>
+                <div className="bg-blue-600/10 border border-blue-500/20 p-6 rounded-2xl relative">
+                    <div className="absolute top-4 right-4"><Lock className="w-4 h-4 text-blue-500" /></div>
+                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-widest block mb-4">Locked Blueprint</span>
+                    <div className="flex justify-between items-end">
+                        <div>
+                            <p className="text-xs text-slate-400 uppercase font-bold">Total Investment</p>
+                            <p className="text-3xl font-black text-white tracking-tighter">${(aiFinancials.setupCost + aiFinancials.monthlyCost).toLocaleString()}</p>
                         </div>
-                        <div className="p-3 bg-slate-900 rounded-lg border border-slate-800">
-                            <span className="block text-[10px] text-slate-500 uppercase font-bold">Monthly Maint.</span>
-                            <span className="block text-xl font-bold text-white">${aiFinancials.monthlyCost.toLocaleString()}</span>
+                        <div className="text-right">
+                            <p className="text-[10px] text-emerald-400 font-black uppercase tracking-widest">Est. Build: {aiFinancials.buildTime}</p>
                         </div>
-                    </div>
-                    <div className="flex justify-between items-center text-xs text-slate-400 px-1">
-                        <span>Est. Build: <span className="text-white font-mono">{aiFinancials.buildTime}</span></span>
-                        <span className="text-emerald-400 font-bold">ROI: ${aiFinancials.roiEstimate.toLocaleString()}/yr</span>
-                    </div>
-                    {/* Visual indicator that this is locked */}
-                    <div className="mt-3 text-[10px] text-center text-slate-600 font-mono border-t border-slate-800 pt-2">
-                        QUOTATION ID: {Date.now().toString(36).toUpperCase()} • VERIFIED BY NEXUS AI
                     </div>
                 </div>
             )}
 
-            <div className="space-y-4">
-              {/* Optional Google Login */}
+            <div className="space-y-5">
+              {/* Google Fast Track */}
               <button 
                 type="button" 
                 onClick={handleGoogleAutofill}
-                className="w-full flex items-center justify-center gap-2 bg-white text-slate-800 py-3 rounded-xl font-bold text-sm hover:bg-slate-100 transition-colors shadow-sm"
+                className="w-full flex items-center justify-center gap-3 bg-white text-slate-900 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all shadow-xl"
               >
-                <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
-                Autofill with Google
+                <Globe className="w-4 h-4" /> Sign In with Google
               </button>
               
-              <div className="flex items-center gap-4 py-2">
-                 <div className="flex-1 h-px bg-slate-800"></div>
-                 <span className="text-xs text-slate-500 font-bold uppercase tracking-widest">or enter manually</span>
-                 <div className="flex-1 h-px bg-slate-800"></div>
+              <div className="relative py-2">
+                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-800"></div></div>
+                 <div className="relative flex justify-center text-[10px] uppercase font-black text-slate-600"><span className="bg-slate-900 px-4">Direct Entry</span></div>
               </div>
 
-              {/* Name */}
-              <div className="group">
-                <label className="text-xs text-slate-500 font-bold ml-1 mb-1 block uppercase">Full Name</label>
-                <div className="relative">
-                    <User className="absolute left-3 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
-                    <input 
-                    required
-                    placeholder="e.g. John Doe"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-white focus:border-cyan-500 outline-none transition-all focus:ring-1 focus:ring-cyan-500/50"
-                    value={formData.name}
-                    onChange={e => setFormData({...formData, name: e.target.value})}
+              {/* Form Fields */}
+              <div className="space-y-4">
+                <div className="group">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Operator Name</label>
+                    <div className="relative">
+                        <User className="absolute left-4 top-4 w-4 h-4 text-slate-600 group-focus-within:text-blue-500 transition-colors" />
+                        <input required placeholder="Your Full Name" className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 text-white font-bold outline-none focus:border-blue-500 transition-all" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} />
+                    </div>
+                </div>
+
+                <div className="group">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Enterprise Phone</label>
+                    <PhoneInput
+                      country={'us'}
+                      value={formData.phone}
+                      onChange={(phone, country: any) => setFormData({...formData, phone, country: country.countryCode})}
+                      containerClass="phone-input-container"
+                      inputClass="!w-full !h-14 !bg-slate-950 !border-slate-800 !rounded-2xl !text-white !font-bold !pl-14 !transition-all !focus:border-blue-500"
+                      buttonClass="!bg-slate-950 !border-slate-800 !rounded-l-2xl !pl-2"
+                      dropdownClass="!bg-slate-900 !text-white !border-slate-800"
                     />
                 </div>
-              </div>
 
-              {/* Phone */}
-              <div className="group">
-                <label className="text-xs text-slate-500 font-bold ml-1 mb-1 block uppercase">Direct Contact Number</label>
-                <div className="relative">
-                    <Phone className="absolute left-3 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
-                    <input 
-                    type="tel"
-                    placeholder="e.g. +1 555-0123"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-white focus:border-cyan-500 outline-none transition-all focus:ring-1 focus:ring-cyan-500/50"
-                    value={formData.phone}
-                    onChange={e => setFormData({...formData, phone: e.target.value})}
-                    />
+                <div className="group">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Work Email</label>
+                    <div className="relative">
+                        <Mail className="absolute left-4 top-4 w-4 h-4 text-slate-600 group-focus-within:text-blue-500 transition-colors" />
+                        <input required type="email" placeholder="email@company.com" className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 text-white font-bold outline-none focus:border-blue-500 transition-all" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
+                    </div>
                 </div>
-              </div>
 
-              {/* Email (Optional but Professional) */}
-              <div className="group">
-                <label className="text-xs text-slate-500 font-bold ml-1 mb-1 block uppercase">Email Address</label>
-                <div className="relative">
-                    <Mail className="absolute left-3 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
-                    <input 
-                    type="email"
-                    placeholder="e.g. john@business.com"
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-white focus:border-cyan-500 outline-none transition-all focus:ring-1 focus:ring-cyan-500/50"
-                    value={formData.email}
-                    onChange={e => setFormData({...formData, email: e.target.value})}
-                    />
-                </div>
-              </div>
-
-              {/* Business Type (Editable) */}
-              <div className="group">
-                <label className="text-xs text-slate-500 font-bold ml-1 mb-1 block uppercase">Industry / Business Type</label>
-                <div className="relative">
-                    <Building2 className="absolute left-3 top-3.5 w-5 h-5 text-slate-500 group-focus-within:text-cyan-400 transition-colors" />
-                    <input 
-                    required
-                    placeholder="e.g. Real Estate, Salon, Coaching..."
-                    className="w-full bg-slate-800 border border-slate-700 rounded-xl py-3 pl-10 pr-4 text-white focus:border-cyan-500 outline-none transition-all focus:ring-1 focus:ring-cyan-500/50"
-                    value={formData.businessType}
-                    onChange={e => setFormData({...formData, businessType: e.target.value})}
-                    />
+                <div className="group">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Organization Type</label>
+                    <div className="relative">
+                        <Building2 className="absolute left-4 top-4 w-4 h-4 text-slate-600 group-focus-within:text-blue-500 transition-colors" />
+                        <input required placeholder="e.g. Finance, Healthcare, Real Estate" className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 text-white font-bold outline-none focus:border-blue-500 transition-all" value={formData.businessType} onChange={e => setFormData({...formData, businessType: e.target.value})} />
+                    </div>
                 </div>
               </div>
             </div>
-            
-            {/* Notes */}
-            <div className="group">
-                <label className="text-xs text-slate-500 mb-1 flex items-center gap-1 uppercase font-bold tracking-wider">
-                    <FileText className="w-3 h-3" /> {aiFinancials ? "Additional Instructions" : "Project Details / AI Plan"}
-                </label>
-                <textarea
-                  placeholder={aiFinancials ? "Any specific requirements for this build?" : "Tell us what you want to automate..."}
-                  className="w-full bg-slate-800 border border-slate-700 rounded-xl p-3 text-white focus:border-cyan-500 outline-none h-40 resize-none font-sans text-sm placeholder:text-slate-600 custom-scrollbar"
-                  value={formData.notes}
-                  onChange={e => setFormData({...formData, notes: e.target.value})}
-                />
-            </div>
-            
+
             <button 
                 type="submit" 
                 disabled={isSending}
-                className="w-full py-4 bg-gradient-to-r from-amber-400 to-orange-500 text-black font-bold rounded-xl hover:shadow-lg hover:shadow-orange-500/20 transition-all flex items-center justify-center gap-2 transform active:scale-95 text-lg"
+                className="w-full py-5 bg-blue-600 text-white font-black rounded-2xl uppercase tracking-[0.2em] hover:bg-blue-500 hover:shadow-[0_0_30px_rgba(37,99,235,0.3)] transition-all flex items-center justify-center gap-3 active:scale-95 disabled:opacity-50"
             >
-              {isSending ? (
-                <>
-                  <Loader2 className="w-5 h-5 animate-spin" /> Processing...
-                </>
-              ) : (
-                aiFinancials ? "Confirm & Deploy" : t.cta
-              )}
+              {isSending ? <Loader2 className="w-5 h-5 animate-spin" /> : "Verify & Initialize"}
             </button>
+            
+            <p className="text-[10px] text-center text-slate-600 font-bold uppercase tracking-widest">Secure 256-bit Encrypted Transmission</p>
           </form>
         ) : (
-          <div className="text-center py-12 px-8">
-            <div className="w-20 h-20 bg-green-500/20 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6 animate-bounce">
-              <CheckCircle className="w-10 h-10" />
+          <div className="p-12 text-center space-y-8">
+            <div className="w-24 h-24 bg-emerald-500/10 text-emerald-500 rounded-[2rem] flex items-center justify-center mx-auto animate-bounce border border-emerald-500/20">
+              <CheckCircle className="w-12 h-12" />
             </div>
-            <h3 className="text-3xl font-bold text-white mb-3">{t.success}</h3>
-            <p className="text-slate-400 mb-8 text-lg">Your request has been sent to our team. We will analyze your needs and contact you shortly.</p>
-            
-            <a 
-              href={getEmailLink()} 
-              className="inline-flex items-center justify-center gap-2 w-full py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-all shadow-lg hover:shadow-blue-500/20"
-            >
-              <Mail className="w-5 h-5" /> Direct Email to Architect
-            </a>
+            <div>
+                <h3 className="text-3xl font-black text-white tracking-tighter uppercase mb-2">Operator Verified</h3>
+                <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">
+                    {aiFinancials ? "Redirecting to Financial Settlement node..." : "Registration complete. A specialist will contact you."}
+                </p>
+            </div>
+            {isSending && <Loader2 className="w-6 h-6 animate-spin mx-auto text-blue-500" />}
           </div>
         )}
       </div>
+
+      <style dangerouslySetInnerHTML={{__html: `
+        .phone-input-container .special-label { display: none; }
+        .phone-input-container input:focus { border-color: #2563eb !important; background-color: #020617 !important; }
+        .phone-input-container .selected-flag:hover, .phone-input-container .selected-flag:focus { background: #0f172a !important; }
+      `}} />
     </div>
   );
 };

@@ -1,5 +1,6 @@
+
 import React, { useMemo, useState, useEffect } from 'react';
-import { Activity, CheckCircle2, Server, Bot, Layers, CheckSquare, Clock, Terminal, AlertCircle, Zap, Cpu, Fingerprint, Sparkles, Database, Play, Square, Plus, ShieldCheck } from 'lucide-react';
+import { Activity, CheckCircle2, Server, Bot, Layers, CheckSquare, Clock, Terminal, AlertCircle, Zap, Cpu, Fingerprint, Sparkles, Database, Play, Square, Plus, ShieldCheck, Briefcase, ChevronRight, Loader2, Globe } from 'lucide-react';
 import { UserProfile } from '../types';
 import { collection, query, where, onSnapshot, doc, updateDoc, addDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -12,6 +13,10 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [agents, setAgents] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
   const [logs, setLogs] = useState<any[]>([]);
+  const [projects, setProjects] = useState<any[]>([]);
+  const [userSettings, setUserSettings] = useState<any>(null);
+  const [isDeploying, setIsDeploying] = useState<string | null>(null);
+  
   const [taskFilter, setTaskFilter] = useState<'all' | 'pending' | 'running' | 'completed'>('all');
   const [isFirebaseConnected, setIsFirebaseConnected] = useState(true);
   const [commandInput, setCommandInput] = useState('');
@@ -22,7 +27,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       return;
     }
 
-    // Initial load and listeners
+    // Standard Listeners
     const qAgents = query(collection(db as any, 'agents'), where('user_id', '==', user.uid));
     const unSubAgents = onSnapshot(qAgents, snapshot => setAgents(snapshot.docs.map(d => ({ ...d.data(), id: d.id }))));
 
@@ -32,350 +37,214 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
     const qLogs = query(collection(db as any, 'logs'), where('user_id', '==', user.uid));
     const unSubLogs = onSnapshot(qLogs, snapshot => setLogs(snapshot.docs.map(d => ({ ...d.data(), id: d.id }))));
 
-    // EXTRA: Auto-refresh data every 3 seconds to ensure UI is perfectly synced with VPS and Workers
-    const intervalId = setInterval(async () => {
-       // Refresh leads/stats or specific API data if needed
-    }, 3000);
+    // 🚀 NEW: Project Build Queue Listener
+    const qProjects = query(collection(db as any, 'projects'), where('userId', '==', user.uid));
+    const unSubProjects = onSnapshot(qProjects, snapshot => setProjects(snapshot.docs.map(d => ({ ...d.data(), id: d.id }))));
+
+    // 🚀 NEW: User Settings Listener (for VPS credentials)
+    const unSubSettings = onSnapshot(doc(db as any, 'users', user.uid, 'private', 'settings'), snap => {
+        if (snap.exists()) setUserSettings(snap.data());
+    });
 
     return () => {
       unSubAgents();
       unSubTasks();
       unSubLogs();
-      clearInterval(intervalId);
+      unSubProjects();
+      unSubSettings();
     };
   }, [user.uid]);
 
-
-
   const toggleAgentStatus = async (agent: any) => {
-    try {
-      const newStatus = agent.status === 'running' ? 'stopped' : 'running';
-      const agentRef = doc(db as any, 'agents', agent.id);
-      await updateDoc(agentRef, { status: newStatus });
-    } catch (e) {
-      console.warn("Update agent failed - check firebase rules", e);
-      alert("Failed to update. Check Firebase permissions.");
-    }
-  };
-
-  const runNewTask = async () => {
-    try {
-      await addDoc(collection(db as any, 'tasks'), {
-        agent_id: 'System',
-        user_id: user.uid,
-        type: 'Fast Execution',
-        status: 'pending',
-        result: 'Awaiting agent allocation...',
-        created_at: new Date().toISOString()
-      });
-    } catch (e) {
-      console.warn("Add task failed", e);
-      alert("Failed to add task. Check Firebase permissions.");
-    }
+    const agentRef = doc(db as any, 'agents', agent.id);
+    await updateDoc(agentRef, { status: agent.status === 'running' ? 'stopped' : 'running' });
   };
 
   const handleCommand = async (e: React.FormEvent) => {
     e.preventDefault();
     if(!commandInput.trim()) return;
-    
-    try {
-        await addDoc(collection(db as any, 'logs'), {
-            agent_id: 'USER',
-            user_id: user.uid,
-            action: `> ${commandInput}`,
-            time: new Date().toLocaleTimeString()
-        });
-        setCommandInput('');
-    } catch (e) {
-        console.warn("Add command failed", e);
-        alert("Failed to send command. Check Firebase permissions.");
-    }
+    await addDoc(collection(db as any, 'logs'), {
+        agent_id: 'USER',
+        user_id: user.uid,
+        action: `> ${commandInput}`,
+        time: new Date().toLocaleTimeString()
+    });
+    setCommandInput('');
   }
 
-  const logsList = useMemo(() => {
-    return logs.sort((a, b) => {
-        const tA = a.timestamp?.seconds || 0;
-        const tB = b.timestamp?.seconds || 0;
-        return tB - tA;
-    });
-  }, [logs]);
+  const handleDeploy = async (projectId: string) => {
+    if (!userSettings?.vpsEndpoint || !userSettings?.vpsToken) {
+        alert("🚨 Missing Navigation Node: Please configure your VPS Endpoint and Token in Settings first.");
+        return;
+    }
 
-  const stats = useMemo(() => {
-    return {
-      total: logs.length,
-      success: logs.filter(l => l.status === 'success').length,
-      failed: logs.filter(l => l.status === 'error' || l.status === 'failed').length
-    };
-  }, [logs]);
+    setIsDeploying(projectId);
+    try {
+        const res = await fetch(`${window.location.origin}/api/deploy-agent`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: user.uid,
+                projectId,
+                vpsEndpoint: userSettings.vpsEndpoint,
+                vpsToken: userSettings.vpsToken
+            })
+        });
 
-  const filteredTasks = useMemo(() => {
-    if (taskFilter === 'all') return tasks;
-    return tasks.filter(t => t.status === taskFilter);
-  }, [tasks, taskFilter]);
+        const data = await res.json();
+        if (res.ok && data.success) {
+            alert("🚀 Neural Link Established! Your agent is now LIVE.");
+        } else {
+            throw new Error(data.message || "Cluster Rejected Deployment");
+        }
+    } catch (err: any) {
+        alert(`❌ Deployment FAILED: ${err.message}`);
+    } finally {
+        setIsDeploying(null);
+    }
+  };
 
   return (
-    <div className="space-y-8 pb-10">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end bg-[#0B1120]/80 border border-[#1e293b]/80 p-6 rounded-2xl backdrop-blur-xl shadow-2xl relative overflow-hidden">
-        {/* Glow Effects */}
-        <div className="absolute -top-24 -right-24 w-64 h-64 bg-blue-500/20 rounded-full blur-[80px]"></div>
-        <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-purple-500/20 rounded-full blur-[80px]"></div>
+    <div className="space-y-10 pb-20">
+      
+      {/* 1. Industrial Header */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end bg-slate-900/50 border border-slate-800 p-8 rounded-[2.5rem] backdrop-blur-xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 p-10 opacity-5 scale-150 rotate-12 transition-transform group-hover:scale-175"><Fingerprint className="w-32 h-32 text-blue-500" /></div>
         
-        <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full mb-4">
-             <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse"></div>
-             <span className="text-[10px] font-bold uppercase tracking-widest text-blue-400">Live Operating System</span>
-          </div>
-          <h1 className="text-3xl md:text-4xl font-black tracking-tight text-white flex flex-wrap items-center gap-4">
-             <Fingerprint className="w-10 h-10 text-blue-500 shrink-0" /> 
-             Welcome, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-600 to-purple-500">{user.displayName || 'Nexus Operator'}</span>
+        <div>
+          <span className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full mb-6">
+             <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+             <span className="text-[9px] font-black uppercase tracking-[0.2em] text-blue-400">Authenticated Node ID: 0x{user.uid.slice(0,8).toUpperCase()}</span>
+          </span>
+          <h1 className="text-4xl md:text-6xl font-black tracking-tighter text-white leading-none">
+             NEURAL <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-600">DASHBOARD</span>
           </h1>
-          <p className="text-slate-400 font-medium text-xs mt-3 ml-1 flex items-center gap-2 uppercase tracking-widest">
-            <ShieldCheck className="w-4 h-4 text-emerald-500" /> QuickKit Global OS <span className="text-slate-600">|</span> Node ID: QK-{user.uid.slice(0,6)}
+          <p className="text-slate-500 font-bold uppercase text-[11px] mt-4 tracking-[0.3em] flex items-center gap-3">
+             <ShieldCheck className="w-4 h-4 text-emerald-500" /> Standard Operating System <span className="text-slate-800">|</span> 24/7 Monitoring Active
           </p>
         </div>
 
-        <div className="flex flex-col items-end gap-3 mt-6 md:mt-0 relative z-10 w-full md:w-auto">
-            <div className="flex items-center gap-3">
-              <div className="flex flex-col items-end">
-                  <span className="text-[10px] uppercase tracking-widest font-bold text-slate-500">Workspace</span>
-                  <span className="text-white font-mono font-bold">Personal Workspace</span>
-              </div>
-            </div>
-            {isFirebaseConnected && (
-                <div className="flex items-center gap-2 text-[10px] text-emerald-400 font-mono">
-                    <CheckCircle2 className="w-3 h-3" /> Database Sync Active
+        <div className="mt-8 md:mt-0 flex flex-col items-end">
+            <div className="p-3 bg-slate-950 border border-slate-800 rounded-2xl flex items-center gap-3 pr-6">
+                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-black text-white">{user.displayName?.[0] || 'O'}</div>
+                <div>
+                   <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Active session</p>
+                   <p className="text-sm font-black text-white uppercase">{user.displayName || 'Operator'}</p>
                 </div>
-            )}
+            </div>
         </div>
       </div>
 
-      {/* 1. Dashboard Stats Section */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        
-        <div className="bg-[#0f172a]/60 border-t-2 border-t-blue-500 border-x border-b border-[#1e293b] p-6 rounded-2xl hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(59,130,246,0.1)] transition-all duration-300 relative overflow-hidden group">
-          <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-500/10 rounded-full blur-[40px] group-hover:bg-blue-500/20 transition-all"></div>
-          <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mb-4">
-             <div className="p-2 bg-blue-500/10 rounded-md"><Layers className="w-4 h-4 text-blue-400" /></div>
-             Total Capacity
-          </div>
-          <div className="flex items-end gap-3">
-              <p className="text-5xl font-black text-white">{stats.totalTasks}</p>
-              <p className="text-xs text-slate-500 font-medium mb-1 border-l border-slate-700 pl-2">Lifetime Tasks</p>
-          </div>
-        </div>
-
-        <div className="bg-[#0f172a]/60 border-t-2 border-t-emerald-500 border-x border-b border-[#1e293b] p-6 rounded-2xl hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(16,185,129,0.1)] transition-all duration-300 relative overflow-hidden group">
-          <div className="absolute -top-10 -right-10 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px] group-hover:bg-emerald-500/20 transition-all"></div>
-          <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mb-4">
-             <div className="p-2 bg-emerald-500/10 rounded-md"><CheckCircle2 className="w-4 h-4 text-emerald-400" /></div>
-             Successful Output
-          </div>
-          <div className="flex items-end gap-3">
-              <p className="text-5xl font-black text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">{stats.completedTasks}</p>
-              <p className="text-xs text-slate-500 font-medium mb-1 border-l border-slate-700 pl-2">Operations complete</p>
-          </div>
-        </div>
-
-        <div className="bg-[#0f172a]/60 border-t-2 border-t-amber-500 border-x border-b border-[#1e293b] p-6 rounded-2xl hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(245,158,11,0.1)] transition-all duration-300 relative overflow-hidden group">
-           <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-500/10 rounded-full blur-[40px] group-hover:bg-amber-500/20 transition-all"></div>
-          <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mb-4">
-             <div className="p-2 bg-amber-500/10 rounded-md"><Zap className="w-4 h-4 text-amber-400" /></div>
-             Live Processing
-          </div>
-          <div className="flex items-end gap-3">
-              <p className="text-5xl font-black text-amber-400">{stats.runningTasks}</p>
-              <p className="text-xs text-slate-500 font-medium mb-1 border-l border-slate-700 pl-2">Active threads</p>
-          </div>
-        </div>
-
-        <div className="bg-[#0f172a]/60 border-t-2 border-t-purple-500 border-x border-b border-[#1e293b] p-6 rounded-2xl hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(168,85,247,0.1)] transition-all duration-300 relative overflow-hidden group">
-          <div className="absolute -top-10 -right-10 w-32 h-32 bg-purple-500/10 rounded-full blur-[40px] group-hover:bg-purple-500/20 transition-all"></div>
-          <div className="text-slate-400 text-[10px] font-black uppercase tracking-widest flex items-center gap-2 mb-4">
-             <div className="p-2 bg-purple-500/10 rounded-md"><Cpu className="w-4 h-4 text-purple-400" /></div>
-             Active Agents
-          </div>
-          <div className="flex items-end gap-3">
-              <p className="text-5xl font-black text-purple-400">{stats.activeAgents}</p>
-              <p className="text-xs text-slate-500 font-medium mb-1 border-l border-slate-700 pl-2">AI Systems running</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[500px]">
-        
-        {/* 2. Agents Section */}
-        <div className="lg:col-span-1 bg-[#0f172a]/60 backdrop-blur-md border border-[#1e293b] rounded-2xl flex flex-col shadow-xl">
-          <div className="p-5 border-b border-[#1e293b] flex justify-between items-center bg-[#0B1120]/50 rounded-t-2xl">
-             <h3 className="text-white font-black uppercase tracking-widest text-xs flex items-center gap-2">
-                <Bot className="w-4 h-4 text-purple-400" /> Fleet Agents
-             </h3>
-             <span className="text-[10px] font-mono bg-purple-500/10 border border-purple-500/20 text-purple-300 px-2 py-1 rounded-md">{agents.length} Deployed</span>
-          </div>
-          <div className="p-4 flex-1 overflow-y-auto space-y-3 custom-scrollbar">
-             {agents.length === 0 ? (
-                 <div className="h-full flex flex-col items-center justify-center opacity-50">
-                    <Database className="w-12 h-12 text-slate-600 mb-4" />
-                    <p className="text-slate-400 text-xs font-bold text-center">No agents deployed.</p>
-                    <p className="text-slate-500 text-[10px] text-center mt-1">Awaiting synchronization from `agents` collection.</p>
-                 </div>
-             ) : (
-                 agents.map(agent => (
-                    <div key={agent.id} className="bg-[#0B1120]/80 p-4 rounded-xl border border-[#1e293b] hover:border-purple-500/30 transition-all hover:shadow-[0_0_15px_rgba(168,85,247,0.05)] group">
-                        <div className="flex justify-between items-start mb-3">
-                           <span className="text-sm font-bold text-white group-hover:text-purple-300 transition-colors">{agent.agent_name || 'Unnamed Agent'}</span>
-                           
-                           {/* AGENT CONTROL BUTTONS */}
-                           <div className="flex items-center gap-2">
-                             <span className={`text-[9px] uppercase font-black px-2 py-1 rounded-md flex items-center gap-1.5 ${agent.status === 'running' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-slate-800 text-slate-400 border border-slate-700'}`}>
-                               {agent.status === 'running' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>}
-                               {agent.status || 'offline'}
-                             </span>
-                             <button 
-                                onClick={() => toggleAgentStatus(agent)} 
-                                className="p-1.5 rounded-md bg-[#0f172a] border border-slate-700 hover:bg-slate-800 transition shadow-sm active:scale-95"
-                                title={agent.status === 'running' ? 'Stop Agent' : 'Start Agent'}
-                             >
-                               {agent.status === 'running' ? <Square className="w-3.5 h-3.5 text-red-400 fill-current" /> : <Play className="w-3.5 h-3.5 text-emerald-400 fill-current" />}
-                             </button>
-                           </div>
-                        </div>
-                        <div className="flex items-center gap-4 text-xs">
-                           <div className="flex items-center gap-1.5 bg-[#0f172a] px-2 py-1 rounded-md border border-slate-800">
-                              <CheckSquare className="w-3.5 h-3.5 text-slate-400" />
-                              <span className="font-mono text-white text-[11px]">{tasks.filter(t => t.agent_id === agent.agent_id && t.status === 'completed').length} Output</span>
-                           </div>
-                           {agent.last_activity && (
-                             <div className="flex items-center gap-1.5 text-slate-400 text-[10px] bg-[#0f172a] px-2 py-1 rounded-md border border-slate-800">
-                                <Clock className="w-3 h-3" /> {agent.last_activity}
-                             </div>
-                           )}
-                        </div>
-                    </div>
-                 ))
-             )}
-          </div>
-        </div>
-
-        {/* 3. Tasks Section */}
-        <div className="lg:col-span-1 bg-[#0f172a]/60 backdrop-blur-md border border-[#1e293b] rounded-2xl flex flex-col shadow-xl">
-          <div className="p-5 border-b border-[#1e293b] flex justify-between items-center bg-[#0B1120]/50 rounded-t-2xl">
-             <div className="flex items-center gap-3">
-                 <h3 className="text-white font-black uppercase tracking-widest text-xs flex items-center gap-2">
-                    <Layers className="w-4 h-4 text-blue-400" /> Pipeline
-                 </h3>
-                 <button onClick={runNewTask} className="w-6 h-6 flex items-center justify-center bg-blue-600/20 hover:bg-blue-600/40 rounded border border-blue-500/30 text-blue-400 transition" title="Trigger Fast Task">
-                    <Plus className="w-3 h-3" />
-                 </button>
-             </div>
-             <select 
-               className="bg-[#0B1120] text-slate-300 text-[10px] font-bold px-2 py-1.5 rounded-md border border-[#1e293b] outline-none uppercase cursor-pointer hover:border-blue-500/50 transition-colors"
-               value={taskFilter}
-               onChange={(e: any) => setTaskFilter(e.target.value)}
-             >
-               <option value="all">All Status</option>
-               <option value="pending">⏳ Pending</option>
-               <option value="running">⚡ Running</option>
-               <option value="completed">✅ Completed</option>
-             </select>
-          </div>
-          <div className="p-4 flex-1 overflow-y-auto space-y-3 custom-scrollbar">
-             {filteredTasks.length === 0 ? (
-                 <div className="h-full flex flex-col items-center justify-center opacity-50">
-                    <Database className="w-12 h-12 text-slate-600 mb-4" />
-                    <p className="text-slate-400 text-xs font-bold text-center">No tasks in pipeline.</p>
-                 </div>
-             ) : (
-                 filteredTasks.map(task => (
-                    <div key={task.id} className="bg-[#0B1120]/80 p-4 rounded-xl border border-[#1e293b] hover:border-blue-500/30 transition-all flex justify-between items-center group">
-                        <div className="w-full">
-                           <div className="flex justify-between items-center mb-1">
-                               <span className="text-[10px] font-bold uppercase text-slate-400 flex items-center gap-1.5">
-                                   <Bot className="w-3 h-3 text-slate-500" /> {task.agent_id || 'System'}
-                               </span>
-                               <span className={`text-[9px] uppercase font-black px-2 py-1 rounded-md ${
-                                   task.status === 'running' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 
-                                   task.status === 'completed' ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' :
-                                   'bg-slate-800 text-slate-400 border border-slate-700'
-                               }`}>
-                                 {task.status || 'pending'}
-                               </span>
-                           </div>
-                           <span className="text-sm font-black tracking-tight text-white capitalize block mt-1">{task.type || 'Automation Task'}</span>
-                           {task.result && <p className="text-[11px] text-slate-500 mt-1.5 border-l-2 border-slate-700 pl-2 group-hover:border-blue-500/50 transition-colors">{task.result}</p>}
-                        </div>
-                    </div>
-                 ))
-             )}
-          </div>
-        </div>
-
-        {/* 4. Command Console (Upgraded Activity Logs) */}
-        <div className="lg:col-span-1 bg-[#050810] border border-[#1e293b] rounded-2xl flex flex-col shadow-xl relative overflow-hidden group">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/5 rounded-full blur-[50px] pointer-events-none"></div>
-          <div className="p-3 border-b border-[#1e293b] flex items-center gap-2 bg-[#080c17]">
-             <div className="flex gap-1.5">
-               <div className="w-2.5 h-2.5 rounded-full bg-red-500/80 border border-red-500"></div>
-               <div className="w-2.5 h-2.5 rounded-full bg-amber-500/80 border border-amber-500"></div>
-               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/80 border border-emerald-500"></div>
-             </div>
-             <h3 className="text-emerald-500/80 font-mono font-bold uppercase tracking-widest text-[9px] ml-2 flex items-center gap-2">
-                <Terminal className="w-3 h-3" /> Command Console
-             </h3>
-          </div>
-          <div className="p-5 flex-1 overflow-y-auto font-mono text-[11px] leading-relaxed custom-scrollbar flex flex-col">
-             
-             {/* Log History */}
-             <div className="flex-1 space-y-3 mb-4">
-                {logs.length === 0 ? (
-                    <p className="text-slate-600 animate-pulse">Waiting for incoming operations...</p>
-                ) : (
-                    logs.slice().reverse().map((log, i) => ( // Show latest first
-                        <div key={log.id || i} className="flex gap-3 text-slate-400">
-                            <span className="text-emerald-500/60 shrink-0">[{log.time || new Date().toLocaleTimeString()}]</span>
+      {/* 2. Build Queue (NEW CLIENT FEATURE) */}
+      {projects.length > 0 && (
+        <section className="space-y-6">
+            <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em] ml-2 flex items-center gap-3">
+                <Briefcase className="w-4 h-4 text-orange-400" /> Active Build Queue
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {(Array.isArray(projects) ? projects : []).map((p, i) => (
+                    <div key={i} className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl hover:border-orange-500/30 transition-all group">
+                         <div className="flex justify-between items-start mb-6">
                             <div>
-                                <span className={log.agent_id === 'USER' ? 'text-amber-400/80 font-bold' : 'text-blue-400/80 font-bold'}>[{log.agent_id}]</span>{' '}
-                                <span className={log.agent_id === 'USER' ? 'text-white' : 'text-slate-300'}>{log.action || log.message}</span>
+                                <h4 className="text-lg font-black text-white uppercase tracking-tight">{p.projectName}</h4>
+                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Status: Engineering Commenced</p>
                             </div>
-                        </div>
-                    ))
-                )}
-             </div>
+                            <span className="px-3 py-1 bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-full text-[9px] font-black uppercase tracking-widest">{p.status}</span>
+                         </div>
+                         <div className="space-y-4">
+                            <div className="space-y-2">
+                                <div className="flex justify-between text-[10px] uppercase font-black tracking-widest"><span className="text-slate-500">Build Progress</span> <span className="text-orange-400">{p.status === 'READY' ? '100% COMPLETE' : 'Phase 1: Architecture'}</span></div>
+                                <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden"><div className={`h-full bg-orange-600 ${p.status !== 'READY' && 'animate-pulse-slow'}`} style={{width: p.status === 'READY' || p.status === 'LIVE' ? '100%' : '25%'}}></div></div>
+                            </div>
+                            
+                            {p.status === 'READY' && (
+                                <button 
+                                    onClick={() => handleDeploy(p.id)}
+                                    disabled={isDeploying === p.id}
+                                    className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-black rounded-xl uppercase text-[10px] tracking-[0.2em] transition-all flex items-center justify-center gap-2 group-hover:shadow-[0_0_20px_rgba(37,99,235,0.3)] disabled:opacity-50"
+                                >
+                                    {isDeploying === p.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Play className="w-4 h-4" /> Initialize Deployment</>}
+                                </button>
+                            )}
 
-             {/* Command Input Form */}
-             <form onSubmit={handleCommand} className="flex gap-2 mt-auto items-center bg-[#0B1120] border border-slate-800 p-2.5 rounded-lg focus-within:border-emerald-500/50 transition shadow-inner">
-                 <span className="text-emerald-500 font-bold text-sm">&gt;</span>
-                  <input 
-                    type="text" 
-                    value={commandInput}
-                    onChange={(e) => setCommandInput(e.target.value)}
-                    className="bg-transparent border-none outline-none text-emerald-100 text-[11px] w-full font-mono placeholder:text-slate-700" 
-                    placeholder="Enter system command (e.g., 'deploy agent')..." 
-                  />
-                 <button type="submit" className="hidden">Send</button>
-             </form>
+                            {p.status === 'LIVE' && p.deploymentUrl && (
+                                <a 
+                                    href={p.deploymentUrl} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="w-full py-3 bg-emerald-600/10 border border-emerald-500/20 hover:bg-emerald-600/20 text-emerald-400 font-black rounded-xl uppercase text-[10px] tracking-[0.2em] transition-all flex items-center justify-center gap-2"
+                                >
+                                    <Globe className="w-4 h-4" /> Access Live Agent <ChevronRight className="w-4 h-4" />
+                                </a>
+                            )}
+                         </div>
+                    </div>
+                ))}
+            </div>
+        </section>
+      )}
 
+      {/* 3. Main Grid */}
+      <div className="grid lg:grid-cols-3 gap-8">
+          
+          {/* Agent Fleet */}
+          <div className="lg:col-span-1 bg-slate-900/30 border border-slate-800 rounded-[2rem] p-8 space-y-8">
+              <div className="flex justify-between items-center">
+                  <h3 className="font-black text-white uppercase text-xs tracking-widest">Fleet Systems</h3>
+                  <span className="text-[10px] font-black text-slate-500 bg-slate-950 px-3 py-1 rounded-full border border-slate-800">{agents.length} Active</span>
+              </div>
+              <div className="space-y-4">
+                  {(Array.isArray(agents) ? agents : []).map(agent => (
+                      <div key={agent.id} className="p-5 bg-slate-900/80 rounded-2xl border border-slate-800 flex justify-between items-center group">
+                          <div>
+                              <p className="text-white font-bold text-sm uppercase">{agent.agent_name}</p>
+                              <div className="flex items-center gap-2 mt-1">
+                                  <div className={`w-1.5 h-1.5 rounded-full ${agent.status === 'running' ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`}></div>
+                                  <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.1em]">{agent.status || 'offline'}</span>
+                              </div>
+                          </div>
+                          <button onClick={() => toggleAgentStatus(agent)} className="p-2.5 bg-slate-950 border border-slate-800 rounded-xl hover:bg-slate-800 transition-colors">
+                              {agent.status === 'running' ? <Square className="w-4 h-4 text-red-500" /> : <Play className="w-4 h-4 text-emerald-500" />}
+                          </button>
+                      </div>
+                  ))}
+              </div>
           </div>
-        </div>
+
+          {/* Activity Console */}
+          <div className="lg:col-span-2 bg-[#050810] border border-slate-800 rounded-[2rem] flex flex-col h-[500px] shadow-2xl relative overflow-hidden">
+                <div className="p-6 border-b border-slate-800 flex justify-between items-center bg-slate-900/10">
+                    <div className="flex items-center gap-3">
+                        <Terminal className="w-5 h-5 text-emerald-500" />
+                        <h3 className="text-[11px] font-black text-emerald-500 uppercase tracking-[0.2em]">Live Operation Logs</h3>
+                    </div>
+                    <div className="flex gap-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-red-500/20 border border-red-500/20"></div>
+                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500/20 border border-amber-500/20"></div>
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/20 border border-emerald-500/20"></div>
+                    </div>
+                </div>
+                
+                <div className="flex-1 p-6 overflow-y-auto font-mono text-[10px] space-y-2 custom-scrollbar text-slate-500">
+                    {(Array.isArray(logs) ? logs : []).slice().reverse().map((log, i) => (
+                        <div key={i} className="flex gap-4 group">
+                             <span className="text-slate-800 shrink-0">[{log.time}]</span>
+                             <span className="text-blue-500/80 font-bold">[{log.agent_id || 'SYS'}]</span>
+                             <span className="text-slate-400 group-hover:text-white transition-colors">{log.action || log.message}</span>
+                        </div>
+                    ))}
+                </div>
+
+                <form onSubmit={handleCommand} className="p-4 border-t border-slate-800 bg-slate-950">
+                    <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 rounded-xl px-4 py-2 focus-within:border-emerald-500/40 transition-colors">
+                        <span className="text-emerald-500 font-bold">&gt;</span>
+                        <input value={commandInput} onChange={e => setCommandInput(e.target.value)} placeholder="Submit cluster command..." className="bg-transparent border-none outline-none text-emerald-400 w-full text-xs font-mono" />
+                    </div>
+                </form>
+          </div>
 
       </div>
-      
-      <style dangerouslySetInnerHTML={{__html: `
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(15, 23, 42, 0.5);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(51, 65, 85, 0.8);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(71, 85, 105, 1);
-        }
-      `}} />
+
     </div>
   );
 };

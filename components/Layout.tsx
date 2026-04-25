@@ -93,6 +93,16 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
             <LogOut className="w-4 h-4" /> Sign Out
           </button>
         </div>
+
+        {/* COMPLIANCE FOOTER */}
+        <div className="p-6 mt-auto border-t border-nexus-border/50">
+            <div className="flex flex-wrap gap-x-4 gap-y-2 mb-4">
+                <a href="#/privacy" className="text-[9px] font-black uppercase tracking-widest text-slate-600 hover:text-blue-400 transition-colors">Privacy</a>
+                <a href="#/terms" className="text-[9px] font-black uppercase tracking-widest text-slate-600 hover:text-blue-400 transition-colors">Terms</a>
+                <a href="#/refund" className="text-[9px] font-black uppercase tracking-widest text-slate-600 hover:text-blue-400 transition-colors">Refund</a>
+            </div>
+            <p className="text-[8px] font-bold text-slate-700 uppercase tracking-widest">© 2026 QUICKKIT AI OPS</p>
+        </div>
       </aside>
 
       {/* Main Content Wrapper */}

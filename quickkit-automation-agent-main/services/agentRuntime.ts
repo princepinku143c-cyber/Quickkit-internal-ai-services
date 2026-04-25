@@ -33,7 +33,7 @@ export const runAgentInference = async (
 
         const response = await ai.models.generateContent({
             // Fix: Ensure correct full model name is used
-            model: config.model || 'gemini-3-flash-preview',
+            model: config.model || 'gemini-2.0-flash',
             contents: fullPrompt,
         });
 

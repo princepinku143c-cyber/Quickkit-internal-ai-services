@@ -8,8 +8,11 @@ import {
   ShieldAlert,
   Menu,
   X,
-  FileText
+  X,
+  FileText,
+  CreditCard
 } from 'lucide-react';
+import { Logo } from './Logo';
 import { UserProfile } from '../types';
 
 interface AdminLayoutProps {
@@ -26,9 +29,10 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, s
   // ADMIN SPECIFIC NAVIGATION
   const navItems = [
     { id: 'admin-dashboard', label: 'Overview', icon: LayoutDashboard },
-    { id: 'admin-leads', label: 'Leads CRM', icon: Users },
-    { id: 'admin-reports', label: 'System Reports', icon: FileText },
-    { id: 'admin-settings', label: 'Global Settings', icon: Settings },
+    { id: 'admin-leads', label: 'Leads Engine', icon: Users },
+    { id: 'admin-projects', label: 'Build Queue', icon: FileText },
+    { id: 'admin-payments', label: 'Revenue Ledger', icon: CreditCard },
+    { id: 'admin-settings', label: 'System Control', icon: Settings },
   ];
 
   return (
@@ -37,9 +41,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, s
       {/* Sidebar - Desktop (Red/Orange Accent for Admin) */}
       <aside className="hidden md:flex w-64 flex-col border-r border-slate-800 bg-slate-900/50 backdrop-blur-xl fixed h-full z-20">
         <div className="p-6 border-b border-slate-800 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-lg shadow-orange-900/20">
-            <ShieldAlert className="text-white w-5 h-5 fill-current" />
-          </div>
+          <Logo size={32} variant="admin" />
           <span className="font-bold text-white tracking-wide text-lg">Admin Panel</span>
         </div>
 
@@ -76,6 +78,15 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, s
           >
             <LogOut className="w-4 h-4" /> Exit Admin
           </button>
+        </div>
+
+        {/* ADMIN COMPLIANCE */}
+        <div className="p-6 mt-auto border-t border-slate-800">
+            <div className="flex flex-wrap gap-x-4 gap-y-2 mb-4">
+                <a href="#/privacy" className="text-[10px] font-bold text-slate-600 hover:text-orange-400">Legal</a>
+                <a href="#/terms" className="text-[10px] font-bold text-slate-600 hover:text-orange-400">Policy</a>
+            </div>
+            <p className="text-[9px] font-bold text-slate-800 uppercase tracking-widest">System Architecture v2.4.0</p>
         </div>
       </aside>
 

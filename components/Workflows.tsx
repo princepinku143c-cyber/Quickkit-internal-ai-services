@@ -75,13 +75,14 @@ export const Workflows: React.FC<WorkflowsProps> = ({ user }) => {
                 <Loader2 className="w-10 h-10 animate-spin text-blue-500 mx-auto mb-4" />
                 <p className="text-slate-400 font-medium">Synchronizing Workflows from Engine...</p>
             </div>
-        ) : projects.length === 0 ? (
+        ) : (Array.isArray(projects) ? projects : []).length === 0 ? (
             <div className="col-span-full py-12 text-center border border-dashed border-slate-800 rounded-xl">
                 <p className="text-slate-500">No active workflows found for your account.</p>
                 <button className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg text-sm">Create New Workflow</button>
             </div>
         ) : (
-            projects.map((project) => (
+            (Array.isArray(projects) ? projects : []).map((project) => (
+                <div key={project.id} className="glass-panel p-6 rounded-xl border border-nexus-border hover:border-blue-500/30 transition-all hover:-translate-y-1">
                 <div key={project.id} className="glass-panel p-6 rounded-xl border border-nexus-border hover:border-blue-500/30 transition-all hover:-translate-y-1">
                     <div className="flex justify-between items-start mb-4">
                         <div className="p-3 rounded-lg bg-nexus-card border border-nexus-border text-blue-400">
@@ -120,7 +121,7 @@ export const Workflows: React.FC<WorkflowsProps> = ({ user }) => {
 
                 {!success ? (
                     <form onSubmit={handleSubmit} className="p-6 space-y-5">
-                        {selectedProject.triggerConfig.map((field) => (
+                        {(Array.isArray(selectedProject.triggerConfig) ? selectedProject.triggerConfig : []).map((field) => (
                             <div key={field.id}>
                                 <label className="block text-sm font-medium text-slate-300 mb-1.5">{field.label}</label>
                                 {field.type === 'select' ? (
@@ -130,7 +131,7 @@ export const Workflows: React.FC<WorkflowsProps> = ({ user }) => {
                                         onChange={(e) => setFormData({...formData, [field.id]: e.target.value})}
                                     >
                                         <option value="">Select...</option>
-                                        {field.options?.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                        {(Array.isArray(field.options) ? field.options : []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
                                     </select>
                                 ) : (
                                     <input 

@@ -19,9 +19,12 @@ export const PaymentGateway = {
         const amount = tier === 'PRO' ? 49 : 99; 
 
         try {
-            const response = await fetch('/api/billing/paypal/createOrder', {
+            const response = await fetch('/api/create-paypal-order', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${await user.getIdToken()}`
+                },
                 body: JSON.stringify({
                     amount, 
                     currency: 'USD',
@@ -138,12 +141,18 @@ export const PaymentGateway = {
     /**
      * Capture a PayPal Order after approval
      */
-    async capturePayPalOrder(orderToken: string): Promise<{ success: boolean; message?: string }> {
+    async capturePayPalOrder(orderID: string): Promise<{ success: boolean; message?: string }> {
+        const user = auth.currentUser;
+        if (!user) throw new Error("Unauthorized: Session missing");
+
         try {
-            const response = await fetch('/api/billing/paypal/captureOrder', {
+            const response = await fetch('/api/capture-paypal-order', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ orderToken })
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${await user.getIdToken()}`
+                },
+                body: JSON.stringify({ orderID })
             });
             const data = await response.json();
             if (!response.ok) {

@@ -1,7 +1,8 @@
-import admin from './_lib/firebaseAdmin';
+import admin from './_lib/firebaseAdmin.js';
 import crypto from 'crypto';
 
-// Server-side hash of valid promo codes
+// ⚠️ SECURITY WARNING: SHA256("password") hashes are predictable. 
+// Replace these with unique, high-entropy promo codes in production.
 const PROMOS = {
   'ea8905488bf75ea7dffc6cc9622159bfaa749001d38eed44edd2f21bf6925d08': 2000, // NEW2000
   '5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8': 5000,  // VIP5000 (password hash)
