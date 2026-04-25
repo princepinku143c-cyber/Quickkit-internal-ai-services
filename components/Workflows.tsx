@@ -83,7 +83,6 @@ export const Workflows: React.FC<WorkflowsProps> = ({ user }) => {
         ) : (
             (Array.isArray(projects) ? projects : []).map((project) => (
                 <div key={project.id} className="glass-panel p-6 rounded-xl border border-nexus-border hover:border-blue-500/30 transition-all hover:-translate-y-1">
-                <div key={project.id} className="glass-panel p-6 rounded-xl border border-nexus-border hover:border-blue-500/30 transition-all hover:-translate-y-1">
                     <div className="flex justify-between items-start mb-4">
                         <div className="p-3 rounded-lg bg-nexus-card border border-nexus-border text-blue-400">
                             {icons[project.icon as keyof typeof icons] || <Zap />}
