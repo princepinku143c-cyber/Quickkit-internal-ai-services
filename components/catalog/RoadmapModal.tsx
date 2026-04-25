@@ -33,6 +33,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
   const [isTyping, setIsTyping] = useState(false);
   const [isDeploying, setIsDeploying] = useState(false);
   const [errorStatus, setErrorStatus] = useState<string | null>(null);
+  const [activeProjectId, setActiveProjectId] = useState<string | null>(null);
   const navigate = useNavigate();
   
   // Coupon State
@@ -135,27 +136,33 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
     }
     setIsDeploying(true);
     try {
-      const res = await fetch(`${window.location.origin}/api/send-lead`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-            name: formData.name,
-            email: formData.email,
-            phone: formData.phone,
-            businessName: formData.businessName,
-            projectName: item?.name || 'Custom Build', 
-            requirement: formData.requirement || `Architect Session: ${item?.name}`,
-            price: finalPrice 
-        })
+      // 1. Send Lead
+      await apiCall('/api/send-lead', { 
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          businessName: formData.businessName,
+          projectName: item?.name || 'Custom Build', 
+          requirement: formData.requirement || `Architect Session: ${item?.name}`,
+          price: finalPrice 
       });
 
-      const data = await res.json();
+      // 2. Create Project Entity (SaaS Logic)
+      const projectData = await apiCall('/api/create-project', {
+          userId: auth.currentUser?.uid,
+          projectName: item?.name || 'Custom Build',
+          price: finalPrice
+      });
 
-      if (res.ok) setView('payment');
-      else throw new Error(data.message || data.details || "API Failure");
+      if (projectData?.projectId) {
+          setActiveProjectId(projectData.projectId);
+          setView('payment');
+      } else {
+          throw new Error("Project Initialization Failed");
+      }
     } catch (err: any) {
-        console.error("LEAD ERROR:", err);
-        alert(`Lead transmission failed: ${err.message}`);
+        console.error("LEAD_PROJECT_ERROR:", err);
+        alert(`Validation failure: ${err.message}`);
     } finally {
         setIsDeploying(false);
     }
@@ -336,23 +343,33 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                            <PayPalButtons 
                              style={{ color: 'blue', shape: 'pill', label: 'pay', height: 55 }}
                              createOrder={async () => {
-                                const idToken = await auth.currentUser?.getIdToken();
-                                const res = await fetch(`${window.location.origin}/api/create-paypal-order`, {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
-                                  body: JSON.stringify({ amount: advanceAmount, projectName: item?.name || 'AI Agent' })
+                                const data = await apiCall('/api/create-paypal-order', { 
+                                    amount: advanceAmount, 
+                                    projectName: item?.name || 'AI Agent',
+                                    projectId: activeProjectId
                                 });
-                                const data = await res.json();
                                 return data.id;
                              }}
                              onApprove={async (data) => {
-                                const idToken = await auth.currentUser?.getIdToken();
-                                const res = await fetch(`${window.location.origin}/api/capture-paypal-order`, {
-                                  method: "POST",
-                                  headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
-                                  body: JSON.stringify({ orderID: data.orderID, projectName: item?.name || "AI Agent" })
+                                const result = await apiCall('/api/capture-paypal-order', { 
+                                    orderID: data.orderID, 
+                                    projectName: item?.name || "AI Agent",
+                                    projectId: activeProjectId
                                 });
-                                if (res.ok) { alert("Initialization Successful. Redirecting to Build Queue."); setView('studio'); onClose(); }
+                                
+                                // Notify user via email (Phase 2)
+                                await apiCall('/api/send-email', {
+                                    email: formData.email,
+                                    name: formData.name,
+                                    subject: "Project Initialized",
+                                    text: `Your project "${item?.name}" has been successfully verified. Build phase initiated.`
+                                }).catch(() => {});
+
+                                if (result) { 
+                                    alert("Initialization Successful. Neural node secured."); 
+                                    setView('studio'); 
+                                    onClose(); 
+                                }
                              }}
                            />
                         </div>
@@ -379,12 +396,29 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                         </section>
                     </div>
 
-                    <div className="pt-10 opacity-30">
-                        <Bot className="w-24 h-24 text-slate-800" />
-                    </div>
-                </div>
-             </div>
-          </div>
+                     <div className="pt-10 space-y-6">
+                        <div className="flex items-center gap-3 p-4 bg-emerald-500/5 border border-emerald-500/10 rounded-2xl">
+                             <ShieldCheck className="w-5 h-5 text-emerald-500" />
+                             <div>
+                                 <p className="text-[10px] font-black text-white uppercase tracking-tight">100% Secure Node</p>
+                                 <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Verified PayPal Integration</p>
+                             </div>
+                        </div>
+                        <div className="flex items-center gap-3 p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl">
+                             <Clock className="w-5 h-5 text-blue-500" />
+                             <div>
+                                 <p className="text-[10px] font-black text-white uppercase tracking-tight">Rapid Engineering</p>
+                                 <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">Estimated 48h-72h Delivery</p>
+                             </div>
+                        </div>
+                        <div className="flex items-center gap-3 p-4 bg-purple-500/5 border border-purple-500/10 rounded-2xl opacity-50">
+                             <Bot className="w-8 h-8 text-slate-800" />
+                             <p className="text-[8px] font-black text-slate-700 uppercase tracking-widest">Agent ID: QK-OS-2026</p>
+                        </div>
+                     </div>
+                 </div>
+              </div>
+           </div>
         )}
 
       </div>

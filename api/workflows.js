@@ -9,17 +9,19 @@ export default async function handler(req, res) {
     const decodedToken = await admin.auth().verifyIdToken(authHeader.split('Bearer ')[1]);
     const userId = decodedToken.uid;
 
-    // Fetch invoices from sub-collection or main payments collection depending on scope
-    const billingSnap = await admin.firestore().collection('payments')
+    // Fetch projects as workflows
+    const snap = await admin.firestore().collection('projects')
         .where('userId', '==', userId)
-        .orderBy('createdAt', 'desc')
         .get();
 
-    const data = billingSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    const data = snap.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
 
     return success(res, Array.isArray(data) ? data : []);
   } catch (err) {
-    console.error("BILLING_API_CRASH:", err);
+    console.error("WORKFLOWS_API_CRASH:", err);
     return error(res, err.message);
   }
 }

@@ -40,7 +40,7 @@ export const DataView: React.FC<DataViewProps> = ({ user }) => {
     return () => clearInterval(poller);
   }, []);
 
-  const filtered = logs.filter(r => 
+  const filtered = (Array.isArray(logs) ? logs : []).filter(r => 
     (r.command || '').toLowerCase().includes(search.toLowerCase()) || 
     (r.outputPreview || '').toLowerCase().includes(search.toLowerCase())
   );

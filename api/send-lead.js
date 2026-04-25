@@ -1,30 +1,14 @@
-import admin from './_lib/firebaseAdmin.js';
-import { getPayPalAccessToken, BASE_URL } from '../lib/paypalAdmin.js';
+import { saveLead } from './services/leadService.js';
+import { success, error } from './_lib/response.js';
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
+  if (req.method !== 'POST') return error(res, 'Method Not Allowed', 405);
 
   try {
-    const { name, email, phone, businessName, requirement, projectName, price } = req.body;
-
-    if (!name || !email || !phone) {
-      return res.status(400).json({ message: "Fields: Name, Email, and Phone are mandatory." });
-    }
-
-    await admin.firestore().collection('leads').add({
-      name,
-      email,
-      phone,
-      businessName: businessName || 'Inquiry',
-      requirement: requirement || 'AI Automation Request',
-      projectName: projectName || 'General Request',
-      price: price || 0,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
-    });
-
-    return res.status(200).json({ success: true, message: "Lead captured successfully" });
-
-  } catch (error) {
-    return res.status(500).json({ message: "Lead submission failed", details: error.message });
+    await saveLead(req.body);
+    return success(res, "Lead archived in neural database.");
+  } catch (err) {
+    console.error("LEAD_API_CRASH:", err);
+    return error(res, err.message, 400); 
   }
 }

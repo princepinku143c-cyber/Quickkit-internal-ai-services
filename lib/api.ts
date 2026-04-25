@@ -2,7 +2,7 @@ import { auth } from './firebase';
 
 export const apiCall = async (url: string, body?: any) => {
   const user = auth.currentUser;
-  if (!user) throw new Error("Not logged in");
+  if (!user) throw new Error("Operator Verification Required. Please log in.");
 
   const idToken = await user.getIdToken();
 
@@ -15,11 +15,16 @@ export const apiCall = async (url: string, body?: any) => {
     body: body ? JSON.stringify(body) : undefined
   });
 
-  const data = await res.json().catch(() => ({}));
+  const raw = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    throw new Error(data.message || data.output || "API failed");
+    throw new Error(raw.message || raw.error || "Neural link communication failure.");
   }
 
-  return data;
+  // Handle both direct and wrapped responses for legacy compatibility
+  if (raw.success === true && raw.data !== undefined) {
+    return raw.data;
+  }
+
+  return raw;
 };

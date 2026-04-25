@@ -26,7 +26,7 @@ export const AdminLeads: React.FC = () => {
   }, []);
 
   const updateStatus = async (id: string, newStatus: LeadStatus) => {
-      const updated = leads.map(l => l.id === id ? { ...l, status: newStatus } : l);
+      const updated = (Array.isArray(leads) ? leads : []).map(l => l.id === id ? { ...l, status: newStatus } : l);
       setLeads(updated);
       // Firebase sync
       const lead = leads.find(l => l.id === id) as any;
@@ -63,7 +63,7 @@ export const AdminLeads: React.FC = () => {
 
   const exportCSV = () => {
       const headers = ['Name','Phone','Email','Business Type','Plan','Setup Cost','Monthly','ROI','Status','Date'];
-      const rows = leads.map(l => [
+      const rows = (Array.isArray(leads) ? leads : []).map(l => [
         l.name, l.phone, l.email, l.businessType, l.plan,
         l.aiQuote?.setupCost || '', l.aiQuote?.monthlyCost || '', l.aiQuote?.roiEstimate || '',
         l.status || 'NEW',
@@ -91,7 +91,7 @@ export const AdminLeads: React.FC = () => {
       }
   };
 
-  const filteredLeads = leads.filter(l => 
+  const filteredLeads = (Array.isArray(leads) ? leads : []).filter(l => 
     l.name.toLowerCase().includes(search.toLowerCase()) || 
     l.email.toLowerCase().includes(search.toLowerCase()) ||
     l.phone.includes(search)

@@ -1,30 +1,43 @@
-
 import fetch from "node-fetch";
-import admin from "../lib/firebaseAdmin.js";
-import { getPayPalAccessToken, BASE_URL } from "../lib/paypalAdmin.js";
+import admin from "./_lib/firebaseAdmin.js";
+import { getPayPalAccessToken, BASE_URL } from "./_lib/paypalAdmin.js";
+import { success, error } from "./_lib/response.js";
 
+/**
+ * Hardened Settlement Capture with Atomic States & Idempotency.
+ */
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
+  if (req.method !== 'POST') return error(res, 'Method Not Allowed', 405);
 
-  const { orderID, projectName } = req.body;
+  const { orderID, projectId } = req.body;
   const authHeader = req.headers.authorization;
-  if (!authHeader) return res.status(401).json({ message: "Missing Authorization" });
+  if (!authHeader) return error(res, "Missing Authorization", 401);
 
   try {
     const idToken = authHeader.split('Bearer ')[1];
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     const userId = decodedToken.uid;
 
-    // 1. 🚨 CRITICAL: Duplicate Payment Protection
-    const existingPayment = await admin.firestore().collection("payments").doc(orderID).get();
-    if (existingPayment.exists) {
-      console.warn(`Double Capture Prevented for Order ID: ${orderID}`);
-      return res.status(400).json({ error: "Transaction already processed. Access denied." });
-    }
+    if (!projectId) throw new Error("Verification failed: Project ID mapping missing.");
 
+    // 1. ATOMIC PROJECT LOCK (Transaction)
+    const projectRef = admin.firestore().collection('projects').doc(projectId);
+    const result = await admin.firestore().runTransaction(async (transaction) => {
+      const doc = await transaction.get(projectRef);
+      if (!doc.exists) throw new Error("Build record not found.");
+      
+      const project = doc.data();
+      if (project.userId !== userId) throw new Error("Industrial Violation: Authorization mismatch.");
+      if (project.advancePaid) throw new Error("Payment already finalized for this project.");
+
+      const expectedAmount = Math.round(project.price * 0.1);
+      return { expectedAmount, projectName: project.projectName };
+    });
+
+    // 2. Fetch PayPal Access Token
     const accessToken = await getPayPalAccessToken();
 
-    // 2. Capture the payment
+    // 3. CAPTURE & VERIFY
     const response = await fetch(`${BASE_URL}/v2/checkout/orders/${orderID}/capture`, {
       method: "POST",
       headers: {
@@ -35,45 +48,47 @@ export default async function handler(req, res) {
 
     const data = await response.json();
 
-    // 3. 🚨 STRENGTHENED: Validation logic
-    if (!data || data.status !== "COMPLETED") {
-       console.error("Payment Capture Failed Audit:", data);
-       throw new Error(`Payment verification failed. Current Status: ${data?.status || 'UNKNOWN'}`);
+    if (data.status !== "COMPLETED") {
+       throw new Error(`External verification failure. Status: ${data.status}`);
     }
 
-    // 4. Atomic CRM Update
+    // 4. Amount Scrutiny
+    const capturedAmount = Number(data.purchase_units[0].payments.captures[0].amount.value);
+    if (Math.abs(capturedAmount - result.expectedAmount) > 1) {
+        throw new Error(`Financial Discrepancy: Captured $${capturedAmount} vs Expected $${result.expectedAmount}`);
+    }
+
+    // 5. ATOMIC BATCH COMMIT
     const batch = admin.firestore().batch();
     
-    // Log payment
+    // Log payment (Idempotent by orderID)
     const paymentRef = admin.firestore().collection("payments").doc(orderID);
     batch.set(paymentRef, {
       userId,
-      projectName,
+      projectId,
+      projectName: result.projectName,
       orderID,
-      amount: data.purchase_units[0].payments.captures[0].amount.value,
+      amount: capturedAmount,
       status: "COMPLETED",
-      raw_payload: data,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
+      verified: true,
+      capturedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
-    // Initialize Project
-    const projectRef = admin.firestore().collection("projects").doc();
-    batch.set(projectRef, {
-      userId,
-      projectName,
+    // Advance Project State
+    batch.update(projectRef, {
+      advancePaid: true,
       status: "IN_PROGRESS",
-      paymentStatus: "ADVANCE_PAID",
-      sourceOrderId: orderID,
-      createdAt: admin.firestore.FieldValue.serverTimestamp()
+      paymentStatus: "SUCCESS_VERIFIED",
+      progress: 10,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
 
     await batch.commit();
 
-    console.log(`✅ Payment Captured for User ${userId}: ${orderID}`);
-    res.status(200).json(data);
+    return success(res, { status: "VERIFIED", orderID });
 
   } catch (err) {
-    console.error("Capture Runtime Error:", err);
-    res.status(500).json({ error: err.message });
+    console.error("CRITICAL_SETTLEMENT_FAILED:", err);
+    return error(res, err.message);
   }
 }

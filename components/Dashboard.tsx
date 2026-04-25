@@ -4,6 +4,7 @@ import { Activity, CheckCircle2, Server, Bot, Layers, CheckSquare, Clock, Termin
 import { UserProfile } from '../types';
 import { collection, query, where, onSnapshot, doc, updateDoc, addDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { apiCall } from '../lib/api';
 
 interface DashboardProps {
   user: UserProfile;
@@ -80,22 +81,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
     setIsDeploying(projectId);
     try {
-        const res = await fetch(`${window.location.origin}/api/deploy-agent`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userId: user.uid,
-                projectId,
-                vpsEndpoint: userSettings.vpsEndpoint,
-                vpsToken: userSettings.vpsToken
-            })
+        const data = await apiCall('/api/deploy-agent', {
+            userId: user.uid,
+            projectId,
+            vpsEndpoint: userSettings.vpsEndpoint,
+            vpsToken: userSettings.vpsToken
         });
 
-        const data = await res.json();
-        if (res.ok && data.success) {
+        if (data.success) {
             alert("🚀 Neural Link Established! Your agent is now LIVE.");
         } else {
-            throw new Error(data.message || "Cluster Rejected Deployment");
+            throw new Error("Cluster Rejected Deployment");
         }
     } catch (err: any) {
         alert(`❌ Deployment FAILED: ${err.message}`);
@@ -135,7 +131,23 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         </div>
       </div>
 
-      {/* 2. Build Queue (NEW CLIENT FEATURE) */}
+      {/* Trust & Guarantee Strip */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 px-2">
+          {[
+            { icon: ShieldCheck, label: "Secure PayPal Node", sub: "AES-256 Encrypted" },
+            { icon: Clock, label: "48h Build Velocity", sub: "Standard ETA" },
+            { icon: CheckCircle2, label: "Success Audit", sub: "QA Verified" },
+            { icon: Zap, label: "Neural Hosting", sub: "Included 1yr" }
+          ].map((item, i) => (
+            <div key={i} className="flex flex-col items-center p-4 bg-slate-900/40 border border-slate-800/50 rounded-2xl text-center">
+                <item.icon className="w-5 h-5 text-blue-500 mb-2" />
+                <p className="text-[10px] font-black text-white uppercase tracking-tight">{item.label}</p>
+                <p className="text-[8px] font-bold text-slate-500 uppercase tracking-widest">{item.sub}</p>
+            </div>
+          ))}
+      </div>
+
+      {/* 2. Build Queue (STABLE CLIENT FEATURE) */}
       {projects.length > 0 && (
         <section className="space-y-6">
             <h3 className="text-xs font-black text-slate-500 uppercase tracking-[0.3em] ml-2 flex items-center gap-3">
@@ -144,14 +156,34 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {(Array.isArray(projects) ? projects : []).map((p, i) => (
                     <div key={i} className="bg-slate-900/50 border border-slate-800 p-6 rounded-3xl hover:border-orange-500/30 transition-all group">
-                         <div className="flex justify-between items-start mb-6">
+                             <div className="flex justify-between items-start mb-6">
                             <div>
                                 <h4 className="text-lg font-black text-white uppercase tracking-tight">{p.projectName}</h4>
-                                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest mt-1">Status: Engineering Commenced</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></div>
+                                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+                                        {p.status === 'PENDING_PAYMENT' ? 'Awaiting Advance Deposit' : 
+                                         p.status === 'IN_PROGRESS' ? 'Architectural Scoping Active' :
+                                         p.status === 'READY' ? 'Build Sequence Finalized' : 'Operational'}
+                                    </p>
+                                </div>
                             </div>
-                            <span className="px-3 py-1 bg-orange-500/10 text-orange-400 border border-orange-500/20 rounded-full text-[9px] font-black uppercase tracking-widest">{p.status}</span>
+                            <span className="px-3 py-1 bg-blue-500/10 text-blue-400 border border-blue-500/20 rounded-full text-[9px] font-black uppercase tracking-widest">{p.status?.replace('_', ' ')}</span>
                          </div>
                          <div className="space-y-4">
+                            <div className="p-4 bg-slate-950 border border-slate-800 rounded-2xl">
+                                <div className="flex justify-between items-center mb-3">
+                                    <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Next Objective</span>
+                                    <span className="text-[9px] font-black text-blue-500 uppercase tracking-widest">
+                                        {p.status === 'PENDING_PAYMENT' ? 'Payment Verification' : 'Asset Assembly'}
+                                    </span>
+                                </div>
+                                <p className="text-xs font-bold text-slate-400 leading-relaxed uppercase tracking-tight">
+                                    {p.status === 'PENDING_PAYMENT' ? 'Complete the 10% advance to trigger the VPS engineering node.' : 
+                                     p.status === 'IN_PROGRESS' ? 'Our agents are currently committing code to your target VPS.' : 
+                                     'Your solution is ready for final deployment.'}
+                                </p>
+                            </div>
                             <div className="space-y-2">
                                 <div className="flex justify-between text-[10px] uppercase font-black tracking-widest"><span className="text-slate-500">Build Progress</span> <span className="text-orange-400">{p.status === 'READY' ? '100% COMPLETE' : 'Phase 1: Architecture'}</span></div>
                                 <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden"><div className={`h-full bg-orange-600 ${p.status !== 'READY' && 'animate-pulse-slow'}`} style={{width: p.status === 'READY' || p.status === 'LIVE' ? '100%' : '25%'}}></div></div>

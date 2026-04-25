@@ -1,21 +1,15 @@
-
-import admin from "../lib/firebaseAdmin.js";
+import { success, error } from '../_lib/response.js';
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return res.status(405).json({ message: 'Method Not Allowed' });
+  if (req.method !== 'POST') return error(res, 'Method Not Allowed', 405);
 
   const { endpoint, token } = req.body;
 
-  if (!endpoint) {
-    return res.status(400).json({ status: "DISCONNECTED", message: "Missing endpoint" });
-  }
+  if (!endpoint) return error(res, "Secure endpoint required for telemetry check.", 400);
 
   try {
-    console.log(`🚀 [VPS_HEALTH] Testing connection to: ${endpoint}`);
-    
-    // Timeout-wrapped fetch
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+    const timeout = setTimeout(() => controller.abort(), 8000);
 
     const response = await fetch(`${endpoint}/health`, {
       method: 'GET',
@@ -29,20 +23,17 @@ export default async function handler(req, res) {
     clearTimeout(timeout);
 
     if (!response.ok) {
-        const text = await response.text();
-        throw new Error(`VPS responded with ${response.status}: ${text}`);
+        throw new Error(`VPS Cluster Offline (Status: ${response.status})`);
     }
 
-    return res.status(200).json({ 
+    return success(res, { 
         status: "CONNECTED",
-        latency: "Optimal",
-        version: "1.2.0-Alpha"
+        node: "Optimal",
+        version: "1.2.0-Alpha-Stable"
     });
+
   } catch (err) {
-    console.error("❌ [VPS_HEALTH_ERROR]:", err.message);
-    return res.status(200).json({ 
-        status: "DISCONNECTED", 
-        error: err.message 
-    });
+    console.error("VPS_HEALTH_CRASH:", err);
+    return error(res, err.message);
   }
 }
