@@ -18,7 +18,7 @@ export const DataView: React.FC<DataViewProps> = ({ user }) => {
     const fetchData = async () => {
         try {
             setError(null);
-            const data = await apiCall('/api/logs');
+            const data = await apiCall('/api/system?action=logs');
             setLogs(data || []);
         } catch (e: any) {
             console.error('Failed to fetch logs:', e);

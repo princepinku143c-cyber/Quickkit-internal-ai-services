@@ -158,7 +158,7 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
 
     updateLog(logId, { cmdStatus: 'running' });
     try {
-      const res = await apiCall('/api/execute', { command });
+      const res = await apiCall('/api/ai?action=execute', { command });
       await deductCredits(10);
       
       updateLog(logId, { 

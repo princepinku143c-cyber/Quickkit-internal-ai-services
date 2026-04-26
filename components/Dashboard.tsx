@@ -81,14 +81,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
     setIsDeploying(projectId);
     try {
-        const data = await apiCall('/api/deploy-agent', {
+        const data = await apiCall('/api/ai?action=deploy', {
             userId: user.uid,
             projectId,
             vpsEndpoint: userSettings.vpsEndpoint,
             vpsToken: userSettings.vpsToken
         });
 
-        if (data.success) {
+        if (data.status === "PROVISIONING") {
             alert("🚀 Neural Link Established! Your agent is now LIVE.");
         } else {
             throw new Error("Cluster Rejected Deployment");

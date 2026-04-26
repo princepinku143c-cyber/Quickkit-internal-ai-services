@@ -19,7 +19,7 @@ export const Workflows: React.FC<WorkflowsProps> = ({ user }) => {
   useEffect(() => {
     const fetchProjects = async () => {
         try {
-            const data = await apiCall('/api/workflows');
+            const data = await apiCall('/api/system?action=workflows');
             setProjects(data || []);
         } catch (e) {
             console.error('Failed to load workflows:', e);
@@ -49,7 +49,7 @@ export const Workflows: React.FC<WorkflowsProps> = ({ user }) => {
     setExecuting(true);
     
     try {
-        await apiCall('/api/trigger', {
+        await apiCall('/api/system?action=trigger', {
             projectId: selectedProject.id,
             payload: formData
         });

@@ -68,7 +68,7 @@ export const LeadForm: React.FC<Props> = ({ lang, close, onBack, onVerified, ini
 
     try {
       // 1. Send to Backend API for Lead Processing & CRM Sync
-      const response = await fetch(`${window.location.origin}/api/send-lead`, {
+      const response = await fetch(`${window.location.origin}/api/system?action=lead`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newLead)

@@ -38,7 +38,7 @@ export const CreditWallet: React.FC<CreditWalletProps> = ({ user }) => {
     setPromoLoading(true);
     setPromoError(null);
     try {
-        await apiCall('/api/promo', { code: promoCode });
+        await apiCall(`/api/system?action=promo&code=${promoCode}`);
         setPromoCode('');
         alert('🚀 Promo applied successfully! Credits added.');
     } catch (e: any) {

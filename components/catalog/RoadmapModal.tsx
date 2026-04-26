@@ -70,7 +70,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
     try {
       const authHeader = auth.currentUser ? `Bearer ${await auth.currentUser.getIdToken()}` : '';
       
-      const res = await fetch(`${window.location.origin}/api/kelly-architect`, {
+      const res = await fetch(`${window.location.origin}/api/ai?action=kelly`, {
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json',
@@ -137,7 +137,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
     setIsDeploying(true);
     try {
       // 1. Send Lead
-      await apiCall('/api/send-lead', { 
+      await apiCall('/api/system?action=lead', { 
           name: formData.name,
           email: formData.email,
           phone: formData.phone,
@@ -148,7 +148,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
       });
 
       // 2. Create Project Entity (SaaS Logic)
-      const projectData = await apiCall('/api/create-project', {
+      const projectData = await apiCall('/api/projects?action=create', {
           userId: auth.currentUser?.uid,
           projectName: item?.name || 'Custom Build',
           price: finalPrice
@@ -343,7 +343,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                            <PayPalButtons 
                              style={{ color: 'blue', shape: 'pill', label: 'pay', height: 55 }}
                              createOrder={async () => {
-                                const data = await apiCall('/api/create-paypal-order', { 
+                                const data = await apiCall('/api/paypal?action=create', { 
                                     amount: advanceAmount, 
                                     projectName: item?.name || 'AI Agent',
                                     projectId: activeProjectId
@@ -351,18 +351,18 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                                 return data.id;
                              }}
                              onApprove={async (data) => {
-                                const result = await apiCall('/api/capture-paypal-order', { 
+                                const result = await apiCall('/api/paypal?action=capture', { 
                                     orderID: data.orderID, 
                                     projectName: item?.name || "AI Agent",
                                     projectId: activeProjectId
                                 });
                                 
                                 // Notify user via email (Phase 2)
-                                await apiCall('/api/send-email', {
-                                    email: formData.email,
+                                await apiCall('/api/system?action=email', {
+                                    to: formData.email,
                                     name: formData.name,
                                     subject: "Project Initialized",
-                                    text: `Your project "${item?.name}" has been successfully verified. Build phase initiated.`
+                                    html: `<p>Your project "${item?.name}" has been successfully verified. Build phase initiated.</p>`
                                 }).catch(() => {});
 
                                 if (result) { 
