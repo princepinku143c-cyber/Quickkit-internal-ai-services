@@ -1,7 +1,7 @@
 import admin from "./_lib/firebaseAdmin.js";
 import { success, error } from "./_lib/response.js";
 import { checkRateLimit } from "./_lib/security.js";
-import fetch from "node-fetch";
+import { askAI } from "./services/aiService.js";
 
 /**
  * Unified AI Intelligence & Execution Cluster.
@@ -30,35 +30,16 @@ export default async function handler(req, res) {
 }
 
 async function handleKelly(req, res, userId) {
-  const { messages, model } = req.body;
+  const { messages } = req.body;
   if (!messages) throw new Error("Payload missing: Neural context required.");
 
   await checkRateLimit(admin, userId, "kelly_api", 10);
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 12000);
-
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_ADMIN_KEY}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        model: model || "deepseek/deepseek-chat",
-        messages: messages.map(m => ({ role: m.role, content: m.content })),
-        max_tokens: 1000
-      }),
-      signal: controller.signal
-    });
-
-    clearTimeout(timeoutId);
-    const data = await response.json();
-    return res.status(200).json(data);
+    const reply = await askAI(messages);
+    return success(res, { reply });
   } catch (e) {
-    if (e.name === 'AbortError') return error(res, "Intelligence Timeout: Response took too long.", 504);
-    throw e;
+    return error(res, e.message, e.message.includes("timeout") ? 504 : 500);
   }
 }
 

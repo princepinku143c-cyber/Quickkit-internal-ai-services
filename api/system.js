@@ -1,6 +1,7 @@
 import admin from "./_lib/firebaseAdmin.js";
 import { success, error } from "./_lib/response.js";
 import nodemailer from "nodemailer";
+import { saveLead } from "./services/leadService.js";
 
 /**
  * Unified System Utility Cluster.
@@ -34,16 +35,12 @@ export default async function handler(req, res) {
 }
 
 async function handleLead(req, res) {
-  const leadData = req.body;
-  if (!leadData.name || !leadData.phone) return error(res, "Incomplete Lead Data", 400);
-
-  const docRef = await admin.firestore().collection('leads').add({
-    ...leadData,
-    submittedAt: new Date().toISOString(),
-    status: 'NEW'
-  });
-
-  return success(res, { id: docRef.id });
+  try {
+    await saveLead(req.body);
+    return success(res, { status: "CAPTURED" });
+  } catch (err) {
+    return error(res, err.message, 400);
+  }
 }
 
 async function handleEmail(req, res, userId) {
