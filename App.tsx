@@ -183,9 +183,9 @@ const App: React.FC = () => {
   const LandingView = () => (
     <div className="bg-[#030712] min-h-screen font-sans text-slate-100 selection:bg-blue-500/30">
       <Helmet>
-        <title>QuickKit AI | Premium AI Automation Agency & Zapier Alternative</title>
-        <meta name="description" content="Deploy high-performance AI agents and custom automation workflows in 3 days. The elite AI automation agency for businesses scaling beyond simple Zapier scripts." />
-        <meta name="keywords" content="AI Automation Agency, Zapier Alternative, Make Alternative, AI Agents for Business, Custom AI Solutions" />
+        <title>QuickKit AI | Build AI Agents That Run Your Business</title>
+        <meta name="description" content="Deploy autonomous AI agents 10x more powerful than traditional automation tools like Zapier. The elite engineering infrastructure for scaling your business operations." />
+        <meta name="keywords" content="AI Business Agents, Autonomous Workflows, Custom AI Engineering, Enterprise AI Automation, Elite Agent Infrastructure" />
         <link rel="canonical" href="https://quickkitai.com" />
       </Helmet>
       <Navbar />
