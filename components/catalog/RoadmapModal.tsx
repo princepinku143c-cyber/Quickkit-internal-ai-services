@@ -11,6 +11,7 @@ import { Logo } from "../Logo";
 import PhoneInput from 'react-phone-input-2';
 import 'react-phone-input-2/lib/style.css';
 import { useNavigate } from 'react-router-dom';
+import { apiCall } from '../../lib/api';
 
 interface RoadmapModalProps {
   item?: ServiceItem;
@@ -134,6 +135,10 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
         alert("Please enter a valid phone number.");
         return;
     }
+    if (!auth.currentUser) {
+        setErrorStatus("LOGIN_REQUIRED");
+        return;
+    }
     setIsDeploying(true);
     try {
       // 1. Send Lead
@@ -204,7 +209,16 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                     </div>
 
                     <div className="pt-6">
-                        <button onClick={() => setView('form')} className="w-full py-6 bg-blue-600 text-white font-black rounded-[2rem] shadow-2xl shadow-blue-900/40 hover:bg-blue-500 hover:-translate-y-1 transition-all uppercase text-sm tracking-[0.2em] flex items-center justify-center gap-3">
+                        <button 
+                            onClick={() => {
+                                if (!auth.currentUser) {
+                                    setErrorStatus("LOGIN_REQUIRED");
+                                } else {
+                                    setView('form');
+                                }
+                            }} 
+                            className="w-full py-6 bg-blue-600 text-white font-black rounded-[2rem] shadow-2xl shadow-blue-900/40 hover:bg-blue-500 hover:-translate-y-1 transition-all uppercase text-sm tracking-[0.2em] flex items-center justify-center gap-3"
+                        >
                             Request Custom Blueprint <ArrowRight className="w-5 h-5" />
                         </button>
                     </div>
