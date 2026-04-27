@@ -25,9 +25,9 @@ interface RoadmapModalProps {
 }
 
 export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onClose, sessionRef }) => {
-  const [view, setView] = useState<'studio' | 'form' | 'payment' | 'tracking'>('studio');
+  const [view, setView] = useState<'studio' | 'form' | 'payment' | 'tracking' | 'success'>('studio');
   const [chatHistory, setChatHistory] = useState<any[]>([
-    { role: 'model', content: `Hello! I'm Kelly. I've prepared the architectural blueprint for the ${item?.name || 'requested automation'}. You can review the technical specs on the left or ask me anything!` }
+    { role: 'model', content: `👋 Hi, I'm Kelly.\n\nI'll design your custom AI system in 60 seconds. Tell me what you want to automate 👇` }
   ]);
   const [userInput, setUserInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -147,19 +147,8 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
           price: finalPrice 
       });
 
-      // 2. Create Project Entity (SaaS Logic)
-      const projectData = await apiCall('/api/projects?action=create', {
-          userId: auth.currentUser?.uid,
-          projectName: item?.name || 'Custom Build',
-          price: finalPrice
-      });
-
-      if (projectData?.projectId) {
-          setActiveProjectId(projectData.projectId);
-          setView('payment');
-      } else {
-          throw new Error("Project Initialization Failed");
-      }
+      // 2. We skip project creation here since it's a lead-first flow now.
+      setView('success');
     } catch (err: any) {
         console.error("LEAD_PROJECT_ERROR:", err);
         alert(`Validation failure: ${err.message}`);
@@ -205,18 +194,18 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                             </div>
                             <p className="text-lg font-black text-white">2–3 DAYS</p>
                         </div>
-                        <div className="bg-slate-900/40 border border-white/5 p-6 rounded-3xl flex items-center justify-between group hover:border-emerald-500/30 transition-all">
+                        <div className="bg-slate-900/40 border border-white/5 p-6 rounded-3xl flex flex-col justify-center group hover:border-purple-500/30 transition-all">
                             <div className="flex items-center gap-4">
-                                <div className="p-2 bg-emerald-500/10 rounded-xl text-emerald-500"><ShieldCheck className="w-5 h-5" /></div>
-                                <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Fixed Asset Value</span>
+                                <div className="p-2 bg-purple-500/10 rounded-xl text-purple-500"><Sparkles className="w-5 h-5" /></div>
+                                <span className="text-xs font-black text-slate-500 uppercase tracking-widest">Pricing Structure</span>
                             </div>
-                            <p className="text-lg font-black text-white">${finalPrice.toLocaleString()}</p>
+                            <p className="text-[10px] font-bold text-slate-400 mt-3 px-2 border-l-2 border-purple-500/30 pl-3 uppercase tracking-widest">Custom quote generated post-scoping</p>
                         </div>
                     </div>
 
                     <div className="pt-6">
                         <button onClick={() => setView('form')} className="w-full py-6 bg-blue-600 text-white font-black rounded-[2rem] shadow-2xl shadow-blue-900/40 hover:bg-blue-500 hover:-translate-y-1 transition-all uppercase text-sm tracking-[0.2em] flex items-center justify-center gap-3">
-                            Deploy This Agent <ArrowRight className="w-5 h-5" />
+                            Request Custom Blueprint <ArrowRight className="w-5 h-5" />
                         </button>
                     </div>
                 </div>
@@ -303,12 +292,28 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                     </div>
                     
                     <button type="submit" disabled={isDeploying} className="md:col-span-2 w-full py-6 bg-blue-600 text-white font-black rounded-[2rem] flex items-center justify-center gap-4 uppercase text-sm tracking-[0.2em] shadow-xl hover:bg-blue-500 transition-all active:scale-95 disabled:opacity-50 mt-4">
-                        {isDeploying ? <Loader2 className="w-6 h-6 animate-spin" /> : "Verify & Start Build"}
+                        {isDeploying ? <Loader2 className="w-6 h-6 animate-spin" /> : "Submit Architecture Scoping"}
                     </button>
                     <p className="md:col-span-2 text-center text-[9px] text-slate-700 font-black uppercase tracking-[0.3em]">Encrypted Session Encryption Active</p>
                 </form>
               </div>
           </div>
+        )}
+
+        {view === 'success' && (
+            <div className="flex-1 flex flex-col items-center justify-center p-16 bg-slate-950/50 space-y-8 animate-slide-up text-center">
+                <div className="w-24 h-24 bg-emerald-500/10 border border-emerald-500/20 rounded-full flex items-center justify-center text-emerald-500 shadow-[0_0_50px_rgba(16,185,129,0.2)]">
+                    <CheckCircle className="w-12 h-12" />
+                </div>
+                <h2 className="text-4xl font-black text-white uppercase tracking-tighter">Your AI System Has Been Designed</h2>
+                <div className="max-w-lg space-y-4 text-slate-400 font-bold uppercase tracking-widest text-[11px] leading-relaxed">
+                    <p>📩 Our architectural team is currently preparing your custom deployment plan.</p>
+                    <p>You will receive the precise pricing matrix and full system blueprint on your email within 10–15 minutes.</p>
+                </div>
+                <button onClick={onClose} className="mt-8 px-8 py-4 bg-white text-nexus-dark font-black rounded-2xl uppercase tracking-[0.1em] text-xs hover:bg-slate-200 transition-all">
+                    Acknowledge & Return
+                </button>
+            </div>
         )}
 
         {view === 'payment' && (
