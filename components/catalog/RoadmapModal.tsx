@@ -68,14 +68,20 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
     setIsTyping(true);
     setErrorStatus(null);
 
+    if (!auth.currentUser) {
+      setErrorStatus("LOGIN_REQUIRED");
+      setIsTyping(false);
+      return;
+    }
+
     try {
-      const authHeader = auth.currentUser ? `Bearer ${await auth.currentUser.getIdToken()}` : '';
+      const authHeader = `Bearer ${await auth.currentUser.getIdToken()}`;
       
       const res = await fetch(`${window.location.origin}/api/ai?action=kelly`, {
         method: 'POST',
         headers: { 
             'Content-Type': 'application/json',
-            ...(authHeader ? { 'Authorization': authHeader } : {})
+            'Authorization': authHeader
         },
         body: JSON.stringify({
           message: userMsg,

@@ -107,8 +107,11 @@ const App: React.FC = () => {
         };
         checkUserCredits();
 
-        unSubMeta = onSnapshot(userRef, (snap) => {
+        unSubMeta = onSnapshot(userRef, async (snap) => {
           const data = snap.data();
+          const token = await firebaseUser.getIdToken();
+          localStorage.setItem('token', token);
+          
           setUser({
             uid: firebaseUser.uid,
             email: firebaseUser.email || '',
@@ -127,6 +130,7 @@ const App: React.FC = () => {
           setAuthLoading(false);
         });
       } else {
+        localStorage.removeItem('token');
         if (unSubMeta) unSubMeta();
         setUser(null);
         setIsAuthenticated(false);
