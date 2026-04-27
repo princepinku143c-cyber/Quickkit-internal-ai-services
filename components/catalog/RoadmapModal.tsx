@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Zap, Bot, Clock, ShieldCheck, Cpu, CheckCircle2, Loader2, Mail, Phone, Building2, User, FileText, CreditCard, DollarSign, Wallet, Shield, CheckCircle, Ticket, Lock, ArrowRight, ArrowLeft } from 'lucide-react';
+import { X, Zap, Bot, Clock, ShieldCheck, Cpu, CheckCircle2, Loader2, Mail, Phone, Building2, User, FileText, CreditCard, DollarSign, Wallet, Shield, CheckCircle, Ticket, Lock, ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
 import { ServiceItem, Currency, AIQuote } from '../../types';
 import { auth, db } from '../../lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
