@@ -9,7 +9,9 @@ import { askAI } from "./services/aiService.js";
  */
 export default async function handler(req, res) {
   const authHeader = req.headers.authorization;
-  if (!authHeader) return error(res, "Missing Authorization", 401);
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return error(res, "UNAUTHORIZED: Industrial Identity Required", 401);
+  }
 
   try {
     const idToken = authHeader.split('Bearer ')[1];
@@ -24,8 +26,8 @@ export default async function handler(req, res) {
 
     return error(res, "Action Not Allowed", 400);
   } catch (err) {
-    console.error("AI_ENGINE_CRASH:", err);
-    return error(res, err.message);
+    console.error("AI_CLUSTER_CRASH:", err);
+    return error(res, "Identity Verification Failure", 403);
   }
 }
 

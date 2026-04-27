@@ -17,8 +17,8 @@ export const AdminLeads: React.FC = () => {
     // Try Firebase first
     if (Object.keys(db).length > 0) {
       const unsubscribe = onSnapshot(collection(db as any, 'leads'), (snapshot) => {
-        const firebaseLeads = snapshot.docs.map(d => ({ ...d.data(), _docId: d.id } as any));
-        const merged = firebaseLeads.map((l: any) => ({ ...l, status: l.status || 'NEW' }));
+        const firebaseLeads = (snapshot.docs || []).map(d => ({ ...d.data(), _docId: d.id } as any));
+        const merged = (Array.isArray(firebaseLeads) ? firebaseLeads : []).map((l: any) => ({ ...l, status: l.status || 'NEW' }));
         setLeads(merged);
       });
       return () => unsubscribe();
@@ -29,7 +29,7 @@ export const AdminLeads: React.FC = () => {
       const updated = (Array.isArray(leads) ? leads : []).map(l => l.id === id ? { ...l, status: newStatus } : l);
       setLeads(updated);
       // Firebase sync
-      const lead = leads.find(l => l.id === id) as any;
+      const lead = (Array.isArray(leads) ? leads : []).find(l => l.id === id) as any;
       if (lead?._docId && Object.keys(db).length > 0) {
         await updateDoc(doc(db as any, 'leads', lead._docId), { status: newStatus });
       }
@@ -87,8 +87,8 @@ export const AdminLeads: React.FC = () => {
   const deleteLead = async (id: string, e: React.MouseEvent) => {
       e.stopPropagation();
       if(confirm('Are you sure you want to delete this lead?')) {
-        const lead = leads.find(l => l.id === id) as any;
-        const updated = leads.filter(l => l.id !== id);
+        const lead = (Array.isArray(leads) ? leads : []).find(l => l.id === id) as any;
+        const updated = (Array.isArray(leads) ? leads : []).filter(l => l.id !== id);
         setLeads(updated);
         if (selectedLead?.id === id) setSelectedLead(null);
         // Firebase sync

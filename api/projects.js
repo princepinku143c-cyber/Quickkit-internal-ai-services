@@ -2,12 +2,14 @@ import admin from "./_lib/firebaseAdmin.js";
 import { success, error } from "./_lib/response.js";
 
 /**
- * Unified Project Lifecycle & Billing Engine.
- * Handles: Create, List, Billing, and Invoicing.
+ * Hardened Project Lifecycle Engine.
+ * Enforces strict input schemas and deterministic default states.
  */
 export default async function handler(req, res) {
   const authHeader = req.headers.authorization;
-  if (!authHeader) return error(res, "Missing Authorization", 401);
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return error(res, "UNAUTHORIZED: Operator Token Required", 401);
+  }
 
   try {
     const idToken = authHeader.split('Bearer ')[1];
@@ -22,13 +24,12 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       if (action === 'create') return handleCreateProject(req, res, userId);
-      if (action === 'invoice') return handleCreateInvoice(req, res, userId);
     }
 
-    return error(res, "Method/Action Not Allowed", 405);
+    return error(res, "Lifecycle Action Not Allowed", 405);
   } catch (err) {
-    console.error("PROJECTS_ENGINE_CRASH:", err);
-    return error(res, err.message);
+    console.error("PROJECT_ENGINE_CRASH:", err);
+    return error(res, "Build Logic Verification Failure", 403);
   }
 }
 
@@ -37,8 +38,10 @@ async function handleListProjects(res, userId) {
     .where('userId', '==', userId)
     .orderBy('createdAt', 'desc')
     .get();
+  
+  // Always return Array for zero-crash frontend (.map)
   const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  return success(res, data);
+  return success(res, Array.isArray(data) ? data : []);
 }
 
 async function handleGetBilling(res, userId) {
@@ -46,26 +49,38 @@ async function handleGetBilling(res, userId) {
     .where('userId', '==', userId)
     .orderBy('createdAt', 'desc')
     .get();
+    
   const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  return success(res, data);
+  return success(res, Array.isArray(data) ? data : []);
 }
 
 async function handleCreateProject(req, res, userId) {
   const { projectName, packageId, price } = req.body;
-  if (!projectName || !packageId) throw new Error("Project metadata incomplete.");
+  
+  // 1. Strict Schema Validation
+  if (!projectName || projectName.length < 3) return error(res, "Invalid Project Name", 400);
+  if (!packageId) return error(res, "Engineering Package Missing", 400);
+  
+  const validPrice = Number(price);
+  if (isNaN(validPrice) || validPrice <= 0) return error(res, "Invalid Value Scoping", 400);
 
+  // 2. Deterministic State Initialization
   const docRef = await admin.firestore().collection('projects').add({
-    userId, projectName, packageId, price,
-    status: 'READY', progress: 0, advancePaid: false,
+    userId, 
+    projectName, 
+    packageId, 
+    price: validPrice,
+    status: 'PENDING_PAYMENT', // Default SaaS Starting State
+    progress: 5,
+    advancePaid: false,
+    paymentStatus: "AWAITING_DEPOSIT",
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-    logs: [{ time: new Date().toISOString(), msg: "Project Architected & Recorded." }]
+    logs: [{ 
+       time: new Date().toISOString(), 
+       msg: "Project Blueprint Secured. Awaiting initial settlement." 
+    }]
   });
 
-  return success(res, { id: docRef.id });
-}
-
-async function handleCreateInvoice(req, res, userId) {
-  // Mock invoice logic for SaaS MVP
-  return success(res, { status: "GENERATED", invoiceId: Math.random().toString(36).substr(2, 9) });
+  return success(res, { projectId: docRef.id });
 }

@@ -1,12 +1,21 @@
 import fetch from "node-fetch";
 
+/**
+ * Hardened AI Intelligence Service.
+ * Implements context pruning, token constraints, and industrial timeout guards.
+ */
 export const askAI = async (messages) => {
-  // Security & Stability Guards (Verify last message)
-  const lastMsg = Array.isArray(messages) ? messages[messages.length - 1]?.content : '';
-  if (!lastMsg || lastMsg.length > 3000) throw new Error("Neural link payload exceeds safety limits (Max 3000 chars).");
+  // 1. Payload Sanitization & Context Pruning (Save Costs + Stay Relevant)
+  const safeHistory = (Array.isArray(messages) ? messages : []).slice(-6); 
+  const lastMsg = safeHistory[safeHistory.length - 1]?.content || '';
+  
+  if (!lastMsg || lastMsg.length > 2000) {
+    throw new Error("Neural payload exceeds safety constraints (Max 2000 chars).");
+  }
 
+  // 2. Industrial Timeout Guard (10s for Vercel Hobby stability)
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 12000); // 12 seconds link limit
+  const timeoutId = setTimeout(() => controller.abort(), 10000); 
 
   try {
     const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -19,8 +28,11 @@ export const askAI = async (messages) => {
       },
       body: JSON.stringify({
         model: "deepseek/deepseek-chat",
-        messages: messages,
-        max_tokens: 500,
+        messages: safeHistory.map(m => ({
+            role: m.role || 'user',
+            content: m.content || ''
+        })),
+        max_tokens: 300, // Strict token control to optimize costs
         temperature: 0.7
       }),
       signal: controller.signal
@@ -29,16 +41,19 @@ export const askAI = async (messages) => {
     clearTimeout(timeoutId);
 
     if (!res.ok) {
-        const errData = await res.json();
-        throw new Error(errData.error?.message || "OpenRouter Node Overload");
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.error?.message || `Intelligence Node Failure: ${res.status}`);
     }
 
     const data = await res.json();
-    return data?.choices?.[0]?.message?.content || "Neural link stable. I am ready for analysis.";
+    const reply = data?.choices?.[0]?.message?.content;
+    
+    if (!reply) throw new Error("Empty intelligence response generated.");
+    return reply;
 
   } catch (err) {
     clearTimeout(timeoutId);
-    if (err.name === 'AbortError') throw new Error("Neural link timeout. Please simplify the request.");
+    if (err.name === 'AbortError') throw new Error("Intelligence link timeout: Request was too complex for current node.");
     throw err;
   }
 };

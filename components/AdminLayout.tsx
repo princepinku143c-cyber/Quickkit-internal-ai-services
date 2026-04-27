@@ -8,7 +8,6 @@ import {
   ShieldAlert,
   Menu,
   X,
-  X,
   FileText,
   CreditCard
 } from 'lucide-react';
