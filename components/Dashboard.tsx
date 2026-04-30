@@ -120,9 +120,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
           </p>
         </div>
 
-        <div className="mt-8 md:mt-0 flex flex-col items-end">
+        <div className="mt-8 md:mt-0 flex flex-col items-end gap-4">
+            <div className="flex items-center gap-3 px-6 py-3 bg-blue-600/10 border border-blue-500/20 rounded-2xl shadow-lg">
+                <div className="p-2 bg-blue-600 rounded-lg text-white"><Zap className="w-4 h-4" /></div>
+                <div>
+                   <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest leading-none mb-1">Balance</p>
+                   <p className="text-xl font-black text-white leading-none">{user.credits || 0} <span className="text-[10px] text-blue-400 uppercase tracking-widest ml-1">Credits</span></p>
+                </div>
+            </div>
+            
             <div className="p-3 bg-slate-950 border border-slate-800 rounded-2xl flex items-center gap-3 pr-6">
-                <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-black text-white">{user.displayName?.[0] || 'O'}</div>
+                <div className="w-10 h-10 rounded-xl bg-slate-800 flex items-center justify-center font-black text-white">{user.displayName?.[0] || 'O'}</div>
                 <div>
                    <p className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Active session</p>
                    <p className="text-sm font-black text-white uppercase">{user.displayName || 'Operator'}</p>
@@ -208,6 +216,19 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
                                 >
                                     <Globe className="w-4 h-4" /> Access Live Agent <ChevronRight className="w-4 h-4" />
                                 </a>
+                            )}
+                            
+                            {/* View Architectural Scope / Chat History */}
+                            {p.requirement && (
+                                <details className="group/details mt-4 border border-slate-800 rounded-xl overflow-hidden bg-slate-900/50">
+                                    <summary className="p-3 text-[10px] font-black text-slate-400 uppercase tracking-widest cursor-pointer hover:bg-slate-800 transition-colors flex items-center justify-between outline-none">
+                                        Architectural Scope & History
+                                        <ChevronRight className="w-4 h-4 group-open/details:rotate-90 transition-transform" />
+                                    </summary>
+                                    <div className="p-4 border-t border-slate-800 bg-slate-950 text-xs font-mono text-slate-500 whitespace-pre-wrap max-h-[200px] overflow-y-auto custom-scrollbar leading-relaxed">
+                                        {p.requirement}
+                                    </div>
+                                </details>
                             )}
                          </div>
                     </div>

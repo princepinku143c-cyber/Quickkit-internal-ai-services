@@ -192,7 +192,7 @@ const App: React.FC = () => {
         <meta name="keywords" content="AI Business Agents, Autonomous Workflows, Custom AI Engineering, Enterprise AI Automation, Elite Agent Infrastructure" />
         <link rel="canonical" href="https://quickkitai.com" />
       </Helmet>
-      <Navbar />
+      <Navbar onContact={() => setShowLeadForm(true)} isAuthenticated={isAuthenticated} />
       <Hero lang={lang} onLaunchArchitect={handleLaunchArchitect} />
       <ComparisonTable />
       <SocialProofBar />
@@ -200,7 +200,13 @@ const App: React.FC = () => {
       <Testimonials />
       <AIAgents onSelectAgent={handleCatalogSelect} />
       <ServiceCatalog onSelectItem={handleCatalogSelect} />
-      <Pricing lang={lang} />
+      <Pricing 
+        lang={lang} 
+        onSelectPlan={(plan) => {
+          setLeadFormNotes(`I am interested in the ${plan} plan and would like to learn more.`);
+          setShowLeadForm(true);
+        }} 
+      />
       <DemoBooking onBookDemo={() => setShowLeadForm(true)} />
       <SystemArchitecture />
       <ROICalculator lang={lang} />

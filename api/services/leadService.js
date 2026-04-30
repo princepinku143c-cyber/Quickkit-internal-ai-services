@@ -5,7 +5,7 @@ import admin from '../_lib/firebaseAdmin.js';
  * Ensures data integrity and prevents spam-leakage through strict sanitization.
  */
 export const saveLead = async (body) => {
-  const { name, email, phone, businessName, requirement, projectName, price } = body;
+  const { name, email, phone, businessName, requirement, projectName, price, userId } = body;
 
   // 1. Mandatory Schema Scrutiny (Anti-Spam)
   if (!name || name.length < 2) throw new Error("Operator identity required.");
@@ -28,9 +28,24 @@ export const saveLead = async (body) => {
     price: Number(price) || 0,
     status: "NEW", // Deterministic State
     source: 'QuickKit-Platform-V2',
-    createdAt: admin.firestore.FieldValue.serverTimestamp()
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    userId: userId || null
   };
 
   const docRef = await admin.firestore().collection("leads").add(leadPayload);
+  
+  // Also create a pending project for the user dashboard
+  if (userId) {
+     await admin.firestore().collection("projects").add({
+        userId,
+        projectName: leadPayload.projectName,
+        requirement: leadPayload.requirement,
+        status: "PENDING_PAYMENT",
+        advancePaid: false,
+        price: leadPayload.price,
+        createdAt: admin.firestore.FieldValue.serverTimestamp()
+     });
+  }
+  
   return { id: docRef.id };
 };

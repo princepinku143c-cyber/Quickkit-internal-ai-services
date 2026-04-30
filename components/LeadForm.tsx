@@ -84,11 +84,19 @@ export const LeadForm: React.FC<Props> = ({ lang, close, onBack, onVerified, ini
       setIsSending(false);
       setSubmitted(true);
 
-      // 🚨 REDIRECT LOGIC: If AI Blueprint exists, move to checkout
+      // 🚨 REDIRECT LOGIC
       if (aiFinancials && onVerified) {
           setTimeout(() => {
               onVerified(newLead); // Trigger the checkout step in parent
           }, 1500);
+      } else {
+          // Standard lead form: Redirect to dashboard after 2 seconds
+          setTimeout(() => {
+              close();
+              if (auth.currentUser) {
+                  window.location.href = '/dashboard';
+              }
+          }, 2000);
       }
 
     } catch (err: any) {
@@ -212,6 +220,19 @@ export const LeadForm: React.FC<Props> = ({ lang, close, onBack, onVerified, ini
                     <div className="relative">
                         <Building2 className="absolute left-4 top-4 w-4 h-4 text-slate-600 group-focus-within:text-blue-500 transition-colors" />
                         <input required placeholder="e.g. Finance, Healthcare, Real Estate" className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 text-white font-bold outline-none focus:border-blue-500 transition-all" value={formData.businessType} onChange={e => setFormData({...formData, businessType: e.target.value})} />
+                    </div>
+                </div>
+
+                <div className="group">
+                    <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Project Notes / Requirements</label>
+                    <div className="relative">
+                        <FileText className="absolute left-4 top-4 w-4 h-4 text-slate-600 group-focus-within:text-blue-500 transition-colors" />
+                        <textarea 
+                          placeholder="Tell us about your automation needs..." 
+                          className="w-full bg-slate-950 border border-slate-800 rounded-2xl py-4 pl-12 pr-4 text-white font-bold outline-none focus:border-blue-500 transition-all min-h-[100px] resize-none" 
+                          value={formData.notes} 
+                          onChange={e => setFormData({...formData, notes: e.target.value})} 
+                        />
                     </div>
                 </div>
               </div>

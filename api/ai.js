@@ -32,16 +32,48 @@ export default async function handler(req, res) {
 }
 
 async function handleKelly(req, res, userId) {
-  const { messages } = req.body;
-  if (!messages) throw new Error("Payload missing: Neural context required.");
+  const { message, history } = req.body;
+  if (!message) return error(res, "Payload missing: Neural context required.", 400);
 
-  await checkRateLimit(admin, userId, "kelly_api", 10);
+  // 1. Check Rate Limit
+  await checkRateLimit(admin, userId, "kelly_api", 15);
 
+  // 2. Check & Deduct Credits
+  const userRef = admin.firestore().collection("users").doc(userId);
+  
   try {
+    const result = await admin.firestore().runTransaction(async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+      if (!userDoc.exists) throw new Error("User profile not initialized.");
+      
+      const userData = userDoc.data();
+      const currentCredits = userData.credits || 0;
+      
+      if (currentCredits < 10) {
+        const err = new Error("LIMIT_REACHED");
+        err.status = 403;
+        throw err;
+      }
+      
+      // Deduct 10 credits per AI Architect prompt
+      transaction.update(userRef, { credits: currentCredits - 10 });
+      return { success: true };
+    });
+
+    // 3. Generate AI Response
+    // Construct messages for OpenRouter (last 6 context window)
+    const messages = [
+        ...(Array.isArray(history) ? history : []).map(m => ({ role: m.role || 'user', content: m.content || '' })),
+        { role: 'user', content: message }
+    ].slice(-6);
+
     const reply = await askAI(messages);
     return success(res, { reply });
+
   } catch (e) {
-    return error(res, e.message, e.message.includes("timeout") ? 504 : 500);
+    if (e.message === "LIMIT_REACHED") return error(res, "LIMIT_REACHED", 403);
+    console.error("KELLY_ERROR:", e);
+    return error(res, e.message, e.status || 500);
   }
 }
 

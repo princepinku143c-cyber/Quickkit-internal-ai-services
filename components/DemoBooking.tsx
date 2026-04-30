@@ -87,6 +87,16 @@ export const DemoBooking: React.FC<DemoBookingProps> = ({ onBookDemo }) => {
                   styles={{ height: '100%', width: '100%' }}
                 />
              </div>
+             <div className="text-center mt-4">
+                <a 
+                  href="https://calendly.com/princepinku143c/30min" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-slate-400 hover:text-blue-500 transition-colors uppercase tracking-widest font-bold"
+                >
+                  Can't see the calendar? Open in new tab →
+                </a>
+             </div>
           </div>
 
         </div>

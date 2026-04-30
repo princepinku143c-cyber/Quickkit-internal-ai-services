@@ -4,9 +4,10 @@ import { Check, Info, AlertCircle, ShieldCheck, Zap } from 'lucide-react';
 
 interface PricingProps {
   lang: Language;
+  onSelectPlan: (plan: string) => void;
 }
 
-export const Pricing: React.FC<PricingProps> = ({ lang }) => {
+export const Pricing: React.FC<PricingProps> = ({ lang, onSelectPlan }) => {
   return (
     <section id="pricing" className="py-32 bg-nexus-dark relative border-t border-nexus-border">
       <div className="container mx-auto px-4 md:px-6">
@@ -58,7 +59,13 @@ export const Pricing: React.FC<PricingProps> = ({ lang }) => {
                    </ul>
                 </div>
              </div>
-             <div className="mt-8 pt-6 border-t border-slate-800">
+             <button 
+                onClick={() => onSelectPlan('BASIC')}
+                className="mt-8 w-full py-4 bg-slate-800 hover:bg-slate-700 text-white font-black uppercase tracking-widest rounded-xl transition-all border border-slate-700 hover:border-emerald-500/50"
+             >
+                Get Started
+             </button>
+             <div className="mt-6 pt-6 border-t border-slate-800">
                 <p className="text-[10px] font-bold uppercase text-slate-500 tracking-widest mb-1">Ideal For:</p>
                 <p className="text-sm text-slate-300">Beginners / Small Businesses dipping toes into AI.</p>
              </div>
@@ -100,7 +107,13 @@ export const Pricing: React.FC<PricingProps> = ({ lang }) => {
                    </ul>
                 </div>
              </div>
-             <div className="mt-8 pt-6 border-t border-slate-800">
+             <button 
+                onClick={() => onSelectPlan('ADVANCED')}
+                className="mt-8 w-full py-4 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest rounded-xl transition-all shadow-xl hover:scale-[1.02]"
+             >
+                Select Advanced
+             </button>
+             <div className="mt-6 pt-6 border-t border-slate-800">
                 <p className="text-[10px] font-bold uppercase text-blue-400 tracking-widest mb-1">Ideal For:</p>
                 <p className="text-sm text-slate-300">Growing teams with high client interaction volume.</p>
              </div>
@@ -140,7 +153,13 @@ export const Pricing: React.FC<PricingProps> = ({ lang }) => {
                    </ul>
                 </div>
              </div>
-             <div className="mt-8 pt-6 border-t border-slate-800">
+             <button 
+                onClick={() => onSelectPlan('FULL_AUTO')}
+                className="mt-8 w-full py-4 bg-slate-800 hover:bg-slate-700 text-white font-black uppercase tracking-widest rounded-xl transition-all border border-slate-700 hover:border-purple-500/50"
+             >
+                Scale with AI
+             </button>
+             <div className="mt-6 pt-6 border-t border-slate-800">
                 <p className="text-[10px] font-bold uppercase text-slate-500 tracking-widest mb-1">Ideal For:</p>
                 <p className="text-sm text-slate-300">Scaling Agencies & Enterprise Operations.</p>
              </div>

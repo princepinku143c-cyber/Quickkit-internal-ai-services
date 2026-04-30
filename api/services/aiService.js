@@ -2,38 +2,41 @@ import fetch from "node-fetch";
 
 /**
  * Hardened AI Intelligence Service.
- * Implements context pruning, token constraints, and industrial timeout guards.
+ * Uses Google Gemini Pro for Industrial-grade stability.
  */
 export const askAI = async (messages) => {
-  // 1. Payload Sanitization & Context Pruning (Save Costs + Stay Relevant)
-  const safeHistory = (Array.isArray(messages) ? messages : []).slice(-6); 
+  const safeHistory = (Array.isArray(messages) ? messages : []).slice(-8); 
   const lastMsg = safeHistory[safeHistory.length - 1]?.content || '';
   
-  if (!lastMsg || lastMsg.length > 2000) {
-    throw new Error("Neural payload exceeds safety constraints (Max 2000 chars).");
+  if (!lastMsg || lastMsg.length > 3000) {
+    throw new Error("Neural payload exceeds safety constraints.");
   }
 
-  // 2. Industrial Timeout Guard (10s for Vercel Hobby stability)
+  const apiKey = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error("AI Infrastructure Offline: Missing API Key.");
+
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 10000); 
+  const timeoutId = setTimeout(() => controller.abort(), 15000); 
 
   try {
-    const res = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    // Gemini 1.5 Flash - Ultra fast and reliable for scoping
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+    
+    // Transform chat history to Gemini format
+    const contents = safeHistory.map(m => ({
+        role: m.role === 'model' ? 'model' : 'user',
+        parts: [{ text: m.content }]
+    }));
+
+    const res = await fetch(url, {
       method: "POST",
-      headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_ADMIN_KEY}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://quickkitai.com",
-        "X-Title": "QuickKit AI"
-      },
-      body: JSON.stringify({
-        model: "deepseek/deepseek-chat",
-        messages: safeHistory.map(m => ({
-            role: m.role || 'user',
-            content: m.content || ''
-        })),
-        max_tokens: 300, // Strict token control to optimize costs
-        temperature: 0.7
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ 
+        contents,
+        generationConfig: {
+            maxOutputTokens: 800,
+            temperature: 0.7,
+        }
       }),
       signal: controller.signal
     });
@@ -42,18 +45,19 @@ export const askAI = async (messages) => {
 
     if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.error?.message || `Intelligence Node Failure: ${res.status}`);
+        console.error("GEMINI_NODE_ERROR:", errData);
+        throw new Error(`Intelligence Node Failure: ${res.status}`);
     }
 
     const data = await res.json();
-    const reply = data?.choices?.[0]?.message?.content;
+    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
     
-    if (!reply) throw new Error("Empty intelligence response generated.");
+    if (!reply) throw new Error("Neural node returned empty response.");
     return reply;
 
   } catch (err) {
     clearTimeout(timeoutId);
-    if (err.name === 'AbortError') throw new Error("Intelligence link timeout: Request was too complex for current node.");
+    if (err.name === 'AbortError') throw new Error("Neural link timeout.");
     throw err;
   }
 };

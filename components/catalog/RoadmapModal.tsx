@@ -147,6 +147,11 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
     }
     setIsDeploying(true);
     try {
+      // Compile Chat History
+      const historyStr = chatHistory && chatHistory.length > 0 
+          ? "\n\n=== ARCHITECT CHAT HISTORY ===\n" + chatHistory.map(msg => `[${msg.role === 'user' ? 'Client' : 'Kelly'}]: ${msg.content}`).join("\n\n")
+          : "";
+
       // 1. Send Lead
       await apiCall('/api/system?action=lead', { 
           name: formData.name,
@@ -154,8 +159,9 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
           phone: formData.phone,
           businessName: formData.businessName,
           projectName: item?.name || 'Custom Build', 
-          requirement: formData.requirement || `Architect Session: ${item?.name}`,
-          price: finalPrice 
+          requirement: (formData.requirement || `Architect Session: ${item?.name || 'Custom Build'}`) + historyStr,
+          price: finalPrice,
+          userId: auth.currentUser.uid
       });
 
       // 2. We skip project creation here since it's a lead-first flow now.
