@@ -2,7 +2,7 @@ import fetch from "node-fetch";
 
 /**
  * Hardened AI Intelligence Service.
- * Uses Google Gemini Pro for Industrial-grade stability.
+ * Uses encrypted Neural Node infrastructure.
  */
 export const askAI = async (messages) => {
   const safeHistory = (Array.isArray(messages) ? messages : []).slice(-8); 
@@ -12,31 +12,44 @@ export const askAI = async (messages) => {
     throw new Error("Neural payload exceeds safety constraints.");
   }
 
-  const apiKey = process.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error("AI Infrastructure Offline: Missing API Key.");
+  // 🛡️ SECURITY: Keys and endpoints are masked in environment variables
+  // No provider names or API keys are exposed in the source code.
+  const apiKey = process.env.NEURAL_NODE_KEY;
+  const endpoint = process.env.NEURAL_NODE_ENDPOINT;
+  const engine = process.env.NEURAL_NODE_ENGINE;
+
+  if (!apiKey || !endpoint || !engine) {
+     throw new Error("AI Infrastructure Offline: Missing Neural Node Configuration.");
+  }
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000); 
+  const timeoutId = setTimeout(() => controller.abort(), 20000); 
 
   try {
-    // Gemini 1.5 Flash - Ultra fast and reliable for scoping
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
-    
-    // Transform chat history to Gemini format
-    const contents = safeHistory.map(m => ({
-        role: m.role === 'model' ? 'model' : 'user',
-        parts: [{ text: m.content }]
+    const formattedMessages = safeHistory.map(m => ({
+        role: m.role === 'model' ? 'assistant' : 'user',
+        content: m.content
     }));
 
-    const res = await fetch(url, {
+    // Inject system persona if it's the start of the conversation
+    if (!formattedMessages.some(m => m.role === 'system')) {
+        formattedMessages.unshift({
+            role: 'system',
+            content: "You are Kelly, the elite AI Architect at QuickKit AI. You help clients build custom AI automation systems for their businesses. You are highly intelligent, professional, and concise. Guide the user to explain their business needs and propose an automation solution."
+        });
+    }
+
+    const res = await fetch(endpoint, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`
+      },
       body: JSON.stringify({ 
-        contents,
-        generationConfig: {
-            maxOutputTokens: 800,
-            temperature: 0.7,
-        }
+        model: engine,
+        messages: formattedMessages,
+        max_tokens: 800,
+        temperature: 0.7,
       }),
       signal: controller.signal
     });
@@ -45,12 +58,12 @@ export const askAI = async (messages) => {
 
     if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        console.error("GEMINI_NODE_ERROR:", errData);
+        console.error("NEURAL_NODE_ERROR:", errData);
         throw new Error(`Intelligence Node Failure: ${res.status}`);
     }
 
     const data = await res.json();
-    const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const reply = data?.choices?.[0]?.message?.content;
     
     if (!reply) throw new Error("Neural node returned empty response.");
     return reply;
