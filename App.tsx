@@ -270,6 +270,8 @@ const App: React.FC = () => {
       <ErrorBoundary>
         <Routes>
           <Route path="/" element={<LandingView />} />
+          <Route path="/pricing" element={<LandingView />} />
+          <Route path="/ai-agents" element={<LandingView />} />
           <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
           <Route path="/dashboard" element={
             isAuthenticated ? (
