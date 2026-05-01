@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { collection, addDoc, setDoc, doc } from 'firebase/firestore';
 import { signInWithPopup } from 'firebase/auth';
@@ -8,6 +7,7 @@ import { PlanTier, Language, LeadSubmission, AIQuote } from '../types';
 import { CONTACT_EMAIL } from '../constants';
 import { TRANSLATIONS } from '../data/translations';
 import { Logo } from './Logo';
+import { apiCall } from '../lib/api';
 
 // NEW: Advanced Phone Input
 import PhoneInput from 'react-phone-input-2';
@@ -68,17 +68,7 @@ export const LeadForm: React.FC<Props> = ({ lang, close, onBack, onVerified, ini
 
     try {
       // 1. Send to Backend API for Lead Processing & CRM Sync
-      const response = await fetch(`${window.location.origin}/api/system?action=lead`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newLead)
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || result.details || "Transmission failed.");
-      }
+      const result = await apiCall(`${window.location.origin}/api/system?action=lead`, newLead);
 
       // 2. SUCCESS HANDLING
       setIsSending(false);
@@ -101,7 +91,7 @@ export const LeadForm: React.FC<Props> = ({ lang, close, onBack, onVerified, ini
 
     } catch (err: any) {
       console.error("Submission error:", err);
-      alert(err.message || "Failed to sync with Command Center.");
+      alert(err.message || "Something went wrong. Please try again.");
       setIsSending(false);
     }
   };

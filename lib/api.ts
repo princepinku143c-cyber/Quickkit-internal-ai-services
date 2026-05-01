@@ -18,7 +18,7 @@ export const apiCall = async (url: string, body?: any) => {
   const raw = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    throw new Error(raw.message || raw.error || "Neural link communication failure.");
+    throw new Error(raw.message || raw.error || "Connection issue. Please retry.");
   }
 
   // Handle both direct and wrapped responses for legacy compatibility

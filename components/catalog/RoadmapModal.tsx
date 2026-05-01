@@ -168,7 +168,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
       setView('success');
     } catch (err: any) {
         console.error("LEAD_PROJECT_ERROR:", err);
-        alert(`Validation failure: ${err.message}`);
+        alert(err.message || "Something went wrong. Please try again.");
     } finally {
         setIsDeploying(false);
     }
