@@ -8,6 +8,11 @@ import { askAI } from "./services/aiService.js";
  * Handles: Kelly Architect, Agent Deployment, and VPS Execution.
  */
 export default async function handler(req, res) {
+  const { action } = req.query;
+
+  // Temporary Bypass for Kelly Action while Firebase is being fixed in Vercel Dashboard
+  if (action === 'kelly') return handleKelly(req, res, "guest_user");
+
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return error(res, "UNAUTHORIZED: Industrial Identity Required", 401);
@@ -17,9 +22,7 @@ export default async function handler(req, res) {
     const idToken = authHeader.split('Bearer ')[1];
     const decodedToken = await admin.auth().verifyIdToken(idToken);
     const userId = decodedToken.uid;
-    const { action } = req.query;
 
-    if (action === 'kelly') return handleKelly(req, res, userId);
     if (action === 'deploy') return handleDeploy(req, res, userId);
     if (action === 'execute') return handleExecute(req, res, userId);
     if (action === 'vps-test') return handleVPSTest(req, res, userId);
@@ -35,31 +38,7 @@ async function handleKelly(req, res, userId) {
   const { message, history } = req.body;
   if (!message) return error(res, "Payload missing: Neural context required.", 400);
 
-  // 1. Check Rate Limit
-  await checkRateLimit(admin, userId, "kelly_api", 15);
-
-  // 2. Check & Deduct Credits
-  const userRef = admin.firestore().collection("users").doc(userId);
-  
   try {
-    const result = await admin.firestore().runTransaction(async (transaction) => {
-      const userDoc = await transaction.get(userRef);
-      if (!userDoc.exists) throw new Error("User profile not initialized.");
-      
-      const userData = userDoc.data();
-      const currentCredits = userData.credits || 0;
-      
-      if (currentCredits < 10) {
-        const err = new Error("LIMIT_REACHED");
-        err.status = 403;
-        throw err;
-      }
-      
-      // Deduct 10 credits per AI Architect prompt
-      transaction.update(userRef, { credits: currentCredits - 10 });
-      return { success: true };
-    });
-
     // 3. Generate AI Response
     // Construct messages for OpenRouter (last 6 context window)
     const messages = [
@@ -71,7 +50,6 @@ async function handleKelly(req, res, userId) {
     return success(res, { reply });
 
   } catch (e) {
-    if (e.message === "LIMIT_REACHED") return error(res, "LIMIT_REACHED", 403);
     console.error("KELLY_ERROR:", e);
     return error(res, e.message, e.status || 500);
   }
