@@ -1,0 +1,16 @@
+{
+  "name": "QuickKit AI",
+  "short_name": "QuickKit",
+  "description": "Enterprise Workflow Automation Platform",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#030712",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/QuickKit_Logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
