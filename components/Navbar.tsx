@@ -33,12 +33,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onContact, isAuthenticated }) =>
 
         {/* Desktop Menu */}
         <div className="hidden lg:flex items-center gap-8">
-          <button onClick={() => scrollTo('hero')} className="text-sm font-bold text-slate-300 hover:text-white transition">Home</button>
-          <button onClick={() => scrollTo('services')} className="text-sm font-bold text-slate-300 hover:text-white transition">Services</button>
-          <button onClick={() => scrollTo('ai-agents')} className="text-sm font-bold text-slate-300 hover:text-white transition">AI Agents</button>
-          <button onClick={() => scrollTo('pricing')} className="text-sm font-bold text-slate-300 hover:text-white transition">Pricing</button>
-          <button onClick={() => scrollTo('demo')} className="text-sm font-bold text-slate-300 hover:text-white transition">Demo</button>
-          <button onClick={() => scrollTo('roi')} className="text-sm font-bold text-slate-300 hover:text-white transition">ROI Calculator</button>
+          <a href="#hero" onClick={(e) => { e.preventDefault(); scrollTo('hero'); }} className="text-sm font-bold text-slate-300 hover:text-white transition">Home</a>
+          <a href="#services" onClick={(e) => { e.preventDefault(); scrollTo('services'); }} className="text-sm font-bold text-slate-300 hover:text-white transition">Services</a>
+          <a href="#ai-agents" onClick={(e) => { e.preventDefault(); scrollTo('ai-agents'); }} className="text-sm font-bold text-slate-300 hover:text-white transition">AI Agents</a>
+          <a href="#pricing" onClick={(e) => { e.preventDefault(); scrollTo('pricing'); }} className="text-sm font-bold text-slate-300 hover:text-white transition">Pricing</a>
+          <a href="#demo" onClick={(e) => { e.preventDefault(); scrollTo('demo'); }} className="text-sm font-bold text-slate-300 hover:text-white transition">Demo</a>
+          <a href="#roi" onClick={(e) => { e.preventDefault(); scrollTo('roi'); }} className="text-sm font-bold text-slate-300 hover:text-white transition">ROI Calculator</a>
           
           <Link to={isAuthenticated ? "/dashboard" : "/login"} replace className="text-sm font-bold text-blue-400 hover:text-blue-300 transition ml-4">
             {isAuthenticated ? "Dashboard" : "Client Portal"}
@@ -66,12 +66,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onContact, isAuthenticated }) =>
       {/* Mobile Menu */}
       {isOpen && (
         <div className="lg:hidden absolute top-full left-0 w-full bg-[#030712] border-b border-slate-800 p-6 flex flex-col gap-6 shadow-2xl">
-          <button onClick={() => scrollTo('hero')} className="text-left text-lg font-bold text-white">Home</button>
-          <button onClick={() => scrollTo('services')} className="text-left text-lg font-bold text-slate-300">Services</button>
-          <button onClick={() => scrollTo('ai-agents')} className="text-left text-lg font-bold text-slate-300">AI Agents</button>
-          <button onClick={() => scrollTo('pricing')} className="text-left text-lg font-bold text-slate-300">Pricing</button>
-          <button onClick={() => scrollTo('demo')} className="text-left text-lg font-bold text-slate-300">Demo</button>
-          <button onClick={() => scrollTo('roi')} className="text-left text-lg font-bold text-slate-300">ROI Calculator</button>
+          <a href="#hero" onClick={(e) => { e.preventDefault(); scrollTo('hero'); }} className="text-left text-lg font-bold text-white">Home</a>
+          <a href="#services" onClick={(e) => { e.preventDefault(); scrollTo('services'); }} className="text-left text-lg font-bold text-slate-300">Services</a>
+          <a href="#ai-agents" onClick={(e) => { e.preventDefault(); scrollTo('ai-agents'); }} className="text-left text-lg font-bold text-slate-300">AI Agents</a>
+          <a href="#pricing" onClick={(e) => { e.preventDefault(); scrollTo('pricing'); }} className="text-left text-lg font-bold text-slate-300">Pricing</a>
+          <a href="#demo" onClick={(e) => { e.preventDefault(); scrollTo('demo'); }} className="text-left text-lg font-bold text-slate-300">Demo</a>
+          <a href="#roi" onClick={(e) => { e.preventDefault(); scrollTo('roi'); }} className="text-left text-lg font-bold text-slate-300">ROI Calculator</a>
           <Link to={isAuthenticated ? "/dashboard" : "/login"} replace onClick={() => setIsOpen(false)} className="text-left text-lg font-bold text-blue-400 border-t border-slate-800 pt-4">
             {isAuthenticated ? "Dashboard" : "Client Portal"}
           </Link>

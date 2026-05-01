@@ -223,6 +223,8 @@ const App: React.FC = () => {
             <span>Support: support@quickkitai.com</span>
           </div>
           <div className="flex flex-wrap justify-center gap-6 mb-8 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">
+            <a href="#ai-agents" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">AI Agents</a>
+            <a href="#pricing" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Pricing</a>
             <Link to="/privacy" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Terms of Service</Link>
             <Link to="/refund" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Refund Policy</Link>
