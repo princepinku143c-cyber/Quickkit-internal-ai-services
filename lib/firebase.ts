@@ -8,29 +8,31 @@ import { getFirestore } from "firebase/firestore";
 // SHARED CONFIG: Use ONE firebaseConfig for the entire app.
 
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDysmepgTK_Uj4Q1_5O4xbo7mjFwSum410",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "ai-crm-system-d28ef.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "ai-crm-system-d28ef",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "ai-crm-system-d28ef.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "849924322329",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:849924322329:web:de81e33ecf3b2b26aa6688",
-  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-NJCV2Z3HEW"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || ""
 };
 
-// Initialize Firebase only if config is present
+// Initialize Firebase only if config is present (prevents crash in demo mode)
+export const isFirebaseConfigured = !!import.meta.env.VITE_FIREBASE_API_KEY;
+
 let app = null;
 try {
-  if (import.meta.env.VITE_FIREBASE_API_KEY) {
+  if (isFirebaseConfigured) {
     app = initializeApp(firebaseConfig);
     console.log("✅ Firebase Client Stack Initialized.");
   } else {
     console.warn("⚠️ Firebase Config Missing: Running in limited mode. Please check VITE_FIREBASE_API_KEY.");
   }
-} catch (e) {
+} catch (e: any) {
   console.error("❌ Firebase Init Error:", e.message);
 }
 
-export const auth = app ? getAuth(app) : ({} as any);
+export const auth = app ? getAuth(app) : ({ currentUser: null, onAuthStateChanged: () => {} } as any);
 export const db = app ? getFirestore(app) : ({} as any);
 export const googleProvider = new GoogleAuthProvider();
 

@@ -1,18 +1,18 @@
 import { auth } from './firebase';
 
-export const apiCall = async (url: string, body?: any) => {
+export const apiCall = async (url: string, body?: any, options: { allowGuest?: boolean } = {}) => {
   const user = auth.currentUser;
-  let idToken = null;
   
-  if (user) {
-    idToken = await user.getIdToken();
+  if (!user && !options.allowGuest) {
+    throw new Error("Operator Verification Required. Please log in.");
   }
 
   const headers: any = {
     "Content-Type": "application/json"
   };
 
-  if (idToken) {
+  if (user) {
+    const idToken = await user.getIdToken();
     headers["Authorization"] = `Bearer ${idToken}`;
   }
 

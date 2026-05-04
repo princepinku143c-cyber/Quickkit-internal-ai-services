@@ -69,39 +69,28 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
         setErrorStatus(null);
 
         try {
-            const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : null;
-            const authHeader = idToken ? `Bearer ${idToken}` : '';
+            const response = await apiCall('/api/ai?action=kelly', {
+                message: userMsg,
+                history: (Array.isArray(chatHistory) ? chatHistory : []).map(m => ({
+                    role: m.role || 'user',
+                    content: m.content || ''
+                }))
+            }, { allowGuest: true });
 
-            const res = await fetch(`${window.location.origin}/api/ai?action=kelly`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': authHeader
-                },
-                body: JSON.stringify({
-                    message: userMsg,
-                    history: (Array.isArray(chatHistory) ? chatHistory : []).map(m => ({
-                        role: m.role || 'user',
-                        content: m.content || ''
-                    }))
-                })
-            });
+            const data = response;
 
-            const data = await res.json();
-
-            if (res.status === 403 && data.message?.includes("INSUFFICIENT_CREDITS")) {
+            if (data.status === 403 && data.message?.includes("INSUFFICIENT_CREDITS")) {
                 setChatHistory(prev => [...prev, { role: 'model', content: "🚨 Your neural credits are depleted. Please top up your account to continue the architectural design." }]);
-            } else if (res.status === 403 && data.message === "LIMIT_REACHED") {
+            } else if (data.status === 403 && data.message === "LIMIT_REACHED") {
                 setErrorStatus("LOGIN_REQUIRED");
                 setChatHistory(prev => [...prev, { role: 'model', content: "🚨 You've reached the guest message limit. Please log in to continue our architectural session." }]);
-            } else if (!res.ok) {
-                setChatHistory(prev => [...prev, { role: 'model', content: "System temporarily unavailable. Our engineers are stabilizing the neural link." }]);
             } else {
                 const replyText = data.data?.reply || data.reply || "I'm here to translate your vision into automation.";
                 setChatHistory(prev => [...prev, { role: 'model', content: replyText }]);
             }
-        } catch (err) {
-            setChatHistory(prev => [...prev, { role: 'model', content: "🚨 Neural link timeout. Please try again." }]);
+        } catch (err: any) {
+            console.error("Kelly Chat Error:", err);
+            setChatHistory(prev => [...prev, { role: 'model', content: err.message || "🚨 Neural link timeout. Please try again." }]);
         } finally {
             setIsTyping(false);
         }
@@ -159,8 +148,8 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                 projectName: item?.name || 'Custom Build',
                 requirement: (formData.requirement || `Architect Session: ${item?.name || 'Custom Build'}`) + historyStr,
                 price: finalPrice,
-                userId: auth.currentUser.uid
-            });
+                userId: auth.currentUser?.uid || null
+            }, { allowGuest: true });
 
             if (response && response.projectId) {
                 setActiveProjectId(response.projectId);
