@@ -5,6 +5,7 @@ type ApiCallOptions = {
 };
 
 export const apiCall = async (url: string, body?: any, options: ApiCallOptions = {}) => {
+  // Firebase auth can be an empty object in demo mode, so guard access.
   const user = 'currentUser' in auth ? auth.currentUser : null;
   if (!user && !options.allowGuest) {
     throw new Error("Operator Verification Required. Please log in.");
