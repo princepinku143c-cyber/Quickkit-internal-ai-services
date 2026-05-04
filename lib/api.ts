@@ -5,7 +5,7 @@ type ApiCallOptions = {
 };
 
 export const apiCall = async (url: string, body?: any, options: ApiCallOptions = {}) => {
-  const user = (auth as any)?.currentUser;
+  const user = 'currentUser' in auth ? auth.currentUser : null;
   if (!user && !options.allowGuest) {
     throw new Error("Operator Verification Required. Please log in.");
   }
