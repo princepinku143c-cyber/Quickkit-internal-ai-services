@@ -68,7 +68,9 @@ export const LeadForm: React.FC<Props> = ({ lang, close, onBack, onVerified, ini
 
     try {
       // 1. Send to Backend API for Lead Processing & CRM Sync
-      const result = await apiCall(`${window.location.origin}/api/system?action=lead`, newLead);
+      const result = await apiCall(`${window.location.origin}/api/system?action=lead`, newLead, {
+        allowGuest: true
+      });
 
       // 2. SUCCESS HANDLING
       setIsSending(false);
