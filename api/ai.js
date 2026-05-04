@@ -10,18 +10,26 @@ import { askAI } from "./services/aiService.js";
 export default async function handler(req, res) {
   const { action } = req.query;
 
-  // Temporary Bypass for Kelly Action while Firebase is being fixed in Vercel Dashboard
-  if (action === 'kelly') return handleKelly(req, res, "guest_user");
-
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return error(res, "UNAUTHORIZED: Industrial Identity Required", 401);
-  }
-
   try {
-    const idToken = authHeader.split('Bearer ')[1];
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const userId = decodedToken.uid;
+    const authHeader = req.headers.authorization;
+    let userId = null;
+    let decodedToken = null;
+
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+      const idToken = authHeader.split('Bearer ')[1];
+      decodedToken = await admin.auth().verifyIdToken(idToken);
+      userId = decodedToken.uid;
+    }
+
+    // --- Action Routing ---
+    
+    // 1. PUBLIC ACTIONS
+    if (action === 'kelly') return handleKelly(req, res, userId);
+
+    // 2. PROTECTED ACTIONS (Requires Auth)
+    if (!userId) {
+      return error(res, "UNAUTHORIZED: Identity Verification Required for Industrial Nodes.", 401);
+    }
 
     if (action === 'deploy') return handleDeploy(req, res, userId);
     if (action === 'execute') return handleExecute(req, res, userId);
@@ -39,14 +47,41 @@ async function handleKelly(req, res, userId) {
   if (!message) return error(res, "Payload missing: Neural context required.", 400);
 
   try {
-    // 3. Generate AI Response
-    // Construct messages for OpenRouter (last 6 context window)
+    // 1. Credit / Access Check
+    if (userId) {
+        const userRef = admin.firestore().collection('users').doc(userId);
+        const userSnap = await userRef.get();
+        
+        let credits = 0;
+        if (!userSnap.exists) {
+            credits = 500;
+            await userRef.set({ credits, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+        } else {
+            credits = userSnap.data().credits || 0;
+        }
+
+        if (credits < 10) {
+            return error(res, "INSUFFICIENT_CREDITS: Neural power depleted. Please upgrade your node.", 403);
+        }
+
+        // Deduct Credits
+        await userRef.update({ 
+            credits: admin.firestore.FieldValue.increment(-10),
+            lastUsed: admin.firestore.FieldValue.serverTimestamp()
+        });
+    } else {
+        // GUEST MODE: Basic Rate Limiting Check (Optional: Add IP-based limiting here)
+        console.log("GUEST_ACCESS: Initializing Neural Consultation for Anonymous Node.");
+    }
+
+    // 2. Generate AI Response
     const messages = [
         ...(Array.isArray(history) ? history : []).map(m => ({ role: m.role || 'user', content: m.content || '' })),
         { role: 'user', content: message }
     ].slice(-6);
 
     const reply = await askAI(messages);
+
     return success(res, { reply });
 
   } catch (e) {

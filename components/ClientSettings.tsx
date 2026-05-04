@@ -55,7 +55,8 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
     loadConfig();
   }, [user.uid]);
 
-  const handleSave = async () => {
+  const handleSave = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setErrorMsg(null);
     
     // Validate API key only if it's being updated (is not empty)
@@ -108,7 +109,7 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
   }
 
   return (
-    <div className="space-y-6 pb-10">
+    <form onSubmit={handleSave} className="space-y-6 pb-10">
       <div>
         <h1 className="text-2xl font-bold text-white">Your Settings</h1>
         <p className="text-slate-400">Private configuration — only visible to you.</p>
@@ -140,6 +141,7 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
                   <div className="relative">
                       <input 
                         type="password"
+                        autoComplete="new-password"
                         value={apiData.geminiKey || (savedStatus.hasApiKey ? "****************" : "")}
                         onChange={e => setApiData({...apiData, geminiKey: e.target.value})}
                         onFocus={(e) => { if (savedStatus.hasApiKey && !apiData.geminiKey) e.target.value = ''; }}
@@ -216,6 +218,7 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
                 </label>
                 <input 
                   type="password"
+                  autoComplete="new-password"
                   placeholder={savedStatus.hasVpsToken ? "•••••••••••••••• (Type to overwrite)" : "Paste secret auth token"}
                   value={apiData.vpsToken}
                   onChange={e => setApiData({...apiData, vpsToken: e.target.value})}
@@ -239,22 +242,23 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
                    Status: <span className={savedStatus.hasVpsEndpoint ? "text-emerald-400" : "text-amber-400"}>
                      {savedStatus.hasVpsEndpoint ? '✅ Connected' : '❌ Disconnected'}
                    </span>
-                </div>
-             </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex flex-col items-end pt-6 gap-3">
-        <button 
-          onClick={handleSave}
-          className={`px-8 py-4 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-3 transition-all ${
-            saved ? 'bg-emerald-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'
-          }`}
-        >
-          {saved ? '✓ Saved' : <><Save className="w-4 h-4" /> Save Configuration</>}
-        </button>
-      </div>
-    </div>
-  );
-};
+                 </div>
+              </div>
+           </div>
+         </div>
+       </div>
+ 
+       <div className="flex flex-col items-end pt-6 gap-3">
+         <button 
+           type="submit"
+           className={`px-8 py-4 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-3 transition-all ${
+             saved ? 'bg-emerald-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'
+           }`}
+         >
+           {saved ? '✓ Saved' : <><Save className="w-4 h-4" /> Save Configuration</>}
+         </button>
+       </div>
+       {errorMsg && <p className="text-xs text-red-500 text-right font-bold mt-2">{errorMsg}</p>}
+     </form>
+   );
+ };

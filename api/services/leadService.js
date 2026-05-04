@@ -5,6 +5,13 @@ import admin from '../_lib/firebaseAdmin.js';
  * Ensures data integrity and prevents spam-leakage through strict sanitization.
  */
 export const saveLead = async (body) => {
+  // 0. Pre-flight Check: Ensure DB is connected
+  try {
+    admin.firestore();
+  } catch (dbErr) {
+    throw new Error("🚨 Backend Infrastructure Offline: Firebase Admin credentials (FIREBASE_PRIVATE_KEY, etc.) are missing or invalid in Vercel.");
+  }
+
   const { name, email, phone, businessName, requirement, projectName, price, userId } = body;
 
   // 1. Mandatory Schema Scrutiny (Anti-Spam)
@@ -34,9 +41,10 @@ export const saveLead = async (body) => {
 
   const docRef = await admin.firestore().collection("leads").add(leadPayload);
   
+  let projectId = null;
   // Also create a pending project for the user dashboard
   if (userId) {
-     await admin.firestore().collection("projects").add({
+     const projectRef = await admin.firestore().collection("projects").add({
         userId,
         projectName: leadPayload.projectName,
         requirement: leadPayload.requirement,
@@ -45,7 +53,8 @@ export const saveLead = async (body) => {
         price: leadPayload.price,
         createdAt: admin.firestore.FieldValue.serverTimestamp()
      });
+     projectId = projectRef.id;
   }
   
-  return { id: docRef.id };
+  return { id: docRef.id, projectId };
 };

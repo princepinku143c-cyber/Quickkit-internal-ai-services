@@ -32,6 +32,7 @@ export default async function handler(req, res) {
     if (action === 'logs') return handleLogs(res, userId);
     if (action === 'workflows') return handleWorkflows(res, userId);
     if (action === 'trigger') return handleTrigger(req, res, userId);
+    if (action === 'setup-admin') return handleSetupAdmin(req, res, userId, decodedToken.email);
 
     return error(res, "Action Not Allowed", 400);
   } catch (err) {
@@ -180,4 +181,30 @@ async function handleWorkflows(res, userId) {
 async function handleTrigger(req, res, userId) {
     const { projectId, params } = req.body;
     return success(res, { status: "TRIGGERED", taskId: `job_${Date.now()}` });
+}
+
+async function handleSetupAdmin(req, res, userId, email) {
+    const targetEmails = [
+      "support@quickkitai.com",
+      "admin@quickkitai.com",
+      "payments@quickkitai.com",
+      "sales@quickkitai.com",
+      "princepinku143c@gmail.com"
+    ];
+
+    if (!email || !targetEmails.includes(email.toLowerCase())) {
+        return error(res, "You are not authorized for the Command Center.", 403);
+    }
+
+    try {
+        await admin.firestore().collection('users').doc(userId).set({
+            role: 'admin',
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+        
+        return success(res, { status: "PROMOTED", message: "Welcome to the Command Center." });
+    } catch (err) {
+        console.error("ADMIN_SETUP_ERROR:", err);
+        return error(res, "Failed to promote account.", 500);
+    }
 }

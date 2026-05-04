@@ -2,16 +2,23 @@ import { auth } from './firebase';
 
 export const apiCall = async (url: string, body?: any) => {
   const user = auth.currentUser;
-  if (!user) throw new Error("Operator Verification Required. Please log in.");
+  let idToken = null;
+  
+  if (user) {
+    idToken = await user.getIdToken();
+  }
 
-  const idToken = await user.getIdToken();
+  const headers: any = {
+    "Content-Type": "application/json"
+  };
+
+  if (idToken) {
+    headers["Authorization"] = `Bearer ${idToken}`;
+  }
 
   const res = await fetch(url, {
     method: body ? "POST" : "GET",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${idToken}`
-    },
+    headers,
     body: body ? JSON.stringify(body) : undefined
   });
 

@@ -54,6 +54,7 @@ export const LegalPages = () => {
                                 <p className="text-sm text-slate-400">Your transaction details and project data are encrypted using industry-standard AES-256 protocols. We do not store credit card information; all payments are handled by PayPal.</p>
                             </div>
                         </div>
+                        <p className="text-xs text-slate-500 mt-8">For data removal requests or privacy inquiries, contact: <span className="text-blue-400">admin@quickkitai.com</span></p>
                     </div>
                 </section>
 
@@ -117,7 +118,7 @@ export const LegalPages = () => {
                                 </li>
                             </ul>
                             <div className="mt-12 pt-8 border-t border-amber-500/10 text-xs font-bold text-amber-500 uppercase tracking-widest text-center">
-                                Submit refund requests to: accounts@quickkitai.com
+                                Submit refund requests to: payments@quickkitai.com
                             </div>
                         </div>
                     </div>

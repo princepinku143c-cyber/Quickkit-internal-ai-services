@@ -8,20 +8,30 @@ import { getFirestore } from "firebase/firestore";
 // SHARED CONFIG: Use ONE firebaseConfig for the entire app.
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDysmepgTK_Uj4Q1_5O4xbo7mjFwSum410",
-  authDomain: "ai-crm-system-d28ef.firebaseapp.com",
-  projectId: "ai-crm-system-d28ef",
-  storageBucket: "ai-crm-system-d28ef.firebasestorage.app",
-  messagingSenderId: "849924322329",
-  appId: "1:849924322329:web:de81e33ecf3b2b26aa6688",
-  measurementId: "G-NJCV2Z3HEW"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyDysmepgTK_Uj4Q1_5O4xbo7mjFwSum410",
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "ai-crm-system-d28ef.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "ai-crm-system-d28ef",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "ai-crm-system-d28ef.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "849924322329",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:849924322329:web:de81e33ecf3b2b26aa6688",
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || "G-NJCV2Z3HEW"
 };
 
-// Initialize Firebase only if config is present (prevents crash in demo mode)
-const app = Object.keys(firebaseConfig).length > 0 ? initializeApp(firebaseConfig) : null;
+// Initialize Firebase only if config is present
+let app = null;
+try {
+  if (import.meta.env.VITE_FIREBASE_API_KEY) {
+    app = initializeApp(firebaseConfig);
+    console.log("✅ Firebase Client Stack Initialized.");
+  } else {
+    console.warn("⚠️ Firebase Config Missing: Running in limited mode. Please check VITE_FIREBASE_API_KEY.");
+  }
+} catch (e) {
+  console.error("❌ Firebase Init Error:", e.message);
+}
 
-export const auth = app ? getAuth(app) : {};
-export const db = app ? getFirestore(app) : {};
+export const auth = app ? getAuth(app) : ({} as any);
+export const db = app ? getFirestore(app) : ({} as any);
 export const googleProvider = new GoogleAuthProvider();
 
 /**

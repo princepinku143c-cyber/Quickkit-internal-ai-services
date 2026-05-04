@@ -18,7 +18,8 @@ import { DemoBooking } from './components/DemoBooking';
 import { ROICalculator } from './components/ROICalculator';
 import { SystemArchitecture } from './components/SystemArchitecture';
 import { Pricing } from './components/Pricing';
-import { ServiceCatalog } from './components/ServiceCatalog';
+import { ServiceCatalog } from './components/ServiceCatalog'; // KEPT for data/types only
+
 import { AIAgents } from './components/AIAgents';
 import { FloatingActions } from './components/FloatingActions';
 import { SmartBot } from './components/SmartBot';
@@ -30,6 +31,8 @@ import { BusinessImpact } from './components/BusinessImpact';
 import { WhyQuickKit } from './components/WhyQuickKit';
 import { Testimonials } from './components/Testimonials';
 import { ComparisonTable } from './components/ComparisonTable';
+import { PainSection } from './components/PainSection';
+import { WhoIsItFor } from './components/WhoIsItFor';
 
 // Portals
 import { Login } from './components/Login';
@@ -84,59 +87,67 @@ const App: React.FC = () => {
 
   useEffect(() => {
     let unSubMeta: any = null;
-    const unsubscribe = onAuthStateChanged(auth as any, async (firebaseUser) => {
-      if (firebaseUser) {
-        const userRef = doc(db as any, 'users', firebaseUser.uid);
-        
-        // 🚨 500 CREDIT ONBOARDING & RESET (FOR ALL USERS)
-        const checkUserCredits = async () => {
-          const snap = await getDoc(userRef);
-          const data = snap.data();
-          
-          if (!snap.exists() || !data || data.credits === undefined || data.credits <= 0) {
-             await setDoc(userRef, {
-               uid: firebaseUser.uid,
-               email: firebaseUser.email,
-               displayName: firebaseUser.displayName || 'Operator',
-               credits: 500, // FORCE 500 FOR ALL ACCOUNTS TO TEST
-               plan: 'free',
-               role: data?.role || 'client',
-               createdAt: data?.createdAt || new Date().toISOString()
-             }, { merge: true });
-          }
-        };
-        checkUserCredits();
+    let unsubscribe: any = () => {};
 
-        unSubMeta = onSnapshot(userRef, async (snap) => {
-          const data = snap.data();
-          const token = await firebaseUser.getIdToken();
-          localStorage.setItem('token', token);
+    if (auth && typeof auth.onAuthStateChanged === 'function') {
+      unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+        if (firebaseUser) {
+          const userRef = doc(db as any, 'users', firebaseUser.uid);
           
-          setUser({
-            uid: firebaseUser.uid,
-            email: firebaseUser.email || '',
-            displayName: firebaseUser.displayName || data?.displayName || 'User',
-            role: data?.role || 'client',
-            credits: data?.credits ?? 0,
-            monthlyLimit: data?.monthlyLimit ?? 1000,
-            tier: data?.tier ?? 'STARTER'
+          // 🚨 500 CREDIT ONBOARDING & RESET (FOR ALL USERS)
+          const checkUserCredits = async () => {
+            if (!db || typeof db.getFirestore !== 'function') return; // Safety
+            const snap = await getDoc(userRef);
+            const data = snap.data();
+            
+            if (!snap.exists() || !data || data.credits === undefined || data.credits <= 0) {
+               await setDoc(userRef, {
+                 uid: firebaseUser.uid,
+                 email: firebaseUser.email,
+                 displayName: firebaseUser.displayName || 'Operator',
+                 credits: 500, // FORCE 500 FOR ALL ACCOUNTS TO TEST
+                 plan: 'free',
+                 role: data?.role || 'client',
+                 createdAt: data?.createdAt || new Date().toISOString()
+               }, { merge: true });
+            }
+          };
+          checkUserCredits();
+
+          unSubMeta = onSnapshot(userRef, async (snap) => {
+            const data = snap.data();
+            const token = await firebaseUser.getIdToken();
+            localStorage.setItem('token', token);
+            
+            setUser({
+              uid: firebaseUser.uid,
+              email: firebaseUser.email || '',
+              displayName: firebaseUser.displayName || data?.displayName || 'User',
+              role: data?.role || 'client',
+              credits: data?.credits ?? 0,
+              monthlyLimit: data?.monthlyLimit ?? 1000,
+              tier: data?.tier ?? 'STARTER'
+            });
+            setIsAuthenticated(true);
+            setAuthLoading(false);
+          }, (err) => {
+            console.error("User metadata sync failed:", err);
+            setUser({ uid: firebaseUser.uid, email: firebaseUser.email || '', displayName: 'User', role: 'client', credits: 0, monthlyLimit: 1000, tier: 'FREE' });
+            setIsAuthenticated(true);
+            setAuthLoading(false);
           });
-          setIsAuthenticated(true);
+        } else {
+          localStorage.removeItem('token');
+          if (unSubMeta) unSubMeta();
+          setUser(null);
+          setIsAuthenticated(false);
           setAuthLoading(false);
-        }, (err) => {
-          console.error("User metadata sync failed:", err);
-          setUser({ uid: firebaseUser.uid, email: firebaseUser.email || '', displayName: 'User', role: 'client', credits: 0, monthlyLimit: 1000, tier: 'FREE' });
-          setIsAuthenticated(true);
-          setAuthLoading(false);
-        });
-      } else {
-        localStorage.removeItem('token');
-        if (unSubMeta) unSubMeta();
-        setUser(null);
-        setIsAuthenticated(false);
-        setAuthLoading(false);
-      }
-    });
+        }
+      });
+    } else {
+      console.warn("Auth initialization skipped: Running in read-only mode.");
+      setAuthLoading(false);
+    }
 
     return () => {
       unsubscribe();
@@ -187,31 +198,30 @@ const App: React.FC = () => {
   const LandingView = () => (
     <div className="bg-[#030712] min-h-screen font-sans text-slate-100 selection:bg-blue-500/30">
       <Helmet>
-        <title>QuickKit AI | Build AI Agents That Run Your Business</title>
-        <meta name="description" content="Deploy autonomous AI agents 10x more powerful than traditional automation tools like Zapier. The elite engineering infrastructure for scaling your business operations." />
-        <meta name="keywords" content="AI Business Agents, Autonomous Workflows, Custom AI Engineering, Enterprise AI Automation, Elite Agent Infrastructure" />
+        <title>QuickKit AI | Automate Your Sales, Leads & Support with AI</title>
+        <meta name="description" content="QuickKit AI builds custom AI automation systems for businesses — chatbots, lead generation, sales automation, and 24/7 operations. See your system live before you pay." />
+        <meta name="keywords" content="AI automation, lead generation AI, sales automation, chatbot, business AI, AI agent, QuickKit AI" />
         <link rel="canonical" href="https://quickkitai.com" />
       </Helmet>
       <Navbar onContact={() => setShowLeadForm(true)} isAuthenticated={isAuthenticated} />
+      {/* FLOW: Hero → Pain → Proof → Pricing → Why → Who → Enterprise → Demo → Footer */}
       <Hero lang={lang} onLaunchArchitect={handleLaunchArchitect} />
-      <ComparisonTable />
+      <PainSection />
       <SocialProofBar />
-      <Services lang={lang} />
-      <Testimonials />
-      <AIAgents onSelectAgent={handleCatalogSelect} />
-      <ServiceCatalog onSelectItem={handleCatalogSelect} />
-      <Pricing 
-        lang={lang} 
+      <Pricing
+        lang={lang}
         onSelectPlan={(plan) => {
-          setLeadFormNotes(`I am interested in the ${plan} plan and would like to learn more.`);
+          setLeadFormNotes(`I am interested in the ${plan} plan.`);
           setShowLeadForm(true);
-        }} 
+        }}
       />
-      <DemoBooking onBookDemo={() => setShowLeadForm(true)} />
-      <SystemArchitecture />
-      <ROICalculator lang={lang} />
-      <BusinessImpact />
       <WhyQuickKit />
+      <WhoIsItFor onBookDemo={() => setShowLeadForm(true)} />
+      <AIAgents onSelectAgent={handleCatalogSelect} />
+      <Testimonials />
+      <DemoBooking onBookDemo={() => setShowLeadForm(true)} />
+      <BusinessImpact />
+      <ROICalculator lang={lang} />
       <FloatingActions />
       <SmartBot onOpenArchitect={() => handleLaunchArchitect('Hi Kelly! I want to explore automation.', true)} />
       
