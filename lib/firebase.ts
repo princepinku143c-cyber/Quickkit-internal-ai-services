@@ -18,7 +18,8 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase only if config is present (prevents crash in demo mode)
-const app = Object.keys(firebaseConfig).length > 0 ? initializeApp(firebaseConfig) : null;
+export const isFirebaseConfigured = Object.keys(firebaseConfig).length > 0;
+const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
 
 export const auth = app ? getAuth(app) : {};
 export const db = app ? getFirestore(app) : {};
