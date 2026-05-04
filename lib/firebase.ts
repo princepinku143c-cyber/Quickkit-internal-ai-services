@@ -1,6 +1,7 @@
 
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import type { Auth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 // # PROJECT: Smart AI CRM (Multi-Tenant CRM)
@@ -21,7 +22,9 @@ const firebaseConfig = {
 export const isFirebaseConfigured = Object.keys(firebaseConfig).length > 0;
 const app = isFirebaseConfigured ? initializeApp(firebaseConfig) : null;
 
-export const auth = app ? getAuth(app) : {};
+type AuthState = Auth | { currentUser: null };
+
+export const auth: AuthState = app ? getAuth(app) : { currentUser: null };
 export const db = app ? getFirestore(app) : {};
 export const googleProvider = new GoogleAuthProvider();
 
