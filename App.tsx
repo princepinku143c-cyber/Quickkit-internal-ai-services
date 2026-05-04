@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
@@ -9,37 +8,33 @@ import { Language, UserProfile, ServiceItem, PlanTier, AIQuote } from './types';
 import { Routes, Route, Navigate, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import type { LegalDocType } from './components/LegalModal';
 
-// Landing Page Components
+// Core Components (Static)
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
-import { Services } from './components/Services';
-import { DemoBooking } from './components/DemoBooking';
-import { ROICalculator } from './components/ROICalculator';
-import { SystemArchitecture } from './components/SystemArchitecture';
-import { Pricing } from './components/Pricing';
-import { ServiceCatalog } from './components/ServiceCatalog'; // KEPT for data/types only
-
-import { AIAgents } from './components/AIAgents';
-import { FloatingActions } from './components/FloatingActions';
-import { SmartBot } from './components/SmartBot';
-import { RoadmapModal } from './components/catalog/RoadmapModal';
-import { LegalPages } from './components/legal/LegalPages';
-import { LeadForm } from './components/LeadForm';
-import { SocialProofBar } from './components/SocialProofBar';
-import { BusinessImpact } from './components/BusinessImpact';
-import { WhyQuickKit } from './components/WhyQuickKit';
-import { Testimonials } from './components/Testimonials';
-import { ComparisonTable } from './components/ComparisonTable';
-import { PainSection } from './components/PainSection';
-import { WhoIsItFor } from './components/WhoIsItFor';
-
-// Portals
-import { Login } from './components/Login';
-import { ClientPortal } from './components/ClientPortal';
-import { AdminPortal } from './components/AdminPortal';
-import { LegalModal, LegalDocType } from './components/LegalModal';
 import { GlobalLoader } from './components/GlobalLoader';
+
+// Lazy Loaded Components
+const Pricing = lazy(() => import('./components/Pricing').then(m => ({ default: m.Pricing })));
+const WhyQuickKit = lazy(() => import('./components/WhyQuickKit').then(m => ({ default: m.WhyQuickKit })));
+const WhoIsItFor = lazy(() => import('./components/WhoIsItFor').then(m => ({ default: m.WhoIsItFor })));
+const AIAgents = lazy(() => import('./components/AIAgents').then(m => ({ default: m.AIAgents })));
+const Testimonials = lazy(() => import('./components/Testimonials').then(m => ({ default: m.Testimonials })));
+const DemoBooking = lazy(() => import('./components/DemoBooking').then(m => ({ default: m.DemoBooking })));
+const BusinessImpact = lazy(() => import('./components/BusinessImpact').then(m => ({ default: m.BusinessImpact })));
+const ROICalculator = lazy(() => import('./components/ROICalculator').then(m => ({ default: m.ROICalculator })));
+const RoadmapModal = lazy(() => import('./components/catalog/RoadmapModal').then(m => ({ default: m.RoadmapModal })));
+const LeadForm = lazy(() => import('./components/LeadForm').then(m => ({ default: m.LeadForm })));
+const Login = lazy(() => import('./components/Login').then(m => ({ default: m.Login })));
+const ClientPortal = lazy(() => import('./components/ClientPortal').then(m => ({ default: m.ClientPortal })));
+const AdminPortal = lazy(() => import('./components/AdminPortal').then(m => ({ default: m.AdminPortal })));
+const LegalPages = lazy(() => import('./components/legal/LegalPages').then(m => ({ default: m.LegalPages })));
+const PainSection = lazy(() => import('./components/PainSection').then(m => ({ default: m.PainSection })));
+const SocialProofBar = lazy(() => import('./components/SocialProofBar').then(m => ({ default: m.SocialProofBar })));
+const SmartBot = lazy(() => import('./components/SmartBot').then(m => ({ default: m.SmartBot })));
+const FloatingActions = lazy(() => import('./components/FloatingActions').then(m => ({ default: m.FloatingActions })));
+const LegalModal = lazy(() => import('./components/LegalModal').then(m => ({ default: m.LegalModal })));
 
 // 🚨 STEP 1 — GLOBAL CRASH STOP (MUST APPLY)
 class ErrorBoundary extends React.Component<any, any> {
@@ -94,9 +89,8 @@ const App: React.FC = () => {
         if (firebaseUser) {
           const userRef = doc(db as any, 'users', firebaseUser.uid);
           
-          // 🚨 500 CREDIT ONBOARDING & RESET (FOR ALL USERS)
           const checkUserCredits = async () => {
-            if (!db || typeof db.getFirestore !== 'function') return; // Safety
+            if (!db || typeof db.getFirestore !== 'function') return;
             const snap = await getDoc(userRef);
             const data = snap.data();
             
@@ -105,7 +99,7 @@ const App: React.FC = () => {
                  uid: firebaseUser.uid,
                  email: firebaseUser.email,
                  displayName: firebaseUser.displayName || 'Operator',
-                 credits: 500, // FORCE 500 FOR ALL ACCOUNTS TO TEST
+                 credits: 500,
                  plan: 'free',
                  role: data?.role || 'client',
                  createdAt: data?.createdAt || new Date().toISOString()
@@ -145,7 +139,6 @@ const App: React.FC = () => {
         }
       });
     } else {
-      console.warn("Auth initialization skipped: Running in read-only mode.");
       setAuthLoading(false);
     }
 
@@ -204,26 +197,29 @@ const App: React.FC = () => {
         <link rel="canonical" href="https://quickkitai.com" />
       </Helmet>
       <Navbar onContact={() => setShowLeadForm(true)} isAuthenticated={isAuthenticated} />
-      {/* FLOW: Hero → Pain → Proof → Pricing → Why → Who → Enterprise → Demo → Footer */}
+      
       <Hero lang={lang} onLaunchArchitect={handleLaunchArchitect} />
-      <PainSection />
-      <SocialProofBar />
-      <Pricing
-        lang={lang}
-        onSelectPlan={(plan) => {
-          setLeadFormNotes(`I am interested in the ${plan} plan.`);
-          setShowLeadForm(true);
-        }}
-      />
-      <WhyQuickKit />
-      <WhoIsItFor onBookDemo={() => setShowLeadForm(true)} />
-      <AIAgents onSelectAgent={handleCatalogSelect} />
-      <Testimonials />
-      <DemoBooking onBookDemo={() => setShowLeadForm(true)} />
-      <BusinessImpact />
-      <ROICalculator lang={lang} />
-      <FloatingActions />
-      <SmartBot onOpenArchitect={() => handleLaunchArchitect('Hi Kelly! I want to explore automation.', true)} />
+      
+      <Suspense fallback={<div className="h-40 flex items-center justify-center"><GlobalLoader message="Loading System..." /></div>}>
+        <PainSection />
+        <SocialProofBar />
+        <Pricing
+          lang={lang}
+          onSelectPlan={(plan) => {
+            setLeadFormNotes(`I am interested in the ${plan} plan.`);
+            setShowLeadForm(true);
+          }}
+        />
+        <WhyQuickKit />
+        <WhoIsItFor onBookDemo={() => setShowLeadForm(true)} />
+        <AIAgents onSelectAgent={handleCatalogSelect} />
+        <Testimonials />
+        <DemoBooking onBookDemo={() => setShowLeadForm(true)} />
+        <BusinessImpact />
+        <ROICalculator lang={lang} />
+        <FloatingActions />
+        <SmartBot onOpenArchitect={() => handleLaunchArchitect('Hi Kelly! I want to explore automation.', true)} />
+      </Suspense>
       
       <footer className="bg-nexus-card border-t border-nexus-border py-12">
         <div className="container mx-auto px-6 text-center text-slate-500">
@@ -243,56 +239,56 @@ const App: React.FC = () => {
         </div>
       </footer>
 
-      {(architectPrompt || selectedCatalogItem) && (
-        <RoadmapModal 
-          item={selectedCatalogItem || undefined} 
-          currency="USD"
-          onClose={() => { setArchitectPrompt(null); setSelectedCatalogItem(null); }}
-          sessionRef={sessionRef}
-          onSaveState={(data, history) => setCachedRoadmap({ data, history })}
-          onBook={handleFinalBook}
-          existingData={cachedRoadmap?.data}
-          existingHistory={cachedRoadmap?.history}
-        />
-      )}
+      <Suspense fallback={null}>
+        {(architectPrompt || selectedCatalogItem) && (
+          <RoadmapModal 
+            item={selectedCatalogItem || undefined} 
+            currency="USD"
+            onClose={() => { setArchitectPrompt(null); setSelectedCatalogItem(null); }}
+            sessionRef={sessionRef}
+            onSaveState={(data, history) => setCachedRoadmap({ data, history })}
+            onBook={handleFinalBook}
+            existingData={cachedRoadmap?.data}
+            existingHistory={cachedRoadmap?.history}
+          />
+        )}
 
-      {showLeadForm && (
-        <LeadForm 
-          lang={lang} 
-          close={() => { setShowLeadForm(false); setCurrentAIQuote(undefined); setLeadFormNotes(''); }} 
-          onBack={resumeArchitect ? handleBackFromForm : undefined}
-          initialData={{ bizType: currentAIQuote ? 'AI Architect Custom Build' : '', plan: PlanTier.STARTER }}
-          prefilledNotes={leadFormNotes}
-          aiFinancials={currentAIQuote}
-          onVerified={(data) => {
-             // If they verify from the general lead form, we could redirect to dashboard
-             console.log("Lead Verified:", data);
-          }}
-        />
-      )}
+        {showLeadForm && (
+          <LeadForm 
+            lang={lang} 
+            close={() => { setShowLeadForm(false); setCurrentAIQuote(undefined); setLeadFormNotes(''); }} 
+            onBack={resumeArchitect ? handleBackFromForm : undefined}
+            initialData={{ bizType: currentAIQuote ? 'AI Architect Custom Build' : '', plan: PlanTier.STARTER }}
+            prefilledNotes={leadFormNotes}
+            aiFinancials={currentAIQuote}
+          />
+        )}
 
-      <LegalModal type={activeLegalModal} onClose={() => setActiveLegalModal(null)} />
+        <LegalModal type={activeLegalModal} onClose={() => setActiveLegalModal(null)} />
+      </Suspense>
     </div>
   );
 
   return (
     <PayPalScriptProvider options={{ "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "sb" }}>
       <ErrorBoundary>
-        <Routes>
-          <Route path="/" element={<LandingView />} />
-          <Route path="/pricing" element={<LandingView />} />
-          <Route path="/ai-agents" element={<LandingView />} />
-          <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
-          <Route path="/dashboard" element={
-            isAuthenticated ? (
-              user?.role === 'admin' ? <AdminPortal user={user!} onLogout={handleLogout} /> : <ClientPortal user={user!} onLogout={handleLogout} />
-            ) : <Navigate to="/login" />
-          } />
-          <Route path="/privacy" element={<LegalPages />} />
-          <Route path="/terms" element={<LegalPages />} />
-          <Route path="/refund" element={<LegalPages />} />
-          <Route path="*" element={<Navigate to="/" />} />
-        </Routes>
+        <Suspense fallback={<GlobalLoader message="Waking Up Architecture..." />}>
+          <Routes>
+            <Route path="/" element={<LandingView />} />
+            <Route path="/pricing" element={<LandingView />} />
+            <Route path="/ai-agents" element={<LandingView />} />
+            <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
+            <Route path="/dashboard" element={
+              isAuthenticated ? (
+                user?.role === 'admin' ? <AdminPortal user={user!} onLogout={handleLogout} /> : <ClientPortal user={user!} onLogout={handleLogout} />
+              ) : <Navigate to="/login" />
+            } />
+            <Route path="/privacy" element={<LegalPages />} />
+            <Route path="/terms" element={<LegalPages />} />
+            <Route path="/refund" element={<LegalPages />} />
+            <Route path="*" element={<Navigate to="/" />} />
+          </Routes>
+        </Suspense>
       </ErrorBoundary>
     </PayPalScriptProvider>
   );
