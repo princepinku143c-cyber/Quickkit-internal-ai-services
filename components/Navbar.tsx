@@ -34,7 +34,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onContact, isAuthenticated }) =>
         {/* Desktop Menu */}
         <div className="hidden lg:flex items-center gap-8">
           <a href="#hero" onClick={(e) => { e.preventDefault(); scrollTo('hero'); }} className="text-sm font-bold text-slate-300 hover:text-white transition">Home</a>
-          <a href="#services" onClick={(e) => { e.preventDefault(); scrollTo('services'); }} className="text-sm font-bold text-slate-300 hover:text-white transition">Services</a>
+          <a href="#ai-agents" onClick={(e) => { e.preventDefault(); scrollTo('ai-agents'); }} className="text-sm font-bold text-slate-300 hover:text-white transition">Services</a>
           <a href="#ai-agents" onClick={(e) => { e.preventDefault(); scrollTo('ai-agents'); }} className="text-sm font-bold text-slate-300 hover:text-white transition">AI Agents</a>
           <a href="#pricing" onClick={(e) => { e.preventDefault(); scrollTo('pricing'); }} className="text-sm font-bold text-slate-300 hover:text-white transition">Pricing</a>
           <a href="#demo" onClick={(e) => { e.preventDefault(); scrollTo('demo'); }} className="text-sm font-bold text-slate-300 hover:text-white transition">Demo</a>
@@ -65,9 +65,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onContact, isAuthenticated }) =>
 
       {/* Mobile Menu */}
       {isOpen && (
-        <div className="lg:hidden absolute top-full left-0 w-full bg-[#030712] border-b border-slate-800 p-6 flex flex-col gap-6 shadow-2xl">
+        <div className="lg:hidden absolute top-full left-0 w-full bg-[#030712] border-b border-slate-800 p-6 flex flex-col gap-6 shadow-2xl z-[60]">
           <a href="#hero" onClick={(e) => { e.preventDefault(); scrollTo('hero'); }} className="text-left text-lg font-bold text-white">Home</a>
-          <a href="#services" onClick={(e) => { e.preventDefault(); scrollTo('services'); }} className="text-left text-lg font-bold text-slate-300">Services</a>
+          <a href="#ai-agents" onClick={(e) => { e.preventDefault(); scrollTo('ai-agents'); }} className="text-left text-lg font-bold text-slate-300">Services</a>
           <a href="#ai-agents" onClick={(e) => { e.preventDefault(); scrollTo('ai-agents'); }} className="text-left text-lg font-bold text-slate-300">AI Agents</a>
           <a href="#pricing" onClick={(e) => { e.preventDefault(); scrollTo('pricing'); }} className="text-left text-lg font-bold text-slate-300">Pricing</a>
           <a href="#demo" onClick={(e) => { e.preventDefault(); scrollTo('demo'); }} className="text-left text-lg font-bold text-slate-300">Demo</a>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
@@ -80,6 +80,9 @@ const App: React.FC = () => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
+  // Ref to store Firestore listener so we can clean it up on logout
+  const metaListenerRef = useRef<(() => void) | null>(null);
+
   useEffect(() => {
     let unSubMeta: any = null;
     let unsubscribe: any = () => {};
@@ -149,6 +152,8 @@ const App: React.FC = () => {
               setIsAuthenticated(true);
               setAuthLoading(false);
             });
+            // Store ref so handleLogout can unsubscribe
+            metaListenerRef.current = unSubMeta;
           } else {
             localStorage.removeItem('token');
             if (unSubMeta) unSubMeta();
@@ -207,9 +212,22 @@ const App: React.FC = () => {
   };
 
   const handleLogout = async () => {
-    await signOut(auth as any);
-    setIsAuthenticated(false);
-    setUser(null);
+    try {
+      // 🛡️ Detach Firestore listener BEFORE signing out to prevent assertion crash
+      if (metaListenerRef.current) {
+        metaListenerRef.current();
+        metaListenerRef.current = null;
+      }
+      setIsAuthenticated(false);
+      setUser(null);
+      localStorage.removeItem('token');
+      await signOut(auth as any);
+    } catch (e) {
+      console.error("Logout error:", e);
+      // Force clean state even if signOut fails
+      setIsAuthenticated(false);
+      setUser(null);
+    }
   };
 
   if (authLoading) return <GlobalLoader message="Waking Up Architecture..." />;
