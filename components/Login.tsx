@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { signInWithEmailAndPassword, signInWithPopup, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import { auth, db, googleProvider } from '../lib/firebase';
+import { auth, db, googleProvider, isFirebaseConfigured } from '../lib/firebase';
 import { Zap, ArrowRight, Lock, ShieldCheck, Mail, Loader2, Home } from 'lucide-react';
 
 export const Login: React.FC = () => {
@@ -22,6 +22,10 @@ export const Login: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isFirebaseConfigured) {
+        setError("System is running in demo mode. Authentication is disabled because Firebase credentials are not configured.");
+        return;
+    }
     if (!auth || Object.keys(auth).length === 0) {
         setError("Authentication system is initializing. Please retry.");
         return;
@@ -54,6 +58,10 @@ export const Login: React.FC = () => {
   };
 
   const handleGoogleSignIn = async () => {
+    if (!isFirebaseConfigured) {
+        setError("System is running in demo mode. Authentication is disabled because Firebase credentials are not configured.");
+        return;
+    }
     if (!auth || Object.keys(auth).length === 0) {
         setError("Authentication system is initializing. Please retry.");
         return;
