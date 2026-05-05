@@ -2,7 +2,7 @@ import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db } from './lib/firebase';
+import { auth, db, isFirebaseConfigured } from './lib/firebase';
 import { generateSessionId } from './lib/utils';
 import { Language, UserProfile, ServiceItem, PlanTier, AIQuote } from './types';
 import { Routes, Route, Navigate, Link } from 'react-router-dom';
@@ -84,67 +84,93 @@ const App: React.FC = () => {
     let unSubMeta: any = null;
     let unsubscribe: any = () => {};
 
-    if (auth && typeof auth.onAuthStateChanged === 'function') {
-      unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-        if (firebaseUser) {
-          const userRef = doc(db as any, 'users', firebaseUser.uid);
-          
-          const checkUserCredits = async () => {
-            if (!db || typeof db.getFirestore !== 'function') return;
-            const snap = await getDoc(userRef);
-            const data = snap.data();
-            
-            if (!snap.exists() || !data || data.credits === undefined || data.credits <= 0) {
-               await setDoc(userRef, {
-                 uid: firebaseUser.uid,
-                 email: firebaseUser.email,
-                 displayName: firebaseUser.displayName || 'Operator',
-                 credits: 500,
-                 plan: 'free',
-                 role: data?.role || 'client',
-                 createdAt: data?.createdAt || new Date().toISOString()
-               }, { merge: true });
-            }
-          };
-          checkUserCredits();
+    // 🛡️ SAFETY TIMEOUT: Don't hang forever if Firebase fails
+    const safetyTimer = setTimeout(() => {
+      if (authLoading) {
+        console.warn("⏳ Auth initialization timed out. Proceeding...");
+        setAuthLoading(false);
+      }
+    }, 5000);
 
-          unSubMeta = onSnapshot(userRef, async (snap) => {
-            const data = snap.data();
-            const token = await firebaseUser.getIdToken();
-            localStorage.setItem('token', token);
+    // Check if it's the real Firebase Auth (it has specific internal properties)
+    // isFirebaseConfigured is imported at the top
+
+    if (isFirebaseConfigured && auth) {
+      try {
+        unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+          clearTimeout(safetyTimer);
+          if (firebaseUser) {
+            const userRef = doc(db as any, 'users', firebaseUser.uid);
             
-            setUser({
-              uid: firebaseUser.uid,
-              email: firebaseUser.email || '',
-              displayName: firebaseUser.displayName || data?.displayName || 'User',
-              role: data?.role || 'client',
-              credits: data?.credits ?? 0,
-              monthlyLimit: data?.monthlyLimit ?? 1000,
-              tier: data?.tier ?? 'STARTER'
+            const checkUserCredits = async () => {
+              if (!db || typeof db.getFirestore !== 'function') return;
+              try {
+                const snap = await getDoc(userRef);
+                const data = snap.data();
+                
+                if (!snap.exists() || !data || data.credits === undefined || data.credits <= 0) {
+                   await setDoc(userRef, {
+                     uid: firebaseUser.uid,
+                     email: firebaseUser.email,
+                     displayName: firebaseUser.displayName || 'Operator',
+                     credits: 500,
+                     plan: 'free',
+                     role: data?.role || 'client',
+                     createdAt: data?.createdAt || new Date().toISOString()
+                   }, { merge: true });
+                }
+              } catch (e) {
+                console.error("Failed to check/update user credits:", e);
+              }
+            };
+            checkUserCredits();
+
+            unSubMeta = onSnapshot(userRef, async (snap) => {
+              const data = snap.data();
+              try {
+                const token = await firebaseUser.getIdToken();
+                localStorage.setItem('token', token);
+              } catch (e) {}
+              
+              setUser({
+                uid: firebaseUser.uid,
+                email: firebaseUser.email || '',
+                displayName: firebaseUser.displayName || data?.displayName || 'User',
+                role: data?.role || 'client',
+                credits: data?.credits ?? 0,
+                monthlyLimit: data?.monthlyLimit ?? 1000,
+                tier: data?.tier ?? 'STARTER'
+              });
+              setIsAuthenticated(true);
+              setAuthLoading(false);
+            }, (err) => {
+              console.error("User metadata sync failed:", err);
+              setUser({ uid: firebaseUser.uid, email: firebaseUser.email || '', displayName: 'User', role: 'client', credits: 0, monthlyLimit: 1000, tier: 'FREE' });
+              setIsAuthenticated(true);
+              setAuthLoading(false);
             });
-            setIsAuthenticated(true);
+          } else {
+            localStorage.removeItem('token');
+            if (unSubMeta) unSubMeta();
+            setUser(null);
+            setIsAuthenticated(false);
             setAuthLoading(false);
-          }, (err) => {
-            console.error("User metadata sync failed:", err);
-            setUser({ uid: firebaseUser.uid, email: firebaseUser.email || '', displayName: 'User', role: 'client', credits: 0, monthlyLimit: 1000, tier: 'FREE' });
-            setIsAuthenticated(true);
-            setAuthLoading(false);
-          });
-        } else {
-          localStorage.removeItem('token');
-          if (unSubMeta) unSubMeta();
-          setUser(null);
-          setIsAuthenticated(false);
-          setAuthLoading(false);
-        }
-      });
+          }
+        });
+      } catch (e) {
+        console.error("Auth Listener Error:", e);
+        setAuthLoading(false);
+      }
     } else {
+      console.warn("Auth initialization skipped: Using guest mode.");
       setAuthLoading(false);
+      clearTimeout(safetyTimer);
     }
 
     return () => {
       unsubscribe();
       if (unSubMeta) unSubMeta();
+      clearTimeout(safetyTimer);
     };
   }, []);
 
