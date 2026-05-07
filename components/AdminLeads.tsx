@@ -11,6 +11,33 @@ export const AdminLeads: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedLead, setSelectedLead] = useState<LeadSubmission | null>(null);
   const [showReplyTemplate, setShowReplyTemplate] = useState(false);
+  const [updateMessage, setUpdateMessage] = useState('');
+  const [isPostingUpdate, setIsPostingUpdate] = useState(false);
+
+  const handlePostUpdate = async () => {
+    if (!selectedLead || !updateMessage.trim() || !selectedLead.userId) {
+        alert("🚨 User ID Missing or Empty Message. Cannot update node.");
+        return;
+    }
+
+    setIsPostingUpdate(true);
+    try {
+        await addDoc(collection(db as any, 'logs'), {
+            user_id: selectedLead.userId,
+            agent_id: 'ARCHITECT',
+            action: updateMessage,
+            time: new Date().toLocaleTimeString(),
+            timestamp: new Date().toISOString()
+        });
+        alert("✅ Update Synchronized with Client Node!");
+        setUpdateMessage('');
+    } catch (e) {
+        console.error(e);
+        alert("Failed to post update.");
+    } finally {
+        setIsPostingUpdate(false);
+    }
+  };
 
   // Real-time Firebase sync
   useEffect(() => {
@@ -299,6 +326,32 @@ export const AdminLeads: React.FC = () => {
                               </div>
                           </div>
                       </div>
+
+
+                      {/* NEW: NEURAL UPDATE SYSTEM */}
+                      {selectedLead.userId && (
+                          <div className="p-6 bg-slate-900 border border-blue-500/20 rounded-2xl space-y-4">
+                              <h3 className="text-xs font-black text-blue-400 uppercase tracking-[0.2em] flex items-center gap-2">
+                                  <Sparkles className="w-4 h-4" /> Neural Update Node
+                              </h3>
+                              <p className="text-[10px] text-slate-500 font-bold uppercase">Send a real-time status update to the client's dashboard terminal.</p>
+                              <div className="relative">
+                                  <textarea 
+                                      value={updateMessage}
+                                      onChange={(e) => setUpdateMessage(e.target.value)}
+                                      placeholder="e.g. Architecture deployment at 50%... ETA 2 hours."
+                                      className="w-full bg-slate-950 border border-slate-800 rounded-xl p-4 text-xs font-mono text-blue-300 outline-none focus:border-blue-500 transition-all min-h-[80px] resize-none"
+                                  />
+                                  <button 
+                                      onClick={handlePostUpdate}
+                                      disabled={isPostingUpdate || !updateMessage.trim()}
+                                      className="absolute bottom-3 right-3 px-3 py-1.5 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black rounded-lg transition-all disabled:opacity-50"
+                                  >
+                                      {isPostingUpdate ? <Loader2 className="w-3 h-3 animate-spin" /> : 'POST UPDATE'}
+                                  </button>
+                              </div>
+                          </div>
+                      )}
 
                       {/* Chat History / Notes */}
                       <div>

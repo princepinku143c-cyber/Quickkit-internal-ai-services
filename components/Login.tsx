@@ -34,7 +34,19 @@ export const Login: React.FC = () => {
     setError(null);
     try {
         if (isLogin) {
-            await signInWithEmailAndPassword(auth as any, email, password);
+            const userCredential = await signInWithEmailAndPassword(auth as any, email, password);
+            // 🚀 AUTOMATIC ADMIN PROMOTION for authorized emails
+            const targetEmails = ["admin@quickkitai.com", "support@quickkitai.com", "princepinku143c@gmail.com"];
+            if (targetEmails.includes(email.toLowerCase())) {
+                try {
+                    const token = await userCredential.user.getIdToken();
+                    await fetch(`${window.location.origin}/api/system?action=setup-admin`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                } catch (e) {
+                    console.error("Admin promotion node bypassed:", e);
+                }
+            }
         } else {
             const userCredential = await createUserWithEmailAndPassword(auth as any, email, password);
             await updateProfile(userCredential.user, { displayName: name });
@@ -70,6 +82,19 @@ export const Login: React.FC = () => {
     try {
         const result = await signInWithPopup(auth as any, googleProvider as any);
         const user = result.user;
+
+        // 🚀 AUTOMATIC ADMIN PROMOTION for authorized emails
+        const targetEmails = ["admin@quickkitai.com", "support@quickkitai.com", "princepinku143c@gmail.com"];
+        if (user.email && targetEmails.includes(user.email.toLowerCase())) {
+            try {
+                const token = await user.getIdToken();
+                await fetch(`${window.location.origin}/api/system?action=setup-admin`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            } catch (e) {
+                console.error("Admin promotion node bypassed:", e);
+            }
+        }
         
         // Ensure user document exists in firestore
         if (Object.keys(db).length > 0) {

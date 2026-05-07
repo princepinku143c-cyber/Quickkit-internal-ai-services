@@ -80,14 +80,14 @@ export const DemoBooking: React.FC<DemoBookingProps> = ({ onBookDemo }) => {
           </div>
 
           {/* Right: Live Calendly Embed */}
-          <div className="lg:w-[500px] bg-white rounded-[2.5rem] p-4 shadow-2xl relative flex flex-col h-[700px]">
+          <div className="w-full lg:w-[500px] bg-white rounded-[2.5rem] p-2 md:p-4 shadow-2xl relative flex flex-col min-h-[500px] lg:h-[700px]">
              <div className="w-full h-full rounded-[2rem] overflow-hidden">
                 <InlineWidget 
                   url="https://calendly.com/princepinku143c/30min" 
                   styles={{ height: '100%', width: '100%' }}
                 />
              </div>
-             <div className="text-center mt-4">
+             <div className="text-center mt-4 mb-2">
                 <a 
                   href="https://calendly.com/princepinku143c/30min" 
                   target="_blank" 

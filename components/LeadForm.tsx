@@ -41,6 +41,16 @@ export const LeadForm: React.FC<Props> = ({ lang, close, onBack, onVerified, ini
     if (prefilledNotes) {
         setFormData(prev => ({ ...prev, notes: prefilledNotes }));
     }
+    
+    // Auto-fill for already authenticated users
+    if (auth.currentUser) {
+        const user = auth.currentUser;
+        setFormData(prev => ({
+            ...prev,
+            name: prev.name || user.displayName || '',
+            email: prev.email || user.email || ''
+        }));
+    }
   }, [prefilledNotes]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -160,19 +170,23 @@ export const LeadForm: React.FC<Props> = ({ lang, close, onBack, onVerified, ini
             )}
 
             <div className="space-y-5">
-              {/* Google Fast Track */}
-              <button 
-                type="button" 
-                onClick={handleGoogleAutofill}
-                className="w-full flex items-center justify-center gap-3 bg-white text-slate-900 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all shadow-xl"
-              >
-                <Globe className="w-4 h-4" /> Sign In with Google
-              </button>
-              
-              <div className="relative py-2">
-                 <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-800"></div></div>
-                 <div className="relative flex justify-center text-[10px] uppercase font-black text-slate-600"><span className="bg-slate-900 px-4">Direct Entry</span></div>
-              </div>
+              {/* Google Fast Track - Only show if NOT logged in */}
+              {!auth.currentUser && (
+                <>
+                  <button 
+                    type="button" 
+                    onClick={handleGoogleAutofill}
+                    className="w-full flex items-center justify-center gap-3 bg-white text-slate-900 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-100 transition-all shadow-xl"
+                  >
+                    <Globe className="w-4 h-4" /> Sign In with Google
+                  </button>
+                  
+                  <div className="relative py-2">
+                     <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-800"></div></div>
+                     <div className="relative flex justify-center text-[10px] uppercase font-black text-slate-600"><span className="bg-slate-900 px-4">Direct Entry</span></div>
+                  </div>
+                </>
+              )}
 
               {/* Form Fields */}
               <div className="space-y-4">
