@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { CreditWallet } from './CreditWallet';
+import { LegalModal, LegalDocType } from './LegalModal';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -26,6 +27,7 @@ interface LayoutProps {
 export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTab, user, onLogout }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [bonusRefresh, setBonusRefresh] = React.useState(0);
+  const [legalDoc, setLegalDoc] = React.useState<LegalDocType>(null);
 
   React.useEffect(() => {
     const handleStorage = () => setBonusRefresh(prev => prev + 1);
@@ -97,9 +99,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
         {/* COMPLIANCE FOOTER */}
         <div className="p-6 mt-auto border-t border-nexus-border/50">
             <div className="flex flex-wrap gap-x-4 gap-y-2 mb-4">
-                <a href="#/privacy" className="text-[9px] font-black uppercase tracking-widest text-slate-600 hover:text-blue-400 transition-colors">Privacy</a>
-                <a href="#/terms" className="text-[9px] font-black uppercase tracking-widest text-slate-600 hover:text-blue-400 transition-colors">Terms</a>
-                <a href="#/refund" className="text-[9px] font-black uppercase tracking-widest text-slate-600 hover:text-blue-400 transition-colors">Refund</a>
+                <button onClick={() => setLegalDoc('privacy')} className="text-[9px] font-black uppercase tracking-widest text-slate-600 hover:text-blue-400 transition-colors">Privacy</button>
+                <button onClick={() => setLegalDoc('terms')} className="text-[9px] font-black uppercase tracking-widest text-slate-600 hover:text-blue-400 transition-colors">Terms</button>
+                <button onClick={() => setLegalDoc('refund')} className="text-[9px] font-black uppercase tracking-widest text-slate-600 hover:text-blue-400 transition-colors">Refund</button>
             </div>
             <p className="text-[8px] font-bold text-slate-700 uppercase tracking-widest">© 2026 QUICKKIT AI OPS</p>
         </div>
@@ -174,6 +176,9 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
           </div>
         </main>
       </div>
+
+      {/* 📜 LEGAL DOCUMENTS MODAL */}
+      <LegalModal type={legalDoc} onClose={() => setLegalDoc(null)} />
     </div>
   );
 };

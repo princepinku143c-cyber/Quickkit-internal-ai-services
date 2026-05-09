@@ -1,210 +1,301 @@
-import admin from "./_lib/firebaseAdmin.js";
-import { success, error } from "./_lib/response.js";
-import nodemailer from "nodemailer";
-import { saveLead } from "./services/leadService.js";
 
-/**
- * Industrialized System Utility Cluster.
- * Handles: Emails, Leads, Promo, Logs, and Workflows.
- */
-export default async function handler(req, res) {
-  const { action } = req.query;
+const admin = require('firebase-admin');
+const nodemailer = require('nodemailer');
 
-  // 🛡️ SECURITY: Public Leads are strictly sanitized in leadService
-  if (action === 'lead') {
-    if (req.method !== 'POST') return error(res, "Method Not Allowed", 405);
-    return handleLead(req, res);
-  }
-
-  // 🛡️ SECURITY: Strict Auth enforced for ALL internal actions
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith("Bearer ")) {
-    return error(res, "UNAUTHORIZED: Infrastructure Access Token Required", 401);
-  }
-
-  try {
-    const idToken = authHeader.split('Bearer ')[1];
-    const decodedToken = await admin.auth().verifyIdToken(idToken);
-    const userId = decodedToken.uid;
-
-    if (action === 'email') return handleEmail(req, res, userId);
-    if (action === 'promo') return handlePromo(req, res, userId);
-    if (action === 'logs') return handleLogs(res, userId);
-    if (action === 'workflows') return handleWorkflows(res, userId);
-    if (action === 'trigger') return handleTrigger(req, res, userId);
-    if (action === 'setup-admin') return handleSetupAdmin(req, res, userId, decodedToken.email);
-
-    return error(res, "Action Not Allowed", 400);
-  } catch (err) {
-    console.error("SYSTEM_CLUSTER_CRASH:", err);
-    return error(res, "System Logic Verification Failure", 403);
-  }
+// Initialize Firebase Admin if not already initialized
+if (!admin.apps.length) {
+    admin.initializeApp({
+        credential: admin.credential.cert({
+            projectId: process.env.FIREBASE_PROJECT_ID,
+            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+        })
+    });
 }
 
-async function handleLead(req, res) {
-  try {
-    const result = await saveLead(req.body);
+const success = (res, data) => res.status(200).json(data);
+const error = (res, msg, code = 400) => res.status(code).json({ error: msg });
+
+module.exports = async (req, res) => {
+    // Enable CORS
+    res.setHeader('Access-Control-Allow-Credentials', true);
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
+
+    if (req.method === 'OPTIONS') return res.status(200).end();
+
+    const { action } = req.query;
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return error(res, "Unauthorized", 401);
+    }
+
+    const token = authHeader.split(' ')[1];
     
-    // 📧 Trigger Industrial Notification (Email to Admin)
     try {
-      const adminEmail = process.env.ADMIN_EMAIL || process.env.EMAIL_USER;
-      if (adminEmail && process.env.EMAIL_PASS) {
-        const transporter = nodemailer.createTransport({
-          service: 'gmail',
-          auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-        });
+        const decodedToken = await admin.auth().verifyIdToken(token);
+        const userId = decodedToken.uid;
+        const userSnap = await admin.firestore().collection('users').doc(userId).get();
+        const userData = userSnap.data();
 
-        // 1. Alert Admin
-        await transporter.sendMail({
-          from: `"QuickKit AI Alerts" <${process.env.EMAIL_USER}>`,
-          to: adminEmail,
-          subject: `🚨 NEW LEAD CAPTURED: ${req.body.name}`,
-          html: `
-            <div style="font-family: sans-serif; padding: 20px; color: #0f172a; border: 1px solid #e2e8f0; border-radius: 12px;">
-              <h2 style="color: #2563eb;">New Operational Intent Detected</h2>
-              <p>A new lead has been synchronized with the platform.</p>
-              <hr style="border: 0; border-top: 1px solid #e2e8f0;" />
-              <p><strong>Name:</strong> ${req.body.name}</p>
-              <p><strong>Email:</strong> ${req.body.email}</p>
-              <p><strong>Phone:</strong> ${req.body.phone}</p>
-              <p><strong>Org/Project:</strong> ${req.body.projectName || req.body.businessName}</p>
-              <p><strong>Requirement:</strong> ${req.body.requirement}</p>
-              <p><strong>Price (Quoted):</strong> $${req.body.price || 0}</p>
-              <hr style="border: 0; border-top: 1px solid #e2e8f0;" />
-              <p style="font-size: 10px; color: #64748b; text-transform: uppercase; letter-spacing: 1px;">QuickKit AI Automation System — Internal Use Only</p>
-            </div>
-          `
-        });
-
-        // 2. Confirm to Client (Professionalism Booster)
-        await transporter.sendMail({
-          from: `"QuickKit AI" <${process.env.EMAIL_USER}>`,
-          to: req.body.email,
-          subject: `Initialization Confirmed: ${req.body.projectName || 'AI Automation'}`,
-          html: `
-            <div style="font-family: sans-serif; padding: 30px; color: #0f172a; line-height: 1.6;">
-              <h1 style="color: #2563eb; font-size: 24px;">Systems Initialized.</h1>
-              <p>Hello ${req.body.name},</p>
-              <p>Your request for <strong>${req.body.projectName || 'AI Automation Architecture'}</strong> has been successfully received and synchronized with our engineering queue.</p>
-              <p><strong>What happens next?</strong></p>
-              <ul style="padding-left: 20px;">
-                <li>Our AI Architects are reviewing your requirements.</li>
-                <li>You will receive a follow-up via phone or email within 24 hours.</li>
-                <li>You can track your project status in your <a href="https://quickkitai.com/dashboard" style="color: #2563eb; text-decoration: none; font-weight: bold;">Client Portal</a>.</li>
-              </ul>
-              <p>Thank you for choosing QuickKit AI for your enterprise automation.</p>
-              <br />
-              <p style="font-size: 14px; color: #64748b;">Best Regards,<br /><strong>QuickKit Engineering Team</strong></p>
-            </div>
-          `
-        });
-      }
-    } catch (emailErr) {
-      console.error("LEAD_NOTIFICATION_FAILED:", emailErr);
-    }
-
-    return success(res, { status: "CAPTURED", ...result });
-  } catch (err) {
-    return error(res, err.message, 400);
-  }
-}
-
-async function handleEmail(req, res, userId) {
-  const { to, subject, html, text } = req.body;
-  if (!to || !subject || (!html && !text)) return error(res, "Incomplete Post Payload", 400);
-
-  try {
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-    });
-
-    await transporter.sendMail({
-      from: `"QuickKit AI" <${process.env.EMAIL_USER}>`,
-      to, subject, text, html
-    });
-
-    return success(res, { status: "DISPATCHED" });
-  } catch (e) {
-    console.error("EMAIL_FAILURE:", e);
-    return success(res, { status: "FALLBACK_ACKNOWLEDGED", warning: "Email Node Bypass" });
-  }
-}
-
-async function handlePromo(req, res, userId) {
-  const { code } = req.query;
-  if (!code) return error(res, "Missing Redemption Code", 400);
-
-  // Simplified logic for MVP: DB check required for production scale
-  if (code.toUpperCase() === "QUICKKIT500") {
-      const userRef = admin.firestore().collection('users').doc(userId);
-      await userRef.update({ 
-          credits: admin.firestore.FieldValue.increment(500),
-          lastPromo: code.toUpperCase()
-      });
-      return success(res, { added: 500 });
-  }
-  
-  return error(res, "Invalid or Expired Infrastructure Code", 400);
-}
-
-async function handleLogs(res, userId) {
-  const snapshot = await admin.firestore().collection('logs')
-    .where('userId', '==', userId)
-    .orderBy('timestamp', 'desc')
-    .limit(50)
-    .get();
-  
-  const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-  return success(res, Array.isArray(data) ? data : []);
-}
-
-async function handleWorkflows(res, userId) {
-    // Return registered project workflows
-    const snapshot = await admin.firestore().collection('projects')
-      .where('userId', '==', userId)
-      .where('advancePaid', '==', true)
-      .get();
-
-    const data = snapshot.docs.map(doc => {
-        const p = doc.data();
-        return {
-            id: doc.id,
-            name: p.projectName,
-            status: p.status,
-            description: "Autonomous Agent Workflow Interface"
+        const actionMap = {
+            'stats': getStats,
+            'add-credits': handleAddCredits,
+            'redeem-code': handleRedeemCode,
+            'credit-request': handleCreditRequest,
+            'generate-payment-token': handleGenerateToken,
+            'verify-payment-token': handleVerifyToken,
+            'project-quote': handleProjectQuote,
+            'project-update': handleProjectUpdate,
+            'project-status': handleProjectStatus
         };
-    });
-    return success(res, Array.isArray(data) ? data : []);
-}
 
-async function handleTrigger(req, res, userId) {
-    const { projectId, params } = req.body;
-    return success(res, { status: "TRIGGERED", taskId: `job_${Date.now()}` });
-}
+        if (actionMap[action]) {
+            // Admin only actions
+            const adminActions = ['add-credits', 'generate-payment-token', 'project-quote', 'project-update'];
+            if (adminActions.includes(action) && userData?.role !== 'admin') {
+                return error(res, "Forbidden: Admin access required", 403);
+            }
+            return await actionMap[action](req, res, userId);
+        }
 
-async function handleSetupAdmin(req, res, userId, email) {
-    const targetEmails = [
-      "support@quickkitai.com",
-      "admin@quickkitai.com",
-      "payments@quickkitai.com",
-      "sales@quickkitai.com",
-      "princepinku143c@gmail.com"
-    ];
-
-    if (!email || !targetEmails.includes(email.toLowerCase())) {
-        return error(res, "You are not authorized for the Command Center.", 403);
+        return error(res, "Invalid Action", 400);
+    } catch (e) {
+        return error(res, "Authentication Failed: " + e.message, 401);
     }
+};
+
+async function getStats(req, res, userId) {
+    try {
+        const leads = await admin.firestore().collection('leads').count().get();
+        const projects = await admin.firestore().collection('projects').count().get();
+        return success(res, { leads: leads.data().count, projects: projects.data().count });
+    } catch (e) {
+        return error(res, e.message, 500);
+    }
+}
+
+async function handleAddCredits(req, res, adminId) {
+    const { targetUserId, amount } = req.body;
+    if (!targetUserId || !amount) return error(res, "Missing params", 400);
 
     try {
-        await admin.firestore().collection('users').doc(userId).set({
-            role: 'admin',
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
-        }, { merge: true });
+        const userRef = admin.firestore().collection('users').doc(targetUserId);
+        await admin.firestore().runTransaction(async (t) => {
+            const doc = await t.get(userRef);
+            const current = doc.data().credits || 0;
+            t.update(userRef, { credits: current + Number(amount) });
+        });
+        return success(res, { status: "CREDITS_ADDED" });
+    } catch (e) {
+        return error(res, e.message, 500);
+    }
+}
+
+async function handleRedeemCode(req, res, userId) {
+    const { code } = req.body;
+    if (!code) return error(res, "Code required", 400);
+
+    try {
+        const promoRef = admin.firestore().collection('promo_codes').doc(code.toUpperCase());
+        const userRef = admin.firestore().collection('users').doc(userId);
+
+        const result = await admin.firestore().runTransaction(async (t) => {
+            const promoDoc = await t.get(promoRef);
+            if (!promoDoc.exists) throw new Error("Invalid promo code.");
+
+            const promoData = promoDoc.data();
+            const usedBy = promoData.usedBy || [];
+
+            if (usedBy.length >= promoData.maxUses) throw new Error("Promo code has reached maximum usage.");
+            if (usedBy.includes(userId)) throw new Error("You have already redeemed this code.");
+
+            const userDoc = await t.get(userRef);
+            const currentCredits = userDoc.data().credits || 0;
+
+            t.update(userRef, { credits: currentCredits + Number(promoData.amount) });
+            t.update(promoRef, { usedBy: [...usedBy, userId] });
+
+            return { amount: promoData.amount };
+        });
+
+        return success(res, { amount: result.amount, status: "CODE_REDEEMED" });
+    } catch (e) {
+        return error(res, e.message, 400);
+    }
+}
+
+async function handleCreditRequest(req, res, userId) {
+    const { amount, email, displayName } = req.body;
+    if (!amount) return error(res, "Amount required", 400);
+
+    try {
+        const requestRef = admin.firestore().collection('payment_requests').doc();
+        await requestRef.set({
+            userId,
+            userEmail: email,
+            displayName,
+            price: Number(amount),
+            credits: Number(amount) * 10,
+            status: 'pending',
+            createdAt: new Date().toISOString()
+        });
+
+        // 📧 Notify Admin
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+        });
+
+        await transporter.sendMail({
+            from: `"QuickKit Billing" <${process.env.EMAIL_USER}>`,
+            to: process.env.EMAIL_USER, // Send to self/admin
+            subject: `💳 New Credit Request: ${displayName} ($${amount})`,
+            html: `
+                <h3>New Credit Purchase Request</h3>
+                <p><strong>Client:</strong> ${displayName} (${email})</p>
+                <p><strong>Amount:</strong> $${amount}</p>
+                <p><strong>Credits to Inject:</strong> ${amount * 10}</p>
+                <hr/>
+                <p>Please log in to the Admin Portal to approve this request and send a payment link.</p>
+            `
+        });
+
+        return success(res, { status: "REQUEST_SENT" });
+    } catch (e) {
+        return error(res, e.message, 500);
+    }
+}
+
+async function handleGenerateToken(req, res, adminId) {
+    const { projectId } = req.body;
+    const token = Math.random().toString(36).substring(2, 8).toUpperCase();
+    try {
+        await admin.firestore().collection('projects').doc(projectId).update({
+            paymentToken: token,
+            paymentTokenGeneratedAt: new Date().toISOString()
+        });
+        return success(res, { token });
+    } catch (e) {
+        return error(res, e.message, 500);
+    }
+}
+
+async function handleVerifyToken(req, res, userId) {
+    const { projectId, token } = req.body;
+    try {
+        const projectRef = admin.firestore().collection('projects').doc(projectId);
+        const snap = await projectRef.get();
+        if (snap.data().paymentToken === token) {
+            await projectRef.update({ 
+                status: 'accepted', 
+                advancePaid: true,
+                paymentToken: null 
+            });
+            return success(res, { status: "VERIFIED" });
+        }
+        return error(res, "Invalid Token", 400);
+    } catch (e) {
+        return error(res, e.message, 500);
+    }
+}
+
+async function handleProjectQuote(req, res, adminId) {
+    const { projectId, quote, clientEmail, projectName } = req.body;
+    try {
+        const projectRef = admin.firestore().collection('projects').doc(projectId);
+        await projectRef.update({
+            status: 'quoted',
+            quote: { ...quote, timestamp: new Date().toISOString() },
+            updatedAt: new Date().toISOString()
+        });
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+        });
+
+        await transporter.sendMail({
+            from: `"QuickKit Engineering" <${process.env.EMAIL_USER}>`,
+            to: clientEmail,
+            subject: `Project Proposal: ${projectName}`,
+            html: `
+                <h2>Architectural Proposal for ${projectName}</h2>
+                <p><strong>Investment:</strong> $${quote.price}</p>
+                <p><strong>Estimated Timeline:</strong> ${quote.timeline}</p>
+                <p><strong>Notes:</strong> ${quote.notes}</p>
+                <p>Please log in to your dashboard to accept this proposal and begin the build.</p>
+            `
+        });
+
+        return success(res, { status: "QUOTE_SENT" });
+    } catch (e) {
+        return error(res, e.message, 500);
+    }
+}
+
+async function handleProjectUpdate(req, res, adminId) {
+    const { projectId, progress, message, clientEmail, projectName } = req.body;
+    try {
+        const projectRef = admin.firestore().collection('projects').doc(projectId);
+        await projectRef.update({
+            progress: Number(progress),
+            lastUpdate: message,
+            updatedAt: new Date().toISOString()
+        });
+
+        await projectRef.collection('history').add({
+            message,
+            percentage: Number(progress),
+            timestamp: new Date().toISOString()
+        });
+
+        if (progress % 25 === 0 || progress === 100) {
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+            });
+            await transporter.sendMail({
+                from: `"QuickKit Engineering" <${process.env.EMAIL_USER}>`,
+                to: clientEmail,
+                subject: `Progress Update: ${projectName} (${progress}%)`,
+                html: `<p>Your project <strong>${projectName}</strong> is now <strong>${progress}%</strong> complete.</p><p>Latest update: <em>${message}</em></p>`
+            });
+        }
+
+        return success(res, { status: "UPDATED" });
+    } catch (e) {
+        return error(res, e.message, 500);
+    }
+}
+
+async function handleProjectStatus(req, res, userId) {
+    const { projectId, status } = req.body;
+    
+    try {
+        const userSnap = await admin.firestore().collection('users').doc(userId).get();
+        const isAdmin = userSnap.data()?.role === 'admin';
+
+        // Security: Clients can only "accept" or request revisions
+        const clientAllowedStatuses = ['accepted', 'revision_requested'];
+        if (!isAdmin && !clientAllowedStatuses.includes(status)) {
+            return error(res, "Unauthorized status transition", 403);
+        }
+
+        const projectRef = admin.firestore().collection('projects').doc(projectId);
+        await projectRef.update({ status, updatedAt: new Date().toISOString() });
         
-        return success(res, { status: "PROMOTED", message: "Welcome to the Command Center." });
-    } catch (err) {
-        console.error("ADMIN_SETUP_ERROR:", err);
-        return error(res, "Failed to promote account.", 500);
+        if (status === 'accepted') {
+            await projectRef.collection('history').add({
+                message: "Client accepted the quote. Build node initialized.",
+                percentage: 0,
+                timestamp: new Date().toISOString()
+            });
+        }
+        return success(res, { status: "STATE_TRANSITIONED" });
+    } catch (e) {
+        return error(res, e.message, 500);
     }
 }

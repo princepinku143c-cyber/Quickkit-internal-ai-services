@@ -9,7 +9,12 @@ import {
   Menu,
   X,
   FileText,
-  CreditCard
+  CreditCard,
+  Briefcase,
+  User,
+  Zap,
+  Tag,
+  Mail
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { UserProfile } from '../types';
@@ -30,7 +35,9 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, s
     { id: 'admin-dashboard', label: 'Overview', icon: LayoutDashboard },
     { id: 'admin-leads', label: 'Leads Engine', icon: Users },
     { id: 'admin-projects', label: 'Build Queue', icon: FileText },
-    { id: 'admin-payments', label: 'Revenue Ledger', icon: CreditCard },
+    { id: 'admin-requests', label: 'Payment Requests', icon: Zap },
+    { id: 'admin-promos', label: 'Promo Manager', icon: Tag },
+    { id: 'admin-users', label: 'Clients Manager', icon: User },
     { id: 'admin-settings', label: 'System Control', icon: Settings },
   ];
 
@@ -121,7 +128,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, s
                   <button
                     key={item.id}
                     onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-3 px-4 py-4 rounded-xl text-lg ${activeTab === item.id ? 'bg-orange-500/20 text-orange-400' : 'text-slate-400'}`}
+                    className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === item.id ? 'bg-blue-600 text-white' : 'text-slate-400'}`}
                   >
                     <item.icon className="w-6 h-6" /> {item.label}
                   </button>

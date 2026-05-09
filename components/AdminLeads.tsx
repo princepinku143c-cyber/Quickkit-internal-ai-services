@@ -81,7 +81,7 @@ export const AdminLeads: React.FC = () => {
             userId: lead.userId,
             projectName: lead.businessType || "Custom AI Agent",
             clientName: lead.name,
-            status: 'READY',
+            status: 'PENDING_PAYMENT',
             value: lead.aiQuote ? (lead.aiQuote.setupCost + lead.aiQuote.monthlyCost) : 2499,
             createdAt: new Date().toISOString(),
             logs: [{ time: new Date().toISOString(), msg: "Project Architected & Approved." }]

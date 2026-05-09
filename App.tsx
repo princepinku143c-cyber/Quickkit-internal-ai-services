@@ -62,6 +62,7 @@ class ErrorBoundary extends React.Component<any, any> {
   }
 }
 
+
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('en');
   const [architectPrompt, setArchitectPrompt] = useState<string | null>(null);
@@ -218,13 +219,21 @@ const App: React.FC = () => {
         metaListenerRef.current();
         metaListenerRef.current = null;
       }
+      
+      // Force UI to switch away from protected routes BEFORE signout completes
       setIsAuthenticated(false);
       setUser(null);
       localStorage.removeItem('token');
-      await signOut(auth as any);
+      
+      // Small delay to ensure React unmounts listeners
+      setTimeout(async () => {
+        try {
+            await signOut(auth as any);
+        } catch (e) {}
+      }, 100);
+      
     } catch (e) {
       console.error("Logout error:", e);
-      // Force clean state even if signOut fails
       setIsAuthenticated(false);
       setUser(null);
     }

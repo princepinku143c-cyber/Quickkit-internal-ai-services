@@ -11,6 +11,7 @@ export const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [isLogin, setIsLogin] = useState(true);
+  const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -61,6 +62,16 @@ export const Login: React.FC = () => {
                     createdAt: new Date().toISOString()
                 });
             }
+
+            // 📧 DISPATCH PROFESSIONAL WELCOME EMAIL
+            try {
+                const token = await userCredential.user.getIdToken();
+                await fetch(`${window.location.origin}/api/system?action=welcome-email`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            } catch (e) {
+                console.error("Welcome dispatch node bypass:", e);
+            }
         }
     } catch (error: any) {
         setError(error.message || "Authentication failed. Please check your credentials.");
@@ -108,6 +119,16 @@ export const Login: React.FC = () => {
                     role: 'client',
                     createdAt: new Date().toISOString()
                 });
+
+                // 📧 DISPATCH PROFESSIONAL WELCOME EMAIL
+                try {
+                    const token = await user.getIdToken();
+                    await fetch(`${window.location.origin}/api/system?action=welcome-email`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                } catch (e) {
+                    console.error("Google welcome dispatch node bypass:", e);
+                }
             }
         }
     } catch (error: any) {
@@ -183,6 +204,18 @@ export const Login: React.FC = () => {
                     )}
                 </button>
                 
+                {isLogin && (
+                    <div className="text-center">
+                        <button 
+                            type="button"
+                            onClick={() => setIsForgotPassword(true)}
+                            className="text-xs text-blue-400 font-bold hover:underline"
+                        >
+                            Forgot Password?
+                        </button>
+                    </div>
+                )}
+                
                 <div className="flex items-center gap-4 py-2">
                    <div className="flex-1 h-px bg-slate-800"></div>
                    <span className="text-xs text-slate-500 font-bold uppercase tracking-widest">or</span>
@@ -219,6 +252,60 @@ export const Login: React.FC = () => {
             </div>
         </div>
 
+        {/* 🔐 FORGOT PASSWORD OVERLAY */}
+        {isForgotPassword && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-nexus-dark/80 backdrop-blur-md">
+                <div className="w-full max-w-sm glass-panel p-8 rounded-3xl border border-nexus-border animate-slide-up">
+                    <div className="text-center mb-6">
+                        <div className="w-12 h-12 bg-blue-600/10 rounded-2xl flex items-center justify-center mx-auto mb-4 text-blue-400">
+                            <Lock className="w-6 h-6" />
+                        </div>
+                        <h2 className="text-xl font-bold text-white uppercase tracking-tight">Recover Credentials</h2>
+                        <p className="text-slate-500 text-xs mt-2">Enter your email to receive a secure reset link.</p>
+                    </div>
+
+                    <form onSubmit={handleForgotPassword} className="space-y-4">
+                        <div>
+                            <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1.5 ml-1">Email Address</label>
+                            <input 
+                                required
+                                type="email" 
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                className="w-full bg-nexus-card border border-nexus-border rounded-xl px-4 py-3 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                                placeholder="name@company.com"
+                            />
+                        </div>
+
+                        <button 
+                            type="submit" 
+                            disabled={loading}
+                            className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl transition-all shadow-xl shadow-blue-600/20 flex items-center justify-center gap-2"
+                        >
+                            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send Reset Link'}
+                        </button>
+
+                        <button 
+                            type="button" 
+                            onClick={() => setIsForgotPassword(false)}
+                            className="w-full py-2 text-slate-500 text-xs font-bold hover:text-white transition-colors"
+                        >
+                            Back to Login
+                        </button>
+                    </form>
+                </div>
+            </div>
+        )}
+
+        {/* Footer Legal Links */}
+        <div className="absolute bottom-8 left-0 right-0 text-center animate-fade-in" style={{ animationDelay: '0.8s' }}>
+            <div className="flex justify-center gap-8 text-[10px] font-black uppercase tracking-[0.2em] text-slate-600">
+                <a href="/privacy" className="hover:text-blue-500 transition-colors">Privacy Policy</a>
+                <a href="/terms" className="hover:text-blue-500 transition-colors">Terms of Service</a>
+                <a href="/refund" className="hover:text-blue-500 transition-colors">Refund Policy</a>
+            </div>
+            <p className="text-[9px] text-slate-800 font-bold uppercase mt-4 tracking-widest">© {new Date().getFullYear()} QuickKit AI Engineering</p>
+        </div>
       </div>
     </div>
   );

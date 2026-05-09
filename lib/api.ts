@@ -25,7 +25,7 @@ export const apiCall = async (url: string, body?: any, options: { allowGuest?: b
   const raw = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    throw new Error(raw.message || raw.error || "Connection issue. Please retry.");
+    throw new Error(raw.message || raw.error || `Error ${res.status}: Connection issue. Please retry.`);
   }
 
   // Handle both direct and wrapped responses for legacy compatibility

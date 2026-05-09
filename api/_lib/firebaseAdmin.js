@@ -5,8 +5,8 @@ if (!admin.apps.length) {
       const { FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY } = process.env;
       
       if (!FIREBASE_PROJECT_ID || !FIREBASE_CLIENT_EMAIL || !FIREBASE_PRIVATE_KEY) {
-        throw new Error("🚨 Missing Critical Backend Credentials: Check FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY in environment variables.");
-      }
+        console.error("🚨 Missing Critical Backend Credentials: Check FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY in Vercel.");
+      } else {
 
       const privateKey = FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
 
@@ -17,7 +17,8 @@ if (!admin.apps.length) {
           privateKey: privateKey,
         }),
       });
-      console.log("✅ Firebase Operational: Neural Node Connected.");
+        console.log("✅ Firebase Operational: Neural Node Connected.");
+      }
     } catch (e) {
       console.error("❌ Firebase Initialization Failure:", e.message);
     }
