@@ -35,6 +35,8 @@ const SocialProofBar = lazy(() => import('./components/SocialProofBar').then(m =
 const SmartBot = lazy(() => import('./components/SmartBot').then(m => ({ default: m.SmartBot })));
 const FloatingActions = lazy(() => import('./components/FloatingActions').then(m => ({ default: m.FloatingActions })));
 const LegalModal = lazy(() => import('./components/LegalModal').then(m => ({ default: m.LegalModal })));
+const Blog = lazy(() => import('./components/seo/Blog').then(m => ({ default: m.Blog })));
+const ServicePage = lazy(() => import('./components/seo/ServicePage').then(m => ({ default: m.ServicePage })));
 
 // 🚨 STEP 1 — GLOBAL CRASH STOP (MUST APPLY)
 class ErrorBoundary extends React.Component<any, any> {
@@ -280,10 +282,16 @@ const App: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-6 text-sm">
             <span>Sales: sales@quickkitai.com</span>
             <span>Support: support@quickkitai.com</span>
+            <div className="flex gap-4">
+              <a href="#" className="hover:text-blue-400 transition-colors">LinkedIn</a>
+              <a href="#" className="hover:text-blue-400 transition-colors">Twitter (X)</a>
+            </div>
           </div>
           <div className="flex flex-wrap justify-center gap-6 mb-8 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">
             <a href="#ai-agents" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">AI Agents</a>
             <a href="#pricing" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Pricing</a>
+            <Link to="/about" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">About Us</Link>
+            <Link to="/contact" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Contact</Link>
             <Link to="/privacy" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Terms of Service</Link>
             <Link to="/refund" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Refund Policy</Link>
@@ -336,9 +344,38 @@ const App: React.FC = () => {
                 user?.role === 'admin' ? <AdminPortal user={user!} onLogout={handleLogout} /> : <ClientPortal user={user!} onLogout={handleLogout} />
               ) : <Navigate to="/login" />
             } />
+            <Route path="/about" element={<LegalPages />} />
+            <Route path="/contact" element={<LegalPages />} />
             <Route path="/privacy" element={<LegalPages />} />
             <Route path="/terms" element={<LegalPages />} />
             <Route path="/refund" element={<LegalPages />} />
+
+            {/* SEO Dedicated Pages */}
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/features" element={
+              <ServicePage title="Features | QuickKit AI" description="Explore the full suite of QuickKit AI features including Nimoclaw, OpenClaw, and custom workflows." keywords="AI features, automation features, QuickKit tools">
+                <PainSection />
+                <WhyQuickKit />
+              </ServicePage>
+            } />
+            <Route path="/ai-crm" element={
+              <ServicePage title="AI CRM Platform | QuickKit AI" description="Transform your customer relationship management with our intelligent AI CRM platform." keywords="AI CRM, smart CRM, autonomous CRM">
+                <AIAgents onSelectAgent={handleCatalogSelect} />
+              </ServicePage>
+            } />
+            <Route path="/ai-lead-generation" element={
+              <ServicePage title="AI Lead Generation | QuickKit AI" description="Automate lead capture and qualification with advanced AI automation." keywords="AI lead gen, automated lead generation">
+                <BusinessImpact />
+                <ROICalculator lang={lang} />
+              </ServicePage>
+            } />
+            <Route path="/support-automation" element={
+              <ServicePage title="Support Automation | QuickKit AI" description="Provide 24/7 autonomous support to your customers using intelligent AI agents." keywords="AI support, autonomous customer service">
+                <WhoIsItFor onBookDemo={() => setShowLeadForm(true)} />
+                <Testimonials />
+              </ServicePage>
+            } />
+
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Suspense>

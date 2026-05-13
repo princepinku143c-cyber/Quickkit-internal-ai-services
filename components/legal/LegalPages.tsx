@@ -26,6 +26,8 @@ export const LegalPages = () => {
                         <ArrowLeft className="w-4 h-4" /> Back to Studio
                     </Link>
                     <div className="flex gap-6 text-[10px] font-black uppercase tracking-widest text-slate-500">
+                        <Link to="/about" className={`hover:text-white transition-colors ${location.pathname === '/about' ? 'text-blue-400' : ''}`}>About</Link>
+                        <Link to="/contact" className={`hover:text-white transition-colors ${location.pathname === '/contact' ? 'text-blue-400' : ''}`}>Contact</Link>
                         <Link to="/privacy" className={`hover:text-white transition-colors ${location.pathname === '/privacy' ? 'text-blue-400' : ''}`}>Privacy</Link>
                         <Link to="/terms" className={`hover:text-white transition-colors ${location.pathname === '/terms' ? 'text-blue-400' : ''}`}>Terms</Link>
                         <Link to="/refund" className={`hover:text-white transition-colors ${location.pathname === '/refund' ? 'text-blue-400' : ''}`}>Refunds</Link>
@@ -35,6 +37,36 @@ export const LegalPages = () => {
 
             <div className="max-w-4xl mx-auto py-32 px-6 space-y-32">
                 
+                {/* About Us */}
+                <section id="about" className={`space-y-8 transition-opacity duration-700 ${location.pathname !== '/about' && 'opacity-40 hover:opacity-100'}`}>
+                    <div className="flex items-center gap-4 text-emerald-500 mb-2">
+                        <Shield className="w-8 h-8" />
+                        <span className="text-xs font-black uppercase tracking-[0.3em]">Company Mission</span>
+                    </div>
+                    <h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter leading-none">About Us</h1>
+                    <div className="space-y-6 leading-relaxed text-lg pt-8">
+                        <p className="text-slate-300">QuickKit AI is a leading AI automation agency dedicated to transforming businesses through intelligent agents and streamlined workflows. Our mission is to democratize enterprise-grade AI operations.</p>
+                        <p className="text-slate-300">Located globally with a focus on delivering high-performance CRM and automation solutions, we combine cutting-edge technology with deep business strategy.</p>
+                    </div>
+                </section>
+
+                {/* Contact Page */}
+                <section id="contact" className={`space-y-8 transition-opacity duration-700 ${location.pathname !== '/contact' && 'opacity-40 hover:opacity-100'}`}>
+                    <div className="flex items-center gap-4 text-purple-500 mb-2">
+                        <Shield className="w-8 h-8" />
+                        <span className="text-xs font-black uppercase tracking-[0.3em]">Get In Touch</span>
+                    </div>
+                    <h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter leading-none">Contact Us</h1>
+                    <div className="space-y-6 leading-relaxed text-lg pt-8">
+                        <p className="text-slate-300">Have a question or need support? Our team is ready to assist you.</p>
+                        <div className="mt-8 space-y-4">
+                            <p className="text-slate-400"><strong className="text-white">Email:</strong> admin@quickkitai.com</p>
+                            <p className="text-slate-400"><strong className="text-white">Sales:</strong> sales@quickkitai.com</p>
+                            <p className="text-slate-400"><strong className="text-white">Support:</strong> support@quickkitai.com</p>
+                        </div>
+                    </div>
+                </section>
+
                 {/* Privacy Policy */}
                 <section id="privacy" className={`space-y-8 transition-opacity duration-700 ${location.pathname !== '/privacy' && 'opacity-40 hover:opacity-100'}`}>
                     <div className="flex items-center gap-4 text-blue-500 mb-2">
