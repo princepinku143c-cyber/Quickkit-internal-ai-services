@@ -171,31 +171,33 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
             <div className="bg-[#080c14] border border-slate-800 w-full max-w-6xl rounded-[3rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col h-[90vh] overflow-hidden relative animate-fade-in">
 
                 {/* Superior Header */}
-                <div className="flex items-center justify-between px-10 py-8 border-b border-white/5 bg-slate-900/20 backdrop-blur-md">
-                    <div className="flex items-center gap-5">
-                        <Logo size={48} />
+                <div className="flex items-center justify-between px-6 md:px-10 py-5 md:py-8 border-b border-white/5 bg-slate-900/20 backdrop-blur-md">
+                    <div className="flex items-center gap-3 md:gap-5">
+                        <div className="scale-75 md:scale-100 origin-left">
+                            <Logo size={48} />
+                        </div>
                         <div>
-                            <h3 className="text-2xl font-black text-white uppercase tracking-tighter">Kelly Architect Studio</h3>
-                            <div className="flex items-center gap-2 mt-1">
-                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
-                                <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em]">Live Intelligence Sync: {item?.name || 'Custom Solution'}</p>
+                            <h3 className="text-lg md:text-2xl font-black text-white uppercase tracking-tighter">Kelly Architect Studio</h3>
+                            <div className="flex items-center gap-2 mt-0.5 md:mt-1">
+                                <div className="w-1.5 h-1.5 md:w-2 md:h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></div>
+                                <p className="text-[8px] md:text-[10px] text-slate-500 font-black uppercase tracking-[0.1em] md:tracking-[0.2em] truncate max-w-[150px] md:max-w-[300px]">Live Intelligence Sync: {item?.name || 'Custom Solution'}</p>
                             </div>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-3 bg-white/5 hover:bg-white/10 rounded-2xl text-slate-400 hover:text-white transition-all"><X className="w-6 h-6" /></button>
+                    <button onClick={onClose} className="p-2 md:p-3 bg-white/5 hover:bg-white/10 rounded-xl md:rounded-2xl text-slate-400 hover:text-white transition-all shrink-0"><X className="w-5 h-5 md:w-6 md:h-6" /></button>
                 </div>
 
                 {view === 'studio' && (
-                    <div className="flex-1 flex overflow-hidden">
-                        <div className="w-full md:w-[450px] border-r border-white/5 bg-slate-950/20 p-12 overflow-y-auto custom-scrollbar">
-                            <div className="space-y-12">
+                    <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
+                        <div className="w-full md:w-[450px] border-b md:border-b-0 md:border-r border-white/5 bg-slate-950/20 p-6 md:p-12 overflow-y-auto custom-scrollbar shrink-0 max-h-[40vh] md:max-h-full">
+                            <div className="space-y-6 md:space-y-12">
                                 <div className="relative">
-                                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] mb-4 block">Deployment Blueprint</span>
-                                    <h4 className="text-4xl font-black text-white leading-none tracking-tighter mb-6">{item?.name || 'Custom Solution'}</h4>
-                                    <p className="text-sm text-slate-400 leading-relaxed font-bold border-l-2 border-slate-800 pl-4 uppercase tracking-wide">{item?.outcome}</p>
+                                    <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] mb-2 md:mb-4 block">Deployment Blueprint</span>
+                                    <h4 className="text-2xl md:text-4xl font-black text-white leading-none tracking-tighter mb-4 md:mb-6">{item?.name || 'Custom Solution'}</h4>
+                                    <p className="text-xs md:text-sm text-slate-400 leading-relaxed font-bold border-l-2 border-slate-800 pl-4 uppercase tracking-wide">{item?.outcome}</p>
                                 </div>
 
-                                <div className="space-y-4">
+                                <div className="hidden md:block space-y-4">
                                     <div className="bg-slate-900/40 border border-white/5 p-6 rounded-3xl flex items-center justify-between group hover:border-blue-500/30 transition-all">
                                         <div className="flex items-center gap-4">
                                             <div className="p-2 bg-blue-500/10 rounded-xl text-blue-500"><Clock className="w-5 h-5" /></div>
@@ -212,7 +214,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                                     </div>
                                 </div>
 
-                                <div className="pt-6">
+                                <div className="pt-2 md:pt-6">
                                     <button
                                         onClick={() => {
                                             if (!auth.currentUser) {
@@ -221,49 +223,48 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                                                 setView('form');
                                             }
                                         }}
-                                        className="w-full py-6 bg-blue-600 text-white font-black rounded-[2rem] shadow-2xl shadow-blue-900/40 hover:bg-blue-500 hover:-translate-y-1 transition-all uppercase text-sm tracking-[0.2em] flex items-center justify-center gap-3"
+                                        className="w-full py-4 md:py-6 bg-blue-600 text-white font-black rounded-2xl md:rounded-[2rem] shadow-2xl shadow-blue-900/40 hover:bg-blue-500 hover:-translate-y-1 transition-all uppercase text-xs md:text-sm tracking-[0.2em] flex items-center justify-center gap-3"
                                     >
-                                        Request Custom Blueprint <ArrowRight className="w-5 h-5" />
+                                        Request Blueprint <ArrowRight className="w-4 h-4 md:w-5 md:h-5" />
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        <div className="flex-1 flex flex-col bg-slate-900/10 relative">
+                        <div className="flex-1 flex flex-col bg-slate-900/10 relative min-h-[50vh] md:min-h-0">
                             {/* Status Overlays */}
                             {errorStatus === 'LIMIT_REACHED' && (
-                                <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 backdrop-blur-md p-10">
-                                    <div className="bg-slate-900 border border-slate-800 p-10 rounded-[3rem] text-center max-w-sm space-y-6">
-                                        <Lock className="w-16 h-16 text-blue-500 mx-auto" />
-                                        <h5 className="text-2xl font-black text-white uppercase tracking-tighter">Session Limit</h5>
-                                        <p className="text-slate-500 text-sm font-bold uppercase tracking-widest">You have reached the guest message limit. Please log in to authorize further architectural scoping.</p>
-                                        <button onClick={() => navigate('/login', { replace: true })} className="w-full py-4 bg-white text-black font-black rounded-2xl uppercase tracking-widest text-xs hover:bg-slate-200 transition-all">Authorize Now</button>
+                                <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 backdrop-blur-md p-6 md:p-10">
+                                    <div className="bg-slate-900 border border-slate-800 p-8 md:p-10 rounded-[2rem] md:rounded-[3rem] text-center max-w-sm space-y-6">
+                                        <Lock className="w-12 h-12 md:w-16 md:h-16 text-blue-500 mx-auto" />
+                                        <h5 className="text-xl md:text-2xl font-black text-white uppercase tracking-tighter">Session Limit</h5>
+                                        <p className="text-slate-500 text-xs md:text-sm font-bold uppercase tracking-widest">You have reached the guest message limit. Please log in to authorize further architectural scoping.</p>
+                                        <button onClick={() => navigate('/login', { replace: true })} className="w-full py-3 md:py-4 bg-white text-black font-black rounded-xl md:rounded-2xl uppercase tracking-widest text-xs hover:bg-slate-200 transition-all">Authorize Now</button>
                                     </div>
                                 </div>
                             )}
 
-
-                            <div ref={scrollRef} className="flex-1 p-10 overflow-y-auto space-y-8 custom-scrollbar">
+                            <div ref={scrollRef} className="flex-1 p-6 md:p-10 overflow-y-auto space-y-6 md:space-y-8 custom-scrollbar">
                                 {(Array.isArray(chatHistory) ? chatHistory : []).map((msg, i) => (
                                     <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                        <div className={`max-w-[80%] p-6 rounded-[2rem] text-sm font-medium ${msg.role === 'user' ? 'bg-blue-600 shadow-xl text-white rounded-tr-none' : 'bg-slate-900/60 border border-white/5 text-slate-300 rounded-tl-none'}`}>
+                                        <div className={`max-w-[90%] md:max-w-[80%] p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] text-xs md:text-sm font-medium ${msg.role === 'user' ? 'bg-blue-600 shadow-xl text-white rounded-tr-none' : 'bg-slate-900/60 border border-white/5 text-slate-300 rounded-tl-none'}`}>
                                             {msg.content}
                                         </div>
                                     </div>
                                 ))}
                                 {isTyping && (
                                     <div className="flex justify-start">
-                                        <div className="bg-slate-900 p-6 rounded-[2rem] rounded-tl-none flex gap-2">
-                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce"></div>
-                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-.3s]"></div>
-                                            <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-.5s]"></div>
+                                        <div className="bg-slate-900 p-5 md:p-6 rounded-[1.5rem] md:rounded-[2rem] rounded-tl-none flex gap-2">
+                                            <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-blue-500 rounded-full animate-bounce"></div>
+                                            <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-.3s]"></div>
+                                            <div className="w-1.5 h-1.5 md:w-2 md:h-2 bg-blue-500 rounded-full animate-bounce [animation-delay:-.5s]"></div>
                                         </div>
                                     </div>
                                 )}
                             </div>
-                            <div className="p-8 border-t border-white/5 bg-slate-950/20">
+                            <div className="p-4 md:p-8 border-t border-white/5 bg-slate-950/20">
                                 <form onSubmit={handleChat} className="relative group">
-                                    <input value={userInput} disabled={errorStatus === 'LOGIN_REQUIRED'} onChange={e => setUserInput(e.target.value)} placeholder="Ask Kelly about deployment, ROI, or custom features..." className="w-full bg-slate-950 border border-slate-800 rounded-3xl py-5 pl-8 pr-20 text-white font-bold placeholder:text-slate-700 outline-none focus:border-blue-500/50 transition-all disabled:opacity-50" />
-                                    <button type="submit" disabled={isTyping || errorStatus === 'LOGIN_REQUIRED'} className="absolute right-3 top-3 p-3 bg-blue-600 text-white rounded-2xl hover:bg-blue-500 shadow-lg transition-all active:scale-95 disabled:opacity-50"><Zap className="w-5 h-5" /></button>
+                                    <input value={userInput} disabled={errorStatus === 'LOGIN_REQUIRED'} onChange={e => setUserInput(e.target.value)} placeholder="Ask Kelly..." className="w-full bg-slate-950 border border-slate-800 rounded-2xl md:rounded-3xl py-4 md:py-5 pl-6 md:pl-8 pr-16 md:pr-20 text-white font-bold placeholder:text-slate-700 outline-none focus:border-blue-500/50 transition-all disabled:opacity-50 text-sm" />
+                                    <button type="submit" disabled={isTyping || errorStatus === 'LOGIN_REQUIRED'} className="absolute right-2 md:right-3 top-2 md:top-3 p-2 md:p-3 bg-blue-600 text-white rounded-xl md:rounded-2xl hover:bg-blue-500 shadow-lg transition-all active:scale-95 disabled:opacity-50"><Zap className="w-4 h-4 md:w-5 md:h-5" /></button>
                                 </form>
                             </div>
                         </div>
