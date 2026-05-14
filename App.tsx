@@ -294,7 +294,6 @@ const App: React.FC = () => {
             <Link to="/contact" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Contact</Link>
             <Link to="/privacy" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Terms of Service</Link>
-            <Link to="/refund" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Refund Policy</Link>
           </div>
           <p>&copy; {new Date().getFullYear()} QuickKit AI. All rights reserved.</p>
         </div>
@@ -348,8 +347,6 @@ const App: React.FC = () => {
             <Route path="/contact" element={<LegalPages />} />
             <Route path="/privacy" element={<LegalPages />} />
             <Route path="/terms" element={<LegalPages />} />
-            <Route path="/refund" element={<LegalPages />} />
-
             {/* SEO Dedicated Pages */}
             <Route path="/blog" element={<Blog />} />
             <Route path="/features" element={

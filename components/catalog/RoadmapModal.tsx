@@ -408,7 +408,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                                 <div className="space-y-10">
                                     <section className="space-y-4">
                                         <h5 className="text-[10px] font-black text-white uppercase tracking-widest bg-white/5 w-fit px-3 py-1 rounded-md">Project Integrity</h5>
-                                        <p className="text-xs text-slate-500 font-bold leading-relaxed uppercase tracking-wider">Initial 10% advance is fully refundable within 72 hours of transaction if engineering logic has not been committed to the VPS stack.</p>
+                                        <p className="text-xs text-slate-500 font-bold leading-relaxed uppercase tracking-wider">Initial 10% advance is required to secure the engineering resources and commence the AI architecture build process.</p>
                                     </section>
                                     <section className="space-y-4">
                                         <h5 className="text-[10px] font-black text-white uppercase tracking-widest bg-white/5 w-fit px-3 py-1 rounded-md">Build Cycle</h5>

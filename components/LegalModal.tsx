@@ -1,7 +1,7 @@
 import React from 'react';
 import { X, ShieldCheck, Scale, CreditCard } from 'lucide-react';
 
-export type LegalDocType = 'privacy' | 'terms' | 'refund' | null;
+export type LegalDocType = 'privacy' | 'terms' | null;
 
 interface LegalModalProps {
   type: LegalDocType;
@@ -32,21 +32,6 @@ export const LegalModal: React.FC<LegalModalProps> = ({ type, onClose }) => {
           <p><strong>1. Intellectual Property</strong><br/>QuickKit retains the architectural rights to the underlying Nimoclaw and OpenClaw logic engines. You retain full ownership of all data processed and workflows customized specifically for your workspace.</p>
           <p><strong>2. Account Usage</strong><br/>You are responsible for maintaining the security of your Smart AI CRM credentials. Unauthorized commercial reselling of your configured AI agent workspace without explicit written consent is prohibited.</p>
           <p><strong>3. Reliability and Uptime</strong><br/>While we guarantee 99.9% uptime on our infrastructure, we cannot be held liable for API outages from underlying model providers (e.g., OpenAI, Google Gemini).</p>
-        </div>
-      )
-    },
-    refund: {
-      title: 'Cancellation & Refund Policy',
-      icon: <CreditCard className="w-5 h-5 text-amber-400" />,
-      text: (
-        <div className="space-y-4 text-slate-300 text-sm leading-relaxed">
-           <p className="bg-amber-500/10 p-4 rounded-lg border border-amber-500/20 text-amber-200 font-medium">
-             Our service delivery is based on a zero-friction, transparent model: Demo First, Payment Second. Because the heavy lifting happens before payment, our refund policy reflects the high setup costs of AI infrastructure.
-           </p>
-          <p><strong>1. Build & Demo Phase (No Risk)</strong><br/>We build your custom architecture and demonstrate the live system. If you are not satisfied with the demo, you owe nothing and we part ways.</p>
-          <p><strong>2. Approval & Handover</strong><br/>Once you approve the system and complete the payment, we execute the formal handover of the Smart AI CRM and activate your 1-month free maintenance.</p>
-          <p><strong>3. 7-Day Cancellation Policy</strong><br/>If you decide to cancel within 7 days of the official handover, you are entitled to a <strong>50% refund</strong>. The retained 50% strictly covers the complex, non-recoverable AI architecture build and deployment costs.</p>
-          <p><strong>4. Monthly Maintenance</strong><br/>After the first free month, maintenance is billed monthly. You may cancel next month's retainer at any time with 7 days' notice prior to the billing cycle.</p>
         </div>
       )
     }

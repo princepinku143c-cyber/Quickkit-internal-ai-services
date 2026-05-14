@@ -30,7 +30,6 @@ export const LegalPages = () => {
                         <Link to="/contact" className={`hover:text-white transition-colors ${location.pathname === '/contact' ? 'text-blue-400' : ''}`}>Contact</Link>
                         <Link to="/privacy" className={`hover:text-white transition-colors ${location.pathname === '/privacy' ? 'text-blue-400' : ''}`}>Privacy</Link>
                         <Link to="/terms" className={`hover:text-white transition-colors ${location.pathname === '/terms' ? 'text-blue-400' : ''}`}>Terms</Link>
-                        <Link to="/refund" className={`hover:text-white transition-colors ${location.pathname === '/refund' ? 'text-blue-400' : ''}`}>Refunds</Link>
                     </div>
                 </div>
             </nav>
@@ -124,37 +123,6 @@ export const LegalPages = () => {
                     </div>
                 </section>
 
-                {/* Refund Policy */}
-                <section id="refund" className={`space-y-8 transition-opacity duration-700 ${location.pathname !== '/refund' && 'opacity-40 hover:opacity-100'}`}>
-                    <div className="flex items-center gap-4 text-amber-500 mb-2">
-                        <CreditCard className="w-8 h-8" />
-                        <span className="text-xs font-black uppercase tracking-[0.3em]">Merchant Protection</span>
-                    </div>
-                    <h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter leading-none">Refund Policy</h1>
-                    <div className="space-y-6 leading-relaxed text-lg pt-8">
-                        <div className="bg-amber-500/5 border border-amber-500/10 p-10 rounded-[2.5rem] relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-8 opacity-10"><CreditCard className="w-32 h-32" /></div>
-                            <h3 className="text-2xl font-black text-white mb-8">The 3-Day Rule</h3>
-                            <ul className="space-y-6">
-                                <li className="flex gap-4">
-                                    <div className="w-6 h-6 rounded-full bg-amber-500/20 flex items-center justify-center text-amber-500 shrink-0 mt-1">✓</div>
-                                    <p className="text-sm text-slate-300">Advance payments are refundable <strong>within 3 days only</strong> if no engineering development has been initialized.</p>
-                                </li>
-                                <li className="flex gap-4">
-                                    <div className="w-6 h-6 rounded-full bg-red-500/20 flex items-center justify-center text-red-500 shrink-0 mt-1">✕</div>
-                                    <p className="text-sm text-slate-300">Once development begins (Blueprint Phase), advance payments become non-refundable to cover non-recoverable architect hours.</p>
-                                </li>
-                                <li className="flex gap-4">
-                                    <div className="w-6 h-6 rounded-full bg-blue-500/20 flex items-center justify-center text-blue-500 shrink-0 mt-1">!</div>
-                                    <p className="text-sm text-slate-300">Full refunds are granted <strong>only</strong> if we fail to deliver the project demo within the contractually agreed timeline.</p>
-                                </li>
-                            </ul>
-                            <div className="mt-12 pt-8 border-t border-amber-500/10 text-xs font-bold text-amber-500 uppercase tracking-widest text-center">
-                                Submit refund requests to: payments@quickkitai.com
-                            </div>
-                        </div>
-                    </div>
-                </section>
 
             </div>
 
