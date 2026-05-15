@@ -5,9 +5,23 @@
 @layer base {
   html {
     scroll-behavior: smooth;
+    /* Prevents iOS Safari rubber-band resize from triggering layout reflows */
+    height: -webkit-fill-available;
   }
   body {
     @apply bg-[#030712] text-[#f1f5f9] antialiased;
+    /* Use minimum available height, not 100vh, to avoid mobile keyboard jumps */
+    min-height: -webkit-fill-available;
+  }
+  /* Info panel height for Kelly chat on mobile — shrinks when keyboard opens */
+  :root {
+    --info-panel-height: 35dvh;
+  }
+  /* Prevent body from scrolling behind modals on iOS */
+  body.modal-open {
+    overflow: hidden;
+    position: fixed;
+    width: 100%;
   }
 }
 

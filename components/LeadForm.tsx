@@ -201,7 +201,7 @@ export const LeadForm: React.FC<Props> = ({ lang, close, onBack, onVerified, ini
                 <div className="group">
                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-1 mb-2 block">Enterprise Phone</label>
                     <PhoneInput
-                      country={'us'}
+                      country={'in'}
                       value={formData.phone}
                       onChange={(phone, country: any) => setFormData({...formData, phone, country: country.countryCode})}
                       containerClass="phone-input-container"

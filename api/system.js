@@ -1,6 +1,6 @@
 
-const admin = require('firebase-admin');
-const nodemailer = require('nodemailer');
+import admin from 'firebase-admin';
+import nodemailer from 'nodemailer';
 
 // Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
@@ -16,7 +16,7 @@ if (!admin.apps.length) {
 const success = (res, data) => res.status(200).json(data);
 const error = (res, msg, code = 400) => res.status(code).json({ error: msg });
 
-module.exports = async (req, res) => {
+export default async (req, res) => {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -28,44 +28,101 @@ module.exports = async (req, res) => {
     const { action } = req.query;
     const authHeader = req.headers.authorization;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        return error(res, "Unauthorized", 401);
+    let userId = null;
+    let userData = null;
+
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        try {
+            const token = authHeader.split(' ')[1];
+            const decodedToken = await admin.auth().verifyIdToken(token);
+            userId = decodedToken.uid;
+            const userSnap = await admin.firestore().collection('users').doc(userId).get();
+            userData = userSnap.data();
+        } catch (e) {
+            return error(res, "Authentication Failed: " + e.message, 401);
+        }
     }
 
-    const token = authHeader.split(' ')[1];
-    
-    try {
-        const decodedToken = await admin.auth().verifyIdToken(token);
-        const userId = decodedToken.uid;
-        const userSnap = await admin.firestore().collection('users').doc(userId).get();
-        const userData = userSnap.data();
+    const actionMap = {
+        'stats': getStats,
+        'add-credits': handleAddCredits,
+        'redeem-code': handleRedeemCode,
+        'credit-request': handleCreditRequest,
+        'generate-payment-token': handleGenerateToken,
+        'verify-payment-token': handleVerifyToken,
+        'project-quote': handleProjectQuote,
+        'project-update': handleProjectUpdate,
+        'project-status': handleProjectStatus,
+        'lead': handleLead
+    };
 
-        const actionMap = {
-            'stats': getStats,
-            'add-credits': handleAddCredits,
-            'redeem-code': handleRedeemCode,
-            'credit-request': handleCreditRequest,
-            'generate-payment-token': handleGenerateToken,
-            'verify-payment-token': handleVerifyToken,
-            'project-quote': handleProjectQuote,
-            'project-update': handleProjectUpdate,
-            'project-status': handleProjectStatus
-        };
-
-        if (actionMap[action]) {
-            // Admin only actions
-            const adminActions = ['add-credits', 'generate-payment-token', 'project-quote', 'project-update'];
-            if (adminActions.includes(action) && userData?.role !== 'admin') {
-                return error(res, "Forbidden: Admin access required", 403);
-            }
-            return await actionMap[action](req, res, userId);
+    if (actionMap[action]) {
+        // Require auth for all actions except 'lead'
+        if (action !== 'lead' && !userId) {
+            return error(res, "Unauthorized", 401);
         }
 
-        return error(res, "Invalid Action", 400);
-    } catch (e) {
-        return error(res, "Authentication Failed: " + e.message, 401);
+        // Admin only actions
+        const adminActions = ['add-credits', 'generate-payment-token', 'project-quote', 'project-update'];
+        if (adminActions.includes(action) && userData?.role !== 'admin') {
+            return error(res, "Forbidden: Admin access required", 403);
+        }
+        return await actionMap[action](req, res, userId);
     }
+
+    return error(res, "Invalid Action", 400);
 };
+
+async function handleLead(req, res, userId) {
+    const data = req.body;
+    try {
+        const leadRef = admin.firestore().collection('leads').doc();
+        const projectRef = admin.firestore().collection('projects').doc();
+
+        await leadRef.set({
+            ...data,
+            userId: userId || data.userId || null,
+            createdAt: new Date().toISOString()
+        });
+
+        await projectRef.set({
+            userId: userId || data.userId || null,
+            clientEmail: data.email,
+            clientName: data.name || data.businessName || 'Guest',
+            projectName: data.projectName || 'Custom Build',
+            businessName: data.businessName || 'Unknown',
+            status: 'pending',
+            progress: 0,
+            price: data.price || 0,
+            advancePaid: false,
+            createdAt: new Date().toISOString()
+        });
+
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+        });
+
+        await transporter.sendMail({
+            from: `"QuickKit System" <${process.env.EMAIL_USER}>`,
+            to: process.env.EMAIL_USER,
+            subject: `🚀 New Lead/Project: ${data.projectName || 'Custom Build'}`,
+            html: `
+                <h3>New Lead Submission</h3>
+                <p><strong>Name:</strong> ${data.name}</p>
+                <p><strong>Email:</strong> ${data.email}</p>
+                <p><strong>Phone:</strong> ${data.phone}</p>
+                <p><strong>Project:</strong> ${data.projectName || 'Custom Build'}</p>
+                <p><strong>Requirements:</strong> ${data.requirement || data.notes || 'N/A'}</p>
+                <p><strong>Price:</strong> $${data.price || 0}</p>
+            `
+        });
+
+        return success(res, { status: "LEAD_CREATED", projectId: projectRef.id });
+    } catch (e) {
+        return error(res, e.message, 500);
+    }
+}
 
 async function getStats(req, res, userId) {
     try {

@@ -55,6 +55,18 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
     });
 
     useEffect(() => {
+        // Lock body scroll when Kelly modal is open — prevents iOS page jump
+        const scrollY = window.scrollY;
+        document.body.classList.add('modal-open');
+        document.body.style.top = `-${scrollY}px`;
+        return () => {
+            document.body.classList.remove('modal-open');
+            document.body.style.top = '';
+            window.scrollTo(0, scrollY);
+        };
+    }, []);
+
+    useEffect(() => {
         if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }, [chatHistory, isTyping]);
 
@@ -167,8 +179,8 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#030712]/95 backdrop-blur-3xl">
-            <div className="bg-[#080c14] border border-slate-800 w-full max-w-6xl rounded-[3rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col h-[90vh] overflow-hidden relative animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center sm:p-4 bg-[#030712]/95 backdrop-blur-3xl">
+            <div className="bg-[#080c14] border border-slate-800 w-full max-w-6xl sm:rounded-[3rem] shadow-[0_0_100px_rgba(0,0,0,0.8)] flex flex-col overflow-hidden relative animate-fade-in" style={{height: '100dvh', maxHeight: '90dvh'}}>
 
                 {/* Superior Header */}
                 <div className="flex items-center justify-between px-6 md:px-10 py-5 md:py-8 border-b border-white/5 bg-slate-900/20 backdrop-blur-md">
@@ -189,7 +201,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
 
                 {view === 'studio' && (
                     <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
-                        <div className="w-full md:w-[450px] border-b md:border-b-0 md:border-r border-white/5 bg-slate-950/20 p-6 md:p-12 overflow-y-auto custom-scrollbar shrink-0 max-h-[40vh] md:max-h-full">
+                        <div className="w-full md:w-[450px] border-b md:border-b-0 md:border-r border-white/5 bg-slate-950/20 p-4 md:p-12 overflow-y-auto custom-scrollbar shrink-0 md:max-h-full" style={{maxHeight: 'var(--info-panel-height, 35dvh)'}}>
                             <div className="space-y-6 md:space-y-12">
                                 <div className="relative">
                                     <span className="text-[10px] font-black text-blue-500 uppercase tracking-[0.4em] mb-2 md:mb-4 block">Deployment Blueprint</span>
@@ -230,7 +242,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                                 </div>
                             </div>
                         </div>
-                        <div className="flex-1 flex flex-col bg-slate-900/10 relative min-h-[50vh] md:min-h-0">
+                        <div className="flex-1 flex flex-col bg-slate-900/10 relative" style={{minHeight: '50dvh', minWidth: 0}}>
                             {/* Status Overlays */}
                             {errorStatus === 'LIMIT_REACHED' && (
                                 <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 backdrop-blur-md p-6 md:p-10">
@@ -261,10 +273,28 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                                     </div>
                                 )}
                             </div>
-                            <div className="p-4 md:p-8 border-t border-white/5 bg-slate-950/20">
+                            <div className="p-3 md:p-8 border-t border-white/5 bg-slate-950/20 shrink-0">
                                 <form onSubmit={handleChat} className="relative group">
-                                    <input value={userInput} disabled={errorStatus === 'LOGIN_REQUIRED'} onChange={e => setUserInput(e.target.value)} placeholder="Ask Kelly..." className="w-full bg-slate-950 border border-slate-800 rounded-2xl md:rounded-3xl py-4 md:py-5 pl-6 md:pl-8 pr-16 md:pr-20 text-white font-bold placeholder:text-slate-700 outline-none focus:border-blue-500/50 transition-all disabled:opacity-50 text-sm" />
-                                    <button type="submit" disabled={isTyping || errorStatus === 'LOGIN_REQUIRED'} className="absolute right-2 md:right-3 top-2 md:top-3 p-2 md:p-3 bg-blue-600 text-white rounded-xl md:rounded-2xl hover:bg-blue-500 shadow-lg transition-all active:scale-95 disabled:opacity-50"><Zap className="w-4 h-4 md:w-5 md:h-5" /></button>
+                                    <input
+                                        value={userInput}
+                                        disabled={errorStatus === 'LOGIN_REQUIRED'}
+                                        onChange={e => setUserInput(e.target.value)}
+                                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChat(); } }}
+                                        placeholder="Ask Kelly..."
+                                        enterKeyHint="send"
+                                        autoComplete="off"
+                                        autoCorrect="off"
+                                        autoCapitalize="sentences"
+                                        className="w-full bg-slate-950 border border-slate-800 rounded-2xl md:rounded-3xl py-4 md:py-5 pl-5 md:pl-8 pr-16 md:pr-20 text-white font-bold placeholder:text-slate-700 outline-none focus:border-blue-500/50 transition-all disabled:opacity-50 text-sm"
+                                    />
+                                    <button
+                                        type="button"
+                                        onPointerDown={e => { e.preventDefault(); handleChat(); }}
+                                        disabled={isTyping || errorStatus === 'LOGIN_REQUIRED'}
+                                        className="absolute right-2 md:right-3 top-2 md:top-3 p-2 md:p-3 bg-blue-600 text-white rounded-xl md:rounded-2xl hover:bg-blue-500 shadow-lg transition-all active:scale-95 disabled:opacity-50"
+                                    >
+                                        <Zap className="w-4 h-4 md:w-5 md:h-5" />
+                                    </button>
                                 </form>
                             </div>
                         </div>
@@ -296,7 +326,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                                 <div className="space-y-2">
                                     <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest ml-2">Direct Phone</label>
                                     <PhoneInput
-                                        country={'us'}
+                                        country={'in'}
                                         value={formData.phone}
                                         onChange={(phone, country: any) => setFormData({ ...formData, phone, country: country.countryCode })}
                                         containerClass="phone-input-container"
