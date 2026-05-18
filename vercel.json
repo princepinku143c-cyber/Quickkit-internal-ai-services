@@ -26,7 +26,7 @@
       ]
     },
     {
-      "source": "/(.+\\.js|.+\\.css|.+\\.woff2|.+\\.png|.+\\.svg|.+\\.webp)",
+      "source": "/(.*).(js|css|woff2|png|svg|webp)",
       "headers": [
         { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
       ]
@@ -34,18 +34,14 @@
   ],
   "redirects": [
     {
-      "source": "http://quickkitai.com/(.*)",
-      "destination": "https://quickkitai.com/$1",
-      "permanent": true
-    },
-    {
-      "source": "http://www.quickkitai.com/(.*)",
-      "destination": "https://quickkitai.com/$1",
-      "permanent": true
-    },
-    {
-      "source": "https://www.quickkitai.com/(.*)",
-      "destination": "https://quickkitai.com/$1",
+      "source": "/:path*",
+      "has": [
+        {
+          "type": "host",
+          "value": "www.quickkitai.com"
+        }
+      ],
+      "destination": "https://quickkitai.com/:path*",
       "permanent": true
     }
   ],
