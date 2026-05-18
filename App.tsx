@@ -37,6 +37,7 @@ const FloatingActions = lazy(() => import('./components/FloatingActions').then(m
 const LegalModal = lazy(() => import('./components/LegalModal').then(m => ({ default: m.LegalModal })));
 const Blog = lazy(() => import('./components/seo/Blog').then(m => ({ default: m.Blog })));
 const ServicePage = lazy(() => import('./components/seo/ServicePage').then(m => ({ default: m.ServicePage })));
+const SEOAudit = lazy(() => import('./components/seo/SEOAudit').then(m => ({ default: m.SEOAudit })));
 
 // 🚨 STEP 1 — GLOBAL CRASH STOP (MUST APPLY)
 class ErrorBoundary extends React.Component<any, any> {
@@ -373,6 +374,7 @@ const App: React.FC = () => {
               </ServicePage>
             } />
 
+            <Route path="/seo-audit" element={<SEOAudit />} />
             <Route path="*" element={<Navigate to="/" />} />
           </Routes>
         </Suspense>

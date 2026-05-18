@@ -29,16 +29,19 @@ export const Hero: React.FC<HeroProps> = ({ lang, onLaunchArchitect }) => {
 
         <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight tracking-tighter text-white animate-slide-up">
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-emerald-400">
-            Automate Your Sales,
+            The AI Agent CRM That
           </span>
           <br />
-          Leads & Support with AI
+          Replaces ChatGPT, Zapier
           <br className="hidden md:block" />
-          <span className="text-slate-400 text-4xl md:text-5xl"> — Without Hiring Staff</span>
+          <span className="text-slate-400 text-4xl md:text-5xl">&amp; Salesforce — Free</span>
         </h1>
 
+        {/* Hidden H2 for Google heading structure — screen-reader accessible */}
+        <h2 className="sr-only">Automate CRM, Bulk Email, Social Media &amp; Trading with Multi-Agent AI — Free to Start 2026</h2>
+
         <p className="text-lg md:text-xl text-slate-400 max-w-3xl mx-auto mb-10 font-sans leading-relaxed animate-slide-up [animation-delay:200ms]">
-          Replace repetitive work with AI systems that <span className="text-white font-bold">generate leads, follow up automatically,</span> and run your operations 24/7.
+          Replace ChatGPT plugins &amp; Zapier with <span className="text-white font-bold">AI agents that generate leads, follow up automatically,</span> and run your entire business 24/7 — free to start.
         </p>
 
         {/* Primary CTA */}
