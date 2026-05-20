@@ -244,7 +244,7 @@ const App: React.FC = () => {
 
   if (authLoading) return <GlobalLoader message="Waking Up Architecture..." />;
 
-  const LandingView = () => (
+  const renderLandingView = () => (
     <div className="bg-[#030712] min-h-screen font-sans text-slate-100 selection:bg-blue-500/30">
       <Helmet>
         <title>QuickKit AI | Automate Your Sales, Leads & Support with AI</title>
@@ -335,9 +335,9 @@ const App: React.FC = () => {
       <ErrorBoundary>
         <Suspense fallback={<GlobalLoader message="Waking Up Architecture..." />}>
           <Routes>
-            <Route path="/" element={<LandingView />} />
-            <Route path="/pricing" element={<LandingView />} />
-            <Route path="/ai-agents" element={<LandingView />} />
+            <Route path="/" element={renderLandingView()} />
+            <Route path="/pricing" element={renderLandingView()} />
+            <Route path="/ai-agents" element={renderLandingView()} />
             <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
             <Route path="/dashboard" element={
               isAuthenticated ? (
