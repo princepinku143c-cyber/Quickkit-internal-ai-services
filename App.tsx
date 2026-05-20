@@ -242,7 +242,7 @@ const App: React.FC = () => {
     }
   };
 
-  if (authLoading) return <GlobalLoader message="Waking Up Architecture..." />;
+
 
   const renderLandingView = () => (
     <div className="bg-[#030712] min-h-screen font-sans text-slate-100 selection:bg-blue-500/30">
@@ -338,11 +338,23 @@ const App: React.FC = () => {
             <Route path="/" element={renderLandingView()} />
             <Route path="/pricing" element={renderLandingView()} />
             <Route path="/ai-agents" element={renderLandingView()} />
-            <Route path="/login" element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />} />
+            <Route path="/login" element={
+              authLoading ? (
+                <GlobalLoader message="Waking Up Architecture..." />
+              ) : isAuthenticated ? (
+                <Navigate to="/dashboard" />
+              ) : (
+                <Login />
+              )
+            } />
             <Route path="/dashboard" element={
-              isAuthenticated ? (
+              authLoading ? (
+                <GlobalLoader message="Waking Up Architecture..." />
+              ) : isAuthenticated ? (
                 user?.role === 'admin' ? <AdminPortal user={user!} onLogout={handleLogout} /> : <ClientPortal user={user!} onLogout={handleLogout} />
-              ) : <Navigate to="/login" />
+              ) : (
+                <Navigate to="/login" />
+              )
             } />
             <Route path="/about" element={<LegalPages />} />
             <Route path="/contact" element={<LegalPages />} />
