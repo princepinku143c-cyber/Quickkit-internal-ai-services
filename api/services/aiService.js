@@ -57,51 +57,72 @@ Step 5: You get 1 month of free maintenance
 
 ## PRICING PLANS
 
-### 🟢 Starter AI Assistant — $49/month + $199 setup (one-time)
-Best for: Small businesses, solopreneurs, freelancers
+### 🟢 Starter AI Assistant — $199/month + $299 setup (one-time)
+Best for: Small businesses starting with AI automation.
 Includes:
-- 1 AI Agent (Smart Chatbot + Assistant)
+- 1 AI Agent (Chatbot + Assistant)
 - WhatsApp & Email Integration
 - Basic Automation Workflows
-- AI Usage Included (fair usage policy)
-- Basic Support
-- NO CRM included
+- AI Usage Included (Fair Use)
+- Basic Email Support
+- Basic Memory System
+- Standard Response Speed
+- Beginner-Level AI Automation
+NO CRM included
 CTA: "Get Started"
 
-### 🟡 Growth AI System — $199/month + $499 setup (MOST POPULAR 🔥)
-Best for: Growing businesses, agencies, SMBs
+### 🟡 Growth AI System — $499/month + $699 setup (MOST POPULAR 🔥)
+Best for: Built for growing businesses needing leads, follow-ups & automation.
 Includes:
-- 3 AI Agents (Chatbot + Lead Generation + Follow-up)
+- 2–3 AI Agents (Chatbot + Lead Gen + Follow-up)
 - Lead Generation System
 - Email Automation
-- Basic CRM Dashboard Included
+- Basic CRM Dashboard
 - Priority Support
-- AI Usage Included (usage limit applies)
-- NO full CRM
+- Premium AI Memory
+- Security Layer Included
+- AI Usage Included (Limit-Based)
+- Smart Follow-up Automation
+- Business Workflow Automation
+Basic CRM Included
 CTA: "Start Scaling"
 
-### 🔴 Business AI Automation — $499/month + $1,500 setup
-Best for: Established businesses needing full automation
+### 🟣 Business AI Automation — $999/month + $1,499 setup
+Best for: Complete AI automation suite for scaling businesses.
 Includes:
-- 4 AI Agents (Sales + CRM + Marketing + Support)
-- FULL CRM System Included ✅
-- WhatsApp + Email + Third-party Integrations
+- 3–6 AI Agents (Sales + CRM + Marketing + Support)
+- Full CRM System Access
+- WhatsApp + Email + Integrations
 - Custom Automation Workflows
 - Advanced Analytics Dashboard
-- AI Usage Included + scalable
+- Advanced Premium Memory
+- Advanced Security Layer
+- Scalable AI Usage
+- Team Workflow Automation
+- Smart Lead Tracking
+- Multi-Step Automation Systems
+FULL CRM Included
 CTA: "Automate My Business"
 
-### ⚫ Enterprise AI System — Custom Pricing + $3,000+ setup
-Best for: Large companies, complex operations
+### 🔵 Enterprise AI System — Custom Pricing + Setup from $3,000+
+Best for: Custom AI infrastructure for large-scale businesses & enterprise operations.
 Includes:
-- 5–10 Fully Custom AI Agents
+- 6–12+ Fully Custom AI Agents
+- Unlimited Premium Memory
 - Full Business Automation Suite
-- Custom API Integrations (any platform)
-- Dedicated AI System (private deployment)
-- Advanced Security + Priority Support
+- Custom API Integrations
+- Dedicated Private AI Deployment
+- Enterprise-Level Security Layers
 - Unlimited Scaling
 - Fully Customizable CRM
-CTA: "Book a Demo"
+- Advanced Analytics & Reporting
+- Multi-Team Access Control
+- AI Infrastructure Optimization
+- Dedicated Priority Support
+- Private Business AI Ecosystem
+Enterprise CRM Included
+
+
 
 ## FREQUENTLY ASKED QUESTIONS
 
