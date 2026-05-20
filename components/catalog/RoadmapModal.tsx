@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { X, Zap, Bot, Clock, ShieldCheck, Cpu, CheckCircle2, Loader2, Mail, Phone, Building2, User, FileText, CreditCard, DollarSign, Wallet, Shield, CheckCircle, Ticket, Lock, ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
 import { ServiceItem, Currency, AIQuote } from '../../types';
 import { auth, db } from '../../lib/firebase';
@@ -13,6 +13,10 @@ import 'react-phone-input-2/lib/style.css';
 import { useNavigate } from 'react-router-dom';
 import { apiCall } from '../../lib/api';
 
+// LocalStorage key for chat persistence
+const KELLY_CHAT_STORAGE_KEY = 'kelly_chat_history';
+const KELLY_SESSION_KEY = 'kelly_chat_session_id';
+
 interface RoadmapModalProps {
     item?: ServiceItem;
     customPrompt?: string;
@@ -25,11 +29,23 @@ interface RoadmapModalProps {
     sessionRef: string;
 }
 
+const KELLY_WELCOME_MSG = `👋 Hi! I'm **Kelly**, your AI Business Consultant at QuickKit AI.\n\nI'm here to help you understand how AI automation can transform your business — and which plan is the right fit for you.\n\n**What I can help you with:**\n• Explain our plans & pricing\n• Understand your business needs\n• Recommend the right AI solution\n• Answer any questions you have\n\nTell me — **what does your business do**, and what would you love to automate? 👇`;
+
 export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onClose, sessionRef }) => {
     const [view, setView] = useState<'studio' | 'form' | 'payment' | 'tracking' | 'success'>('studio');
-    const [chatHistory, setChatHistory] = useState<any[]>([
-        { role: 'model', content: `👋 Hi! I'm **Kelly**, your AI Business Consultant at QuickKit AI.\n\nI'm here to help you understand how AI automation can transform your business — and which plan is the right fit for you.\n\n**What I can help you with:**\n• Explain our plans & pricing\n• Understand your business needs\n• Recommend the right AI solution\n• Answer any questions you have\n\nTell me — **what does your business do**, and what would you love to automate? 👇` }
-    ]);
+
+    // Load chat history from localStorage (persists across refresh)
+    const [chatHistory, setChatHistory] = useState<any[]>(() => {
+        try {
+            const stored = localStorage.getItem(KELLY_CHAT_STORAGE_KEY);
+            if (stored) {
+                const parsed = JSON.parse(stored);
+                if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+            }
+        } catch (e) {}
+        return [{ role: 'model', content: KELLY_WELCOME_MSG }];
+    });
+
     const [userInput, setUserInput] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [isDeploying, setIsDeploying] = useState(false);
@@ -44,6 +60,7 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
     const [couponError, setCouponError] = useState('');
 
     const scrollRef = useRef<HTMLDivElement>(null);
+    const isSendingRef = useRef(false); // Prevent double-fire
 
     const [formData, setFormData] = useState({
         name: auth.currentUser?.displayName || '',
@@ -54,15 +71,22 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
         country: 'us'
     });
 
+    // Persist chat history to localStorage whenever it changes
     useEffect(() => {
-        // Lock body scroll when Kelly modal is open — prevents iOS page jump
-        const scrollY = window.scrollY;
-        document.body.classList.add('modal-open');
-        document.body.style.top = `-${scrollY}px`;
+        try {
+            localStorage.setItem(KELLY_CHAT_STORAGE_KEY, JSON.stringify(chatHistory));
+        } catch (e) {}
+    }, [chatHistory]);
+
+    useEffect(() => {
+        // FIX: Lock body scroll using overflow:hidden only — avoids scroll position jump on close
+        const prevOverflow = document.body.style.overflow;
+        const prevPosition = document.body.style.position;
+        document.body.style.overflow = 'hidden';
         return () => {
-            document.body.classList.remove('modal-open');
-            document.body.style.top = '';
-            window.scrollTo(0, scrollY);
+            document.body.style.overflow = prevOverflow || '';
+            document.body.style.position = prevPosition || '';
+            // NOTE: Do NOT call window.scrollTo() here — it causes page jump to top!
         };
     }, []);
 
@@ -70,19 +94,27 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
         if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }, [chatHistory, isTyping]);
 
-    const handleChat = async (e?: React.FormEvent) => {
-        if (e) e.preventDefault();
-        if (!userInput.trim() || isTyping) return;
+    const handleChat = useCallback(async (e?: React.FormEvent | React.KeyboardEvent | React.PointerEvent) => {
+        // FIX: Always prevent default to stop ANY form submission / page reload
+        if (e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
 
-        const userMsg = userInput;
+        // FIX: Debounce — prevent double-fire from onPointerDown + onSubmit both firing
+        if (isSendingRef.current || isTyping) return;
+        const msgToSend = userInput.trim();
+        if (!msgToSend) return;
+
+        isSendingRef.current = true;
         setUserInput('');
-        setChatHistory(prev => [...prev, { role: 'user', content: userMsg }]);
+        setChatHistory(prev => [...prev, { role: 'user', content: msgToSend }]);
         setIsTyping(true);
         setErrorStatus(null);
 
         try {
             const response = await apiCall('/api/ai?action=kelly', {
-                message: userMsg,
+                message: msgToSend,
                 history: (Array.isArray(chatHistory) ? chatHistory : []).map(m => ({
                     role: m.role || 'user',
                     content: m.content || ''
@@ -105,8 +137,17 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
             setChatHistory(prev => [...prev, { role: 'model', content: err.message || "🚨 Neural link timeout. Please try again." }]);
         } finally {
             setIsTyping(false);
+            // Small delay before allowing next send to prevent rapid double-fire
+            setTimeout(() => { isSendingRef.current = false; }, 300);
         }
-    };
+    }, [userInput, isTyping, chatHistory]);
+
+    // Clear chat history (optional reset button)
+    const handleClearChat = useCallback(() => {
+        const freshHistory = [{ role: 'model', content: KELLY_WELCOME_MSG }];
+        setChatHistory(freshHistory);
+        try { localStorage.removeItem(KELLY_CHAT_STORAGE_KEY); } catch (e) {}
+    }, []);
 
     const handleApplyCoupon = async () => {
         if (!couponCode.trim()) return;
@@ -274,12 +315,20 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                                 )}
                             </div>
                             <div className="p-3 md:p-8 border-t border-white/5 bg-slate-950/20 shrink-0">
-                                <form onSubmit={handleChat} className="relative group">
+                                {/* FIX: Use div instead of form to completely prevent any page reload/submit behavior */}
+                                <div className="relative group">
                                     <input
                                         value={userInput}
                                         disabled={errorStatus === 'LOGIN_REQUIRED'}
                                         onChange={e => setUserInput(e.target.value)}
-                                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleChat(); } }}
+                                        onKeyDown={e => {
+                                            // FIX: Stop ALL default behaviors on Enter to prevent page reload
+                                            if (e.key === 'Enter' && !e.shiftKey) {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                handleChat(e);
+                                            }
+                                        }}
                                         placeholder="Ask Kelly..."
                                         enterKeyHint="send"
                                         autoComplete="off"
@@ -289,13 +338,22 @@ export const RoadmapModal: React.FC<RoadmapModalProps> = ({ item, currency, onCl
                                     />
                                     <button
                                         type="button"
-                                        onPointerDown={e => { e.preventDefault(); handleChat(); }}
+                                        onPointerDown={e => { e.preventDefault(); e.stopPropagation(); handleChat(e); }}
+                                        onClick={e => { e.preventDefault(); e.stopPropagation(); }}
                                         disabled={isTyping || errorStatus === 'LOGIN_REQUIRED'}
                                         className="absolute right-2 md:right-3 top-2 md:top-3 p-2 md:p-3 bg-blue-600 text-white rounded-xl md:rounded-2xl hover:bg-blue-500 shadow-lg transition-all active:scale-95 disabled:opacity-50"
                                     >
                                         <Zap className="w-4 h-4 md:w-5 md:h-5" />
                                     </button>
-                                </form>
+                                </div>
+                                {/* Clear chat button */}
+                                <button
+                                    type="button"
+                                    onClick={handleClearChat}
+                                    className="mt-2 mx-auto block text-[9px] text-slate-700 hover:text-slate-500 font-bold uppercase tracking-widest transition-colors"
+                                >
+                                    Clear Chat
+                                </button>
                             </div>
                         </div>
                     </div>
