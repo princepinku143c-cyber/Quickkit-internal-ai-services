@@ -20,7 +20,7 @@ export const Hero: React.FC<HeroProps> = ({ lang, onLaunchArchitect }) => {
       <div className="container mx-auto px-6 text-center z-10">
         {/* Status chip */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono text-emerald-400 mb-8 animate-fade-in tracking-[0.2em] uppercase font-black">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> Live AI Systems Delivering Results
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> See Live AI Systems In Action
         </div>
 
         <p className="text-xl md:text-2xl font-black mb-4 tracking-widest text-slate-500 uppercase">
@@ -29,19 +29,19 @@ export const Hero: React.FC<HeroProps> = ({ lang, onLaunchArchitect }) => {
 
         <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight tracking-tighter text-white animate-slide-up">
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-emerald-400">
-            The AI Agent CRM That
+            Custom AI Agents &amp;
           </span>
           <br />
-          Replaces ChatGPT, Zapier
+          AI Employees
           <br className="hidden md:block" />
-          <span className="text-slate-400 text-4xl md:text-5xl">&amp; Salesforce — Free</span>
+          <span className="text-slate-400 text-4xl md:text-5xl">Built for Global Scale — Free</span>
         </h1>
 
         {/* Hidden H2 for Google heading structure — screen-reader accessible */}
-        <h2 className="sr-only">Automate CRM, Bulk Email, Social Media &amp; Trading with Multi-Agent AI — Free to Start 2026</h2>
+        <h2 className="sr-only">Bespoke AI Agents and Virtual AI Employees Built for Global Scale — Free to Start 2026</h2>
 
         <p className="text-lg md:text-xl text-slate-400 max-w-3xl mx-auto mb-10 font-sans leading-relaxed animate-slide-up [animation-delay:200ms]">
-          Replace ChatGPT plugins &amp; Zapier with <span className="text-white font-bold">AI agents that generate leads, follow up automatically,</span> and run your entire business 24/7 — free to start.
+          The future of business is no longer manual. <span className="text-white font-bold">Modern companies are switching to AI-powered automation systems</span> to scale faster, handle customers smarter, and operate 24/7.
         </p>
 
         {/* Primary CTA */}
@@ -54,8 +54,8 @@ export const Hero: React.FC<HeroProps> = ({ lang, onLaunchArchitect }) => {
           >
             Book a Free Demo <ArrowRight className="w-4 h-4 ml-1" />
           </button>
-          <p className="text-center text-[11px] text-slate-500 font-bold uppercase tracking-widest mt-4">
-            No commitment. See your AI system live before you pay.
+          <p className="text-center text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-4">
+            Zero Risk • Live Demo Available • Built For Modern Businesses
           </p>
 
           {/* Secondary ghost link */}
