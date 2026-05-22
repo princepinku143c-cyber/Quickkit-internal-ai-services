@@ -39,7 +39,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, s
     { id: 'admin-requests', label: 'Payment Requests', icon: Zap },
     { id: 'admin-promos', label: 'Promo Manager', icon: Tag },
     { id: 'admin-users', label: 'Clients Manager', icon: User },
-    { id: 'admin-settings', label: 'System Control', icon: Settings },
+    { id: 'admin-payments', label: 'Transactions', icon: CreditCard },
   ];
 
   return (
