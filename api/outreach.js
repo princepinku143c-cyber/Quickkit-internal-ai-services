@@ -227,58 +227,17 @@ async function handleApprove(req, res) {
     // Generate custom HTML email
     const emailHtml = generateEmailHtml(leadData);
 
-    // Send email using Brevo SMTP (Nodemailer) or Brevo Transactional API
-    const brevoApiKey = process.env.BREVO_API_KEY;
-    let sentVia = "Brevo SMTP";
-
-    if (brevoApiKey) {
-      // Send via Brevo API V3
-      const apiRes = await fetch("https://api.brevo.com/v3/smtp/email", {
-        method: "POST",
-        headers: {
-          "accept": "application/json",
-          "api-key": brevoApiKey,
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          sender: { name: "QuickKit AI", email: process.env.EMAIL_USER || "admin@quickkitai.com" },
-          to: [{ email: leadData.email, name: leadData.businessName }],
-          subject: `Exclusive Growth Offer: QuickKit AI Partnership for ${leadData.businessName}`,
-          htmlContent: emailHtml,
-        }),
-      });
-
-      if (!apiRes.ok) {
-        const errText = await apiRes.text();
-        throw new Error(`Brevo API Dispatch Error: ${apiRes.status} - ${errText}`);
-      }
-      sentVia = "Brevo Web API";
-    } else {
-      // Fallback: SMTP transporter
-      const transporter = nodemailer.createTransport({
-        service: "gmail",
-        auth: {
-          user: process.env.EMAIL_USER || "admin@quickkitai.com",
-          pass: process.env.EMAIL_PASS,
-        },
-      });
-
-      await transporter.sendMail({
-        from: `"QuickKit AI" <${process.env.EMAIL_USER || "admin@quickkitai.com"}>`,
-        to: leadData.email,
-        subject: `Exclusive Growth Offer: QuickKit AI Partnership for ${leadData.businessName}`,
-        html: emailHtml,
-      });
-    }
+    // Send email with automatic fallback
+    const result = await sendOutreachEmail(leadData, emailHtml);
 
     // Update database status
     await admin.firestore().collection("leads_outreach").doc(id).update({
       status: "SENT",
       sentAt: admin.firestore.FieldValue.serverTimestamp(),
-      sentVia,
+      sentVia: result.sentVia,
     });
 
-    return success(res, { status: "SENT", leadId: id });
+    return success(res, { status: "SENT", leadId: id, sentVia: result.sentVia });
   } catch (err) {
     console.error("APPROVE_ERROR:", err);
     return error(res, err.message, 500);
@@ -366,43 +325,18 @@ async function handleTelegramWebhook(req, res) {
 
         // Send Email
         const emailHtml = generateEmailHtml(leadData);
-        const brevoApiKey = process.env.BREVO_API_KEY;
-
-        if (brevoApiKey) {
-          await fetch("https://api.brevo.com/v3/smtp/email", {
-            method: "POST",
-            headers: {
-              "accept": "application/json",
-              "api-key": brevoApiKey,
-              "content-type": "application/json",
-            },
-            body: JSON.stringify({
-              sender: { name: "QuickKit AI", email: process.env.EMAIL_USER || "admin@quickkitai.com" },
-              to: [{ email: leadData.email, name: leadData.businessName }],
-              subject: `Exclusive Growth Offer: QuickKit AI Partnership for ${leadData.businessName}`,
-              htmlContent: emailHtml,
-            }),
-          });
-        } else {
-          const transporter = nodemailer.createTransport({
-            service: "gmail",
-            auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-          });
-          await transporter.sendMail({
-            from: `"QuickKit AI" <${process.env.EMAIL_USER}>`,
-            to: leadData.email,
-            subject: `Exclusive Growth Offer: QuickKit AI Partnership for ${leadData.businessName}`,
-            html: emailHtml,
-          });
-        }
+        
+        // Send email with automatic fallback
+        const result = await sendOutreachEmail(leadData, emailHtml);
 
         await leadRef.update({
           status: "SENT",
           sentAt: admin.firestore.FieldValue.serverTimestamp(),
+          sentVia: result.sentVia,
         });
 
-        await answerCallbackQuery(botToken, queryId, "Email approved and sent!");
-        await editTelegramMessage(botToken, chatId, messageId, `✅ *APPROVED & COLD EMAIL DISPATCHED*:\n*Company:* ${leadData.businessName}\n*Target:* ${leadData.email}`);
+        await answerCallbackQuery(botToken, queryId, `Email approved and sent via ${result.sentVia}!`);
+        await editTelegramMessage(botToken, chatId, messageId, `✅ *APPROVED & COLD EMAIL DISPATCHED* (via ${result.sentVia}):\n*Company:* ${leadData.businessName}\n*Target:* ${leadData.email}`);
       } else {
         // Reject
         await leadRef.update({
@@ -658,4 +592,57 @@ function generateEmailHtml(leadData) {
     </body>
     </html>
   `;
+}
+
+// Helper to send email with automatic fallback from Brevo API to Gmail SMTP
+async function sendOutreachEmail(leadData, emailHtml) {
+  const brevoApiKey = process.env.BREVO_API_KEY;
+  
+  if (brevoApiKey) {
+    try {
+      console.log("Attempting to send email via Brevo Web API...");
+      const apiRes = await fetch("https://api.brevo.com/v3/smtp/email", {
+        method: "POST",
+        headers: {
+          "accept": "application/json",
+          "api-key": brevoApiKey,
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          sender: { name: "QuickKit AI", email: process.env.EMAIL_USER || "admin@quickkitai.com" },
+          to: [{ email: leadData.email, name: leadData.businessName }],
+          subject: `Exclusive Growth Offer: QuickKit AI Partnership for ${leadData.businessName}`,
+          htmlContent: emailHtml,
+        }),
+      });
+
+      if (apiRes.ok) {
+        return { success: true, sentVia: "Brevo Web API" };
+      }
+      
+      const errText = await apiRes.text();
+      console.warn(`Brevo API returned error status ${apiRes.status}: ${errText}. Falling back to Gmail SMTP...`);
+    } catch (apiErr) {
+      console.warn("Brevo API call failed with exception:", apiErr.message, ". Falling back to Gmail SMTP...");
+    }
+  }
+
+  // Fallback to Gmail SMTP
+  console.log("Sending email via fallback Gmail SMTP...");
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.EMAIL_USER || "admin@quickkitai.com",
+      pass: process.env.EMAIL_PASS,
+    },
+  });
+
+  await transporter.sendMail({
+    from: `"QuickKit AI" <${process.env.EMAIL_USER || "admin@quickkitai.com"}>`,
+    to: leadData.email,
+    subject: `Exclusive Growth Offer: QuickKit AI Partnership for ${leadData.businessName}`,
+    html: emailHtml,
+  });
+
+  return { success: true, sentVia: "Gmail SMTP" };
 }
