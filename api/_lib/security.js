@@ -26,7 +26,7 @@ export async function checkRateLimit(admin, userId, action, limitCount = 10) {
       }
 
       // 3. Increment within window
-      transaction.update(limitRef, { count: data.count + 1 });
+      transaction.set(limitRef, { count: data.count + 1, firstCall: data.firstCall });
       return { allowed: true };
     });
 

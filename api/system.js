@@ -342,6 +342,16 @@ async function handleProjectStatus(req, res, userId) {
         }
 
         const projectRef = admin.firestore().collection('projects').doc(projectId);
+        const projectSnap = await projectRef.get();
+        if (!projectSnap.exists) {
+            return error(res, "Project not found", 404);
+        }
+
+        const projectData = projectSnap.data();
+        if (!isAdmin && projectData.userId !== userId) {
+            return error(res, "Unauthorized project access", 403);
+        }
+
         await projectRef.update({ status, updatedAt: new Date().toISOString() });
         
         if (status === 'accepted') {

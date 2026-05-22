@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { OutreachLead } from '../types';
 import { collection, onSnapshot, addDoc, updateDoc, doc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { apiCall } from '../lib/api';
 import { Search, PlusCircle, Globe, Mail, Phone, Clock, ArrowRight, CheckCircle2, XCircle, AlertCircle, RefreshCw, Send, Trash2, Eye, X } from 'lucide-react';
 
 export const AdminOutreach: React.FC = () => {
@@ -69,25 +70,14 @@ export const AdminOutreach: React.FC = () => {
       };
 
       // 2. Call the serverless function to perform analysis
-      const response = await fetch('/api/outreach?action=analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          businessName,
-          websiteUrl,
-          email,
-          phone,
-          location,
-          nicheNotes
-        })
+      const result = await apiCall('/api/outreach?action=analyze', {
+        businessName,
+        websiteUrl,
+        email,
+        phone,
+        location,
+        nicheNotes
       });
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Failed to analyze lead");
-      }
-
-      const result = await response.json();
       
       // Reset form
       setBusinessName('');
@@ -107,22 +97,17 @@ export const AdminOutreach: React.FC = () => {
     }
   };
 
-  const handleApproveAndSend = async (lead: OutreachLead) => {
-    if (!confirm(`Confirm dispatch of cold email proposal to ${lead.businessName}?`)) return;
+  const handleApproveAndSend = async (lead: OutreachLead, immediate = true) => {
+    const actionText = immediate 
+      ? `Confirm dispatch of cold email proposal immediately to ${lead.businessName}?`
+      : `Confirm timezone-aware scheduling of cold email proposal to ${lead.businessName} (9:30 AM local time)?`;
+      
+    if (!confirm(actionText)) return;
     setActionLoading(true);
     try {
-      const response = await fetch('/api/outreach?action=approve', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: lead.id })
-      });
+      await apiCall('/api/outreach?action=approve', { id: lead.id, immediate });
 
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Failed to dispatch email");
-      }
-
-      alert("🚀 Cold email successfully sent!");
+      alert(immediate ? "🚀 Cold email successfully sent!" : "📅 Cold email successfully scheduled for 9:30 AM local time!");
       setSelectedLead(null);
     } catch (e: any) {
       console.error(e);
@@ -136,16 +121,7 @@ export const AdminOutreach: React.FC = () => {
     if (!confirm(`Are you sure you want to reject/skip the outreach draft for ${lead.businessName}?`)) return;
     setActionLoading(true);
     try {
-      const response = await fetch('/api/outreach?action=reject', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: lead.id })
-      });
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Failed to reject lead");
-      }
+      await apiCall('/api/outreach?action=reject', { id: lead.id });
 
       alert("❌ Outreach draft rejected & archived.");
       setSelectedLead(null);
@@ -160,23 +136,14 @@ export const AdminOutreach: React.FC = () => {
   const handleReanalyze = async (lead: OutreachLead) => {
     setActionLoading(true);
     try {
-      const response = await fetch('/api/outreach?action=analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          businessName: lead.businessName,
-          websiteUrl: lead.websiteUrl,
-          email: lead.email,
-          phone: lead.phone,
-          location: lead.location,
-          nicheNotes: "Force AI re-analysis"
-        })
+      await apiCall('/api/outreach?action=analyze', {
+        businessName: lead.businessName,
+        websiteUrl: lead.websiteUrl,
+        email: lead.email,
+        phone: lead.phone,
+        location: lead.location,
+        nicheNotes: "Force AI re-analysis"
       });
-
-      if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.error || "Failed to re-analyze");
-      }
 
       alert("🔄 AI Re-Analysis triggered successfully!");
       setSelectedLead(null);
@@ -198,6 +165,10 @@ export const AdminOutreach: React.FC = () => {
     switch (status) {
       case 'SENT':
         return <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5"><CheckCircle2 className="w-3.5 h-3.5" /> SENT</span>;
+      case 'APPROVED':
+        return <span className="bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> SCHEDULED</span>;
+      case 'FAILED_MX':
+        return <span className="bg-rose-500/20 text-rose-400 border border-rose-500/30 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5" /> FAILED DNS</span>;
       case 'REJECTED':
         return <span className="bg-red-500/20 text-red-400 border border-red-500/30 px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1.5"><XCircle className="w-3.5 h-3.5" /> REJECTED</span>;
       case 'PENDING_APPROVAL':
@@ -438,11 +409,18 @@ export const AdminOutreach: React.FC = () => {
                       <XCircle className="w-4 h-4" /> Reject Draft
                     </button>
                     <button 
-                      onClick={() => handleApproveAndSend(selectedLead)}
+                      onClick={() => handleApproveAndSend(selectedLead, false)}
+                      disabled={actionLoading}
+                      className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-blue-600 hover:from-indigo-500 hover:to-blue-500 text-white text-sm font-bold rounded-lg flex items-center gap-1.5 transition-all shadow-lg"
+                    >
+                      <Clock className="w-4 h-4" /> Approve & Schedule
+                    </button>
+                    <button 
+                      onClick={() => handleApproveAndSend(selectedLead, true)}
                       disabled={actionLoading}
                       className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-sm font-bold rounded-lg flex items-center gap-1.5 transition-all shadow-lg shadow-emerald-950/20"
                     >
-                      <Send className="w-4 h-4" /> Approve & Dispatch
+                      <Send className="w-4 h-4" /> Dispatch Now
                     </button>
                   </>
                 )}

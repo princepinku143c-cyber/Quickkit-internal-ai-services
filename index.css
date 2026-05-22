@@ -75,8 +75,17 @@
   }
 }
 
+@keyframes spin {
+  100% { transform: rotate(360deg); }
+}
+
 @keyframes spin-reverse {
   100% { transform: rotate(-360deg); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.3; transform: scale(1) rotate(0deg); }
+  50% { opacity: 0.8; transform: scale(1.1) rotate(180deg); }
 }
 
 ::-webkit-scrollbar { width: 4px; }

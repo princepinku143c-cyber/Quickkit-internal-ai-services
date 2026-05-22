@@ -50,7 +50,7 @@ export const Hero: React.FC<HeroProps> = ({ lang, onLaunchArchitect }) => {
             onClick={() => {
               document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' });
             }}
-            className="w-full sm:w-auto px-14 py-5 bg-white text-nexus-dark rounded-xl font-black text-sm hover:bg-slate-100 transition-all flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(255,255,255,0.2)] active:scale-95 uppercase tracking-widest hover:-translate-y-0.5 mx-auto"
+            className="w-full sm:w-auto px-14 py-5 bg-white text-nexus-dark rounded-xl font-black text-sm hover:bg-slate-100 transition-all flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(255,255,255,0.2)] active:scale-95 uppercase tracking-widest hover:-translate-y-0.5 mx-auto cyber-glow"
           >
             Book a Free Demo <ArrowRight className="w-4 h-4 ml-1" />
           </button>

@@ -1,5 +1,6 @@
 import nodemailer from "nodemailer";
 import { success, error } from "./_lib/response.js";
+import admin from "./_lib/firebaseAdmin.js";
 
 /**
  * Administrative Proposal Transmission Endpoint.
@@ -8,6 +9,25 @@ import { success, error } from "./_lib/response.js";
  */
 export default async function handler(req, res) {
   if (req.method !== 'POST') return error(res, "Method Not Allowed", 405);
+
+  // Authenticate user & role
+  const authHeader = req.headers.authorization;
+  let isAdmin = false;
+
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    try {
+      const token = authHeader.split(' ')[1];
+      const decodedToken = await admin.auth().verifyIdToken(token);
+      const userSnap = await admin.firestore().collection('users').doc(decodedToken.uid).get();
+      isAdmin = userSnap.data()?.role === 'admin';
+    } catch (e) {
+      console.error("Auth verification failed in send-proposal:", e.message);
+    }
+  }
+
+  if (!isAdmin) {
+    return error(res, "Forbidden: Admin access required", 403);
+  }
 
   const { email, name, price, features } = req.body;
 

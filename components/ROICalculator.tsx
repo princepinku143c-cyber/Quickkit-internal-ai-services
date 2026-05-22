@@ -139,6 +139,23 @@ export const ROICalculator: React.FC<{ lang: Language }> = ({ lang }) => {
                 </div>
               </div>
 
+              <div className="bg-[#0f172a]/60 border border-slate-800 rounded-2xl p-5 mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-[10px] md:text-xs text-slate-400 uppercase tracking-widest font-bold">Time Reclaimed Efficiency</span>
+                  <span className="text-sm font-mono text-cyan-400 font-bold">{efficiency}%</span>
+                </div>
+                <div className="w-full bg-slate-900 h-2.5 rounded-full overflow-hidden border border-slate-800/80">
+                  <div 
+                    className="bg-gradient-to-r from-cyan-500 to-emerald-500 h-full rounded-full transition-all duration-500 ease-out shadow-[0_0_12px_rgba(6,182,212,0.4)]"
+                    style={{ width: `${efficiency}%` }}
+                  />
+                </div>
+                <div className="mt-2 text-[10px] text-slate-500 flex justify-between">
+                  <span>Current: {formatNumber(currentMonthlyHours)} hrs/mo</span>
+                  <span>Saved: {formatNumber(savedMonthlyHours)} hrs/mo</span>
+                </div>
+              </div>
+
               <div className="grid grid-cols-2 gap-4 mb-8">
                 <div className="bg-slate-900/50 rounded-2xl border border-slate-800 p-6 text-center">
                   <div className="text-[10px] md:text-xs text-slate-500 uppercase tracking-widest font-bold mb-2">Hours Saved / Month</div>

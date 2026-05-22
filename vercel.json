@@ -51,7 +51,7 @@
   "crons": [
     {
       "path": "/api/outreach?action=process-queue",
-      "schedule": "30 3 * * *"
+      "schedule": "0 * * * *"
     }
   ]
 }

@@ -89,7 +89,7 @@ const AdminDashboardOverview: React.FC = () => {
             </div>
 
             <div className="grid lg:grid-cols-3 gap-8">
-                <div className="lg:col-span-2 bg-slate-900/50 border border-slate-800 rounded-3xl p-8">
+                <div className="lg:col-span-2 glass-card rounded-3xl p-8">
                     <h3 className="text-lg font-black text-white uppercase tracking-widest mb-6 flex items-center gap-2">
                         <CreditCard className="w-5 h-5 text-emerald-400" /> Recent Transactions
                     </h3>
@@ -106,7 +106,7 @@ const AdminDashboardOverview: React.FC = () => {
                     </div>
                 </div>
 
-                <div className="bg-slate-900/50 border border-slate-800 rounded-3xl p-8 flex flex-col items-center justify-center text-center">
+                <div className="glass-card rounded-3xl p-8 flex flex-col items-center justify-center text-center">
                     <Clock className="w-12 h-12 text-slate-700 mb-4" />
                     <h4 className="text-sm font-black text-slate-500 uppercase tracking-widest">System Load</h4>
                     <p className="text-xs text-slate-600 mt-2">AI Architect Cluster: OPTIMAL</p>
@@ -117,7 +117,7 @@ const AdminDashboardOverview: React.FC = () => {
 };
 
 const StatCard = ({ icon, label, value, color }: any) => (
-    <div className="bg-slate-900/50 border border-slate-800 p-8 rounded-[2rem]">
+    <div className="glass-card p-8 rounded-[2rem]">
         <div className={`p-2 bg-${color}-500/10 rounded-xl w-fit text-${color}-400 mb-4`}>{icon}</div>
         <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">{label}</p>
         <p className="text-3xl font-black text-white tracking-tighter mt-1">{value}</p>
@@ -181,7 +181,7 @@ const AdminProjectsView: React.FC = () => {
             <h2 className="text-3xl font-black text-white uppercase tracking-tighter">Neural Build Queue</h2>
             <div className="grid grid-cols-1 gap-8">
                 {projects.map((p) => (
-                    <div key={p.id} className="p-8 bg-slate-900/40 border border-slate-800 rounded-[2.5rem] backdrop-blur-xl relative overflow-hidden group">
+                    <div key={p.id} className="p-8 glass-card rounded-[2.5rem] relative overflow-hidden group">
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-8">
                             <div className="flex items-center gap-6">
                                 <div className="w-16 h-16 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-3xl flex items-center justify-center text-white shadow-xl shadow-blue-600/20"><Briefcase className="w-8 h-8" /></div>

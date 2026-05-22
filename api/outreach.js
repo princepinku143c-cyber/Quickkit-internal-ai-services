@@ -1,6 +1,7 @@
 import admin from "./_lib/firebaseAdmin.js";
 import fetch from "node-fetch";
 import nodemailer from "nodemailer";
+import dns from "dns";
 
 // CORS Headers Configuration
 const setCorsHeaders = (res) => {
@@ -23,12 +24,54 @@ export default async function handler(req, res) {
   const { action } = req.query;
 
   try {
-    if (action === "analyze") return handleAnalyze(req, res);
-    if (action === "approve") return handleApprove(req, res);
-    if (action === "reject") return handleReject(req, res);
-    if (action === "add-lead") return handleAddLead(req, res);
-    if (action === "process-queue") return handleProcessQueue(req, res);
-    if (action === "telegram-webhook") return handleTelegramWebhook(req, res);
+    // 1. Telegram webhook check
+    if (action === "telegram-webhook") {
+      const botToken = process.env.TELEGRAM_BOT_TOKEN;
+      const secretParam = req.query.secret;
+      const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET || botToken;
+      if (!secretParam || secretParam !== expectedSecret) {
+        console.warn("Unauthorized Telegram webhook call attempted.");
+        return res.status(403).json({ error: "Unauthorized: Invalid Webhook Secret Signature" });
+      }
+      return handleTelegramWebhook(req, res);
+    }
+
+    // 2. Resolve user authentication
+    let userData = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      try {
+        const token = authHeader.split(' ')[1];
+        const decodedToken = await admin.auth().verifyIdToken(token);
+        const userSnap = await admin.firestore().collection('users').doc(decodedToken.uid).get();
+        userData = userSnap.data();
+      } catch (e) {
+        console.error("Auth verification failed in outreach:", e.message);
+      }
+    }
+
+    const isAdmin = userData?.role === 'admin';
+
+    // 3. process-queue can run via Admin or Cron
+    if (action === "process-queue") {
+      const isCron = req.headers['x-vercel-cron'] === '1' || (process.env.CRON_SECRET && authHeader === `Bearer ${process.env.CRON_SECRET}`);
+      if (!isCron && !isAdmin) {
+        return error(res, "Forbidden: Administrative access or Cron execution required.", 403);
+      }
+      return handleProcessQueue(req, res);
+    }
+
+    // 4. Admin actions
+    const adminActions = ["analyze", "approve", "reject", "add-lead"];
+    if (adminActions.includes(action)) {
+      if (!isAdmin) {
+        return error(res, "Forbidden: Admin access required", 403);
+      }
+      if (action === "analyze") return handleAnalyze(req, res);
+      if (action === "approve") return handleApprove(req, res);
+      if (action === "reject") return handleReject(req, res);
+      if (action === "add-lead") return handleAddLead(req, res);
+    }
 
     return error(res, "Invalid Action", 400);
   } catch (err) {
@@ -120,6 +163,47 @@ async function handleAnalyze(req, res) {
   }
 }
 
+// Lightweight HTML scraper helper with a strict timeout and tech signature detection
+async function scrapeWebsite(url) {
+  if (!url) return { title: "", description: "", techTags: [] };
+  let targetUrl = url.trim();
+  if (!/^https?:\/\//i.test(targetUrl)) {
+    targetUrl = "https://" + targetUrl;
+  }
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 3000);
+    const response = await fetch(targetUrl, {
+      signal: controller.signal,
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36",
+        "Accept": "text/html"
+      }
+    });
+    clearTimeout(timeoutId);
+    if (!response.ok) return { title: "", description: "", techTags: [], error: `HTTP ${response.status}` };
+    const html = await response.text();
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    const title = titleMatch ? titleMatch[1].trim() : "";
+    const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) ||
+                      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
+    const description = descMatch ? descMatch[1].trim() : "";
+    const techTags = [];
+    const lowerHtml = html.toLowerCase();
+    if (lowerHtml.includes("shopify") || lowerHtml.includes("cdn.shopify.com")) techTags.push("Shopify");
+    if (lowerHtml.includes("wp-content") || lowerHtml.includes("wordpress")) techTags.push("WordPress");
+    if (lowerHtml.includes("webflow")) techTags.push("Webflow");
+    if (lowerHtml.includes("calendly.com")) techTags.push("Calendly");
+    if (lowerHtml.includes("api.whatsapp.com") || lowerHtml.includes("wa.me") || lowerHtml.includes("whatsapp")) techTags.push("WhatsApp");
+    if (lowerHtml.includes("squarespace")) techTags.push("Squarespace");
+    if (lowerHtml.includes("wix.com") || lowerHtml.includes("wixstatic")) techTags.push("Wix");
+    return { title, description, techTags };
+  } catch (err) {
+    console.error(`Scraper timed out or failed for ${targetUrl}:`, err.message);
+    return { title: "", description: "", techTags: [], error: err.message };
+  }
+}
+
 // Core helper: Analyzes lead niche/URL with DeepSeek, builds proposal, registers to Firestore, notifies Telegram
 async function analyzeAndDraftLead(leadId, leadData, botToken, chatId, customConfig) {
   const { businessName, websiteUrl, email, phone, location, nicheNotes } = leadData;
@@ -138,8 +222,12 @@ async function analyzeAndDraftLead(leadId, leadData, botToken, chatId, customCon
     deepseekModel = "deepseek-chat";
   }
 
+  // Scrape lead website
+  const scrapeResult = await scrapeWebsite(websiteUrl);
+
   const systemPrompt = `You are a cold outreach automation agent for QuickKit AI.
 We analyze prospect websites/niches and design cold email proposals with custom AI Agents & AI Employees.
+Utilize the provided website context (scraped title, description, and tech signatures like Shopify, WordPress, Calendly, WhatsApp) to craft a highly personalized intro hook and identify concrete operational improvements for their exact technology stack.
 You must return a raw JSON object (and nothing else) containing:
 1. "niche": Short niche category (e.g., Travel Agency, E-commerce, Real Estate).
 2. "customPainPoint": An object representing a 3rd specific operational pain point for this business type.
@@ -170,7 +258,12 @@ Business Name: ${businessName}
 Website: ${websiteUrl || "N/A"}
 Location: ${isIndia ? "India" : "Abroad (Global)"}
 Notes: ${nicheNotes || "N/A"}
-isIndia: ${isIndia}`;
+isIndia: ${isIndia}
+
+Website Scraped Context:
+- Title: ${scrapeResult.title || "N/A"}
+- Description: ${scrapeResult.description || "N/A"}
+- Tech Stack Tags: ${scrapeResult.techTags.length > 0 ? scrapeResult.techTags.join(", ") : "None detected"}`;
 
   const aiRes = await fetch(deepseekEndpoint, {
     method: "POST",
@@ -267,9 +360,9 @@ isIndia: ${isIndia}`;
   return { ...leadData, ...updateData };
 }
 
-// 2. Approve draft and send email
+// 2. Approve draft and send email (either immediately or scheduled timezone-aware)
 async function handleApprove(req, res) {
-  const { id } = req.body;
+  const { id, immediate } = req.body;
   if (!id) return error(res, "Lead ID required", 400);
 
   try {
@@ -281,20 +374,34 @@ async function handleApprove(req, res) {
       return success(res, { status: "ALREADY_SENT", message: "Email has already been sent." });
     }
 
-    // Generate custom HTML email
-    const emailHtml = generateEmailHtml(leadData);
+    // If immediate dispatch is requested (or default to true if unspecified to avoid breaking old clients)
+    if (immediate !== false) {
+      // Generate custom HTML email
+      const emailHtml = generateEmailHtml(leadData);
 
-    // Send email with automatic fallback
-    const result = await sendOutreachEmail(leadData, emailHtml);
+      // Send email with automatic fallback
+      const result = await sendOutreachEmail(leadData, emailHtml);
 
-    // Update database status
-    await admin.firestore().collection("leads_outreach").doc(id).update({
-      status: "SENT",
-      sentAt: admin.firestore.FieldValue.serverTimestamp(),
-      sentVia: result.sentVia,
-    });
+      // Update database status
+      await admin.firestore().collection("leads_outreach").doc(id).update({
+        status: "SENT",
+        sentAt: admin.firestore.FieldValue.serverTimestamp(),
+        sentVia: result.sentVia,
+      });
 
-    return success(res, { status: "SENT", leadId: id, sentVia: result.sentVia });
+      return success(res, { status: "SENT", leadId: id, sentVia: result.sentVia });
+    } else {
+      // Timezone-Aware scheduling (9:30 AM local time)
+      const timezone = getTimezoneFromLocation(leadData.location);
+      const scheduledTime = getNextLocalTargetTime(timezone, 9, 30);
+      
+      await admin.firestore().collection("leads_outreach").doc(id).update({
+        status: "APPROVED",
+        scheduledSendTime: admin.firestore.Timestamp.fromDate(scheduledTime),
+      });
+
+      return success(res, { status: "APPROVED", leadId: id, scheduledSendTime: scheduledTime });
+    }
   } catch (err) {
     console.error("APPROVE_ERROR:", err);
     return error(res, err.message, 500);
@@ -364,13 +471,45 @@ async function handleProcessQueue(req, res) {
     }
 
     const customConfig = await loadOutreachConfig();
-    const result = await processQueuedLeads(chatId, botToken, customConfig);
+    
+    // 1. Process queued leads (analyze & draft)
+    const queueResult = await processQueuedLeads(chatId, botToken, customConfig);
 
-    if (result.processed > 0) {
-      await sendTelegramMessage(botToken, chatId, `🌞 *Good Morning!* Your daily 9:00 AM outreach batch has completed:\n\n• *Processed Leads:* \`${result.processed}\` sent for approval\n• *Errors:* \`${result.errors}\``);
+    // 2. Dispatch scheduled leads
+    const dispatchResult = await dispatchApprovedOutreaches();
+
+    // Notify Telegram if any action was taken
+    if (queueResult.processed > 0 || queueResult.dnsFailed > 0 || dispatchResult.dispatched > 0) {
+      let msg = `🌞 *Hourly Outreach Run Completed*\n\n`;
+      if (queueResult.processed > 0 || queueResult.dnsFailed > 0) {
+        msg += `*Queue Processing:*\n`;
+        msg += `• *Drafts Generated:* \`${queueResult.processed}\` sent for approval\n`;
+        if (queueResult.dnsFailed > 0) {
+          msg += `• *DNS Pre-check Failed:* \`${queueResult.dnsFailed}\` marked failed\n`;
+        }
+        if (queueResult.errors > 0) {
+          msg += `• *Errors:* \`${queueResult.errors}\` failed to process\n`;
+        }
+        msg += `\n`;
+      }
+      if (dispatchResult.dispatched > 0) {
+        msg += `*Dispatched Emails:*\n`;
+        msg += `• *Successfully Sent:* \`${dispatchResult.dispatched}\` emails\n`;
+        dispatchResult.sentDetails.forEach(d => {
+          msg += `  - _${d.company}_ (${d.sentVia})\n`;
+        });
+        if (dispatchResult.errors > 0) {
+          msg += `• *Errors:* \`${dispatchResult.errors}\` failed to dispatch\n`;
+        }
+      }
+      await sendTelegramMessage(botToken, chatId, msg);
     }
 
-    return success(res, { status: "SUCCESS", ...result });
+    return success(res, { 
+      status: "SUCCESS", 
+      queue: queueResult,
+      dispatch: dispatchResult
+    });
   } catch (err) {
     console.error("PROCESS_QUEUE_ERROR:", err);
     return error(res, err.message, 500);
@@ -380,6 +519,7 @@ async function handleProcessQueue(req, res) {
 // Helper: Fetch queued leads and analyze them in parallel
 async function processQueuedLeads(chatId, botToken, customConfig) {
   let processed = 0;
+  let dnsFailed = 0;
   let errors = 0;
 
   try {
@@ -389,26 +529,42 @@ async function processQueuedLeads(chatId, botToken, customConfig) {
       .get();
 
     if (snapshot.empty) {
-      return { processed: 0, errors: 0 };
+      return { processed: 0, dnsFailed: 0, errors: 0 };
     }
 
     const promises = snapshot.docs.map(async (doc) => {
+      const leadId = doc.id;
+      const leadData = doc.data();
       try {
-        const leadId = doc.id;
-        const leadData = doc.data();
+        // MX record DNS precheck
+        const mxValid = await checkMxRecords(leadData.email);
+        if (!mxValid) {
+          console.warn(`DNS check failed for queued lead ${leadId} (${leadData.email}). Setting status to FAILED_MX.`);
+          await admin.firestore().collection("leads_outreach").doc(leadId).update({
+            status: "FAILED_MX",
+            dnsFailedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+          dnsFailed++;
+          
+          if (botToken && chatId) {
+            await sendTelegramMessage(botToken, chatId, `⚠️ *DNS Pre-check Failed*:\n• *Company:* ${leadData.businessName}\n• *Email:* ${leadData.email}\nDomain has no valid MX or A records. Skipped email generation.`);
+          }
+          return;
+        }
+
         await analyzeAndDraftLead(leadId, leadData, botToken, chatId, customConfig);
         processed++;
       } catch (err) {
-        console.error(`Error analyzing queued lead ${doc.id}:`, err);
+        console.error(`Error processing/analyzing queued lead ${leadId}:`, err);
         errors++;
       }
     });
 
     await Promise.all(promises);
-    return { processed, errors };
+    return { processed, dnsFailed, errors };
   } catch (e) {
     console.error("processQueuedLeads failure:", e);
-    return { processed, errors, error: e.message };
+    return { processed, dnsFailed, errors, error: e.message };
   }
 }
 
@@ -1068,10 +1224,13 @@ function generateEmailHtml(leadData) {
   `;
 }
 
-// Helper to send email with automatic fallback from Brevo API to Gmail SMTP
+// Helper to send email with automatic fallback: Brevo API -> Resend API -> Gmail SMTP
 async function sendOutreachEmail(leadData, emailHtml) {
+  const senderEmail = process.env.EMAIL_OUTREACH || "outreach@quickkitai.net";
   const brevoApiKey = process.env.BREVO_API_KEY;
+  const resendApiKey = process.env.RESEND_API_KEY;
   
+  // 1. Try Brevo API
   if (brevoApiKey) {
     try {
       console.log("Attempting to send email via Brevo Web API...");
@@ -1083,7 +1242,7 @@ async function sendOutreachEmail(leadData, emailHtml) {
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          sender: { name: "QuickKit AI", email: process.env.EMAIL_USER || "admin@quickkitai.com" },
+          sender: { name: "QuickKit AI", email: senderEmail },
           to: [{ email: leadData.email, name: leadData.businessName }],
           subject: `Exclusive Growth Offer: QuickKit AI Partnership for ${leadData.businessName}`,
           htmlContent: emailHtml,
@@ -1095,28 +1254,239 @@ async function sendOutreachEmail(leadData, emailHtml) {
       }
       
       const errText = await apiRes.text();
-      console.warn(`Brevo API returned error status ${apiRes.status}: ${errText}. Falling back to Gmail SMTP...`);
+      console.warn(`Brevo API returned error status ${apiRes.status}: ${errText}. Trying next fallback...`);
     } catch (apiErr) {
-      console.warn("Brevo API call failed with exception:", apiErr.message, ". Falling back to Gmail SMTP...");
+      console.warn("Brevo API call failed with exception:", apiErr.message, ". Trying next fallback...");
     }
   }
 
-  // Fallback to Gmail SMTP
+  // 2. Try Resend API
+  if (resendApiKey) {
+    try {
+      console.log("Attempting to send email via Resend Web API...");
+      const apiRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${resendApiKey}`
+        },
+        body: JSON.stringify({
+          from: `QuickKit AI <${senderEmail}>`,
+          to: [leadData.email],
+          subject: `Exclusive Growth Offer: QuickKit AI Partnership for ${leadData.businessName}`,
+          html: emailHtml,
+        }),
+      });
+
+      if (apiRes.ok) {
+        return { success: true, sentVia: "Resend Web API" };
+      }
+
+      const errText = await apiRes.text();
+      console.warn(`Resend API returned error status ${apiRes.status}: ${errText}. Trying next fallback...`);
+    } catch (apiErr) {
+      console.warn("Resend API call failed with exception:", apiErr.message, ". Trying next fallback...");
+    }
+  }
+
+  // 3. Fallback to Gmail SMTP
   console.log("Sending email via fallback Gmail SMTP...");
+  const gmailUser = process.env.EMAIL_USER || "admin@quickkitai.com";
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
-      user: process.env.EMAIL_USER || "admin@quickkitai.com",
+      user: gmailUser,
       pass: process.env.EMAIL_PASS,
     },
   });
 
   await transporter.sendMail({
-    from: `"QuickKit AI" <${process.env.EMAIL_USER || "admin@quickkitai.com"}>`,
+    from: `"QuickKit AI" <${gmailUser}>`,
     to: leadData.email,
     subject: `Exclusive Growth Offer: QuickKit AI Partnership for ${leadData.businessName}`,
     html: emailHtml,
   });
 
   return { success: true, sentVia: "Gmail SMTP" };
+}
+
+// Timezone mapping from location
+function getTimezoneFromLocation(location) {
+  if (!location) return "Asia/Kolkata";
+  const locLower = location.toLowerCase();
+  if (locLower.includes("india") || locLower.includes("in")) {
+    return "Asia/Kolkata";
+  }
+  if (locLower.includes("london") || locLower.includes("uk") || locLower.includes("united kingdom")) {
+    return "Europe/London";
+  }
+  if (locLower.includes("paris") || locLower.includes("france") || locLower.includes("germany") || locLower.includes("berlin") || locLower.includes("europe")) {
+    return "Europe/Paris";
+  }
+  if (locLower.includes("los angeles") || locLower.includes("la") || locLower.includes("california") || locLower.includes("pst") || locLower.includes("pacific")) {
+    return "America/Los_Angeles";
+  }
+  if (locLower.includes("chicago") || locLower.includes("central") || locLower.includes("cst")) {
+    return "America/Chicago";
+  }
+  if (locLower.includes("new york") || locLower.includes("ny") || locLower.includes("east") || locLower.includes("est")) {
+    return "America/New_York";
+  }
+  if (locLower.includes("us") || locLower.includes("usa") || locLower.includes("america")) {
+    return "America/New_York";
+  }
+  return "Asia/Kolkata";
+}
+
+// Calculate the next localized 9:30 AM (or target hour/minute) in UTC time
+function getNextLocalTargetTime(timezone, targetHour, targetMinute) {
+  const now = new Date();
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "numeric",
+    second: "numeric",
+    hour12: false
+  });
+  
+  const parts = formatter.formatToParts(now);
+  const val = (type) => parts.find(p => p.type === type).value;
+  const yr = parseInt(val("year"), 10);
+  const mo = parseInt(val("month"), 10) - 1;
+  const dy = parseInt(val("day"), 10);
+  
+  let candidate = new Date(Date.UTC(yr, mo, dy, targetHour, targetMinute));
+  
+  for (let i = 0; i < 3; i++) {
+    const partsCand = formatter.formatToParts(candidate);
+    const candVal = (type) => partsCand.find(p => p.type === type).value;
+    
+    const candYr = parseInt(candVal("year"), 10);
+    const candMo = parseInt(candVal("month"), 10) - 1;
+    const candDy = parseInt(candVal("day"), 10);
+    const candHr = parseInt(candVal("hour"), 10) % 24;
+    const candMin = parseInt(candVal("minute"), 10);
+    
+    const targetDateUTC = Date.UTC(yr, mo, dy, targetHour, targetMinute);
+    const gotDateUTC = Date.UTC(candYr, candMo, candDy, candHr, candMin);
+    const diffMs = targetDateUTC - gotDateUTC;
+    
+    candidate = new Date(candidate.getTime() + diffMs);
+  }
+  
+  if (candidate <= now) {
+    let tomorrowCandidate = new Date(Date.UTC(yr, mo, dy + 1, targetHour, targetMinute));
+    for (let i = 0; i < 3; i++) {
+      const partsCand = formatter.formatToParts(tomorrowCandidate);
+      const candVal = (type) => partsCand.find(p => p.type === type).value;
+      
+      const candYr = parseInt(candVal("year"), 10);
+      const candMo = parseInt(candVal("month"), 10) - 1;
+      const candDy = parseInt(candVal("day"), 10);
+      const candHr = parseInt(candVal("hour"), 10) % 24;
+      const candMin = parseInt(candVal("minute"), 10);
+      
+      const targetDateUTC = Date.UTC(yr, mo, dy + 1, targetHour, targetMinute);
+      const gotDateUTC = Date.UTC(candYr, candMo, candDy, candHr, candMin);
+      const diffMs = targetDateUTC - gotDateUTC;
+      
+      tomorrowCandidate = new Date(tomorrowCandidate.getTime() + diffMs);
+    }
+    return tomorrowCandidate;
+  }
+  
+  return candidate;
+}
+
+// DNS MX Record resolver checking
+function checkMxRecords(email) {
+  return new Promise((resolve) => {
+    if (!email || !email.includes("@")) {
+      return resolve(false);
+    }
+    const domain = email.split("@")[1].trim();
+    
+    dns.resolveMx(domain, (err, addresses) => {
+      if (!err && addresses && addresses.length > 0) {
+        return resolve(true);
+      }
+      
+      // If we got a network/server error (not a "domain/records do not exist" error), bypass and assume valid
+      if (err && err.code !== 'ENOTFOUND' && err.code !== 'ENODATA') {
+        console.warn(`MX DNS query returned server/network error (${err.code}). Bypassing checks.`);
+        return resolve(true);
+      }
+      
+      dns.resolve4(domain, (errA, addressesA) => {
+        if (!errA && addressesA && addressesA.length > 0) {
+          return resolve(true);
+        }
+        
+        // If A lookup also fails with a network/server error, bypass and assume valid
+        if (errA && errA.code !== 'ENOTFOUND' && errA.code !== 'ENODATA') {
+          console.warn(`A DNS query returned server/network error (${errA.code}). Bypassing checks.`);
+          return resolve(true);
+        }
+        
+        resolve(false);
+      });
+    });
+  });
+}
+
+// Query APPROVED leads and dispatch those that have passed scheduled time
+async function dispatchApprovedOutreaches() {
+  let dispatched = 0;
+  let errors = 0;
+  const sentDetails = [];
+
+  try {
+    const snapshot = await admin.firestore().collection("leads_outreach")
+      .where("status", "==", "APPROVED")
+      .get();
+
+    if (snapshot.empty) {
+      return { dispatched: 0, errors: 0, sentDetails };
+    }
+
+    const nowMs = Date.now();
+    const approvedLeads = [];
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const scheduledTime = data.scheduledSendTime ? data.scheduledSendTime.toDate().getTime() : 0;
+      if (scheduledTime <= nowMs) {
+        approvedLeads.push({ id: doc.id, ...data });
+      }
+    });
+
+    const batchToProcess = approvedLeads.slice(0, 10);
+
+    for (const lead of batchToProcess) {
+      try {
+        const emailHtml = generateEmailHtml(lead);
+        const result = await sendOutreachEmail(lead, emailHtml);
+
+        await admin.firestore().collection("leads_outreach").doc(lead.id).update({
+          status: "SENT",
+          sentAt: admin.firestore.FieldValue.serverTimestamp(),
+          sentVia: result.sentVia,
+        });
+
+        dispatched++;
+        sentDetails.push({ company: lead.businessName, email: lead.email, sentVia: result.sentVia });
+      } catch (err) {
+        console.error(`Failed to dispatch approved lead ${lead.id}:`, err);
+        errors++;
+      }
+    }
+
+    return { dispatched, errors, sentDetails };
+  } catch (e) {
+    console.error("dispatchApprovedOutreaches failure:", e);
+    return { dispatched, errors, sentDetails, error: e.message };
+  }
 }

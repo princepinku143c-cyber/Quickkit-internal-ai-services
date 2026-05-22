@@ -203,7 +203,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
       {/* 2. Custom Credit Request & Header Stats */}
       <div className="flex flex-col lg:flex-row gap-8">
-          <div className="flex-1 bg-slate-900/40 border border-slate-800 p-8 rounded-[2.5rem] backdrop-blur-xl relative overflow-hidden group">
+          <div className="flex-1 glass-card p-8 rounded-[2.5rem] relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-10 opacity-5 scale-150 rotate-12 transition-transform group-hover:scale-175"><Fingerprint className="w-32 h-32 text-blue-500" /></div>
               <div>
                   <span className="inline-flex items-center gap-2 px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-full mb-6">
@@ -279,7 +279,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
 
             <div className="grid grid-cols-1 gap-6">
                 {projects.map((p) => (
-                    <div key={p.id} className="p-8 bg-slate-900/40 border border-slate-800 rounded-[2.5rem] backdrop-blur-xl relative overflow-hidden group">
+                    <div key={p.id} className="p-8 glass-card rounded-[2.5rem] relative overflow-hidden group">
                         
                         {/* Status Strip */}
                         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10">
@@ -409,14 +409,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
       <div className="grid lg:grid-cols-3 gap-8">
           
           {/* Agent Fleet */}
-          <div className="lg:col-span-1 bg-slate-900/30 border border-slate-800 rounded-[2rem] p-8 space-y-8">
+          <div className="lg:col-span-1 glass-card rounded-[2rem] p-8 space-y-8">
               <div className="flex justify-between items-center">
                   <h3 className="font-black text-white uppercase text-xs tracking-widest">Neural Fleet</h3>
                   <span className="text-[10px] font-black text-slate-500 bg-slate-950 px-3 py-1 rounded-full border border-slate-800">{agents.length} Nodes</span>
               </div>
               <div className="space-y-4">
                   {(Array.isArray(agents) ? agents : []).map(agent => (
-                      <div key={agent.id} className="p-6 bg-slate-900/80 rounded-2xl border border-slate-800 flex justify-between items-center group hover:border-blue-500/30 transition-all">
+                      <div key={agent.id} className="p-6 glass-card rounded-2xl flex justify-between items-center group">
                           <div>
                               <p className="text-white font-bold text-sm uppercase">{agent.agent_name}</p>
                               <div className="flex items-center gap-2 mt-1">

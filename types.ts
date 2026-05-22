@@ -197,7 +197,7 @@ export interface OutreachLead {
   introSentence: string;
   painPoints: OutreachPainPoint[];
   pricing: OutreachPricing;
-  status: 'PENDING_APPROVAL' | 'SENT' | 'REJECTED' | 'ANALYZING';
+  status: 'PENDING_APPROVAL' | 'SENT' | 'REJECTED' | 'ANALYZING' | 'APPROVED' | 'FAILED_MX';
   createdAt: string;
   sentAt?: string;
   rejectedAt?: string;
