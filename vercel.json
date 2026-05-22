@@ -47,5 +47,11 @@
   ],
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "crons": [
+    {
+      "path": "/api/outreach?action=process-queue",
+      "schedule": "30 3 * * *"
+    }
   ]
 }

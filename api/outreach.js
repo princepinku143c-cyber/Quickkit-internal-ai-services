@@ -26,6 +26,8 @@ export default async function handler(req, res) {
     if (action === "analyze") return handleAnalyze(req, res);
     if (action === "approve") return handleApprove(req, res);
     if (action === "reject") return handleReject(req, res);
+    if (action === "add-lead") return handleAddLead(req, res);
+    if (action === "process-queue") return handleProcessQueue(req, res);
     if (action === "telegram-webhook") return handleTelegramWebhook(req, res);
 
     return error(res, "Invalid Action", 400);
@@ -33,6 +35,48 @@ export default async function handler(req, res) {
     console.error("OUTREACH_CRASH:", err);
     return error(res, err.message, 500);
   }
+}
+
+// Helper: Load Outreach settings/pricing configurations
+async function loadOutreachConfig() {
+  try {
+    const configSnap = await admin.firestore().collection("settings").doc("outreach_config").get();
+    if (configSnap.exists) {
+      return configSnap.data();
+    }
+  } catch (err) {
+    console.error("Error loading outreach config:", err.message);
+  }
+  return null;
+}
+
+// Helper: Deep merge pricing configs
+function mergePricing(current, updates) {
+  const merged = { ...current };
+  for (const region in updates) {
+    merged[region] = { ...merged[region] };
+    for (const tier in updates[region]) {
+      merged[region][tier] = {
+        ...merged[region][tier],
+        ...updates[region][tier]
+      };
+    }
+  }
+  return merged;
+}
+
+// Helper: Send message to Telegram chat
+async function sendTelegramMessage(token, chatId, text) {
+  if (!token) return;
+  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      chat_id: chatId,
+      text: text,
+      parse_mode: "Markdown",
+    }),
+  });
 }
 
 // 1. Analyze Prospect, generate pain points and email draft, push to Telegram
@@ -44,25 +88,57 @@ async function handleAnalyze(req, res) {
   }
 
   try {
-    // Determine pricing and currency based on location
     const isIndia = location.toLowerCase() === "india";
-    const pricing = getPricingDetails(isIndia);
+    const dbEntry = {
+      businessName,
+      websiteUrl: websiteUrl || "",
+      email,
+      phone: phone || "",
+      location,
+      isIndia,
+      status: "ANALYZING",
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      nicheNotes: nicheNotes || "",
+    };
 
-    // Call DeepSeek to analyze the niche & website to extract the 3rd dynamic pain point and generate specific context
-    const deepseekApiKey = process.env.NEURAL_NODE_KEY;
-    const deepseekEndpoint = process.env.NEURAL_NODE_ENDPOINT || "https://api.deepseek.com/chat/completions";
-    let deepseekModel = process.env.NEURAL_NODE_ENGINE || "deepseek-chat";
+    // Save lead to outreach sub-collection
+    const docRef = await admin.firestore().collection("leads_outreach").add(dbEntry);
+    const leadId = docRef.id;
 
-    if (!deepseekApiKey) {
-      throw new Error("Missing DeepSeek API credentials.");
-    }
+    // Fetch custom config and process analysis
+    const customConfig = await loadOutreachConfig();
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    const chatDoc = await admin.firestore().collection("settings").doc("telegram").get();
+    const chatId = chatDoc.exists ? chatDoc.data().chatId : process.env.TELEGRAM_CHAT_ID;
 
-    // Handle user naming confusion (e.g., deepseek-v4-flash) by mapping to official deepseek-chat
-    if (deepseekModel === "deepseek-v4-flash" || (deepseekModel.includes("flash") && deepseekEndpoint.includes("deepseek.com"))) {
-      deepseekModel = "deepseek-chat";
-    }
+    const analysis = await analyzeAndDraftLead(leadId, dbEntry, botToken, chatId, customConfig);
 
-    const systemPrompt = `You are a cold outreach automation agent for QuickKit AI.
+    return success(res, { leadId, status: "PENDING_APPROVAL", analysis });
+  } catch (err) {
+    console.error("ANALYZE_ERROR:", err);
+    return error(res, err.message, 500);
+  }
+}
+
+// Core helper: Analyzes lead niche/URL with DeepSeek, builds proposal, registers to Firestore, notifies Telegram
+async function analyzeAndDraftLead(leadId, leadData, botToken, chatId, customConfig) {
+  const { businessName, websiteUrl, email, phone, location, nicheNotes } = leadData;
+  const isIndia = location.toLowerCase() === "india";
+  const pricing = getPricingDetails(isIndia, customConfig);
+
+  const deepseekApiKey = process.env.NEURAL_NODE_KEY;
+  const deepseekEndpoint = process.env.NEURAL_NODE_ENDPOINT || "https://api.deepseek.com/chat/completions";
+  let deepseekModel = process.env.NEURAL_NODE_ENGINE || "deepseek-chat";
+
+  if (!deepseekApiKey) {
+    throw new Error("Missing DeepSeek API credentials.");
+  }
+
+  if (deepseekModel === "deepseek-v4-flash" || (deepseekModel.includes("flash") && deepseekEndpoint.includes("deepseek.com"))) {
+    deepseekModel = "deepseek-chat";
+  }
+
+  const systemPrompt = `You are a cold outreach automation agent for QuickKit AI.
 We analyze prospect websites/niches and design cold email proposals with custom AI Agents & AI Employees.
 You must return a raw JSON object (and nothing else) containing:
 1. "niche": Short niche category (e.g., Travel Agency, E-commerce, Real Estate).
@@ -89,125 +165,106 @@ Return exactly this JSON format:
   "introSentence": "..."
 }`;
 
-    const userMessage = `Analyze this prospect:
+  const userMessage = `Analyze this prospect:
 Business Name: ${businessName}
 Website: ${websiteUrl || "N/A"}
 Location: ${isIndia ? "India" : "Abroad (Global)"}
 Notes: ${nicheNotes || "N/A"}
 isIndia: ${isIndia}`;
 
-    const aiRes = await fetch(deepseekEndpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${deepseekApiKey}`,
-      },
-      body: JSON.stringify({
-        model: deepseekModel,
-        messages: [
-          { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage },
+  const aiRes = await fetch(deepseekEndpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${deepseekApiKey}`,
+    },
+    body: JSON.stringify({
+      model: deepseekModel,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
+      ],
+      temperature: 0.3,
+      response_format: { type: "json_object" },
+    }),
+  });
+
+  if (!aiRes.ok) {
+    throw new Error(`DeepSeek API connection failure: ${aiRes.status}`);
+  }
+
+  const aiData = await aiRes.json();
+  const parsedAI = JSON.parse(aiData.choices[0].message.content);
+
+  const painPoints = [
+    {
+      title: isIndia ? "24x7 WhatsApp Handling" : "24/7 Automated Support",
+      before: isIndia
+        ? "Customer raat ko message karta hai, subah tak competitor se book ho chuka hota hai."
+        : "Leads inquire outside office hours and wait overnight, dropping off to competitors who reply faster.",
+      after: isIndia
+        ? "Raat 2 baje bhi 10 second mein professional reply. Package details, pricing, availability instantly share hoti hai."
+        : "Instant professional responses 24/7 within 10 seconds via WhatsApp/Email. Sharing quotes, itineraries, and booking links dynamically.",
+      result: isIndia
+        ? "Result: Sirf yeh ek feature monthly bookings 20-30% badha sakta hai."
+        : "Result: Captures and converts up to 25% more after-hours inquiries.",
+    },
+    {
+      title: isIndia ? "Smart Lead Qualification" : "Automated Lead Scoring",
+      before: isIndia
+        ? "Staff 50 logon se baat karta hai — 45 sirf 'puch rahe the' — 5 genuine customers miss ho jaate hain."
+        : "Sales team spends 80% of their time chatting with low-intent leads, leaving key customers unattended.",
+      after: isIndia
+        ? "AI budget, dates, group size qualify karke, hot leads staff ko instantly forward kar deta hai."
+        : "AI pre-qualifies budget, preferences, and timeline, alerting your team only for high-value sales opportunities.",
+      result: isIndia
+        ? "Result: Staff productivity 3 guna — same team se 3x zyada bookings."
+        : "Result: Decreases response time by 90% and triples lead-to-booking rates.",
+    },
+    {
+      title: parsedAI.customPainPoint.title,
+      before: parsedAI.customPainPoint.before,
+      after: parsedAI.customPainPoint.after,
+      result: parsedAI.customPainPoint.result,
+    },
+  ];
+
+  const updateData = {
+    niche: parsedAI.niche || "Business Automation",
+    introSentence: parsedAI.introSentence || "",
+    painPoints,
+    pricing,
+    status: "PENDING_APPROVAL",
+    analyzedAt: admin.firestore.FieldValue.serverTimestamp(),
+  };
+
+  await admin.firestore().collection("leads_outreach").doc(leadId).update(updateData);
+
+  if (botToken && chatId) {
+    const telegramText = `🚨 *New Campaign Lead Draft Generated* 🚨\n\n*Company:* ${businessName}\n*Website:* ${websiteUrl || "N/A"}\n*Location:* ${location}\n*Niche:* ${parsedAI.niche}\n\n*Dynamic Pain Point 3:* ${parsedAI.customPainPoint.title}\n• Before: ${parsedAI.customPainPoint.before}\n• After: ${parsedAI.customPainPoint.after}\n\n*Pricing Proposed:* ${pricing.starter.price}/mo + ${pricing.starter.setup} setup\n\nWould you like to approve and dispatch this cold email?`;
+
+    const telegramButtons = {
+      inline_keyboard: [
+        [
+          { text: "✅ Approve & Send", callback_data: `approve_${leadId}` },
+          { text: "❌ Reject / Skip", callback_data: `reject_${leadId}` },
         ],
-        temperature: 0.3,
-        response_format: { type: "json_object" },
-      }),
-    });
-
-    if (!aiRes.ok) {
-      throw new Error(`DeepSeek API connection failure: ${aiRes.status}`);
-    }
-
-    const aiData = await aiRes.json();
-    const parsedAI = JSON.parse(aiData.choices[0].message.content);
-
-    // Build the 3 pain points structure
-    const painPoints = [
-      {
-        title: isIndia ? "24x7 WhatsApp Handling" : "24/7 Automated Support",
-        before: isIndia
-          ? "Customer raat ko message karta hai, subah tak competitor se book ho chuka hota hai."
-          : "Leads inquire outside office hours and wait overnight, dropping off to competitors who reply faster.",
-        after: isIndia
-          ? "Raat 2 baje bhi 10 second mein professional reply. Package details, pricing, availability instantly share hoti hai."
-          : "Instant professional responses 24/7 within 10 seconds via WhatsApp/Email. Sharing quotes, itineraries, and booking links dynamically.",
-        result: isIndia
-          ? "Result: Sirf yeh ek feature monthly bookings 20-30% badha sakta hai."
-          : "Result: Captures and converts up to 25% more after-hours inquiries.",
-      },
-      {
-        title: isIndia ? "Smart Lead Qualification" : "Automated Lead Scoring",
-        before: isIndia
-          ? "Staff 50 logon se baat karta hai — 45 sirf 'puch rahe the' — 5 genuine customers miss ho jaate hain."
-          : "Sales team spends 80% of their time chatting with low-intent leads, leaving key customers unattended.",
-        after: isIndia
-          ? "AI budget, dates, group size qualify karke, hot leads staff ko instantly forward kar deta hai."
-          : "AI pre-qualifies budget, preferences, and timeline, alerting your team only for high-value sales opportunities.",
-        result: isIndia
-          ? "Result: Staff productivity 3 guna — same team se 3x zyada bookings."
-          : "Result: Decreases response time by 90% and triples lead-to-booking rates.",
-      },
-      {
-        title: parsedAI.customPainPoint.title,
-        before: parsedAI.customPainPoint.before,
-        after: parsedAI.customPainPoint.after,
-        result: parsedAI.customPainPoint.result,
-      },
-    ];
-
-    // Build outreach database entry
-    const dbEntry = {
-      businessName,
-      websiteUrl: websiteUrl || "",
-      email,
-      phone: phone || "",
-      location,
-      isIndia,
-      niche: parsedAI.niche || "Business Automation",
-      introSentence: parsedAI.introSentence || "",
-      painPoints,
-      pricing,
-      status: "PENDING_APPROVAL",
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      ],
     };
 
-    // Save lead to outreach sub-collection
-    const docRef = await admin.firestore().collection("leads_outreach").add(dbEntry);
-    const leadId = docRef.id;
-
-    // Send notification to Telegram for human approval
-    const botToken = process.env.TELEGRAM_BOT_TOKEN;
-    const chatDoc = await admin.firestore().collection("settings").doc("telegram").get();
-    const chatId = chatDoc.exists ? chatDoc.data().chatId : process.env.TELEGRAM_CHAT_ID;
-
-    if (botToken && chatId) {
-      const telegramText = `🚨 *New Campaign Lead Draft Generated* 🚨\n\n*Company:* ${businessName}\n*Website:* ${websiteUrl || "N/A"}\n*Location:* ${location}\n*Niche:* ${parsedAI.niche}\n\n*Dynamic Pain Point 3:* ${parsedAI.customPainPoint.title}\n• Before: ${parsedAI.customPainPoint.before}\n• After: ${parsedAI.customPainPoint.after}\n\n*Pricing Proposed:* ${pricing.starter.price}/mo + ${pricing.starter.setup} setup\n\nWould you like to approve and dispatch this cold email?`;
-
-      const telegramButtons = {
-        inline_keyboard: [
-          [
-            { text: "✅ Approve & Send", callback_data: `approve_${leadId}` },
-            { text: "❌ Reject / Skip", callback_data: `reject_${leadId}` },
-          ],
-        ],
-      };
-
-      await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: telegramText,
-          parse_mode: "Markdown",
-          reply_markup: telegramButtons,
-        }),
-      });
-    }
-
-    return success(res, { leadId, status: "PENDING_APPROVAL", analysis: dbEntry });
-  } catch (err) {
-    console.error("ANALYZE_ERROR:", err);
-    return error(res, err.message, 500);
+    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: telegramText,
+        parse_mode: "Markdown",
+        reply_markup: telegramButtons,
+      }),
+    });
   }
+
+  return { ...leadData, ...updateData };
 }
 
 // 2. Approve draft and send email
@@ -261,37 +318,434 @@ async function handleReject(req, res) {
   }
 }
 
-// 4. Telegram Webhook Callback Queries
+// 4. Add Lead to queue directly (for scraper/VPS automation)
+async function handleAddLead(req, res) {
+  const { businessName, websiteUrl, email, phone, location } = req.body;
+
+  if (!businessName || !email || !location) {
+    return error(res, "Business Name, Email, and Location (India/Abroad) are required.", 400);
+  }
+
+  try {
+    const isIndia = location.toLowerCase() === "india";
+    const dbEntry = {
+      businessName,
+      websiteUrl: websiteUrl || "",
+      email,
+      phone: phone || "",
+      location,
+      isIndia,
+      status: "QUEUED",
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    };
+
+    const docRef = await admin.firestore().collection("leads_outreach").add(dbEntry);
+    return success(res, { leadId: docRef.id, status: "QUEUED" });
+  } catch (err) {
+    console.error("ADD_LEAD_ERROR:", err);
+    return error(res, err.message, 500);
+  }
+}
+
+// 5. Trigger Queue Processing
+async function handleProcessQueue(req, res) {
+  try {
+    const chatDoc = await admin.firestore().collection("settings").doc("telegram").get();
+    const isPaused = chatDoc.exists ? chatDoc.data().paused === true : false;
+    const chatId = chatDoc.exists ? chatDoc.data().chatId : process.env.TELEGRAM_CHAT_ID;
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+
+    if (isPaused) {
+      return success(res, { status: "PAUSED", message: "Outreach queue is paused." });
+    }
+
+    if (!chatId || !botToken) {
+      return error(res, "Telegram bot configurations missing.", 400);
+    }
+
+    const customConfig = await loadOutreachConfig();
+    const result = await processQueuedLeads(chatId, botToken, customConfig);
+
+    if (result.processed > 0) {
+      await sendTelegramMessage(botToken, chatId, `🌞 *Good Morning!* Your daily 9:00 AM outreach batch has completed:\n\n• *Processed Leads:* \`${result.processed}\` sent for approval\n• *Errors:* \`${result.errors}\``);
+    }
+
+    return success(res, { status: "SUCCESS", ...result });
+  } catch (err) {
+    console.error("PROCESS_QUEUE_ERROR:", err);
+    return error(res, err.message, 500);
+  }
+}
+
+// Helper: Fetch queued leads and analyze them in parallel
+async function processQueuedLeads(chatId, botToken, customConfig) {
+  let processed = 0;
+  let errors = 0;
+
+  try {
+    const snapshot = await admin.firestore().collection("leads_outreach")
+      .where("status", "==", "QUEUED")
+      .limit(5) // Vercel Hobby Timeout mitigation
+      .get();
+
+    if (snapshot.empty) {
+      return { processed: 0, errors: 0 };
+    }
+
+    const promises = snapshot.docs.map(async (doc) => {
+      try {
+        const leadId = doc.id;
+        const leadData = doc.data();
+        await analyzeAndDraftLead(leadId, leadData, botToken, chatId, customConfig);
+        processed++;
+      } catch (err) {
+        console.error(`Error analyzing queued lead ${doc.id}:`, err);
+        errors++;
+      }
+    });
+
+    await Promise.all(promises);
+    return { processed, errors };
+  } catch (e) {
+    console.error("processQueuedLeads failure:", e);
+    return { processed, errors, error: e.message };
+  }
+}
+
+// 6. Telegram Webhook Callback Queries & Chatbot Controller
 async function handleTelegramWebhook(req, res) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   const update = req.body;
 
   if (!update) return success(res, { ok: true });
 
-  // If a standard text message is received (e.g. /start), register chat ID
+  // Handle Text Messages (Slash commands + Conversational Controller)
   if (update.message && update.message.text) {
     const chatId = update.message.chat.id;
     const text = update.message.text.trim();
+    const textLower = text.toLowerCase();
 
-    if (text.startsWith("/start") || text.toLowerCase() === "hello") {
-      // Save Chat ID to settings
+    // 1. Direct Webhook Slash commands
+    if (textLower.startsWith("/start") || textLower === "start" || textLower === "resume" || textLower.startsWith("/resume")) {
       await admin.firestore().collection("settings").doc("telegram").set({
         chatId,
+        paused: false,
         registeredAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+
+      await sendTelegramMessage(botToken, chatId, `▶️ *Outreach Active!*\n\nI have resumed the AI cold outreach queue. Daily at *9:00 AM IST*, queued leads will be analyzed and sent here for approval.\n\nCommands:\n- /stop: Pause queue\n- /status: Check status\n- /process: Run immediately`);
+      return success(res, { ok: true });
+    }
+
+    if (textLower.startsWith("/stop") || textLower === "stop" || textLower === "pause" || textLower.startsWith("/pause")) {
+      await admin.firestore().collection("settings").doc("telegram").set({
+        chatId,
+        paused: true,
+      }, { merge: true });
+
+      await sendTelegramMessage(botToken, chatId, `⏸️ *Outreach Paused!*\n\nI have paused the daily outreach batch. No drafts will be processed or sent here until you resume.\n\nUse /start to resume.`);
+      return success(res, { ok: true });
+    }
+
+    if (textLower.startsWith("/status") || textLower === "status") {
+      const chatDoc = await admin.firestore().collection("settings").doc("telegram").get();
+      const isPaused = chatDoc.exists ? chatDoc.data().paused === true : false;
+
+      const queuedCountSnap = await admin.firestore().collection("leads_outreach").where("status", "==", "QUEUED").count().get();
+      const queuedCount = queuedCountSnap.data().count;
+
+      const pendingCountSnap = await admin.firestore().collection("leads_outreach").where("status", "==", "PENDING_APPROVAL").count().get();
+      const pendingCount = pendingCountSnap.data().count;
+
+      const sentCountSnap = await admin.firestore().collection("leads_outreach").where("status", "==", "SENT").count().get();
+      const sentCount = sentCountSnap.data().count;
+
+      await sendTelegramMessage(botToken, chatId, `📊 *Outreach Command Center Status*:\n\n• *Queue State:* ${isPaused ? "⏸️ PAUSED" : "▶️ ACTIVE"}\n• *Queued Leads:* \`${queuedCount}\` (waiting for batch)\n• *Pending Approval:* \`${pendingCount}\` (waiting for dispatch)\n• *Sent Proposals:* \`${sentCount}\` completed\n\nUse /process to trigger immediately, or /stop to pause.`);
+      return success(res, { ok: true });
+    }
+
+    if (textLower.startsWith("/process") || textLower === "process" || textLower === "run") {
+      const chatDoc = await admin.firestore().collection("settings").doc("telegram").get();
+      const isPaused = chatDoc.exists ? chatDoc.data().paused === true : false;
+
+      if (isPaused) {
+        await sendTelegramMessage(botToken, chatId, `⚠️ *Process Aborted:* The outreach queue is currently paused. Resume it first with /start.`);
+      } else {
+        await sendTelegramMessage(botToken, chatId, `⚡ *Triggering queue batch run...* Please wait.`);
+        const customConfig = await loadOutreachConfig();
+        const result = await processQueuedLeads(chatId, botToken, customConfig);
+        await sendTelegramMessage(botToken, chatId, `✅ *Queue Run Complete*:\n\n• *Processed:* \`${result.processed}\` leads\n• *Errors:* \`${result.errors}\``);
+      }
+      return success(res, { ok: true });
+    }
+
+    if (textLower.startsWith("/add")) {
+      const parts = text.replace(/\/add\s+/i, "").split("|").map(p => p.trim());
+      if (parts.length < 3) {
+        await sendTelegramMessage(botToken, chatId, "⚠️ *Invalid Format!* Use: `/add Company Name | Website URL | email@address.com | Location (India or Abroad)`");
+      } else {
+        const [businessName, websiteUrl, email, locationInput] = parts;
+        const location = locationInput || "Abroad";
+        await sendTelegramMessage(botToken, chatId, `⏳ *Adding & analyzing prospect:* ${businessName}...`);
+        
+        const isIndia = location.toLowerCase() === "india";
+        const dbEntry = {
+          businessName,
+          websiteUrl: websiteUrl || "",
+          email,
+          phone: "",
+          location,
+          isIndia,
+          status: "ANALYZING",
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+
+        try {
+          const docRef = await admin.firestore().collection("leads_outreach").add(dbEntry);
+          const customConfig = await loadOutreachConfig();
+          await analyzeAndDraftLead(docRef.id, dbEntry, botToken, chatId, customConfig);
+        } catch (e) {
+          await sendTelegramMessage(botToken, chatId, `❌ *Analysis Failed:* ${e.message}`);
+        }
+      }
+      return success(res, { ok: true });
+    }
+
+    // 2. Conversational CRM AI Controller (DeepSeek-powered chatbot helper)
+    try {
+      const configDoc = await admin.firestore().collection("settings").doc("outreach_config").get();
+      const pricingConfig = configDoc.exists ? configDoc.data().pricing : null;
+
+      const chatDoc = await admin.firestore().collection("settings").doc("telegram").get();
+      const isPaused = chatDoc.exists ? chatDoc.data().paused === true : false;
+
+      const queuedCountSnap = await admin.firestore().collection("leads_outreach").where("status", "==", "QUEUED").count().get();
+      const queuedCount = queuedCountSnap.data().count;
+
+      const pendingCountSnap = await admin.firestore().collection("leads_outreach").where("status", "==", "PENDING_APPROVAL").count().get();
+      const pendingCount = pendingCountSnap.data().count;
+
+      const sentCountSnap = await admin.firestore().collection("leads_outreach").where("status", "==", "SENT").count().get();
+      const sentCount = sentCountSnap.data().count;
+
+      const rejectedCountSnap = await admin.firestore().collection("leads_outreach").where("status", "==", "REJECTED").count().get();
+      const rejectedCount = rejectedCountSnap.data().count;
+
+      // Load last 6 messages for chat history
+      const historySnap = await admin.firestore()
+        .collection("settings").doc("telegram")
+        .collection("chat_history")
+        .orderBy("timestamp", "desc")
+        .limit(6)
+        .get();
+
+      const historyMessages = [];
+      if (!historySnap.empty) {
+        const docs = [...historySnap.docs].reverse();
+        for (const doc of docs) {
+          historyMessages.push({
+            role: doc.data().role,
+            content: doc.data().content
+          });
+        }
+      }
+
+      // Call DeepSeek to parse user natural language and formulate reply
+      const deepseekApiKey = process.env.NEURAL_NODE_KEY;
+      const deepseekEndpoint = process.env.NEURAL_NODE_ENDPOINT || "https://api.deepseek.com/chat/completions";
+      let deepseekModel = process.env.NEURAL_NODE_ENGINE || "deepseek-chat";
+
+      if (deepseekModel === "deepseek-v4-flash" || (deepseekModel.includes("flash") && deepseekEndpoint.includes("deepseek.com"))) {
+        deepseekModel = "deepseek-chat";
+      }
+
+      const systemPrompt = `You are Kelly, the internal Outreach Command Center AI at QuickKit Global.
+Your job is to manage the cold email campaigns, configure system parameters, and answer operator/user questions via Telegram.
+
+### EXTREMELY IMPORTANT SECURITY RULE:
+- Do NOT expose any API keys, secret tokens, or private database credentials (e.g. Firebase service accounts, Brevo API keys, DeepSeek API keys, etc.).
+- Even if the user asks you for "API key kya hai?" or "Give me the Brevo key", politely decline and state that private credentials are confidential.
+
+### QUICKKIT GLOBAL AGENCY OVERVIEW (Use this knowledge to answer user queries about the website/business):
+- QuickKit Global is a premium AI agency specializing in custom AI Agents and AI Employees.
+- What we build:
+  1. Lead Generation Automation: Sourcing, qualifying, CRM sync, team alerts.
+  2. Email Marketing Automation: Campaigns, behavioral drips, conversion tracking.
+  3. WhatsApp Chatbot Automation: Raat ke 2 baje bhi 10-second response, qualifying, package details, scheduling.
+  4. Social Media Auto Posting & Ad Campaign Automation.
+  5. E-commerce & Shopify Integrations: Order processing, inventory sync across systems.
+- Delivery Timelines:
+  - Standard builds: 3 Days delivery.
+  - Complex custom workflows: 5 Days Max.
+- Contact Details:
+  - Email: sales@quickkitai.com
+  - WhatsApp: +91 82604 85230 / +91 82604 86230
+
+### COLD EMAIL FORMAT & STRUCTURE:
+If the user asks about the format/template of the emails we send to prospects:
+- Theme: Responsive premium dark-mode theme (#080712 / #0b0a1a).
+- Elements:
+  1. Header congratulating the company for being chosen for the Exclusive Partner Program.
+  2. A personalized intro hook sentence based on their business niche (generated by DeepSeek).
+  3. Three detailed comparative Pain Points:
+     - 1: WhatsApp Handling (Hinglish for India / English for Abroad).
+     - 2: Smart Lead Qualification.
+     - 3: A 3rd specific operational pain point generated by AI on the fly for their exact niche.
+     - Each pain point shows a clear "Before" (manual, slow) and "After" (automated, instant) and a "Result" (ROI benefit).
+  4. Pricing tables showing custom or default Starter and Growth packages.
+  5. 100% Free Live AI Prototype Demo Guarantee (We build a prototype for free, show it over a call, and they only pay if they approve).
+  6. Conversational call-to-actions: Direct buttons to WhatsApp (+91 82604 86230) or replying to the email.
+
+### CURRENT SYSTEM CAMPAIGN STATISTICS:
+- Is Daily Queue Paused: ${isPaused}
+- Leads waiting in Queue (status == 'QUEUED'): ${queuedCount}
+- Leads pending Approval (status == 'PENDING_APPROVAL'): ${pendingCount}
+- Leads successfully Sent (status == 'SENT'): ${sentCount}
+- Leads Skipped/Rejected (status == 'REJECTED'): ${rejectedCount}
+- Total Leads in CRM: ${queuedCount + pendingCount + sentCount + rejectedCount}
+
+### CURRENT PRICING CONFIGURATION (Use this to know pricing settings):
+- India Pricing overrides: ${pricingConfig && pricingConfig.india ? JSON.stringify(pricingConfig.india) : "None (Using defaults: Starter: ₹11,999/mo + ₹14,999 setup, Growth: ₹19,999/mo + ₹24,999 setup)"}
+- Abroad Pricing overrides: ${pricingConfig && pricingConfig.abroad ? JSON.stringify(pricingConfig.abroad) : "None (Using defaults: Starter: $179/mo + $269 setup, Growth: $449/mo + $629 setup)"}
+
+### AVAILABLE ACTIONS YOU CAN EXECUTE (include in the "dbUpdate" field of your JSON if the user requests them):
+1. Update Pricing Configuration:
+   - Format: {"action": "update_config", "pricing": { "india": { "starter": { "price": "₹15,000" } } }}
+   - You can update "starter", "growth", "business", "enterprise" pricing and setups for "india" or "abroad".
+   - If the user says "price thoda badha do" without specifics, suggest or apply an increase of +10% or +₹1,000/$20. Ensure you pass the final updated values.
+2. Add a Prospect:
+   - Format: {"action": "add_prospect", "prospect": { "businessName": "...", "websiteUrl": "...", "email": "...", "location": "..." }}
+   - If the user provides unstructured details (e.g. "Client: Himalaya Travel, site: himalaya.com, email: info@himalaya.com, location: India" or "TechCorp at techcorp.io, email: hello@techcorp.io"), extract the businessName, websiteUrl, email, and location ("India" or "Abroad"). Default location to "Abroad" if not specified.
+3. Pause Daily Outreach:
+   - Format: {"action": "pause_queue"}
+4. Resume Daily Outreach:
+   - Format: {"action": "resume_queue"}
+5. Trigger Queue Run:
+   - Format: {"action": "process_queue"}
+
+### CONVERSATIONAL RULES:
+- Respond in a warm, helpful, and natural mix of Hinglish (Hindi written in Roman script) and English, since the operator communicates in a mix of Hindi and English. E.g., "Hanji Sir, maine starter price update kar diya hai." or "Abhi tak total 15 emails ja chuke hain!"
+- If a database update action is executed, mention it clearly in your reply so the operator knows it worked.
+- Keep the reply concise and to the point.
+
+RESPONSE FORMAT:
+You MUST return a JSON object (and nothing else) with these keys:
+{
+  "reply": "Conversational reply in friendly Hinglish/English (max 150 words)",
+  "dbUpdate": null or { ...one of the JSON actions above... }
+}`;
+
+      const chatMessagesForAI = [
+        { role: "system", content: systemPrompt },
+        ...historyMessages,
+        { role: "user", content: text }
+      ];
+
+      const aiRes = await fetch(deepseekEndpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${deepseekApiKey}`,
+        },
+        body: JSON.stringify({
+          model: deepseekModel,
+          messages: chatMessagesForAI,
+          temperature: 0.5,
+          response_format: { type: "json_object" },
+        }),
       });
 
-      if (botToken) {
-        await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            chat_id: chatId,
-            text: `🤖 *QuickKit AI Outreach Controller Initialized!*\n\nThis Chat ID (\`${chatId}\`) has been successfully registered in your Firestore Settings. You will now receive cold email drafts here for validation.`,
-            parse_mode: "Markdown",
-          }),
-        });
+      if (!aiRes.ok) {
+        throw new Error(`DeepSeek AI connection error: ${aiRes.status}`);
       }
+
+      const aiData = await aiRes.json();
+      const rawContent = aiData.choices[0].message.content.trim();
+      
+      let parsedResponse;
+      try {
+        const jsonStart = rawContent.indexOf('{');
+        const jsonEnd = rawContent.lastIndexOf('}');
+        if (jsonStart !== -1 && jsonEnd !== -1) {
+          parsedResponse = JSON.parse(rawContent.substring(jsonStart, jsonEnd + 1));
+        } else {
+          parsedResponse = JSON.parse(rawContent);
+        }
+      } catch (err) {
+        parsedResponse = {
+          reply: rawContent,
+          dbUpdate: null
+        };
+      }
+
+      // Execute dbUpdate action if requested
+      if (parsedResponse.dbUpdate) {
+        const dbUpdate = parsedResponse.dbUpdate;
+        
+        if (dbUpdate.action === "update_config" && dbUpdate.pricing) {
+          const configRef = admin.firestore().collection("settings").doc("outreach_config");
+          const configDocSnap = await configRef.get();
+          let currentPricing = {};
+          if (configDocSnap.exists) {
+            currentPricing = configDocSnap.data().pricing || {};
+          }
+          const mergedPricing = mergePricing(currentPricing, dbUpdate.pricing);
+          await configRef.set({ pricing: mergedPricing }, { merge: true });
+        }
+
+        if (dbUpdate.action === "add_prospect" && dbUpdate.prospect) {
+          const p = dbUpdate.prospect;
+          const isIndia = (p.location || "Abroad").toLowerCase() === "india";
+          const dbEntry = {
+            businessName: p.businessName,
+            websiteUrl: p.websiteUrl || "",
+            email: p.email,
+            phone: "",
+            location: p.location || "Abroad",
+            isIndia,
+            status: "ANALYZING",
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          };
+          const docRef = await admin.firestore().collection("leads_outreach").add(dbEntry);
+          const customConfig = configDoc.exists ? configDoc.data() : null;
+          await analyzeAndDraftLead(docRef.id, dbEntry, botToken, chatId, customConfig);
+        }
+
+        if (dbUpdate.action === "pause_queue") {
+          await admin.firestore().collection("settings").doc("telegram").set({ paused: true }, { merge: true });
+        }
+
+        if (dbUpdate.action === "resume_queue") {
+          await admin.firestore().collection("settings").doc("telegram").set({ paused: false }, { merge: true });
+        }
+
+        if (dbUpdate.action === "process_queue") {
+          const customConfig = configDoc.exists ? configDoc.data() : null;
+          await processQueuedLeads(chatId, botToken, customConfig);
+        }
+      }
+
+      // Send response message back to user
+      await sendTelegramMessage(botToken, chatId, parsedResponse.reply);
+
+      // Save to chat history in Firestore
+      const chatHistoryRef = admin.firestore().collection("settings").doc("telegram").collection("chat_history");
+      await chatHistoryRef.add({
+        role: "user",
+        content: text,
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
+      });
+      await chatHistoryRef.add({
+        role: "assistant",
+        content: parsedResponse.reply,
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+    } catch (e) {
+      console.error("AI_TELEGRAM_CONTROLLER_ERROR:", e);
+      await sendTelegramMessage(botToken, chatId, `⚠️ *Sorry Operator, I encountered a neural malfunction:* ${e.message}`);
     }
+
     return success(res, { ok: true });
   }
 
@@ -376,19 +830,15 @@ async function editTelegramMessage(token, chatId, messageId, text) {
 }
 
 // Utility: Pricing detail configurations
-function getPricingDetails(isIndia) {
-  if (isIndia) {
-    return {
-      currency: "₹",
-      currencyCode: "INR",
-      starter: { price: "₹11,999", setup: "₹14,999" },
-      growth: { price: "₹19,999", setup: "₹24,999" },
-      business: { price: "₹34,999", setup: "₹49,999" },
-      enterprise: { price: "₹1,00,000+", setup: "Custom Setup" },
-    };
-  }
-  // US / Global Outreach (10% Discount from Default rates)
-  return {
+function getPricingDetails(isIndia, customConfig) {
+  const defaults = isIndia ? {
+    currency: "₹",
+    currencyCode: "INR",
+    starter: { price: "₹11,999", setup: "₹14,999" },
+    growth: { price: "₹19,999", setup: "₹24,999" },
+    business: { price: "₹34,999", setup: "₹49,999" },
+    enterprise: { price: "₹1,00,000+", setup: "Custom Setup" },
+  } : {
     currency: "$",
     currencyCode: "USD",
     starter: { price: "$179", setup: "$269" },
@@ -396,6 +846,30 @@ function getPricingDetails(isIndia) {
     business: { price: "$899", setup: "$1,349" },
     enterprise: { price: "$2,700+", setup: "Custom Setup" },
   };
+
+  if (!customConfig || !customConfig.pricing) {
+    return defaults;
+  }
+
+  const regionKey = isIndia ? "india" : "abroad";
+  const customRegionPricing = customConfig.pricing[regionKey];
+
+  if (!customRegionPricing) {
+    return defaults;
+  }
+
+  // Deep merge or fallback to default
+  const merged = { ...defaults };
+  const keys = ["starter", "growth", "business", "enterprise"];
+  for (const key of keys) {
+    if (customRegionPricing[key]) {
+      merged[key] = {
+        price: customRegionPricing[key].price || defaults[key].price,
+        setup: customRegionPricing[key].setup || defaults[key].setup,
+      };
+    }
+  }
+  return merged;
 }
 
 // Generate the customized premium responsive HTML email
