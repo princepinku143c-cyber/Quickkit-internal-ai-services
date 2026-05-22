@@ -1,7 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { Navbar } from '../Navbar';
-import { Footer } from '../Footer'; // We might need to abstract the footer or just inline it if it's in App.tsx
 import { Link } from 'react-router-dom';
 
 interface ServicePageProps {

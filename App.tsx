@@ -40,15 +40,14 @@ const ServicePage = lazy(() => import('./components/seo/ServicePage').then(m => 
 const SEOAudit = lazy(() => import('./components/seo/SEOAudit').then(m => ({ default: m.SEOAudit })));
 
 // 🚨 STEP 1 — GLOBAL CRASH STOP (MUST APPLY)
-class ErrorBoundary extends React.Component<any, any> {
-  constructor(props:any) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-  static getDerivedStateFromError(error:any) {
+class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
+  props!: { children: React.ReactNode };
+  state = { hasError: false, error: null as any };
+
+  static getDerivedStateFromError(error: any) {
     return { hasError: true, error };
   }
-  componentDidCatch(error:any, info:any) {
+  componentDidCatch(error: any, info: any) {
     console.error("GLOBAL ERROR:", error, info);
   }
   render() {

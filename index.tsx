@@ -7,10 +7,9 @@ import { HelmetProvider } from 'react-helmet-async';
 
 // 🚨 FINAL EMERGENCY ERROR BOUNDARY
 class FinalErrorBoundary extends React.Component<{children: React.ReactNode}, {hasError: boolean, error: any}> {
-  constructor(props: any) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
+  props!: { children: React.ReactNode };
+  state = { hasError: false, error: null as any };
+
   static getDerivedStateFromError(error: any) {
     return { hasError: true, error };
   }

@@ -12,6 +12,7 @@ interface State {
 }
 
 export class ErrorBoundary extends Component<Props, State> {
+  props!: Props;
   public state: State = {
     hasError: false
   };
@@ -64,6 +65,6 @@ export class ErrorBoundary extends Component<Props, State> {
       );
     }
 
-    return this.children;
+    return this.props.children;
   }
 }

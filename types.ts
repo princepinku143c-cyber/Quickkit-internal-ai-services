@@ -135,6 +135,7 @@ export interface LeadSubmission {
   plan: string;
   submittedAt: string;
   notes?: string;
+  userId?: string;
   // Optional Quote Data attached to lead
   aiQuote?: AIQuote;
   status?: LeadStatus; // CRM Status
@@ -161,3 +162,45 @@ export interface CatalogCategory {
   description?: string;
   items: ServiceItem[];
 }
+
+export interface OutreachPainPoint {
+  title: string;
+  before: string;
+  after: string;
+  result: string;
+}
+
+export interface OutreachPricingDetail {
+  price: string;
+  setup: string;
+}
+
+export interface OutreachPricing {
+  currency: string;
+  currencyCode: string;
+  starter: OutreachPricingDetail;
+  growth: OutreachPricingDetail;
+  business: OutreachPricingDetail;
+  enterprise: OutreachPricingDetail;
+}
+
+export interface OutreachLead {
+  id: string;
+  _docId?: string;
+  businessName: string;
+  websiteUrl: string;
+  email: string;
+  phone: string;
+  location: string;
+  isIndia: boolean;
+  niche: string;
+  introSentence: string;
+  painPoints: OutreachPainPoint[];
+  pricing: OutreachPricing;
+  status: 'PENDING_APPROVAL' | 'SENT' | 'REJECTED' | 'ANALYZING';
+  createdAt: string;
+  sentAt?: string;
+  rejectedAt?: string;
+  sentVia?: string;
+}
+

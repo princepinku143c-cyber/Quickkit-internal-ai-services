@@ -24,7 +24,7 @@ export const Billing: React.FC<BillingProps> = ({ user }) => {
         const list = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
-        }));
+        })) as any[];
         setPayments(list.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0)));
         setLoading(false);
     });

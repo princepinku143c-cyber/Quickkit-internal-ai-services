@@ -45,5 +45,11 @@ service cloud.firestore {
       allow read: if request.auth != null && resource.data.userId == request.auth.uid;
       allow write: if request.auth != null && resource.data.userId == request.auth.uid;
     }
+
+    // 6. Outreach Leads Rules (Admin only)
+    match /leads_outreach/{leadId} {
+      allow read, write: if request.auth != null && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
   }
 }

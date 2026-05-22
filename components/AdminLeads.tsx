@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { LeadSubmission, LeadStatus } from '../types';
 import { collection, onSnapshot, updateDoc, doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Search, Download, Trash2, Phone, Mail, Eye, X, DollarSign, MessageSquare, ShieldCheck, Clock, Sparkles, PlusCircle } from 'lucide-react';
+import { Search, Download, Trash2, Phone, Mail, Eye, X, DollarSign, MessageSquare, ShieldCheck, Clock, Sparkles, PlusCircle, Loader2 } from 'lucide-react';
 import { addDoc } from 'firebase/firestore';
 
 export const AdminLeads: React.FC = () => {

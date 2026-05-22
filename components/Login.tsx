@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { signInWithEmailAndPassword, signInWithPopup, createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithPopup, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
 import { auth, db, googleProvider, isFirebaseConfigured } from '../lib/firebase';
@@ -133,6 +133,29 @@ export const Login: React.FC = () => {
         }
     } catch (error: any) {
         setError(error.message || "Google sign-in failed. Please try again.");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const handleForgotPassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isFirebaseConfigured) {
+        setError("System is running in demo mode. Reset is disabled because Firebase credentials are not configured.");
+        return;
+    }
+    if (!auth || Object.keys(auth).length === 0) {
+        setError("Authentication system is initializing. Please retry.");
+        return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+        await sendPasswordResetEmail(auth as any, email);
+        alert("A secure credentials recovery link has been dispatched to your email address.");
+        setIsForgotPassword(false);
+    } catch (error: any) {
+        setError(error.message || "Failed to send reset email. Please verify the address.");
     } finally {
         setLoading(false);
     }

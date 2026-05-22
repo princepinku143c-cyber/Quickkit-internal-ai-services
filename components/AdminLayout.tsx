@@ -34,6 +34,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, s
   const navItems = [
     { id: 'admin-dashboard', label: 'Overview', icon: LayoutDashboard },
     { id: 'admin-leads', label: 'Leads Engine', icon: Users },
+    { id: 'admin-outreach', label: 'AI Cold Outreach', icon: Mail },
     { id: 'admin-projects', label: 'Build Queue', icon: FileText },
     { id: 'admin-requests', label: 'Payment Requests', icon: Zap },
     { id: 'admin-promos', label: 'Promo Manager', icon: Tag },

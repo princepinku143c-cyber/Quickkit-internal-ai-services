@@ -109,7 +109,7 @@ const CellIcon = ({ val }: { val: boolean | string }) => {
   return <span className="flex justify-center"><AlertTriangle size={14} className="text-yellow-400" /></span>;
 };
 
-const Pill = ({ text }: { text: string }) => (
+const Pill: React.FC<{ text: string }> = ({ text }) => (
   <span className="inline-block px-3 py-1 text-xs font-mono border border-cyan-500/50 text-cyan-300 rounded-full bg-cyan-500/10 hover:bg-cyan-500/20 transition-colors cursor-default">
     {text}
   </span>

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { UserProfile, LeadSubmission } from '../types';
 import { AdminLayout } from './AdminLayout';
 import { AdminLeads } from './AdminLeads';
+import { AdminOutreach } from './AdminOutreach';
 import { Activity, DollarSign, Users, TrendingUp, Briefcase, CreditCard, Clock, CheckCircle, Fingerprint, Loader2, Copy, Send, ChevronRight, Plus, Zap } from 'lucide-react';
 import { collection, onSnapshot, query, orderBy, limit, doc, updateDoc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -30,6 +31,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ user, onLogout }) => {
       {activeTab === 'admin-users' && <AdminUsersView />}
       {activeTab === 'admin-promos' && <AdminPromosView />}
       {activeTab === 'admin-requests' && <AdminRequestsView />}
+      {activeTab === 'admin-outreach' && <AdminOutreach />}
     </AdminLayout>
   );
 };

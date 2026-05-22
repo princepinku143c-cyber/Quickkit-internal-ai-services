@@ -16,10 +16,15 @@ export const askAI = async (messages) => {
   // No provider names or API keys are exposed in the source code.
   const apiKey = process.env.NEURAL_NODE_KEY;
   const endpoint = process.env.NEURAL_NODE_ENDPOINT;
-  const engine = process.env.NEURAL_NODE_ENGINE;
+  let engine = process.env.NEURAL_NODE_ENGINE;
 
   if (!apiKey || !endpoint || !engine) {
      throw new Error("AI Infrastructure Offline: Missing Neural Node Configuration.");
+  }
+
+  // Handle user naming confusion (e.g., deepseek-v4-flash) by mapping to official deepseek-chat
+  if (engine === "deepseek-v4-flash" || (engine.includes("flash") && endpoint.includes("deepseek.com"))) {
+    engine = "deepseek-chat";
   }
 
   const controller = new AbortController();
