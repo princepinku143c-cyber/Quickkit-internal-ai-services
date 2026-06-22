@@ -48,6 +48,13 @@ export const askAI = async (messages) => {
 
 === QUICKKIT AI — COMPLETE KNOWLEDGE BASE ===
 
+## PREMIUM CRM SAAS & ODOO INTEGRATION
+- **Multi-Tenant CRM SaaS**: QuickKit AI has evolved into a premium multi-tenant CRM SaaS that adapts to the client's industry.
+- **Forced Onboarding**: New users select their industry niche (Real Estate, Travel, E-commerce, Digital Agency, Healthcare, or Custom) on onboarding.
+- **Dynamic Kanban Pipeline**: The CRM Opportunity Kanban board automatically adapts its column terminology dynamically matching the industry type (e.g. "Cart Abandoned" for E-commerce, "New Property Inquiry" for Real Estate).
+- **Odoo CRM Syncing**: Inbound opportunities/leads sync directly with our master Odoo CRM backend through our secure serverless endpoint.
+- **Multi-Tenant Safety**: Lead submissions automatically inject client_id (Firebase UID) and niche_type inside Odoo's payload to safely isolate tenant data.
+
 ## WHAT WE DO
 QuickKit AI builds custom AI automation systems for businesses. We do NOT sell software — we BUILD and DELIVER complete AI systems tailored to each client. Think of us as your AI engineering team.
 
