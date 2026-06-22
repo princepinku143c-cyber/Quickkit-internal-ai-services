@@ -20,6 +20,11 @@ export interface UserProfile {
   currentBusinessId?: string;
   // Config Bridge
   settings?: ClientSettings;
+  industryType?: string;
+  workspaceName?: string;
+  operatorName?: string;
+  contactEmail?: string;
+  crmInitialized?: boolean;
 }
 
 export interface TriggerRequest {

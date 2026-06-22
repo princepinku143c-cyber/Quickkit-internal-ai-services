@@ -19,7 +19,47 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
   const [isDeploying, setIsDeploying] = useState<string | null>(null);
 
   if (!user) return null;
-  
+
+  const dynamicLabels = useMemo(() => {
+    const isRealEstate = user.industryType === 'Real Estate';
+    const isEcom = user.industryType === 'E-commerce';
+    const isAgency = user.industryType === 'Agency';
+    const isHealthcare = user.industryType === 'Healthcare';
+    const isTravel = user.industryType === 'Travel';
+
+    if (isRealEstate) {
+      return {
+        commandCenter: 'Property Command Center',
+        deployments: 'Active Properties',
+      };
+    } else if (isEcom) {
+      return {
+        commandCenter: 'Store Sync Center',
+        deployments: 'Store Syncs / Operations',
+      };
+    } else if (isAgency) {
+      return {
+        commandCenter: 'Agency Lead Hub',
+        deployments: 'Active Client Workflows',
+      };
+    } else if (isHealthcare) {
+      return {
+        commandCenter: 'Patient Care Operations',
+        deployments: 'Clinic Appointments',
+      };
+    } else if (isTravel) {
+      return {
+        commandCenter: 'Booking Hub',
+        deployments: 'Active Tours & Inquiries',
+      };
+    }
+
+    return {
+      commandCenter: 'Build Command Center',
+      deployments: 'Active Deployments',
+    };
+  }, [user.industryType]);
+
   const [taskFilter, setTaskFilter] = useState<'all' | 'pending' | 'running' | 'completed'>('all');
   const [isFirebaseConnected, setIsFirebaseConnected] = useState(true);
   const [commandInput, setCommandInput] = useState('');
@@ -271,8 +311,8 @@ export const Dashboard: React.FC<DashboardProps> = ({ user }) => {
         <section className="space-y-8">
             <div className="flex justify-between items-end px-2">
                 <div>
-                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] mb-2">Build Command Center</h3>
-                    <h4 className="text-3xl font-black text-white uppercase tracking-tighter">Active Deployments</h4>
+                    <h3 className="text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] mb-2">{dynamicLabels.commandCenter}</h3>
+                    <h4 className="text-3xl font-black text-white uppercase tracking-tighter">{dynamicLabels.deployments}</h4>
                 </div>
                 <div className="h-10 w-10 bg-slate-900 border border-slate-800 rounded-2xl flex items-center justify-center text-blue-500 shadow-xl"><Briefcase className="w-5 h-5" /></div>
             </div>

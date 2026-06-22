@@ -145,7 +145,12 @@ const App: React.FC = () => {
                 role: data?.role || 'client',
                 credits: data?.credits ?? 0,
                 monthlyLimit: data?.monthlyLimit ?? 1000,
-                tier: data?.tier ?? 'STARTER'
+                tier: data?.tier ?? 'STARTER',
+                industryType: data?.industryType || '',
+                workspaceName: data?.workspaceName || '',
+                operatorName: data?.operatorName || '',
+                contactEmail: data?.contactEmail || '',
+                crmInitialized: data?.crmInitialized || false,
               });
               setIsAuthenticated(true);
               setAuthLoading(false);

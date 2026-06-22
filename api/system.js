@@ -118,6 +118,88 @@ async function handleLead(req, res, userId) {
             `
         });
 
+        // Odoo CRM Integration (Wrapped in try-catch to keep it fault-tolerant)
+        try {
+            const odooUrl = process.env.ODOO_URL;
+            const odooDb = process.env.ODOO_DB;
+            const odooUsername = process.env.ODOO_USERNAME;
+            const odooApiKey = process.env.ODOO_API_KEY;
+
+            if (odooUrl && odooDb && odooUsername && odooApiKey) {
+                // Step A: Authenticate
+                const authResponse = await fetch(`${odooUrl}/jsonrpc`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        jsonrpc: "2.0",
+                        method: "call",
+                        params: {
+                            service: "common",
+                            method: "login",
+                            args: [odooDb, odooUsername, odooApiKey]
+                        },
+                        id: Date.now()
+                    })
+                });
+                
+                const authData = await authResponse.json();
+                const uid = authData.result;
+                
+                if (uid) {
+                    // Step B: Create crm.lead
+                    let clientNiche = "Unknown";
+                    const targetUid = userId || data.userId || null;
+                    if (targetUid) {
+                        try {
+                            const userSnap = await admin.firestore().collection('users').doc(targetUid).get();
+                            if (userSnap.exists) {
+                                clientNiche = userSnap.data().industryType || "Unknown";
+                            }
+                        } catch (userErr) {
+                            console.error("Failed to fetch user niche for tagging:", userErr);
+                        }
+                    }
+
+                    const leadDescription = `Project: ${data.projectName || 'Custom Build'}\nRequirements: ${data.requirement || data.notes || 'N/A'}\n\n--- CRM Mappings ---\nClient_ID: ${targetUid || 'Guest'}\nNiche: ${clientNiche}`;
+                    
+                    await fetch(`${odooUrl}/jsonrpc`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            jsonrpc: "2.0",
+                            method: "call",
+                            params: {
+                                service: "object",
+                                method: "execute_kw",
+                                args: [
+                                    odooDb,
+                                    uid,
+                                    odooApiKey,
+                                    "crm.lead",
+                                    "create",
+                                    [{
+                                        name: `${data.name || 'New Lead'} - ${data.projectName || 'Custom Build'}`,
+                                        contact_name: data.name,
+                                        email_from: data.email,
+                                        phone: data.phone,
+                                        description: leadDescription
+                                    }]
+                                ]
+                            },
+                            id: Date.now() + 1
+                        })
+                    });
+                    console.log("✅ Lead successfully synced to Odoo CRM.");
+                } else {
+                    console.error("❌ Odoo Authentication failed (invalid UID returned).");
+                }
+            } else {
+                console.warn("⚠️ Odoo environment variables are incomplete.");
+            }
+        } catch (odooError) {
+            console.error("❌ Failed to sync lead to Odoo CRM:", odooError);
+        }
+
         return success(res, { status: "LEAD_CREATED", projectId: projectRef.id });
     } catch (e) {
         return error(res, e.message, 500);
