@@ -9,6 +9,8 @@ import { Routes, Route, Navigate, Link } from 'react-router-dom';
 import { ArrowLeft } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import type { LegalDocType } from './components/LegalModal';
+import { IndustryProvider } from './lib/IndustryContext';
+import { Onboarding } from './components/Onboarding';
 
 // Core Components (Static)
 import { Navbar } from './components/Navbar';
@@ -337,63 +339,80 @@ const App: React.FC = () => {
   return (
     <PayPalScriptProvider options={{ "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "sb" }}>
       <ErrorBoundary>
-        <Suspense fallback={<GlobalLoader message="Waking Up Architecture..." />}>
-          <Routes>
-            <Route path="/" element={renderLandingView()} />
-            <Route path="/pricing" element={renderLandingView()} />
-            <Route path="/ai-agents" element={renderLandingView()} />
-            <Route path="/login" element={
-              authLoading ? (
-                <GlobalLoader message="Waking Up Architecture..." />
-              ) : isAuthenticated ? (
-                <Navigate to="/dashboard" />
-              ) : (
-                <Login />
-              )
-            } />
-            <Route path="/dashboard" element={
-              authLoading ? (
-                <GlobalLoader message="Waking Up Architecture..." />
-              ) : isAuthenticated ? (
-                user?.role === 'admin' ? <AdminPortal user={user!} onLogout={handleLogout} /> : <ClientPortal user={user!} onLogout={handleLogout} />
-              ) : (
-                <Navigate to="/login" />
-              )
-            } />
-            <Route path="/about" element={<LegalPages />} />
-            <Route path="/contact" element={<LegalPages />} />
-            <Route path="/privacy" element={<LegalPages />} />
-            <Route path="/terms" element={<LegalPages />} />
-            {/* SEO Dedicated Pages */}
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/features" element={
-              <ServicePage title="Features | QuickKit AI" description="Explore the full suite of QuickKit AI features including Nimoclaw, OpenClaw, and custom workflows." keywords="AI features, automation features, QuickKit tools">
-                <PainSection />
-                <WhyQuickKit />
-              </ServicePage>
-            } />
-            <Route path="/ai-crm" element={
-              <ServicePage title="AI CRM Platform | QuickKit AI" description="Transform your customer relationship management with our intelligent AI CRM platform." keywords="AI CRM, smart CRM, autonomous CRM">
-                <AIAgents onSelectAgent={handleCatalogSelect} />
-              </ServicePage>
-            } />
-            <Route path="/ai-lead-generation" element={
-              <ServicePage title="AI Lead Generation | QuickKit AI" description="Automate lead capture and qualification with advanced AI automation." keywords="AI lead gen, automated lead generation">
-                <BusinessImpact />
-                <ROICalculator lang={lang} />
-              </ServicePage>
-            } />
-            <Route path="/support-automation" element={
-              <ServicePage title="Support Automation | QuickKit AI" description="Provide 24/7 autonomous support to your customers using intelligent AI agents." keywords="AI support, autonomous customer service">
-                <WhoIsItFor onBookDemo={() => setShowLeadForm(true)} />
-                <Testimonials />
-              </ServicePage>
-            } />
+        <IndustryProvider initialIndustryType={user?.industryType || ''}>
+          <Suspense fallback={<GlobalLoader message="Waking Up Architecture..." />}>
+            <Routes>
+              <Route path="/" element={renderLandingView()} />
+              <Route path="/pricing" element={renderLandingView()} />
+              <Route path="/ai-agents" element={renderLandingView()} />
+              <Route path="/login" element={
+                authLoading ? (
+                  <GlobalLoader message="Waking Up Architecture..." />
+                ) : isAuthenticated ? (
+                  user?.industryType ? <Navigate to="/dashboard" /> : <Navigate to="/onboarding" />
+                ) : (
+                  <Login />
+                )
+              } />
+              <Route path="/onboarding" element={
+                authLoading ? (
+                  <GlobalLoader message="Waking Up Architecture..." />
+                ) : isAuthenticated ? (
+                  user?.industryType ? <Navigate to="/dashboard" /> : <Onboarding user={user!} onLogout={handleLogout} />
+                ) : (
+                  <Navigate to="/login" />
+                )
+              } />
+              <Route path="/dashboard" element={
+                authLoading ? (
+                  <GlobalLoader message="Waking Up Architecture..." />
+                ) : isAuthenticated ? (
+                  !user?.industryType ? (
+                    <Navigate to="/onboarding" />
+                  ) : user?.role === 'admin' ? (
+                    <AdminPortal user={user!} onLogout={handleLogout} />
+                  ) : (
+                    <ClientPortal user={user!} onLogout={handleLogout} />
+                  )
+                ) : (
+                  <Navigate to="/login" />
+                )
+              } />
+              <Route path="/about" element={<LegalPages />} />
+              <Route path="/contact" element={<LegalPages />} />
+              <Route path="/privacy" element={<LegalPages />} />
+              <Route path="/terms" element={<LegalPages />} />
+              {/* SEO Dedicated Pages */}
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/features" element={
+                <ServicePage title="Features | QuickKit AI" description="Explore the full suite of QuickKit AI features including Nimoclaw, OpenClaw, and custom workflows." keywords="AI features, automation features, QuickKit tools">
+                  <PainSection />
+                  <WhyQuickKit />
+                </ServicePage>
+              } />
+              <Route path="/ai-crm" element={
+                <ServicePage title="AI CRM Platform | QuickKit AI" description="Transform your customer relationship management with our intelligent AI CRM platform." keywords="AI CRM, smart CRM, autonomous CRM">
+                  <AIAgents onSelectAgent={handleCatalogSelect} />
+                </ServicePage>
+              } />
+              <Route path="/ai-lead-generation" element={
+                <ServicePage title="AI Lead Generation | QuickKit AI" description="Automate lead capture and qualification with advanced AI automation." keywords="AI lead gen, automated lead generation">
+                  <BusinessImpact />
+                  <ROICalculator lang={lang} />
+                </ServicePage>
+              } />
+              <Route path="/support-automation" element={
+                <ServicePage title="Support Automation | QuickKit AI" description="Provide 24/7 autonomous support to your customers using intelligent AI agents." keywords="AI support, autonomous customer service">
+                  <WhoIsItFor onBookDemo={() => setShowLeadForm(true)} />
+                  <Testimonials />
+                </ServicePage>
+              } />
 
-            <Route path="/seo-audit" element={<SEOAudit />} />
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </Suspense>
+              <Route path="/seo-audit" element={<SEOAudit />} />
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </Suspense>
+        </IndustryProvider>
       </ErrorBoundary>
     </PayPalScriptProvider>
   );

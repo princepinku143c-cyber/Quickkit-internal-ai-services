@@ -2,18 +2,20 @@
 import React from 'react';
 import { 
   LayoutDashboard, 
-  Zap, 
-  Database, 
-  CreditCard, 
   Settings, 
   LogOut, 
   Bell,
-  Terminal,
   Menu,
-  X
+  X,
+  Users,
+  Briefcase,
+  Layers,
+  Contact,
+  Calendar,
+  BarChart3,
+  Zap
 } from 'lucide-react';
 import { UserProfile } from '../types';
-import { CreditWallet } from './CreditWallet';
 import { LegalModal, LegalDocType } from './LegalModal';
 
 interface LayoutProps {
@@ -37,10 +39,12 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'terminal', label: 'AI Agent', icon: Terminal },
-    { id: 'workflows', label: 'Legacy Workflows', icon: Zap },
-    { id: 'data', label: 'Data & Results', icon: Database },
-    { id: 'billing', label: 'Billing', icon: CreditCard },
+    { id: 'leads', label: 'Leads', icon: Users },
+    { id: 'accounts', label: 'Accounts', icon: Briefcase },
+    { id: 'opportunities', label: 'Opportunities', icon: Layers },
+    { id: 'contacts', label: 'Contacts', icon: Contact },
+    { id: 'calendar', label: 'Calendar', icon: Calendar },
+    { id: 'reports', label: 'Reports', icon: BarChart3 },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
@@ -56,7 +60,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
           <span className="font-bold text-white tracking-wide text-lg">Smart AI CRM</span>
         </div>
 
-        <nav className="flex-1 p-4 space-y-2">
+        <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
           {navItems.map((item) => (
             <button
               key={item.id}
@@ -72,11 +76,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
             </button>
           ))}
         </nav>
-
-        {/* Credit Wallet Widget (Sidebar Position) */}
-        <div className="px-4 pb-2">
-            <CreditWallet user={user} />
-        </div>
 
         <div className="p-4 border-t border-nexus-border">
           <div className="flex items-center gap-3 px-4 py-3 rounded-lg bg-nexus-card border border-nexus-border mb-3">
@@ -97,7 +96,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
         </div>
 
         {/* COMPLIANCE FOOTER */}
-        <div className="p-6 mt-auto border-t border-nexus-border/50">
+        <div className="p-6 border-t border-nexus-border/50">
             <div className="flex flex-wrap gap-x-4 gap-y-2 mb-4">
                 <button onClick={() => setLegalDoc('privacy')} className="text-[9px] font-black uppercase tracking-widest text-slate-600 hover:text-blue-400 transition-colors">Privacy</button>
                 <button onClick={() => setLegalDoc('terms')} className="text-[9px] font-black uppercase tracking-widest text-slate-600 hover:text-blue-400 transition-colors">Terms</button>
@@ -124,14 +123,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
           </div>
 
           <div className="flex items-center gap-4">
-            
-            {/* Topbar Credit Badge (Simplified) */}
-            <div className="hidden md:flex items-center gap-2 bg-nexus-card border border-nexus-border px-3 py-1.5 rounded-full">
-                <Zap className="w-3 h-3 text-emerald-400" />
-                <span className="text-sm font-bold text-white">{(user.credits + (Number(localStorage.getItem('bonusCredits')) || 0)).toLocaleString()}</span>
-                <span className="text-xs text-slate-500">Credits</span>
-            </div>
-
             <button className="relative p-2 text-slate-400 hover:text-white transition-colors">
               <Bell className="w-5 h-5" />
               <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
@@ -146,7 +137,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
                  <span className="font-bold text-white text-xl">Smart AI CRM</span>
                  <button onClick={() => setIsMobileMenuOpen(false)}><X className="text-white" /></button>
               </div>
-              <div className="p-4 space-y-2">
+              <div className="p-4 space-y-2 overflow-y-auto h-[calc(100vh-80px)]">
                 {navItems.map((item) => (
                   <button
                     key={item.id}
@@ -156,11 +147,6 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
                     <item.icon className="w-6 h-6" /> {item.label}
                   </button>
                 ))}
-                
-                {/* Mobile Credit Display */}
-                <div className="px-4 py-4">
-                    <p className="text-slate-400 mb-2">Credits: <span className="text-white font-bold">{(user.credits + (Number(localStorage.getItem('bonusCredits')) || 0)).toLocaleString()}</span> / {user.monthlyLimit}</p>
-                </div>
 
                 <button onClick={onLogout} className="w-full flex items-center gap-3 px-4 py-4 text-red-400 mt-8">
                    <LogOut className="w-6 h-6" /> Sign Out

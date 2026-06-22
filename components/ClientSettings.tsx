@@ -3,6 +3,7 @@ import { UserProfile } from '../types';
 import { Save, Mail, User, Shield, Lock, Laptop, ShoppingBag, Compass, HelpCircle, CheckCircle2, Building2, HeartPulse } from 'lucide-react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
+import { useIndustry } from '../lib/IndustryContext';
 
 interface ClientSettingsProps {
   user: UserProfile;
@@ -18,6 +19,7 @@ const INDUSTRIES = [
 ];
 
 export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
+  const { setIndustryTypeState } = useIndustry();
   const [selectedIndustry, setSelectedIndustry] = useState<string>(user.industryType || 'Real Estate');
   const [formData, setFormData] = useState({
     workspaceName: user.workspaceName || '',
@@ -84,6 +86,7 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
         const docRef = doc(db as any, 'users', user.uid);
         await setDoc(docRef, updates, { merge: true });
       }
+      setIndustryTypeState(selectedIndustry);
       setSaved(true);
       setTimeout(() => setSaved(false), 2500);
     } catch (e) {

@@ -1,13 +1,14 @@
-
 import React, { useState } from 'react';
 import { UserProfile } from '../types';
 import { Layout } from './Layout';
 import { Dashboard } from './Dashboard';
-import { Workflows } from './Workflows';
-import { DataView } from './DataView';
-import { Billing } from './Billing';
+import { LeadsView } from './LeadsView';
+import { AccountsView } from './AccountsView';
+import { OpportunitiesView } from './OpportunitiesView';
+import { ContactsView } from './ContactsView';
+import { CalendarView } from './CalendarView';
+import { ReportsView } from './ReportsView';
 import { ClientSettings } from './ClientSettings';
-import { AITerminal } from './AITerminal';
 
 interface ClientPortalProps {
   user: UserProfile;
@@ -25,10 +26,12 @@ export const ClientPortal: React.FC<ClientPortalProps> = ({ user, onLogout }) =>
       onLogout={onLogout}
     >
       {activeTab === 'dashboard' && <Dashboard user={user} />}
-      {activeTab === 'terminal' && <AITerminal user={user} />}
-      {activeTab === 'workflows' && <Workflows user={user} />}
-      {activeTab === 'data' && <DataView user={user} />}
-      {activeTab === 'billing' && <Billing user={user} />}
+      {activeTab === 'leads' && <LeadsView user={user} />}
+      {activeTab === 'accounts' && <AccountsView user={user} />}
+      {activeTab === 'opportunities' && <OpportunitiesView user={user} />}
+      {activeTab === 'contacts' && <ContactsView user={user} />}
+      {activeTab === 'calendar' && <CalendarView user={user} />}
+      {activeTab === 'reports' && <ReportsView user={user} />}
       {activeTab === 'settings' && <ClientSettings user={user} />}
     </Layout>
   );
