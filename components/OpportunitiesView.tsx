@@ -869,7 +869,7 @@ export const OpportunitiesView: React.FC<OpportunitiesProps> = ({ user }) => {
                 <DollarSign className="w-6 h-6 animate-pulse" />
               </div>
             </div>
-            <h3 className="text-base font-black text-white uppercase tracking-wider mb-2">Send Payment Proposal?</h3>
+            <h3 className="text-base font-black text-white uppercase tracking-wider mb-2">Deal Closed! Send Payment Proposal / Invoice?</h3>
             <p className="text-xs text-slate-400 mb-6 leading-relaxed">
               Would you like to automatically dispatch a payment proposal and invoice to <strong>{proposalConfirmLead.name}</strong> for <strong>${(proposalConfirmLead.budget || proposalConfirmLead.price || 0).toLocaleString()}</strong>?
             </p>
@@ -893,7 +893,8 @@ export const OpportunitiesView: React.FC<OpportunitiesProps> = ({ user }) => {
                       body: JSON.stringify({
                         email: lead.email,
                         name: lead.name,
-                        price: lead.budget || lead.price || 0
+                        price: lead.budget || lead.price || 0,
+                        features: [lead.projectName || 'CRM System Implementation', 'AI Auto-Responder Integration', 'Odoo Sync Connection']
                       })
                     });
                     if (res.ok) {
