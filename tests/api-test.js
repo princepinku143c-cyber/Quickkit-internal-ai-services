@@ -27,11 +27,12 @@ async function testUniversalWebhook() {
     const body = await res.json();
     console.log(`Test A Response Status: ${status}`, body);
 
-    if (status === 200 && (body.status === 'LEAD_INGESTED' || body.leadId)) {
+    const data = body.data || body;
+    if (status === 200 && (data.status === 'LEAD_INGESTED' || data.leadId)) {
       console.log('✅ Test A: Universal Webhook - PASS');
       return true;
     } else {
-      console.log(`❌ Test A: Universal Webhook - FAIL (Expected 200, got ${status})`);
+      console.log(`❌ Test A: Universal Webhook - FAIL (Expected 200 with leadId/LEAD_INGESTED, got ${status})`);
       return false;
     }
   } catch (error) {
@@ -56,7 +57,8 @@ async function testKellyChat() {
     const body = await res.json();
     console.log(`Test B Response Status: ${status}`, body);
 
-    if (status === 200 && body.reply && typeof body.reply === 'string') {
+    const data = body.data || body;
+    if (status === 200 && data.reply && typeof data.reply === 'string') {
       console.log('✅ Test B: Kelly AI Chat Engine - PASS');
       return true;
     } else {
@@ -89,7 +91,8 @@ async function testCrmSync() {
     const body = await res.json();
     console.log(`Test C Response Status: ${status}`, body);
 
-    if (status === 200 && (body.status === 'LEAD_CREATED' || body.projectId)) {
+    const data = body.data || body;
+    if (status === 200 && (data.status === 'LEAD_CREATED' || data.projectId)) {
       console.log('✅ Test C: System CRM Sync - PASS');
       return true;
     } else {
