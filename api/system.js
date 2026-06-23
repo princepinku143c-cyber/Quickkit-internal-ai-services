@@ -1,6 +1,7 @@
 
 import admin from 'firebase-admin';
 import nodemailer from 'nodemailer';
+import { askAI } from './services/aiService.js';
 
 // Initialize Firebase Admin if not already initialized
 if (!admin.apps.length) {
@@ -84,6 +85,23 @@ async function handleLead(req, res, userId) {
             userId: userId || data.userId || null,
             createdAt: new Date().toISOString()
         });
+
+        // Asynchronously call the askAI service to draft a welcome email
+        const leadId = leadRef.id;
+        const leadName = data.name || 'Guest';
+        const projectName = data.projectName || 'Custom Build';
+        (async () => {
+            try {
+                const prompt = `Write a short, highly professional 3-sentence welcome email for a new lead named ${leadName} inquiring about ${projectName}. Offer to schedule a quick call.`;
+                const draft = await askAI([{ role: "user", content: prompt }]);
+                await admin.firestore().collection('leads').doc(leadId).update({
+                    aiDraftReply: draft
+                });
+                console.log(`🤖 AI Draft successfully generated for lead ${leadId}`);
+            } catch (err) {
+                console.error(`❌ Failed to generate AI draft for lead ${leadId}:`, err);
+            }
+        })();
 
         await projectRef.set({
             userId: userId || data.userId || null,

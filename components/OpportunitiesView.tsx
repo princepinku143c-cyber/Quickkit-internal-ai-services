@@ -5,7 +5,7 @@ import {
   Plus, Search, Filter, Mail, Phone, Building2, Calendar, 
   ChevronRight, ChevronLeft, Trash2, X, AlertCircle, CheckCircle2,
   Sparkles, Layers, Briefcase, User, DollarSign, MapPin, 
-  ShoppingBag, ClipboardList, Info, FileText, Send
+  ShoppingBag, ClipboardList, Info, FileText, Send, Bot, Loader2
 } from 'lucide-react';
 import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -195,7 +195,17 @@ export const OpportunitiesView: React.FC<OpportunitiesProps> = ({ user }) => {
   // Modals visibility State
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedLead, setSelectedLead] = useState<any | null>(null);
-  const [activeLeadTab, setActiveLeadTab] = useState<'info' | 'niche'>('info');
+  const [activeLeadTab, setActiveLeadTab] = useState<'info' | 'niche' | 'ai'>('info');
+
+  // Keep selectedLead updated with latest data from leads real-time listener
+  useEffect(() => {
+    if (selectedLead) {
+      const latest = leads.find(l => l.id === selectedLead.id);
+      if (latest && JSON.stringify(latest) !== JSON.stringify(selectedLead)) {
+        setSelectedLead(latest);
+      }
+    }
+  }, [leads, selectedLead]);
 
   // Lead Form State
   const [formName, setFormName] = useState('');
@@ -668,11 +678,11 @@ export const OpportunitiesView: React.FC<OpportunitiesProps> = ({ user }) => {
             </div>
 
             {/* Tab navigation */}
-            <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-900 mb-6">
+            <div className="flex bg-slate-950 p-1 rounded-xl border border-slate-900 mb-6 gap-1">
               <button
                 type="button"
                 onClick={() => setActiveLeadTab('info')}
-                className={`flex-1 px-4 py-2.5 text-xs font-black uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-2 ${
+                className={`flex-1 px-3 py-2.5 text-xs font-black uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-2 ${
                   activeLeadTab === 'info'
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10'
                     : 'text-slate-500 hover:text-slate-300'
@@ -683,13 +693,24 @@ export const OpportunitiesView: React.FC<OpportunitiesProps> = ({ user }) => {
               <button
                 type="button"
                 onClick={() => setActiveLeadTab('niche')}
-                className={`flex-1 px-4 py-2.5 text-xs font-black uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-2 ${
+                className={`flex-1 px-3 py-2.5 text-xs font-black uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-2 ${
                   activeLeadTab === 'niche'
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10'
                     : 'text-slate-500 hover:text-slate-300'
                 }`}
               >
                 <Sparkles className="w-3.5 h-3.5" /> {industryType || 'Niche'} Actions
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveLeadTab('ai')}
+                className={`flex-1 px-3 py-2.5 text-xs font-black uppercase tracking-wider rounded-lg transition-all flex items-center justify-center gap-2 ${
+                  activeLeadTab === 'ai'
+                    ? 'bg-purple-600 text-white shadow-lg shadow-purple-600/10'
+                    : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                <Bot className="w-3.5 h-3.5 text-purple-400" /> AI Assistant
               </button>
             </div>
 
@@ -740,7 +761,7 @@ export const OpportunitiesView: React.FC<OpportunitiesProps> = ({ user }) => {
                   </div>
                 )}
               </div>
-            ) : (
+            ) : activeLeadTab === 'niche' ? (
               /* Niche Specific lazy load modules */
               <div className="space-y-4">
                 {industryType === 'Real Estate' && <PropertyMapWidget lead={selectedLead} />}
@@ -751,6 +772,58 @@ export const OpportunitiesView: React.FC<OpportunitiesProps> = ({ user }) => {
                     No custom niche actions configured for {industryType || 'Custom'} workspace.
                   </div>
                 )}
+              </div>
+            ) : (
+              /* AI Assistant tab content */
+              <div className="space-y-6">
+                <div className="p-5 bg-gradient-to-br from-indigo-950/20 to-purple-950/20 border border-purple-500/20 rounded-2xl relative overflow-hidden">
+                  <div className="flex items-center gap-2 mb-4">
+                    <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400">
+                      <Bot className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-black text-white uppercase tracking-wider">AI Welcome Draft</h4>
+                      <p className="text-[10px] text-slate-500">Automatically drafted welcome message for this lead.</p>
+                    </div>
+                  </div>
+
+                  {selectedLead.aiDraftReply ? (
+                    <div className="space-y-4">
+                      <textarea
+                        value={selectedLead.aiDraftReply}
+                        readOnly
+                        className="w-full h-32 bg-[#050810] border border-purple-500/30 focus:border-purple-500 outline-none rounded-xl p-4 text-xs text-slate-200 leading-relaxed font-mono shadow-[0_0_15px_rgba(168,85,247,0.05)] resize-none"
+                      />
+                      
+                      <div className="flex gap-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(selectedLead.aiDraftReply);
+                            alert("📋 Draft copied to clipboard!");
+                          }}
+                          className="flex-1 py-3 bg-[#0B1120] hover:bg-slate-900 border border-[#1e293b] hover:border-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5"
+                        >
+                          Copy Draft
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            alert("🚀 Email dispatched successfully via mock sender!");
+                          }}
+                          className="flex-1 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-purple-600/15 flex items-center justify-center gap-1.5"
+                        >
+                          <Send className="w-3.5 h-3.5" /> Send via Email
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-8 text-center text-slate-500 text-xs border border-dashed border-slate-900 rounded-2xl flex flex-col items-center justify-center gap-3">
+                      <Loader2 className="w-6 h-6 animate-spin text-purple-400" />
+                      <span>Drafting welcome email proposal...</span>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 

@@ -1,5 +1,6 @@
 import admin, { db } from "./_lib/firebaseAdmin.js";
 import { success, error } from "./_lib/response.js";
+import { askAI } from "./services/aiService.js";
 
 export default async function handler(req, res) {
   // CORS configuration
@@ -61,6 +62,23 @@ export default async function handler(req, res) {
 
     // Save lead record
     await leadRef.set(leadData);
+
+    // Asynchronously call the askAI service to draft a welcome email
+    const leadId = leadRef.id;
+    const leadName = leadData.name || 'Webhook Inbound Lead';
+    const projectName = leadData.projectName || 'External Webhook Sync';
+    (async () => {
+      try {
+        const prompt = `Write a short, highly professional 3-sentence welcome email for a new lead named ${leadName} inquiring about ${projectName}. Offer to schedule a quick call.`;
+        const draft = await askAI([{ role: "user", content: prompt }]);
+        await db.collection('leads').doc(leadId).update({
+          aiDraftReply: draft
+        });
+        console.log(`🤖 AI Draft successfully generated for webhook lead ${leadId}`);
+      } catch (err) {
+        console.error(`❌ Failed to generate AI draft for webhook lead ${leadId}:`, err);
+      }
+    })();
 
     // Save project node
     await projectRef.set({
