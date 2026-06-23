@@ -25,6 +25,7 @@ export interface UserProfile {
   operatorName?: string;
   contactEmail?: string;
   crmInitialized?: boolean;
+  customFormSchema?: any[];
 }
 
 export interface TriggerRequest {

@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { UserProfile } from '../types';
-import { Save, Mail, User, Shield, Lock, Laptop, ShoppingBag, Compass, HelpCircle, CheckCircle2, Building2, HeartPulse } from 'lucide-react';
+import { 
+  Save, Mail, User, Shield, Lock, Laptop, ShoppingBag, 
+  Compass, HelpCircle, CheckCircle2, Building2, HeartPulse, 
+  Plus, Trash2, ListFilter, Sliders
+} from 'lucide-react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { useIndustry } from '../lib/IndustryContext';
@@ -20,7 +24,9 @@ const INDUSTRIES = [
 
 export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
   const { setIndustryTypeState } = useIndustry();
+  const [activeSubTab, setActiveSubTab] = useState<'general' | 'customFields'>('general');
   const [selectedIndustry, setSelectedIndustry] = useState<string>(user.industryType || 'Real Estate');
+  
   const [formData, setFormData] = useState({
     workspaceName: user.workspaceName || '',
     operatorName: user.operatorName || user.displayName || '',
@@ -31,6 +37,12 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
   const [saved, setSaved] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
+  // Custom Fields Builder State
+  const [customFields, setCustomFields] = useState<any[]>([]);
+  const [newFieldLabel, setNewFieldLabel] = useState('');
+  const [newFieldType, setNewFieldType] = useState<'text' | 'number' | 'select'>('text');
+  const [newFieldOptions, setNewFieldOptions] = useState('');
 
   useEffect(() => {
     const loadConfig = async () => {
@@ -50,6 +62,9 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
             contactEmail: data.contactEmail || data.email || '',
           });
           if (data.crmInitialized !== undefined) setCrmInitialized(data.crmInitialized);
+          if (Array.isArray(data.customFormSchema)) {
+            setCustomFields(data.customFormSchema);
+          }
         }
       } catch (e) {
         console.error("Failed to load user config:", e);
@@ -80,6 +95,7 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
           operatorName: formData.operatorName,
           contactEmail: formData.contactEmail,
           crmInitialized: crmInitialized,
+          customFormSchema: customFields,
           updated_at: new Date().toISOString()
         };
 
@@ -95,6 +111,32 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
     }
   };
 
+  const handleAddField = () => {
+    if (!newFieldLabel.trim()) return;
+    const cleanId = newFieldLabel.trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+    
+    // Check if ID already exists
+    if (customFields.some(f => f.id === cleanId)) {
+      alert("A field with this label already exists.");
+      return;
+    }
+
+    const fieldObj = {
+      id: cleanId,
+      label: newFieldLabel.trim(),
+      type: newFieldType,
+      options: newFieldType === 'select' ? newFieldOptions.split(',').map(o => o.trim()).filter(Boolean) : []
+    };
+
+    setCustomFields(prev => [...prev, fieldObj]);
+    setNewFieldLabel('');
+    setNewFieldOptions('');
+  };
+
+  const handleRemoveField = (fieldId: string) => {
+    setCustomFields(prev => prev.filter(f => f.id !== fieldId));
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -104,164 +146,323 @@ export const ClientSettings: React.FC<ClientSettingsProps> = ({ user }) => {
   }
 
   return (
-    <form onSubmit={handleSave} className="space-y-8 pb-10">
-      <div>
-        <h1 className="text-2xl font-bold text-white">Your Settings</h1>
-        <p className="text-slate-400">Configure your dynamic Odoo CRM workspace and industry niche mappings.</p>
+    <div className="space-y-8 pb-10">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-[#1e293b] pb-6 gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-white uppercase tracking-tight">Your Settings</h1>
+          <p className="text-slate-400 text-sm">Configure your dynamic Odoo CRM workspace and industry niche mappings.</p>
+        </div>
+
+        {/* Sub-tab Navigation */}
+        <div className="flex bg-slate-950 p-1 rounded-xl border border-[#1e293b] self-stretch sm:self-auto">
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('general')}
+            className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all ${
+              activeSubTab === 'general'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10'
+                : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            General Config
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveSubTab('customFields')}
+            className={`flex-1 sm:flex-initial px-4 py-2 text-xs font-black uppercase tracking-wider rounded-lg transition-all ${
+              activeSubTab === 'customFields'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10'
+                : 'text-slate-500 hover:text-slate-300'
+            }`}
+          >
+            Custom Fields Builder
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
-        {/* Industry Selector Card Grid */}
-        <div className="lg:col-span-2 space-y-6">
-          <div className="bg-[#0f172a]/80 backdrop-blur-md p-6 rounded-2xl border border-[#1e293b] shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-[40px] pointer-events-none"></div>
-            
-            <div className="flex items-center gap-2 mb-6 border-b border-[#1e293b] pb-4">
-              <div className="p-2 bg-purple-500/10 rounded-lg">
-                <Shield className="w-5 h-5 text-purple-400" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white">Select Your Industry</h3>
-                <p className="text-[10px] text-slate-500">Adapts terminology across your entire workspace.</p>
+      {activeSubTab === 'general' ? (
+        <form onSubmit={handleSave} className="space-y-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Industry Selector Card Grid */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="bg-[#0f172a]/80 backdrop-blur-md p-6 rounded-2xl border border-[#1e293b] shadow-xl relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-[40px] pointer-events-none"></div>
+                
+                <div className="flex items-center gap-2 mb-6 border-b border-[#1e293b] pb-4">
+                  <div className="p-2 bg-purple-500/10 rounded-lg">
+                    <Shield className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-bold text-white">Select Your Industry</h3>
+                    <p className="text-[10px] text-slate-500">Adapts terminology across your entire workspace.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {INDUSTRIES.map((ind) => {
+                    const isSelected = selectedIndustry === ind.id;
+                    const IconComponent = ind.icon;
+                    return (
+                      <div
+                        key={ind.id}
+                        onClick={() => setSelectedIndustry(ind.id)}
+                        className={`p-5 rounded-2xl border cursor-pointer transition-all duration-300 relative group flex flex-col justify-between h-36 ${
+                          isSelected
+                            ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.25)]'
+                            : 'bg-[#0B1120] border-[#1e293b] hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className={`p-2.5 rounded-xl ${isSelected ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-900 text-slate-500'}`}>
+                            <IconComponent className="w-5 h-5" />
+                          </div>
+                          {isSelected && (
+                            <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,1)] animate-pulse"></div>
+                          )}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-white text-sm uppercase tracking-wider mb-1">{ind.name}</h4>
+                          <p className="text-[10px] text-slate-500 line-clamp-2 leading-relaxed">{ind.desc}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {INDUSTRIES.map((ind) => {
-                const isSelected = selectedIndustry === ind.id;
-                const IconComponent = ind.icon;
-                return (
-                  <div
-                    key={ind.id}
-                    onClick={() => setSelectedIndustry(ind.id)}
-                    className={`p-5 rounded-2xl border cursor-pointer transition-all duration-300 relative group flex flex-col justify-between h-36 ${
-                      isSelected
-                        ? 'bg-blue-600/10 border-blue-500 shadow-[0_0_15px_rgba(59,130,246,0.25)]'
-                        : 'bg-[#0B1120] border-[#1e293b] hover:border-slate-700'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className={`p-2.5 rounded-xl ${isSelected ? 'bg-blue-500/20 text-blue-400' : 'bg-slate-900 text-slate-500'}`}>
-                        <IconComponent className="w-5 h-5" />
-                      </div>
-                      {isSelected && (
-                        <div className="w-2.5 h-2.5 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,1)] animate-pulse"></div>
-                      )}
+            {/* Odoo CRM Connection Details */}
+            <div className="lg:col-span-1 space-y-6">
+              <div className="bg-[#0f172a]/80 backdrop-blur-md p-6 rounded-2xl border border-[#1e293b] shadow-xl relative overflow-hidden h-fit">
+                <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px] pointer-events-none"></div>
+                
+                <div className="flex items-center justify-between mb-6 border-b border-[#1e293b] pb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-emerald-500/10 rounded-lg">
+                      <Lock className="w-5 h-5 text-emerald-400" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-white text-sm uppercase tracking-wider mb-1">{ind.name}</h4>
-                      <p className="text-[10px] text-slate-500 line-clamp-2 leading-relaxed">{ind.desc}</p>
+                      <h3 className="text-lg font-bold text-white">Smart CRM Link</h3>
+                      <p className="text-[10px] text-slate-500">Initialize and connect to Master Odoo pipeline.</p>
                     </div>
                   </div>
-                );
-              })}
+                </div>
+
+                <div className="space-y-5">
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
+                      Workspace Name
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.workspaceName}
+                      onChange={e => setFormData({ ...formData, workspaceName: e.target.value })}
+                      placeholder="e.g. My Agency Hub"
+                      className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-slate-200 outline-none focus:border-blue-500 transition-colors"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
+                      Operator Name
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={formData.operatorName}
+                        onChange={e => setFormData({ ...formData, operatorName: e.target.value })}
+                        placeholder="e.g. Prince Kaada"
+                        className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-slate-200 outline-none focus:border-blue-500 transition-colors pl-10"
+                      />
+                      <div className="absolute left-3 top-3 text-slate-600">
+                        <User className="w-4 h-4" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
+                      Contact Email
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="email"
+                        value={formData.contactEmail}
+                        onChange={e => setFormData({ ...formData, contactEmail: e.target.value })}
+                        placeholder="operator@company.com"
+                        className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-slate-200 outline-none focus:border-blue-500 transition-colors pl-10"
+                      />
+                      <div className="absolute left-3 top-3 text-slate-600">
+                        <Mail className="w-4 h-4" />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-4 border-t border-[#1e293b] flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setCrmInitialized(prev => !prev)}
+                      className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${
+                        crmInitialized
+                          ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30'
+                          : 'bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700'
+                      }`}
+                    >
+                      {crmInitialized ? 'crm initialized' : 'initialize crm'}
+                    </button>
+                    <div className="text-xs font-mono">
+                      Status: <span className={crmInitialized ? 'text-emerald-400 font-bold' : 'text-slate-500'}>
+                        {crmInitialized ? 'Connected ✓' : 'Offline'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
-        {/* Odoo CRM Connection Details */}
-        <div className="lg:col-span-1 space-y-6">
-          <div className="bg-[#0f172a]/80 backdrop-blur-md p-6 rounded-2xl border border-[#1e293b] shadow-xl relative overflow-hidden h-fit">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full blur-[40px] pointer-events-none"></div>
-            
-            <div className="flex items-center justify-between mb-6 border-b border-[#1e293b] pb-4">
-              <div className="flex items-center gap-2">
-                <div className="p-2 bg-emerald-500/10 rounded-lg">
-                  <Lock className="w-5 h-5 text-emerald-400" />
+          <div className="flex flex-col items-end pt-6 gap-3">
+            <button
+              type="submit"
+              className={`px-8 py-4 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-3 transition-all ${
+                saved ? 'bg-emerald-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'
+              }`}
+            >
+              {saved ? <><CheckCircle2 className="w-4 h-4" /> Saved</> : <><Save className="w-4 h-4" /> Save Configuration</>}
+            </button>
+            {errorMsg && <p className="text-xs text-red-500 text-right font-bold mt-2">{errorMsg}</p>}
+          </div>
+        </form>
+      ) : (
+        /* Custom Fields Builder Sub-Panel */
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Creator Form */}
+          <div className="lg:col-span-1 space-y-6">
+            <div className="bg-[#0f172a]/80 backdrop-blur-md p-6 rounded-2xl border border-[#1e293b] shadow-xl relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-full blur-[40px] pointer-events-none"></div>
+              
+              <div className="flex items-center gap-2 mb-6 border-b border-[#1e293b] pb-4">
+                <div className="p-2 bg-blue-500/10 rounded-lg text-blue-400">
+                  <Sliders className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-bold text-white">Smart CRM Link</h3>
-                  <p className="text-[10px] text-slate-500">Initialize and connect to Master Odoo pipeline.</p>
+                  <h3 className="text-lg font-bold text-white">Create Custom Field</h3>
+                  <p className="text-[10px] text-slate-500">Add dynamic attributes to your client form.</p>
                 </div>
               </div>
-            </div>
 
-            <div className="space-y-5">
-              <div>
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
-                  Workspace Name
-                </label>
-                <input
-                  type="text"
-                  value={formData.workspaceName}
-                  onChange={e => setFormData({ ...formData, workspaceName: e.target.value })}
-                  placeholder="e.g. My Agency Hub"
-                  className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-slate-200 outline-none focus:border-blue-500 transition-colors"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
-                  Operator Name
-                </label>
-                <div className="relative">
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Field Label</label>
                   <input
                     type="text"
-                    value={formData.operatorName}
-                    onChange={e => setFormData({ ...formData, operatorName: e.target.value })}
-                    placeholder="e.g. Prince Kaada"
-                    className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-slate-200 outline-none focus:border-blue-500 transition-colors pl-10"
+                    value={newFieldLabel}
+                    onChange={e => setNewFieldLabel(e.target.value)}
+                    placeholder="e.g. Property Size (sq ft)"
+                    className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-xs text-slate-200 outline-none focus:border-blue-500 transition-colors"
                   />
-                  <div className="absolute left-3 top-3 text-slate-600">
-                    <User className="w-4 h-4" />
-                  </div>
                 </div>
-              </div>
 
-              <div>
-                <label className="block text-[10px] font-black text-slate-500 uppercase tracking-widest mb-2">
-                  Contact Email
-                </label>
-                <div className="relative">
-                  <input
-                    type="email"
-                    value={formData.contactEmail}
-                    onChange={e => setFormData({ ...formData, contactEmail: e.target.value })}
-                    placeholder="operator@company.com"
-                    className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-slate-200 outline-none focus:border-blue-500 transition-colors pl-10"
-                  />
-                  <div className="absolute left-3 top-3 text-slate-600">
-                    <Mail className="w-4 h-4" />
-                  </div>
+                <div>
+                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Field Type</label>
+                  <select
+                    value={newFieldType}
+                    onChange={e => setNewFieldType(e.target.value as any)}
+                    className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-xs text-slate-200 outline-none focus:border-blue-500 transition-colors"
+                  >
+                    <option value="text">Text Input</option>
+                    <option value="number">Number Input</option>
+                    <option value="select">Dropdown (Select)</option>
+                  </select>
                 </div>
-              </div>
 
-              <div className="pt-4 border-t border-[#1e293b] flex items-center justify-between">
+                {newFieldType === 'select' && (
+                  <div>
+                    <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Dropdown Options</label>
+                    <input
+                      type="text"
+                      value={newFieldOptions}
+                      onChange={e => setNewFieldOptions(e.target.value)}
+                      placeholder="e.g. Direct, Reference, Agent"
+                      className="w-full bg-[#0B1120] border border-[#1e293b] rounded-xl px-4 py-3 text-xs text-slate-200 outline-none focus:border-blue-500 transition-colors"
+                    />
+                    <p className="text-[9px] text-slate-500 mt-1">Separate dropdown items with commas.</p>
+                  </div>
+                )}
+
                 <button
                   type="button"
-                  onClick={() => setCrmInitialized(prev => !prev)}
-                  className={`px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all duration-300 ${
-                    crmInitialized
-                      ? 'bg-emerald-600/20 text-emerald-400 border border-emerald-500/30'
-                      : 'bg-slate-800 text-slate-400 hover:bg-slate-700 border border-slate-700'
-                  }`}
+                  onClick={handleAddField}
+                  className="w-full py-3.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
                 >
-                  {crmInitialized ? 'crm initialized' : 'initialize crm'}
+                  <Plus className="w-4 h-4" /> Add Field
                 </button>
-                <div className="text-xs font-mono">
-                  Status: <span className={crmInitialized ? 'text-emerald-400 font-bold' : 'text-slate-500'}>
-                    {crmInitialized ? 'Connected ✓' : 'Offline'}
+              </div>
+            </div>
+          </div>
+
+          {/* Current Layout Schema */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-[#0f172a]/80 backdrop-blur-md p-6 rounded-2xl border border-[#1e293b] shadow-xl flex flex-col justify-between min-h-[400px]">
+              <div>
+                <div className="flex items-center justify-between mb-6 border-b border-[#1e293b] pb-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-2 bg-purple-500/10 rounded-lg text-purple-400">
+                      <ListFilter className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-white">Dynamic Form Schema</h3>
+                      <p className="text-[10px] text-slate-500">Live fields rendered inside your "+ Add New Lead" modal.</p>
+                    </div>
+                  </div>
+                  <span className="text-xs bg-slate-950 border border-slate-900 px-3 py-1 rounded-full text-slate-400 font-mono">
+                    {customFields.length} Custom Fields
                   </span>
                 </div>
+
+                {customFields.length === 0 ? (
+                  <div className="border border-dashed border-[#1e293b]/50 rounded-2xl p-12 text-center text-slate-600 text-xs">
+                    No custom fields added yet. Define metadata attributes using the left builder panel.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {customFields.map((field) => (
+                      <div key={field.id} className="p-4 bg-slate-950 border border-slate-900 rounded-xl flex justify-between items-center hover:border-slate-800 transition-colors">
+                        <div>
+                          <p className="font-bold text-white text-xs uppercase tracking-wide">{field.label}</p>
+                          <p className="text-[9px] text-slate-500 uppercase mt-0.5">Type: <span className="text-blue-400 font-bold">{field.type}</span></p>
+                          {field.options && field.options.length > 0 && (
+                            <p className="text-[9px] text-slate-600 truncate max-w-[200px] mt-1">Options: {field.options.join(', ')}</p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveField(field.id)}
+                          className="text-red-500/60 hover:text-red-500 transition-colors p-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="flex justify-end pt-6 border-t border-[#1e293b]/50 mt-8">
+                <button
+                  type="button"
+                  onClick={() => handleSave()}
+                  className={`px-8 py-4 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-3 transition-all ${
+                    saved ? 'bg-emerald-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-600/10'
+                  }`}
+                >
+                  {saved ? <><CheckCircle2 className="w-4 h-4" /> Saved Layout</> : <><Save className="w-4 h-4" /> Save Fields Schema</>}
+                </button>
               </div>
             </div>
           </div>
         </div>
-
-      </div>
-
-      <div className="flex flex-col items-end pt-6 gap-3">
-        <button
-          type="submit"
-          className={`px-8 py-4 rounded-xl font-black uppercase tracking-widest text-xs flex items-center gap-3 transition-all ${
-            saved ? 'bg-emerald-500 text-white' : 'bg-blue-600 hover:bg-blue-500 text-white'
-          }`}
-        >
-          {saved ? <><CheckCircle2 className="w-4 h-4" /> Saved</> : <><Save className="w-4 h-4" /> Save Configuration</>}
-        </button>
-      </div>
-      {errorMsg && <p className="text-xs text-red-500 text-right font-bold mt-2">{errorMsg}</p>}
-    </form>
+      )}
+    </div>
   );
 };

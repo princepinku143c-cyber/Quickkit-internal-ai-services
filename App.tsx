@@ -153,6 +153,7 @@ const App: React.FC = () => {
                 operatorName: data?.operatorName || '',
                 contactEmail: data?.contactEmail || '',
                 crmInitialized: data?.crmInitialized || false,
+                customFormSchema: data?.customFormSchema || [],
               });
               setIsAuthenticated(true);
               setAuthLoading(false);
