@@ -4,7 +4,7 @@ import { useIndustry } from '../lib/IndustryContext';
 import { 
   Plus, Search, Filter, Mail, Phone, Building2, Calendar, 
   ChevronRight, ChevronLeft, Trash2, X, AlertCircle, CheckCircle2,
-  Sparkles, Layers, Briefcase, User
+  Sparkles, Layers, Briefcase, User, DollarSign
 } from 'lucide-react';
 import { collection, query, where, onSnapshot, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
@@ -85,6 +85,7 @@ export const OpportunitiesView: React.FC<OpportunitiesProps> = ({ user }) => {
   const [formEmail, setFormEmail] = useState('');
   const [formPhone, setFormPhone] = useState('');
   const [formCompany, setFormCompany] = useState('');
+  const [formBudget, setFormBudget] = useState('');
   const [formRequirements, setFormRequirements] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -163,7 +164,8 @@ export const OpportunitiesView: React.FC<OpportunitiesProps> = ({ user }) => {
       phone: formPhone.trim(),
       businessName: formCompany.trim() || 'Unknown Company',
       projectName: `${industryType || 'General'} Opportunity`,
-      price: 0,
+      price: Number(formBudget) || 0,
+      budget: Number(formBudget) || 0,
       requirement: formRequirements.trim(),
       userId: user.uid, // client_id
       niche_type: industryType || 'Custom',
@@ -172,13 +174,30 @@ export const OpportunitiesView: React.FC<OpportunitiesProps> = ({ user }) => {
 
     try {
       // 1. Post to Odoo bridge system.js backend
-      await apiCall('/api/system?action=lead', payload);
+      const response = await apiCall('/api/system?action=lead', payload);
 
-      // 2. Clear state and close modal
+      // 2. Optimistic local state update
+      const newLeadObj = {
+        id: response.projectId || Math.random().toString(),
+        name: payload.name,
+        email: payload.email,
+        phone: payload.phone,
+        businessName: payload.businessName,
+        budget: payload.budget,
+        price: payload.price,
+        requirement: payload.requirement,
+        userId: user.uid,
+        status: 'NEW',
+        createdAt: new Date().toISOString()
+      };
+      setLeads(prev => [newLeadObj, ...prev]);
+
+      // 3. Clear state and close modal
       setFormName('');
       setFormEmail('');
       setFormPhone('');
       setFormCompany('');
+      setFormBudget('');
       setFormRequirements('');
       setShowAddModal(false);
       alert("✅ Opportunity successfully synced to Odoo CRM!");
@@ -270,15 +289,18 @@ export const OpportunitiesView: React.FC<OpportunitiesProps> = ({ user }) => {
                         </div>
 
                         <div className="flex justify-between items-center border-t border-slate-900/80 pt-3">
-                          <button
-                            onClick={() => handleDeleteLead(lead.id)}
-                            className="text-red-500/60 hover:text-red-500 transition-colors p-1"
-                            title="Delete Lead"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
+                          <div>
+                            <p className="text-xs font-black text-emerald-400 font-mono">${(lead.budget || lead.price || 0).toLocaleString()}</p>
+                          </div>
                           
                           <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => handleDeleteLead(lead.id)}
+                              className="text-red-500/60 hover:text-red-500 transition-colors p-1 mr-2"
+                              title="Delete Lead"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
                             {stage.key !== 'NEW' && (
                               <button
                                 onClick={() => moveLead(lead.id, stage.key, 'left')}
@@ -375,17 +397,34 @@ export const OpportunitiesView: React.FC<OpportunitiesProps> = ({ user }) => {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Company Name</label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={formCompany}
-                    onChange={e => setFormCompany(e.target.value)}
-                    placeholder="e.g. Acme Realty"
-                    className="w-full bg-[#050810] border border-[#1e293b] rounded-xl px-4 py-3 text-xs text-slate-200 outline-none focus:border-blue-500 transition-colors pl-10"
-                  />
-                  <Building2 className="absolute left-3 top-3.5 w-4 h-4 text-slate-600" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Company Name</label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={formCompany}
+                      onChange={e => setFormCompany(e.target.value)}
+                      placeholder="e.g. Acme Realty"
+                      className="w-full bg-[#050810] border border-[#1e293b] rounded-xl px-4 py-3 text-xs text-slate-200 outline-none focus:border-blue-500 transition-colors pl-10"
+                    />
+                    <Building2 className="absolute left-3 top-3.5 w-4 h-4 text-slate-600" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest mb-1.5">Deal Budget ($)</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      required
+                      value={formBudget}
+                      onChange={e => setFormBudget(e.target.value)}
+                      placeholder="e.g. 5000"
+                      className="w-full bg-[#050810] border border-[#1e293b] rounded-xl px-4 py-3 text-xs text-slate-200 outline-none focus:border-blue-500 transition-colors pl-10"
+                    />
+                    <DollarSign className="absolute left-3 top-3.5 w-4 h-4 text-slate-600" />
+                  </div>
                 </div>
               </div>
 

@@ -75,9 +75,9 @@ export const LeadsView: React.FC<LeadsProps> = ({ user }) => {
         </div>
       ) : filteredLeads.length === 0 ? (
         <div className="border border-dashed border-[#1e293b] rounded-3xl p-16 text-center">
-          <Users className="w-12 h-12 text-slate-700 mx-auto mb-4" />
-          <h3 className="font-bold text-white uppercase mb-1">No Leads Found</h3>
-          <p className="text-slate-500 text-xs max-w-sm mx-auto mb-6">Create new leads from the Kanban board to sync them with your system database.</p>
+          <Users className="w-12 h-12 text-slate-700 mx-auto mb-4 animate-pulse" />
+          <h3 className="font-bold text-white uppercase mb-1">No Data Found</h3>
+          <p className="text-slate-500 text-xs max-w-sm mx-auto mb-6">Add a Lead to Begin populating the database.</p>
         </div>
       ) : (
         <div className="bg-[#0f172a]/40 border border-[#1e293b] rounded-3xl overflow-hidden">
