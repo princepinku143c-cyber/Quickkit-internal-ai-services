@@ -11,6 +11,7 @@ import { Helmet } from 'react-helmet-async';
 import type { LegalDocType } from './components/LegalModal';
 import { IndustryProvider } from './lib/IndustryContext';
 import { Onboarding } from './components/Onboarding';
+import { PublicNichePage } from './components/PublicNichePage';
 
 // Core Components (Static)
 import { Navbar } from './components/Navbar';
@@ -391,6 +392,9 @@ const App: React.FC = () => {
               <Route path="/integrations" element={<ClientPortalWrapper />} />
               <Route path="/settings" element={<ClientPortalWrapper />} />
               <Route path="/portal" element={<ClientPortalWrapper />} />
+
+              {/* Dynamic Public Niche Route */}
+              <Route path="/solutions/:niche" element={<PublicNichePage />} />
 
               {/* Admin Routes */}
               <Route path="/admin-dashboard" element={<AdminPortalWrapper />} />
