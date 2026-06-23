@@ -12,6 +12,7 @@ import type { LegalDocType } from './components/LegalModal';
 import { IndustryProvider } from './lib/IndustryContext';
 import { Onboarding } from './components/Onboarding';
 import { PublicNichePage } from './components/PublicNichePage';
+import { FloatingChatWidget } from './components/FloatingChatWidget';
 
 // Core Components (Static)
 import { Navbar } from './components/Navbar';
@@ -439,6 +440,7 @@ const App: React.FC = () => {
               <Route path="/seo-audit" element={<SEOAudit />} />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
+            <FloatingChatWidget />
           </Suspense>
         </IndustryProvider>
       </ErrorBoundary>
