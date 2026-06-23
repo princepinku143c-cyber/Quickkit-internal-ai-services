@@ -38,7 +38,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
     return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
-  const navItems = [
+  const rawNavItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'leads', label: 'Leads', icon: Users },
     { id: 'accounts', label: 'Accounts', icon: Briefcase },
@@ -49,6 +49,11 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
     { id: 'integrations', label: 'Integrations', icon: Puzzle },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
+
+  const isClient = user.role === 'client';
+  const navItems = isClient
+    ? rawNavItems.filter(item => ['dashboard', 'opportunities', 'calendar', 'reports'].includes(item.id))
+    : rawNavItems;
 
   return (
     <div className="flex min-h-screen bg-nexus-dark text-slate-300 font-sans">

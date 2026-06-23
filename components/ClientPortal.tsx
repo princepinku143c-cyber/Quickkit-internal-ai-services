@@ -19,6 +19,8 @@ interface ClientPortalProps {
 export const ClientPortal: React.FC<ClientPortalProps> = ({ user, onLogout }) => {
   const [activeTab, setActiveTab] = useState('dashboard');
 
+  const isClient = user.role === 'client';
+
   return (
     <Layout 
       activeTab={activeTab} 
@@ -27,14 +29,14 @@ export const ClientPortal: React.FC<ClientPortalProps> = ({ user, onLogout }) =>
       onLogout={onLogout}
     >
       {activeTab === 'dashboard' && <Dashboard user={user} />}
-      {activeTab === 'leads' && <LeadsView user={user} />}
-      {activeTab === 'accounts' && <AccountsView user={user} />}
+      {!isClient && activeTab === 'leads' && <LeadsView user={user} />}
+      {!isClient && activeTab === 'accounts' && <AccountsView user={user} />}
       {activeTab === 'opportunities' && <OpportunitiesView user={user} />}
-      {activeTab === 'contacts' && <ContactsView user={user} />}
+      {!isClient && activeTab === 'contacts' && <ContactsView user={user} />}
       {activeTab === 'calendar' && <CalendarView user={user} />}
       {activeTab === 'reports' && <ReportsView user={user} />}
-      {activeTab === 'integrations' && <IntegrationsView user={user} />}
-      {activeTab === 'settings' && <ClientSettings user={user} />}
+      {!isClient && activeTab === 'integrations' && <IntegrationsView user={user} />}
+      {!isClient && activeTab === 'settings' && <ClientSettings user={user} />}
     </Layout>
   );
 };

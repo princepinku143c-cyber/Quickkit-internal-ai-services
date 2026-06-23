@@ -196,6 +196,8 @@ export const OpportunitiesView: React.FC<OpportunitiesProps> = ({ user }) => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedLead, setSelectedLead] = useState<any | null>(null);
   const [activeLeadTab, setActiveLeadTab] = useState<'info' | 'niche' | 'ai'>('info');
+  const [proposalConfirmLead, setProposalConfirmLead] = useState<any | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   // Keep selectedLead updated with latest data from leads real-time listener
   useEffect(() => {
@@ -256,6 +258,8 @@ export const OpportunitiesView: React.FC<OpportunitiesProps> = ({ user }) => {
     if (nextIdx < 0 || nextIdx >= STAGES.length) return;
 
     const nextStage = STAGES[nextIdx].key;
+    const lead = leads.find(l => l.id === leadId);
+
     try {
       const leadRef = doc(db as any, 'leads', leadId);
       await updateDoc(leadRef, { status: nextStage });
@@ -263,6 +267,11 @@ export const OpportunitiesView: React.FC<OpportunitiesProps> = ({ user }) => {
       // Update selected lead details status if currently open
       if (selectedLead && selectedLead.id === leadId) {
         setSelectedLead((prev: any) => prev ? { ...prev, status: nextStage } : null);
+      }
+
+      // Check if transitioned to Contract or Won to trigger invoice proposal
+      if ((nextStage === 'CONTRACT' || nextStage === 'WON') && lead) {
+        setProposalConfirmLead(lead);
       }
     } catch (e) {
       console.error("Failed to transition lead status:", e);
@@ -849,6 +858,67 @@ export const OpportunitiesView: React.FC<OpportunitiesProps> = ({ user }) => {
             </div>
 
           </div>
+        </div>
+      )}
+
+      {proposalConfirmLead && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="bg-[#0b0f19] border border-[#1e293b] rounded-[2rem] max-w-sm w-full p-6 shadow-2xl relative overflow-hidden text-center">
+            <div className="mb-4 text-center flex justify-center">
+              <div className="p-3.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+                <DollarSign className="w-6 h-6 animate-pulse" />
+              </div>
+            </div>
+            <h3 className="text-base font-black text-white uppercase tracking-wider mb-2">Send Payment Proposal?</h3>
+            <p className="text-xs text-slate-400 mb-6 leading-relaxed">
+              Would you like to automatically dispatch a payment proposal and invoice to <strong>{proposalConfirmLead.name}</strong> for <strong>${(proposalConfirmLead.budget || proposalConfirmLead.price || 0).toLocaleString()}</strong>?
+            </p>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setProposalConfirmLead(null)}
+                className="flex-1 py-3 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white rounded-xl text-xs font-bold uppercase tracking-widest transition-colors"
+              >
+                No, Skip
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  const lead = proposalConfirmLead;
+                  setProposalConfirmLead(null);
+                  try {
+                    const res = await fetch('/api/send-proposal', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        email: lead.email,
+                        name: lead.name,
+                        price: lead.budget || lead.price || 0
+                      })
+                    });
+                    if (res.ok) {
+                      setToast("Invoice Sent Successfully!");
+                      setTimeout(() => setToast(null), 3000);
+                    } else {
+                      console.error("Failed to send proposal");
+                    }
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
+                className="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-emerald-600/20"
+              >
+                Yes, Send
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-5 py-3.5 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-bold text-xs uppercase tracking-widest rounded-2xl shadow-[0_0_20px_rgba(16,185,129,0.15)] animate-fade-in">
+          <CheckCircle2 className="w-4 h-4 text-emerald-400 animate-bounce" />
+          <span>{toast}</span>
         </div>
       )}
     </div>
