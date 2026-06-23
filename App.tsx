@@ -337,6 +337,21 @@ const App: React.FC = () => {
     </div>
   );
 
+  const ClientPortalWrapper: React.FC = () => {
+    if (authLoading) return <GlobalLoader message="Waking Up Architecture..." />;
+    if (!isAuthenticated) return <Navigate to="/login" />;
+    if (!user?.industryType) return <Navigate to="/onboarding" />;
+    if (user?.role === 'admin') return <Navigate to="/admin-dashboard" />;
+    return <ClientPortal user={user!} onLogout={handleLogout} />;
+  };
+
+  const AdminPortalWrapper: React.FC = () => {
+    if (authLoading) return <GlobalLoader message="Waking Up Architecture..." />;
+    if (!isAuthenticated) return <Navigate to="/login" />;
+    if (user?.role !== 'admin') return <Navigate to="/dashboard" />;
+    return <AdminPortal user={user!} onLogout={handleLogout} />;
+  };
+
   return (
     <PayPalScriptProvider options={{ "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "sb" }}>
       <ErrorBoundary>
@@ -364,21 +379,29 @@ const App: React.FC = () => {
                   <Navigate to="/login" />
                 )
               } />
-              <Route path="/dashboard" element={
-                authLoading ? (
-                  <GlobalLoader message="Waking Up Architecture..." />
-                ) : isAuthenticated ? (
-                  !user?.industryType ? (
-                    <Navigate to="/onboarding" />
-                  ) : user?.role === 'admin' ? (
-                    <AdminPortal user={user!} onLogout={handleLogout} />
-                  ) : (
-                    <ClientPortal user={user!} onLogout={handleLogout} />
-                  )
-                ) : (
-                  <Navigate to="/login" />
-                )
-              } />
+              
+              {/* Client Routes */}
+              <Route path="/dashboard" element={<ClientPortalWrapper />} />
+              <Route path="/leads" element={<ClientPortalWrapper />} />
+              <Route path="/accounts" element={<ClientPortalWrapper />} />
+              <Route path="/opportunities" element={<ClientPortalWrapper />} />
+              <Route path="/contacts" element={<ClientPortalWrapper />} />
+              <Route path="/calendar" element={<ClientPortalWrapper />} />
+              <Route path="/reports" element={<ClientPortalWrapper />} />
+              <Route path="/integrations" element={<ClientPortalWrapper />} />
+              <Route path="/settings" element={<ClientPortalWrapper />} />
+              <Route path="/portal" element={<ClientPortalWrapper />} />
+
+              {/* Admin Routes */}
+              <Route path="/admin-dashboard" element={<AdminPortalWrapper />} />
+              <Route path="/admin-leads" element={<AdminPortalWrapper />} />
+              <Route path="/admin-projects" element={<AdminPortalWrapper />} />
+              <Route path="/admin-payments" element={<AdminPortalWrapper />} />
+              <Route path="/admin-users" element={<AdminPortalWrapper />} />
+              <Route path="/admin-promos" element={<AdminPortalWrapper />} />
+              <Route path="/admin-requests" element={<AdminPortalWrapper />} />
+              <Route path="/admin-outreach" element={<AdminPortalWrapper />} />
+
               <Route path="/about" element={<LegalPages />} />
               <Route path="/contact" element={<LegalPages />} />
               <Route path="/privacy" element={<LegalPages />} />

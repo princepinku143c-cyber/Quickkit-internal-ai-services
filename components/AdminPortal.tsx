@@ -8,6 +8,7 @@ import { Activity, DollarSign, Users, TrendingUp, Briefcase, CreditCard, Clock, 
 import { collection, onSnapshot, query, orderBy, limit, doc, updateDoc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { apiCall } from '../lib/api';
+import { useLocation } from 'react-router-dom';
 
 interface AdminPortalProps {
   user: UserProfile;
@@ -15,7 +16,8 @@ interface AdminPortalProps {
 }
 
 export const AdminPortal: React.FC<AdminPortalProps> = ({ user, onLogout }) => {
-  const [activeTab, setActiveTab] = useState('admin-dashboard');
+  const location = useLocation();
+  const activeTab = location.pathname.substring(1) || 'admin-dashboard';
 
   return (
     <AdminLayout

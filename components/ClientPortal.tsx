@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { UserProfile } from '../types';
 import { Layout } from './Layout';
 import { Dashboard } from './Dashboard';
@@ -10,6 +10,7 @@ import { CalendarView } from './CalendarView';
 import { ReportsView } from './ReportsView';
 import { IntegrationsView } from './IntegrationsView';
 import { ClientSettings } from './ClientSettings';
+import { useLocation } from 'react-router-dom';
 
 interface ClientPortalProps {
   user: UserProfile;
@@ -17,7 +18,9 @@ interface ClientPortalProps {
 }
 
 export const ClientPortal: React.FC<ClientPortalProps> = ({ user, onLogout }) => {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const location = useLocation();
+  const rawTab = location.pathname.substring(1);
+  const activeTab = rawTab === 'portal' ? 'dashboard' : (rawTab || 'dashboard');
 
   const isClient = user.role === 'client';
 

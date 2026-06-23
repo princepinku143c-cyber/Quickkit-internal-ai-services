@@ -18,16 +18,19 @@ import {
 } from 'lucide-react';
 import { Logo } from './Logo';
 import { UserProfile } from '../types';
+import { useLocation, Link } from 'react-router-dom';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
-  activeTab: string;
-  setActiveTab: (tab: string) => void;
+  activeTab?: string;
+  setActiveTab?: (tab: string) => void;
   user: UserProfile;
   onLogout: () => void;
 }
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, setActiveTab, user, onLogout }) => {
+  const location = useLocation();
+  const currentPath = location.pathname.substring(1) || 'admin-dashboard';
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   // ADMIN SPECIFIC NAVIGATION
@@ -53,20 +56,23 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, s
         </div>
 
         <nav className="flex-1 p-4 space-y-2">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              onClick={() => setActiveTab(item.id)}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
-                activeTab === item.id 
-                  ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.1)]' 
-                  : 'hover:bg-slate-800 text-slate-400 hover:text-white'
-              }`}
-            >
-              <item.icon className={`w-5 h-5 ${activeTab === item.id ? 'text-orange-400' : 'text-slate-500 group-hover:text-white'}`} />
-              <span className="font-medium">{item.label}</span>
-            </button>
-          ))}
+          {navItems.map((item) => {
+            const isActive = currentPath === item.id;
+            return (
+              <Link
+                key={item.id}
+                to={'/' + item.id}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 group ${
+                  isActive 
+                    ? 'bg-orange-500/10 text-orange-400 border border-orange-500/20 shadow-[0_0_15px_rgba(249,115,22,0.1)]' 
+                    : 'hover:bg-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                <item.icon className={`w-5 h-5 ${isActive ? 'text-orange-400' : 'text-slate-500 group-hover:text-white'}`} />
+                <span className="font-medium">{item.label}</span>
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="p-4 border-t border-slate-800">
@@ -125,15 +131,19 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, s
                  <button onClick={() => setIsMobileMenuOpen(false)}><X className="text-white" /></button>
               </div>
               <div className="p-4 space-y-2">
-                {navItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => { setActiveTab(item.id); setIsMobileMenuOpen(false); }}
-                    className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${activeTab === item.id ? 'bg-blue-600 text-white' : 'text-slate-400'}`}
-                  >
-                    <item.icon className="w-6 h-6" /> {item.label}
-                  </button>
-                ))}
+                {navItems.map((item) => {
+                  const isActive = currentPath === item.id;
+                  return (
+                    <Link
+                      key={item.id}
+                      to={'/' + item.id}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all ${isActive ? 'bg-orange-500 text-white' : 'text-slate-400'}`}
+                    >
+                      <item.icon className="w-6 h-6" /> {item.label}
+                    </Link>
+                  );
+                })}
                 <button onClick={onLogout} className="w-full flex items-center gap-3 px-4 py-4 text-red-400 mt-8">
                    <LogOut className="w-6 h-6" /> Exit Admin
                 </button>
