@@ -22,7 +22,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({ user, onLogout }) => {
   return (
     <AdminLayout
       activeTab={activeTab}
-      setActiveTab={setActiveTab}
       user={user}
       onLogout={onLogout}
     >

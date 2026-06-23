@@ -27,7 +27,6 @@ export const ClientPortal: React.FC<ClientPortalProps> = ({ user, onLogout }) =>
   return (
     <Layout 
       activeTab={activeTab} 
-      setActiveTab={setActiveTab} 
       user={user} 
       onLogout={onLogout}
     >
