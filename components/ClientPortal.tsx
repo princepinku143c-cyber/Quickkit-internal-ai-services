@@ -8,6 +8,7 @@ import { OpportunitiesView } from './OpportunitiesView';
 import { ContactsView } from './ContactsView';
 import { CalendarView } from './CalendarView';
 import { ReportsView } from './ReportsView';
+import { IntegrationsView } from './IntegrationsView';
 import { ClientSettings } from './ClientSettings';
 
 interface ClientPortalProps {
@@ -32,6 +33,7 @@ export const ClientPortal: React.FC<ClientPortalProps> = ({ user, onLogout }) =>
       {activeTab === 'contacts' && <ContactsView user={user} />}
       {activeTab === 'calendar' && <CalendarView user={user} />}
       {activeTab === 'reports' && <ReportsView user={user} />}
+      {activeTab === 'integrations' && <IntegrationsView user={user} />}
       {activeTab === 'settings' && <ClientSettings user={user} />}
     </Layout>
   );

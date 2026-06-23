@@ -13,7 +13,8 @@ import {
   Contact,
   Calendar,
   BarChart3,
-  Zap
+  Zap,
+  Puzzle
 } from 'lucide-react';
 import { UserProfile } from '../types';
 import { LegalModal, LegalDocType } from './LegalModal';
@@ -45,6 +46,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, activeTab, setActiveTa
     { id: 'contacts', label: 'Contacts', icon: Contact },
     { id: 'calendar', label: 'Calendar', icon: Calendar },
     { id: 'reports', label: 'Reports', icon: BarChart3 },
+    { id: 'integrations', label: 'Integrations', icon: Puzzle },
     { id: 'settings', label: 'Settings', icon: Settings },
   ];
 
