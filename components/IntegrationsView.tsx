@@ -77,9 +77,45 @@ export const IntegrationsView: React.FC<IntegrationsProps> = ({ user }) => {
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [showWebhookModal, setShowWebhookModal] = useState(false);
+  const [testingHook, setTestingHook] = useState(false);
 
   // Generate unique Webhook URL
-  const webhookUrl = `https://quickkitai.com/api/webhook?client_id=${user.uid}`;
+  const webhookUrl = `${window.location.protocol}//${window.location.host}/api/webhook?client_id=${user.uid}`;
+
+  const handleTriggerTestPayload = async () => {
+    setTestingHook(true);
+    try {
+      const response = await fetch(`/api/webhook?uid=${user.uid}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          name: `Jane Doe (Test Lead ${Math.floor(Math.random() * 1000)})`,
+          email: `test-${Math.floor(Math.random() * 10000)}@example.com`,
+          phone: `+1-555-019${Math.floor(Math.random() * 9)}`,
+          company: "Acme Webhook Test LLC",
+          projectName: "E-Commerce Pipeline Setup",
+          budget: 7500,
+          custom_metadata: {
+            customField_test: "Automated webhook tester injection",
+            leadSource: "QuickKit Integrations Tester"
+          }
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`Server returned status ${response.status}`);
+      }
+
+      alert("🚀 Webhook Triggered Successfully! A new card has been added to your Kanban board.");
+    } catch (err: any) {
+      console.error(err);
+      alert(`❌ Failed to trigger test payload: ${err.message || err}`);
+    } finally {
+      setTestingHook(false);
+    }
+  };
 
   useEffect(() => {
     const loadIntegrations = async () => {
@@ -224,12 +260,27 @@ export const IntegrationsView: React.FC<IntegrationsProps> = ({ user }) => {
             <p className="text-xs text-slate-400 leading-relaxed line-clamp-2">Push leads automatically from Shopify, ClickFunnels, or FB Ads to your CRM.</p>
           </div>
 
-          <div className="pt-6 border-t border-[#1e293b]/40 mt-6">
+          <div className="pt-6 border-t border-[#1e293b]/40 mt-6 space-y-2.5">
             <button
               onClick={() => setShowWebhookModal(true)}
               className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-600/15 flex items-center justify-center gap-1.5"
             >
               <Link className="w-4 h-4" /> Get Webhook URL
+            </button>
+            <button
+              onClick={handleTriggerTestPayload}
+              disabled={testingHook}
+              className="w-full py-3 bg-[#0B1120] hover:bg-slate-900 border border-[#1e293b] hover:border-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
+            >
+              {testingHook ? (
+                <>
+                  <Loader2 className="w-4 h-4 animate-spin text-blue-500" /> Sending Payload...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-4 h-4 text-blue-500" /> Trigger Test Payload
+                </>
+              )}
             </button>
           </div>
         </div>
@@ -336,13 +387,31 @@ export const IntegrationsView: React.FC<IntegrationsProps> = ({ user }) => {
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => setShowWebhookModal(false)}
-                className="w-full py-4 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-colors"
-              >
-                Close Webhook panel
-              </button>
+              <div className="flex flex-col gap-2.5">
+                <button
+                  type="button"
+                  onClick={handleTriggerTestPayload}
+                  disabled={testingHook}
+                  className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-600/15 flex items-center justify-center gap-1.5 disabled:opacity-50"
+                >
+                  {testingHook ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Sending Test Payload...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-4 h-4" /> Trigger Test Payload
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowWebhookModal(false)}
+                  className="w-full py-4 bg-slate-900 border border-slate-800 hover:border-slate-700 text-slate-400 hover:text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-colors"
+                >
+                  Close Webhook panel
+                </button>
+              </div>
             </div>
           </div>
         </div>

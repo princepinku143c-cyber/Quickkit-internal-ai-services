@@ -9,11 +9,13 @@ service cloud.firestore {
         (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'credits', 'plan', 'tier']));
     }
 
-    // 2. Leads Rules (Public can write, only Admin can read)
+    // 2. Leads Rules (Public can write, client-side access restricted to owner or admin)
     match /leads/{leadId} {
       allow create: if true; 
-      allow read, update, delete: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow read, update, delete: if request.auth != null && (
+        resource.data.userId == request.auth.uid || 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
     }
 
     // 3. Projects Rules (Client can read their own, Admin can do anything)
