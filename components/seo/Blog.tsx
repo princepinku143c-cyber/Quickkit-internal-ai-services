@@ -2,6 +2,7 @@ import React from 'react';
 import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, BookOpen, Clock, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { BLOG_POSTS } from '../data/blog-posts';
 
 const BLOG_POSTS = [
   {
