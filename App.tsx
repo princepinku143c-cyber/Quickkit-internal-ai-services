@@ -40,7 +40,6 @@ const SmartBot = lazy(() => import('./components/SmartBot').then(m => ({ default
 const FloatingActions = lazy(() => import('./components/FloatingActions').then(m => ({ default: m.FloatingActions })));
 const LegalModal = lazy(() => import('./components/LegalModal').then(m => ({ default: m.LegalModal })));
 const Blog = lazy(() => import('./components/seo/Blog').then(m => ({ default: m.Blog })));
-const BlogPost = lazy(() => import('./components/seo/BlogPost').then(m => ({ default: m.BlogPost })));
 const ServicePage = lazy(() => import('./components/seo/ServicePage').then(m => ({ default: m.ServicePage })));
 const SEOAudit = lazy(() => import('./components/seo/SEOAudit').then(m => ({ default: m.SEOAudit })));
 
@@ -414,7 +413,6 @@ const App: React.FC = () => {
               <Route path="/terms" element={<LegalPages />} />
               {/* SEO Dedicated Pages */}
               <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:id" element={<BlogPost />} />
               <Route path="/features" element={
                 <ServicePage title="Features | QuickKit AI" description="Explore the full suite of QuickKit AI features including Nimoclaw, OpenClaw, and custom workflows." keywords="AI features, automation features, QuickKit tools">
                   <PainSection />
