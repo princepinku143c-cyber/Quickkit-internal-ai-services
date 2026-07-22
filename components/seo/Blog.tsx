@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { ArrowLeft, BookOpen, Clock, ChevronRight, Search, Tag } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { BLOG_POSTS } from '../data/blog-posts';
+import { BLOG_POSTS } from '../../data/blog-posts';
 
 const categories = ['All', ...new Set(BLOG_POSTS.map(p => p.category))];
 
