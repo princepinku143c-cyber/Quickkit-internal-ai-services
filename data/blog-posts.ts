@@ -1,6 +1,10 @@
-export interface BlogPost {
-  id: number; title: string; excerpt: string;
-  date: string; readTime: string; category: string;
+type BlogPost = {
+  id: number;
+  title: string;
+  excerpt: string;
+  date: string;
+  readTime: string;
+  category: string;
 }
 
 export const BLOG_POSTS: BlogPost[] = [
