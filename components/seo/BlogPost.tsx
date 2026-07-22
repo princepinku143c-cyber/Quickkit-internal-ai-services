@@ -31,7 +31,7 @@ export const BlogPost = () => {
             <p className="text-slate-400 text-lg leading-relaxed">{post.excerpt}</p>
           </div>
           <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-8 text-center">
-            <p className="text-slate-400 mb-6">Want the full article with implementation guide? Get started with QuickKit AI.</p>
+            <p className="text-slate-400 mb-6">Full article content available. Get started with QuickKit AI for complete implementation guides and tutorials.</p>
             <div className="flex gap-4 justify-center">
               <a href="/pricing" className="bg-blue-600 hover:bg-blue-700 text-white font-bold px-6 py-3 rounded-full transition-colors">View Plans</a>
               <Link to="/blog" className="border border-slate-700 hover:border-slate-500 text-white font-bold px-6 py-3 rounded-full transition-colors">More Articles</Link>
