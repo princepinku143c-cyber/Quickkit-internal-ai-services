@@ -83,5 +83,8 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ]
+  ],
+  "buildCommand": "echo 'using prebuilt'",
+  "outputDirectory": "dist",
+  "installCommand": "echo 'skip install'"
 }
