@@ -93,3 +93,13 @@ export const BLOG_POSTS: BlogPost[] = [
   { id: 83, title: "No-Code AI Agent Builder: Deploy Intelligent Automation Without Developers", excerpt: "title: 'No-Code AI Agent Builder: Deploy Intelligent Automation Without Developers' keyword: 'no code ai agent builder' date: 2026-07-22 cluster: 'technical-integration' slug: 'no-code-ai-agent-builde", date: "July 22, 2026", readTime: "3 min read", category: "Technical" },
   { id: 84, title: "Reduce Response Time with AI", excerpt: "title: 'Reduce Response Time with AI' slug: reduce-response-time-with-ai date: 2026-07-22 word_count: 1472 --- First, I need to write a comprehensive SEO blog post titled 'Reduce Response Time with AI", date: "July 22, 2026", readTime: "9 min read", category: "Customer Support" }
 ];
+// FAQ Schema for AEO (Answer Engine Optimization)
+export const GENERATE_FAQ_SCHEMA = (keyword, answers) => ({
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": (answers || []).map(a => ({
+    "@type": "Question",
+    "name": a.q,
+    "acceptedAnswer": { "@type": "Answer", "text": a.a }
+  }))
+});
