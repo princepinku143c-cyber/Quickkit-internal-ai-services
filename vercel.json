@@ -83,16 +83,5 @@
       "source": "/(.*)",
       "destination": "/index.html"
     }
-  ],
-  "crons": [
-    {
-      "path": "/api/outreach?action=process-queue",
-      "schedule": "30 3 * * *"
-    }
-  ],
-  "functions": {
-    "api/**/*.js": {
-      "runtime": "nodejs@22.x"
-    }
-  }
+  ]
 }
