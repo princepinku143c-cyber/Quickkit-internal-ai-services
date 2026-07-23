@@ -1,5 +1,6 @@
 import React from 'react';
 import { Helmet } from 'react-helmet-async';
+import { SeoMeta } from '../SeoMeta';
 import { ArrowLeft, BookOpen, Clock, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { BLOG_POSTS } from '../../data/blog-posts';
@@ -7,6 +8,7 @@ import { BLOG_POSTS } from '../../data/blog-posts';
 export const Blog = () => {
   return (
     <div className="min-h-screen bg-[#030712] text-slate-300 font-sans">
+      <SeoMeta title="AI Automation Blog 2026 | QuickKit AI" description="84 articles on AI agents, CRM automation, and workflow automation." keywords="AI agents, CRM automation, AI blog, QuickKit AI" ogType="blog" />
       <Helmet>
         <title>AI Automation Blog 2026 | QuickKit AI</title>
         <meta name="description" content="Read the latest guides on AI agents, free AI CRM, workflow automation from QuickKit AI. 80+ articles." />
