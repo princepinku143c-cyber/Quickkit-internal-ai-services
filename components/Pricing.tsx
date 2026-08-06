@@ -8,36 +8,13 @@ interface PricingProps {
 
 const PLANS = [
   {
-    id: 'STARTER',
-    badge: 'Beginner',
-    color: 'emerald',
-    title: 'Starter AI Assistant',
-    monthly: 199,
-    setup: 299,
-    cta: 'Get Started',
-    crmBadge: '❌ No CRM Included',
-    tagline: 'Perfect for small businesses starting with AI automation.',
-    features: [
-      '1 AI Agent (Chatbot + Assistant)',
-      'WhatsApp & Email Integration',
-      'Basic Automation Workflows',
-      'AI Usage Included (Fair Use)',
-      'Basic Email Support',
-      'Basic Memory System',
-      'Standard Response Speed',
-      'Beginner-Level AI Automation',
-    ],
-    notIncluded: ['CRM System', 'Lead Generation Agent', 'Advanced Analytics', 'Security Layer', 'Team Access'],
-  },
-  {
     id: 'GROWTH',
-    badge: 'Most Popular 🔥',
+    badge: 'Growth System',
     color: 'blue',
     title: 'Growth AI System',
     monthly: 499,
     setup: 699,
     cta: 'Start Scaling',
-    popular: true,
     crmBadge: '⚡ Basic CRM Included',
     tagline: 'Built for growing businesses needing leads, follow-ups & automation.',
     features: [
@@ -56,12 +33,13 @@ const PLANS = [
   },
   {
     id: 'BUSINESS',
-    badge: 'Best Value 💎',
+    badge: 'MOST POPULAR 🔥',
     color: 'purple',
     title: 'Business AI Automation',
     monthly: 999,
     setup: 1499,
     cta: 'Automate My Business',
+    popular: true,
     crmBadge: '✅ Full CRM Included',
     tagline: 'Complete AI automation suite for scaling businesses.',
     features: [
