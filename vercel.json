@@ -84,7 +84,7 @@
       "destination": "/index.html"
     }
   ],
-  "buildCommand": "echo 'using prebuilt'",
+  "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "installCommand": "echo 'skip install'"
+  "installCommand": "npm install"
 }
