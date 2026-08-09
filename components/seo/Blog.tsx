@@ -42,7 +42,7 @@ export const Blog = () => {
       </div>
       <div className="container mx-auto px-6 max-w-5xl py-24">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {BLOG_POSTS.slice(0, 50).map((post, i) => (
+          {[...BLOG_POSTS].reverse().map((post, i) => (
             <article key={post.id} className={`group bg-slate-900/40 border border-slate-800 rounded-3xl p-8 hover:bg-slate-800/50 hover:border-slate-700 transition-all duration-300 cursor-pointer ${i === 0 ? 'md:col-span-2' : ''}`}>
               <div className="flex items-center justify-between mb-6">
                 <span className="text-xs font-black uppercase tracking-widest text-blue-400 bg-blue-500/10 px-3 py-1 rounded-full">{post.category}</span>
