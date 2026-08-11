@@ -94,6 +94,7 @@ export const BLOG_POSTS: BlogPost[] = [
   { id: 84, title: "Reduce Response Time with AI", excerpt: "title: 'Reduce Response Time with AI' slug: reduce-response-time-with-ai date: 2026-07-22 word_count: 1472 --- First, I need to write a comprehensive SEO blog post titled 'Reduce Response Time with AI", date: "July 22, 2026", readTime: "9 min read", category: "Customer Support" },
   { id: 85, title: "AI Lead Generation for Real Estate Agents: India + USA Guide 2026", excerpt: "Free AI lead generation tools for real estate agents in India and USA. WhatsApp-first in India, authority play in USA, 90-day free plan.", date: "August 9, 2026", readTime: "6 min read", category: "Real Estate AI" },
   { id: 86, title: "Free AI Lead Generation Tools for Indian Small Business Owners", excerpt: "WhatsApp AI, Hinglish voice receptionist, and AI CRM without manual data entry for Indian SMEs. Start free with QuickKit AI.", date: "August 9, 2026", readTime: "5 min read", category: "India Business" },
+  { id: 87, title: "How AI Agents Run a Business 24/7: Lead Gen, CRM & Follow-Up", excerpt: "See how QuickKit AI agents automate lead generation, CRM, and follow-up 24/7. One dashboard, zero manual work, free to start.", date: "August 9, 2026", readTime: "6 min read", category: "AI Agents" },
 
 ];
 // FAQ Schema for AEO (Answer Engine Optimization)
