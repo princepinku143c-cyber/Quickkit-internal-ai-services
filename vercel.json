@@ -80,7 +80,7 @@
   ],
   "rewrites": [
     {
-      "source": "/(.*)",
+      "source": "/((?!assets/|sitemap\\.xml|robots\\.txt|favicon).*)",
       "destination": "/index.html"
     }
   ],
