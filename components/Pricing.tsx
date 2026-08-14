@@ -132,7 +132,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
         </div>
 
         {/* Pricing Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 max-w-7xl mx-auto mb-24">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto mb-24">
           {PLANS.map((plan) => (
             <div
               key={plan.id}
