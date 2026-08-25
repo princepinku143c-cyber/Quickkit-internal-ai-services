@@ -1,104 +1,32 @@
 import React from 'react';
 
-const ImpactCard = ({ value, title, desc, colorClass, ringColor, dashOffset }: any) => (
-  <div className="glass-card rounded-2xl p-8 text-center group">
-    <div className="flex justify-center mb-6">
-      <div className="relative w-24 h-24">
-        <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-          <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="8"/>
-          <circle 
-            cx="50" 
-            cy="50" 
-            r="45" 
-            fill="none" 
-            stroke={ringColor} 
-            strokeWidth="8" 
-            strokeDasharray="283" 
-            strokeDashoffset={dashOffset} 
-            strokeLinecap="round" 
-            className="transition-all duration-1000 group-hover:stroke-blue-400 drop-shadow-md"
-          />
-        </svg>
-        <span className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-2xl font-black font-mono text-white drop-shadow-md">
-          {value}
-        </span>
-      </div>
+const ImpactCard = ({ title, desc, colorClass }: any) => (
+  <div className="glass-card rounded-2xl p-8 text-center group hover:border-blue-500/20 transition-all">
+    <div className={`mx-auto mb-6 w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center ${colorClass}`}>
+      <span className="text-2xl font-black">AI</span>
     </div>
     <h3 className={`text-lg font-bold mb-3 ${colorClass}`}>{title}</h3>
-    <p className="text-sm text-slate-400 leading-relaxed" dangerouslySetInnerHTML={{ __html: desc }}></p>
+    <p className="text-sm text-slate-400 leading-relaxed">{desc}</p>
   </div>
 );
 
-export const BusinessImpact: React.FC = () => {
-  return (
-    <section className="py-24 relative overflow-hidden bg-gradient-to-b from-transparent via-blue-900/5 to-transparent">
-      
-      <div className="max-w-6xl mx-auto px-4 relative z-10">
-        <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium mb-4">
-            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span>
-            Business Impact
-          </div>
-          <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight mb-6 mt-4">
-            What <span className="bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">AI Automation</span> Does For Your Business
-          </h2>
-          <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-600 mx-auto rounded-full mb-6"></div>
-          <p className="text-lg text-slate-400 max-w-2xl mx-auto">
-            See exactly how intelligent automation transforms every aspect of your operations — error-free, 24/7, at scale.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          <ImpactCard 
-            value="10x" 
-            title="Revenue Growth" 
-            desc="AI agents work 24/7 capturing leads, following up, and closing deals while you sleep. Our clients see up to <strong class='text-white'>10x revenue growth</strong> within 6 months."
-            colorClass="text-blue-400"
-            ringColor="#60a5fa"
-            dashOffset={28}
-          />
-          <ImpactCard 
-            value="95%" 
-            title="Error Elimination" 
-            desc="Human errors cost businesses thousands. AI agents execute tasks with <strong class='text-white'>95% fewer errors</strong> — no typos, no missed follows-ups."
-            colorClass="text-emerald-400"
-            ringColor="#34d399"
-            dashOffset={14}
-          />
-          <ImpactCard 
-            value="85%" 
-            title="Time Saved" 
-            desc="Automate repetitive tasks like data entry, scheduling, emails, and reporting. Your team gets back <strong class='text-white'>85% of their time</strong>."
-            colorClass="text-cyan-400"
-            ringColor="#22d3ee"
-            dashOffset={42}
-          />
-          <ImpactCard 
-            value="24/7" 
-            title="Non-Stop Operations" 
-            desc="Your AI agents never sleep, take breaks, or call in sick. They handle customer queries and process orders <strong class='text-white'>around the clock</strong>."
-            colorClass="text-amber-400"
-            ringColor="#fbbf24"
-            dashOffset={56}
-          />
-          <ImpactCard 
-            value="75%" 
-            title="Cost Reduction" 
-            desc="Replace expensive manual labor with intelligent automation. Businesses cut operational costs by <strong class='text-white'>up to 75%</strong> while increasing quality."
-            colorClass="text-pink-400"
-            ringColor="#f472b6"
-            dashOffset={70}
-          />
-          <ImpactCard 
-            value="∞" 
-            title="Infinite Scalability" 
-            desc="Unlike hiring, AI scales instantly. Handle <strong class='text-white'>1 or 10,000 customers simultaneously</strong> without additional costs or delays."
-            colorClass="text-purple-400"
-            ringColor="#c084fc"
-            dashOffset={0}
-          />
-        </div>
+export const BusinessImpact: React.FC = () => (
+  <section className="py-24 relative overflow-hidden bg-gradient-to-b from-transparent via-blue-900/5 to-transparent">
+    <div className="max-w-6xl mx-auto px-4 relative z-10">
+      <div className="text-center mb-16">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium mb-4"><span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" /> Business Impact</div>
+        <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight mb-6 mt-4">What Your AI Workforce Can Automate</h2>
+        <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-600 mx-auto rounded-full mb-6" />
+        <p className="text-lg text-slate-400 max-w-2xl mx-auto">Instead of promising arbitrary percentages, we show the actual work your configured agents can take over.</p>
       </div>
-    </section>
-  );
-};
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        <ImpactCard title="Lead Capture & Qualification" desc="Capture inbound enquiries, collect the required details, qualify leads and route them to the right workflow or human team member." colorClass="text-blue-400" />
+        <ImpactCard title="CRM & Data Operations" desc="Create or update records, move leads through defined stages, trigger follow-ups and keep connected business systems in sync." colorClass="text-emerald-400" />
+        <ImpactCard title="WhatsApp & Customer Communication" desc="Automate approved customer conversations, FAQs, follow-ups and routing where the required WhatsApp/API integrations are configured." colorClass="text-cyan-400" />
+        <ImpactCard title="Voice & Appointment Workflows" desc="Support configured voice workflows such as reception, qualification, reminders or appointment routing when the required voice provider is connected." colorClass="text-amber-400" />
+        <ImpactCard title="Email & Outreach" desc="Run configured email sequences, notifications, lead follow-ups and operational messages with appropriate provider limits and safeguards." colorClass="text-pink-400" />
+        <ImpactCard title="Reports & Internal Workflows" desc="Collect information, trigger routine processes, generate summaries and route tasks across the connected systems your business uses." colorClass="text-purple-400" />
+      </div>
+    </div>
+  </section>
+);
