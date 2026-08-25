@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, ArrowRight, Bot, Clock, ShieldCheck, Zap, Target, Video, Server } from 'lucide-react';
+import { Mail, ArrowRight, Bot, Clock, ShieldCheck, Target, Video, Server } from 'lucide-react';
 
 export const WhyQuickKit: React.FC = () => {
   const reasons = [
@@ -44,7 +44,7 @@ export const WhyQuickKit: React.FC = () => {
             <p className="text-slate-300">Tell us what your team does manually. We can map the workflow, identify suitable AI agents and recommend the right managed system.</p>
           </div>
           <div className="flex flex-col gap-4 w-full md:w-auto relative z-10 text-center">
-            <a href="mailto:sales@quickkitai.com?subject=AI%20Automation%20Analysis" className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(37,99,235,0.4)] cyber-glow"><Mail size={18} /> Request an Analysis</a>
+            <a href="mailto:admin@quickkitai.com?subject=AI%20Automation%20Analysis" className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-bold transition-all shadow-[0_0_20px_rgba(37,99,235,0.4)] cyber-glow"><Mail size={18} /> Request an Analysis</a>
             <button onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })} className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl font-bold transition-all">Book a Demo <ArrowRight size={18} /></button>
           </div>
         </div>
