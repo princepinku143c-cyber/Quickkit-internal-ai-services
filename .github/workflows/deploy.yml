@@ -1,17 +1,17 @@
-name: Build + Deploy
+name: Build
 on:
-  push: {branches: [main]}
+  push:
+    branches: [main]
   workflow_dispatch:
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: {node-version: 22}
-      - run: npm install --legacy-peer-deps && npm run build
-      - name: Trigger Vercel deploy
-        run: |
-          curl -f -s -X POST "https://api.vercel.com/v1/integrations/deploy/prj_6L53sWrE1IW89n2ROZAU6BaSiRnk/pg9wmDLHab"
-
-
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install --legacy-peer-deps
+      - run: npm run build
