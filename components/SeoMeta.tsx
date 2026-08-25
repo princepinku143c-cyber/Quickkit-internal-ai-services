@@ -21,7 +21,6 @@ export const SeoMeta: React.FC<SeoMetaProps> = ({
   const siteName = 'QuickKit AI';
   const defaultOgImage = ogImage || 'https://quickkitai.com/og-image.png';
   const canonicalUrl = canonical || (typeof window !== 'undefined' ? window.location.href : 'https://quickkitai.com');
-
   const fullTitle = title.includes('QuickKit') ? title : `${title} | QuickKit AI`;
 
   const articleSchema = articleBody ? {
@@ -29,6 +28,7 @@ export const SeoMeta: React.FC<SeoMetaProps> = ({
     '@type': 'Article',
     headline: title,
     description,
+    articleBody,
     author: { '@type': 'Organization', name: authorName },
     datePublished: datePublished || new Date().toISOString(),
     publisher: { '@type': 'Organization', name: siteName }
@@ -39,7 +39,7 @@ export const SeoMeta: React.FC<SeoMetaProps> = ({
     '@type': 'Organization',
     name: siteName,
     url: 'https://quickkitai.com',
-    description: 'Custom AI Agents & AI Employees for business automation.'
+    description: 'Managed AI agents and AI workforce systems for Indian businesses, including sales, support, CRM, WhatsApp, voice and business automation.'
   };
 
   return (
@@ -49,7 +49,6 @@ export const SeoMeta: React.FC<SeoMetaProps> = ({
       <meta name="keywords" content={keywords} />
       <link rel="canonical" href={canonicalUrl} />
 
-      {/* Open Graph */}
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={defaultOgImage} />
@@ -57,13 +56,11 @@ export const SeoMeta: React.FC<SeoMetaProps> = ({
       <meta property="og:type" content={ogType} />
       <meta property="og:site_name" content={siteName} />
 
-      {/* Twitter Cards */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={fullTitle} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={defaultOgImage} />
 
-      {/* Schema.org */}
       <script type="application/ld+json">
         {JSON.stringify(organizationSchema)}
       </script>
