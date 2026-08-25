@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
-import { PayPalScriptProvider } from "@paypal/react-paypal-js";
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db, isFirebaseConfigured } from './lib/firebase';
@@ -68,7 +67,6 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
   }
 }
 
-
 const App: React.FC = () => {
   const [lang, setLang] = useState<Language>('en');
   const [architectPrompt, setArchitectPrompt] = useState<string | null>(null);
@@ -82,19 +80,14 @@ const App: React.FC = () => {
   const [currentAIQuote, setCurrentAIQuote] = useState<AIQuote | undefined>(undefined);
   const [activeLegalModal, setActiveLegalModal] = useState<LegalDocType>(null);
 
-  // Auth State
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
-
-  // Ref to store Firestore listener so we can clean it up on logout
   const metaListenerRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     let unSubMeta: any = null;
     let unsubscribe: any = () => {};
-
-    // 🛡️ SAFETY TIMEOUT: Don't hang forever if Firebase fails
     const safetyTimer = setTimeout(() => {
       if (authLoading) {
         console.warn("⏳ Auth initialization timed out. Proceeding...");
@@ -102,32 +95,27 @@ const App: React.FC = () => {
       }
     }, 5000);
 
-    // Check if it's the real Firebase Auth (it has specific internal properties)
-    // isFirebaseConfigured is imported at the top
-
     if (isFirebaseConfigured && auth) {
       try {
         unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
           clearTimeout(safetyTimer);
           if (firebaseUser) {
             const userRef = doc(db as any, 'users', firebaseUser.uid);
-            
             const checkUserCredits = async () => {
               if (!db || typeof db.getFirestore !== 'function') return;
               try {
                 const snap = await getDoc(userRef);
                 const data = snap.data();
-                
                 if (!snap.exists() || !data || data.credits === undefined || data.credits <= 0) {
-                   await setDoc(userRef, {
-                     uid: firebaseUser.uid,
-                     email: firebaseUser.email,
-                     displayName: firebaseUser.displayName || 'Operator',
-                     credits: 500,
-                     plan: 'free',
-                     role: data?.role || 'client',
-                     createdAt: data?.createdAt || new Date().toISOString()
-                   }, { merge: true });
+                  await setDoc(userRef, {
+                    uid: firebaseUser.uid,
+                    email: firebaseUser.email,
+                    displayName: firebaseUser.displayName || 'Operator',
+                    credits: 500,
+                    plan: 'free',
+                    role: data?.role || 'client',
+                    createdAt: data?.createdAt || new Date().toISOString()
+                  }, { merge: true });
                 }
               } catch (e) {
                 console.error("Failed to check/update user credits:", e);
@@ -141,7 +129,7 @@ const App: React.FC = () => {
                 const token = await firebaseUser.getIdToken();
                 localStorage.setItem('token', token);
               } catch (e) {}
-              
+
               setUser({
                 uid: firebaseUser.uid,
                 email: firebaseUser.email || '',
@@ -165,7 +153,6 @@ const App: React.FC = () => {
               setIsAuthenticated(true);
               setAuthLoading(false);
             });
-            // Store ref so handleLogout can unsubscribe
             metaListenerRef.current = unSubMeta;
           } else {
             localStorage.removeItem('token');
@@ -226,24 +213,16 @@ const App: React.FC = () => {
 
   const handleLogout = async () => {
     try {
-      // 🛡️ Detach Firestore listener BEFORE signing out to prevent assertion crash
       if (metaListenerRef.current) {
         metaListenerRef.current();
         metaListenerRef.current = null;
       }
-      
-      // Force UI to switch away from protected routes BEFORE signout completes
       setIsAuthenticated(false);
       setUser(null);
       localStorage.removeItem('token');
-      
-      // Small delay to ensure React unmounts listeners
       setTimeout(async () => {
-        try {
-            await signOut(auth as any);
-        } catch (e) {}
+        try { await signOut(auth as any); } catch (e) {}
       }, 100);
-      
     } catch (e) {
       console.error("Logout error:", e);
       setIsAuthenticated(false);
@@ -251,30 +230,20 @@ const App: React.FC = () => {
     }
   };
 
-
-
   const renderLandingView = () => (
     <div className="bg-[#030712] min-h-screen font-sans text-slate-100 selection:bg-blue-500/30">
       <Helmet>
-        <title>QuickKit AI | Automate Your Sales, Leads & Support with AI</title>
-        <meta name="description" content="QuickKit AI builds custom AI automation systems for businesses — chatbots, lead generation, sales automation, and 24/7 operations. See your system live before you pay." />
-        <meta name="keywords" content="AI automation, lead generation AI, sales automation, chatbot, business AI, AI agent, QuickKit AI" />
+        <title>QuickKit AI | Managed AI Agents for Indian Businesses</title>
+        <meta name="description" content="QuickKit AI builds, deploys, operates and maintains managed AI agent systems for Indian businesses across sales, support, CRM, WhatsApp, voice and business workflows." />
+        <meta name="keywords" content="managed AI agents India, AI employees India, AI automation India, WhatsApp AI automation, CRM AI, business AI agents" />
         <link rel="canonical" href="https://quickkitai.com" />
       </Helmet>
       <Navbar onContact={() => setShowLeadForm(true)} isAuthenticated={isAuthenticated} />
-      
       <Hero lang={lang} onLaunchArchitect={handleLaunchArchitect} />
-      
       <Suspense fallback={<div className="h-40 flex items-center justify-center"><GlobalLoader message="Loading System..." /></div>}>
         <PainSection />
         <SocialProofBar />
-        <Pricing
-          lang={lang}
-          onSelectPlan={(plan) => {
-            setLeadFormNotes(`I am interested in the ${plan} plan.`);
-            setShowLeadForm(true);
-          }}
-        />
+        <Pricing lang={lang} onSelectPlan={(plan) => { setLeadFormNotes(`I am interested in the ${plan} plan.`); setShowLeadForm(true); }} />
         <WhyQuickKit />
         <WhoIsItFor onBookDemo={() => setShowLeadForm(true)} />
         <AIAgents onSelectAgent={handleCatalogSelect} />
@@ -283,15 +252,14 @@ const App: React.FC = () => {
         <BusinessImpact />
         <ROICalculator lang={lang} />
         <FloatingActions />
-        <SmartBot onOpenArchitect={() => handleLaunchArchitect('Hi Kelly! I want to explore automation.', true)} />
+        <SmartBot onOpenArchitect={() => handleLaunchArchitect('Hi! I want to explore automation.', true)} />
       </Suspense>
-      
+
       <footer className="bg-nexus-card border-t border-nexus-border py-12">
         <div className="container mx-auto px-6 text-center text-slate-500">
           <p className="text-xs font-mono tracking-widest uppercase mb-4 text-slate-600 font-black">Built with Advanced Agentic Architecture</p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-6 text-sm">
-            <span>Sales: sales@quickkitai.com</span>
-            <span>Support: support@quickkitai.com</span>
+            <span>Contact: admin@quickkitai.com</span>
             <div className="flex gap-4">
               <a href="#" className="hover:text-blue-400 transition-colors">LinkedIn</a>
               <a href="#" className="hover:text-blue-400 transition-colors">Twitter (X)</a>
@@ -308,143 +276,28 @@ const App: React.FC = () => {
           <p>&copy; {new Date().getFullYear()} QuickKit AI. All rights reserved.</p>
         </div>
       </footer>
-
-      <Suspense fallback={null}>
-        {(architectPrompt || selectedCatalogItem) && (
-          <RoadmapModal 
-            item={selectedCatalogItem || undefined} 
-            currency="USD"
-            onClose={() => { setArchitectPrompt(null); setSelectedCatalogItem(null); }}
-            sessionRef={sessionRef}
-            onSaveState={(data, history) => setCachedRoadmap({ data, history })}
-            onBook={handleFinalBook}
-            existingData={cachedRoadmap?.data}
-            existingHistory={cachedRoadmap?.history}
-          />
-        )}
-
-        {showLeadForm && (
-          <LeadForm 
-            lang={lang} 
-            close={() => { setShowLeadForm(false); setCurrentAIQuote(undefined); setLeadFormNotes(''); }} 
-            onBack={resumeArchitect ? handleBackFromForm : undefined}
-            initialData={{ bizType: currentAIQuote ? 'AI Architect Custom Build' : '', plan: PlanTier.STARTER }}
-            prefilledNotes={leadFormNotes}
-            aiFinancials={currentAIQuote}
-          />
-        )}
-
-        <LegalModal type={activeLegalModal} onClose={() => setActiveLegalModal(null)} />
-      </Suspense>
     </div>
   );
 
-  const ClientPortalWrapper: React.FC = () => {
-    if (authLoading) return <GlobalLoader message="Waking Up Architecture..." />;
-    if (!isAuthenticated) return <Navigate to="/login" />;
-    if (!user?.industryType) return <Navigate to="/onboarding" />;
-    if (user?.role === 'admin') return <Navigate to="/admin-dashboard" />;
-    return <ClientPortal user={user!} onLogout={handleLogout} />;
-  };
-
-  const AdminPortalWrapper: React.FC = () => {
-    if (authLoading) return <GlobalLoader message="Waking Up Architecture..." />;
-    if (!isAuthenticated) return <Navigate to="/login" />;
-    if (user?.role !== 'admin') return <Navigate to="/dashboard" />;
-    return <AdminPortal user={user!} onLogout={handleLogout} />;
-  };
-
   return (
-    <PayPalScriptProvider options={{ "client-id": import.meta.env.VITE_PAYPAL_CLIENT_ID || "sb" }}>
-      <ErrorBoundary>
-        <IndustryProvider initialIndustryType={user?.industryType || ''}>
-          <Suspense fallback={<GlobalLoader message="Waking Up Architecture..." />}>
-            <Routes>
-              <Route path="/" element={renderLandingView()} />
-              <Route path="/pricing" element={renderLandingView()} />
-              <Route path="/ai-agents" element={renderLandingView()} />
-              <Route path="/login" element={
-                authLoading ? (
-                  <GlobalLoader message="Waking Up Architecture..." />
-                ) : isAuthenticated ? (
-                  user?.industryType ? <Navigate to="/dashboard" /> : <Navigate to="/onboarding" />
-                ) : (
-                  <Login />
-                )
-              } />
-              <Route path="/onboarding" element={
-                authLoading ? (
-                  <GlobalLoader message="Waking Up Architecture..." />
-                ) : isAuthenticated ? (
-                  user?.industryType ? <Navigate to="/dashboard" /> : <Onboarding user={user!} onLogout={handleLogout} />
-                ) : (
-                  <Navigate to="/login" />
-                )
-              } />
-              
-              {/* Client Routes */}
-              <Route path="/dashboard" element={<ClientPortalWrapper />} />
-              <Route path="/leads" element={<ClientPortalWrapper />} />
-              <Route path="/accounts" element={<ClientPortalWrapper />} />
-              <Route path="/opportunities" element={<ClientPortalWrapper />} />
-              <Route path="/contacts" element={<ClientPortalWrapper />} />
-              <Route path="/calendar" element={<ClientPortalWrapper />} />
-              <Route path="/reports" element={<ClientPortalWrapper />} />
-              <Route path="/integrations" element={<ClientPortalWrapper />} />
-              <Route path="/settings" element={<ClientPortalWrapper />} />
-              <Route path="/portal" element={<ClientPortalWrapper />} />
-
-              {/* Dynamic Public Niche Route */}
-              <Route path="/solutions/:niche" element={<PublicNichePage />} />
-
-              {/* Admin Routes */}
-              <Route path="/admin-dashboard" element={<AdminPortalWrapper />} />
-              <Route path="/admin-leads" element={<AdminPortalWrapper />} />
-              <Route path="/admin-projects" element={<AdminPortalWrapper />} />
-              <Route path="/admin-payments" element={<AdminPortalWrapper />} />
-              <Route path="/admin-users" element={<AdminPortalWrapper />} />
-              <Route path="/admin-promos" element={<AdminPortalWrapper />} />
-              <Route path="/admin-requests" element={<AdminPortalWrapper />} />
-              <Route path="/admin-outreach" element={<AdminPortalWrapper />} />
-
-              <Route path="/about" element={<LegalPages />} />
-              <Route path="/contact" element={<LegalPages />} />
-              <Route path="/privacy" element={<LegalPages />} />
-              <Route path="/terms" element={<LegalPages />} />
-              {/* SEO Dedicated Pages */}
-              <Route path="/blog" element={<Blog />} />
-              <Route path="/features" element={
-                <ServicePage title="Features | QuickKit AI" description="Explore the full suite of QuickKit AI features including Nimoclaw, OpenClaw, and custom workflows." keywords="AI features, automation features, QuickKit tools">
-                  <PainSection />
-                  <WhyQuickKit />
-                </ServicePage>
-              } />
-              <Route path="/ai-crm" element={
-                <ServicePage title="AI CRM Platform | QuickKit AI" description="Transform your customer relationship management with our intelligent AI CRM platform." keywords="AI CRM, smart CRM, autonomous CRM">
-                  <AIAgents onSelectAgent={handleCatalogSelect} />
-                </ServicePage>
-              } />
-              <Route path="/ai-lead-generation" element={
-                <ServicePage title="AI Lead Generation | QuickKit AI" description="Automate lead capture and qualification with advanced AI automation." keywords="AI lead gen, automated lead generation">
-                  <BusinessImpact />
-                  <ROICalculator lang={lang} />
-                </ServicePage>
-              } />
-              <Route path="/support-automation" element={
-                <ServicePage title="Support Automation | QuickKit AI" description="Provide 24/7 autonomous support to your customers using intelligent AI agents." keywords="AI support, autonomous customer service">
-                  <WhoIsItFor onBookDemo={() => setShowLeadForm(true)} />
-                  <Testimonials />
-                </ServicePage>
-              } />
-
-              <Route path="/seo-audit" element={<SEOAudit />} />
-              <Route path="*" element={<Navigate to="/" />} />
-            </Routes>
-            <FloatingChatWidget />
-          </Suspense>
-        </IndustryProvider>
-      </ErrorBoundary>
-    </PayPalScriptProvider>
+    <ErrorBoundary>
+      <IndustryProvider>
+        <Routes>
+          <Route path="/" element={renderLandingView()} />
+          <Route path="/about" element={<LegalPages />} />
+          <Route path="/contact" element={<LegalPages />} />
+          <Route path="/privacy" element={<LegalPages />} />
+          <Route path="/terms" element={<LegalPages />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/client" element={isAuthenticated ? <ClientPortal user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />} />
+          <Route path="/admin" element={isAuthenticated && user?.role === 'admin' ? <AdminPortal user={user} onLogout={handleLogout} /> : <Navigate to="/login" replace />} />
+          <Route path="/blog" element={<Blog />} />
+          <Route path="/services/:slug" element={<ServicePage />} />
+          <Route path="/seo-audit" element={<SEOAudit />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </IndustryProvider>
+    </ErrorBoundary>
   );
 };
 
