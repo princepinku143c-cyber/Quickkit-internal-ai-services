@@ -21,6 +21,19 @@ export default defineConfig(({ mode }) => {
         alias: {
           '@': path.resolve(__dirname, '.'),
         }
+      },
+      build: {
+        rollupOptions: {
+          output: {
+            manualChunks: {
+              react: ['react', 'react-dom', 'react-router-dom'],
+              firebase: ['firebase', 'firebase-admin'],
+              ui: ['lucide-react', 'react-helmet-async'],
+              forms: ['react-phone-input-2', 'react-calendly'],
+            }
+          }
+        },
+        chunkSizeWarningLimit: 500,
       }
     };
 });
