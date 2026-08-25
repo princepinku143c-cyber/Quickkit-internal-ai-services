@@ -1,41 +1,64 @@
-# ── QuickKit AI — robots.txt ──────────────────────────────────────
-# Allow all crawlers full access to public pages
+# QuickKit AI robots policy
+# Public pages are crawlable. Private, API and admin routes are blocked.
 
 User-agent: *
 Allow: /
-
-# Block admin and private routes from indexing
 Disallow: /dashboard
 Disallow: /admin
+Disallow: /client
 Disallow: /client-portal
 Disallow: /api/
 Disallow: /scratch/
 
-# Specific bots — keep Googlebot, Bingbot, friendly
+# AI / answer-engine crawlers: public marketing content is intentionally crawlable.
+# Keep private routes blocked via the rules above.
+User-agent: GPTBot
+Allow: /
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /client
+Disallow: /client-portal
+Disallow: /api/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /client
+Disallow: /client-portal
+Disallow: /api/
+
+User-agent: PerplexityBot
+Allow: /
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /client
+Disallow: /client-portal
+Disallow: /api/
+
+User-agent: ClaudeBot
+Allow: /
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /client
+Disallow: /client-portal
+Disallow: /api/
+
 User-agent: Googlebot
 Allow: /
 Disallow: /dashboard
 Disallow: /admin
+Disallow: /client
+Disallow: /client-portal
 Disallow: /api/
 
 User-agent: Bingbot
 Allow: /
 Disallow: /dashboard
 Disallow: /admin
+Disallow: /client
+Disallow: /client-portal
 Disallow: /api/
-
-# Block AI scrapers that don't add indexing value
-User-agent: GPTBot
-Disallow: /
-
-User-agent: ChatGPT-User
-Disallow: /
-
-User-agent: CCBot
-Disallow: /
-
-# Crawl delay (optional — protects server)
-Crawl-delay: 2
 
 # Sitemap
 Sitemap: https://quickkitai.com/sitemap.xml
