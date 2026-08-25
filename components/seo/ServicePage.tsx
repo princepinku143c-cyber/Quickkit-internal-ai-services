@@ -19,12 +19,14 @@ export const ServicePage: React.FC<ServicePageProps> = ({ title, description, ke
       <div className="container mx-auto px-6 text-center text-slate-500">
         <p className="text-xs font-mono tracking-widest uppercase mb-4 text-slate-600 font-black">Built with Advanced Agentic Architecture</p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-6 text-sm">
-          <a href="mailto:sales@quickkitai.com" className="hover:text-blue-400 transition-colors">Sales: sales@quickkitai.com</a>
-          <a href="mailto:support@quickkitai.com" className="hover:text-blue-400 transition-colors">Support: support@quickkitai.com</a>
+          <a href="mailto:admin@quickkitai.com" className="hover:text-blue-400 transition-colors">Contact: admin@quickkitai.com</a>
         </div>
         <div className="flex flex-wrap justify-center gap-6 mb-8 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">
           <Link to="/#ai-agents" className="hover:text-blue-400 transition-colors">AI Agents</Link>
           <Link to="/#pricing" className="hover:text-blue-400 transition-colors">Pricing</Link>
+          <Link to="/#demo" className="hover:text-blue-400 transition-colors">Demo</Link>
+          <Link to="/#industries" className="hover:text-blue-400 transition-colors">Industries</Link>
+          <Link to="/#roi" className="hover:text-blue-400 transition-colors">ROI Calculator</Link>
           <Link to="/about" className="hover:text-blue-400 transition-colors">About Us</Link>
           <Link to="/contact" className="hover:text-blue-400 transition-colors">Contact</Link>
           <Link to="/privacy" className="hover:text-blue-400 transition-colors">Privacy Policy</Link>
