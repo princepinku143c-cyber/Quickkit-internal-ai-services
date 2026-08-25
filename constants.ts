@@ -1,17 +1,17 @@
 import { PlanTier } from './types';
 
-export const APP_NAME = "QuickKit Global";
+export const APP_NAME = "QuickKit AI";
 export const APP_VERSION = "v5.0.0-PRO";
-export const CONTACT_EMAIL = "sales@quickkitai.com";
-export const SUPPORT_EMAIL = "support@quickkitai.com";
+export const CONTACT_EMAIL = "admin@quickkitai.com";
+export const SUPPORT_EMAIL = "admin@quickkitai.com";
 export const WHATSAPP_NUMBER = "918260485230";
 
-// Agency Delivery Promises - Speed Optimized
+// Agency delivery configuration
 export const DELIVERY_STANDARD = "3 Days";
 export const DELIVERY_COMPLEX = "5 Days Max";
 
-// Global Maintenance Logic
-export const BASE_MAINTENANCE = 100;
+// Internal maintenance defaults. Public pricing is defined in the public Pricing component.
+export const BASE_MAINTENANCE = 0;
 
 export const PLANS = {
   [PlanTier.STARTER]: {
@@ -30,7 +30,7 @@ export const PLANS = {
   [PlanTier.PRO]: {
     name: "Pro Automation Suite",
     bestFor: "Scaling Teams",
-    priceMonth: 199, 
+    priceMonth: 199,
     priceSetup: 1599,
     features: [
       "Standard Zapier Monitoring",
@@ -43,7 +43,7 @@ export const PLANS = {
   [PlanTier.BUSINESS]: {
     name: "Nexus Enterprise OS",
     bestFor: "Full Infrastructure Ownership",
-    priceMonth: 299, 
+    priceMonth: 299,
     priceSetup: 3499,
     features: [
       "Full Premium Optimization",
