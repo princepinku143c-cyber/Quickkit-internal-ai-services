@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Server, Bot, Sparkles, ArrowRight, MessageCircle } from 'lucide-react';
+import { ShieldCheck, Server, Bot, ArrowRight, MessageCircle } from 'lucide-react';
 import { Language } from '../types';
 import { WHATSAPP_NUMBER } from '../constants';
 
