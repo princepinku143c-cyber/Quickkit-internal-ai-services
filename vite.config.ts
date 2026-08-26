@@ -27,7 +27,6 @@ export default defineConfig(({ mode }) => {
           output: {
             manualChunks: {
               react: ['react', 'react-dom', 'react-router-dom'],
-              firebase: ['firebase'],
               ui: ['lucide-react', 'react-helmet-async'],
               forms: ['react-phone-input-2', 'react-calendly'],
             }
