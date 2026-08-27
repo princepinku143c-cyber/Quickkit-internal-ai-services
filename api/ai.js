@@ -21,12 +21,8 @@ export default async function handler(req, res) {
       userId = decodedToken.uid;
     }
 
-    // --- Action Routing ---
-    
-    // 1. PUBLIC ACTIONS
     if (action === 'kelly') return handleKelly(req, res, userId);
 
-    // 2. PROTECTED ACTIONS (Requires Auth)
     if (!userId) {
       return error(res, "UNAUTHORIZED: Identity Verification Required for Industrial Nodes.", 401);
     }
@@ -47,43 +43,42 @@ async function handleKelly(req, res, userId) {
   if (!message) return error(res, "Payload missing: Neural context required.", 400);
 
   try {
-    // 1. Credit / Access Check
+    // Protect both authenticated and anonymous AI usage before any model call.
+    // Authenticated users are keyed by Firebase UID; guests use a bounded client key.
+    const forwarded = req.headers["x-forwarded-for"];
+    const clientIp = String(forwarded || req.socket?.remoteAddress || "unknown").split(",")[0].trim();
+    const rateKey = userId ? `uid:${userId}` : `guest:${clientIp.slice(0, 96)}`;
+    await checkRateLimit(admin, rateKey, "kelly", userId ? 30 : 5);
+
     if (userId) {
-        const userRef = admin.firestore().collection('users').doc(userId);
-        const userSnap = await userRef.get();
-        
-        let credits = 0;
-        if (!userSnap.exists) {
-            credits = 500;
-            await userRef.set({ credits, createdAt: admin.firestore.FieldValue.serverTimestamp() });
-        } else {
-            credits = userSnap.data().credits || 0;
-        }
+      const userRef = admin.firestore().collection('users').doc(userId);
+      const userSnap = await userRef.get();
 
-        if (credits < 10) {
-            return error(res, "INSUFFICIENT_CREDITS: Neural power depleted. Please upgrade your node.", 403);
-        }
+      let credits = 0;
+      if (!userSnap.exists) {
+        credits = 500;
+        await userRef.set({ credits, createdAt: admin.firestore.FieldValue.serverTimestamp() });
+      } else {
+        credits = userSnap.data().credits || 0;
+      }
 
-        // Deduct Credits
-        await userRef.update({ 
-            credits: admin.firestore.FieldValue.increment(-10),
-            lastUsed: admin.firestore.FieldValue.serverTimestamp()
-        });
-    } else {
-        // GUEST MODE: Basic Rate Limiting Check (Optional: Add IP-based limiting here)
-        console.log("GUEST_ACCESS: Initializing Neural Consultation for Anonymous Node.");
+      if (credits < 10) {
+        return error(res, "INSUFFICIENT_CREDITS: Neural power depleted. Please upgrade your node.", 403);
+      }
+
+      await userRef.update({
+        credits: admin.firestore.FieldValue.increment(-10),
+        lastUsed: admin.firestore.FieldValue.serverTimestamp()
+      });
     }
 
-    // 2. Generate AI Response
     const messages = [
-        ...(Array.isArray(history) ? history : []).map(m => ({ role: m.role || 'user', content: m.content || '' })),
-        { role: 'user', content: message }
+      ...(Array.isArray(history) ? history : []).map(m => ({ role: m.role || 'user', content: m.content || '' })),
+      { role: 'user', content: message }
     ].slice(-6);
 
     const reply = await askAI(messages);
-
     return success(res, { reply });
-
   } catch (e) {
     console.error("KELLY_ERROR:", e);
     return error(res, e.message, e.status || 500);
@@ -91,18 +86,16 @@ async function handleKelly(req, res, userId) {
 }
 
 async function handleDeploy(req, res, userId) {
-  // Logic from deploy-agent.js
   const { agentId, config } = req.body;
   return success(res, { status: "PROVISIONING", task: "deploy", timestamp: Date.now() });
 }
 
 async function handleExecute(req, res, userId) {
-  // Logic from execute.js
   const { command } = req.body;
   return success(res, { status: "QUEUED", command, output: "Mock VPS execution acknowledged." });
 }
 
 async function handleVPSTest(req, res, userId) {
-    const { endpoint, token } = req.body;
-    return success(res, { status: "CONNECTED", endpoint });
+  const { endpoint, token } = req.body;
+  return success(res, { status: "CONNECTED", endpoint });
 }
