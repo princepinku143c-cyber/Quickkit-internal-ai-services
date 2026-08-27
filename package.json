@@ -16,7 +16,6 @@
     "lucide-react": "^0.562.0",
     "nodemailer": "^8.0.7",
     "react": "^19.2.3",
-    "react-calendly": "^4.4.0",
     "react-dom": "^19.2.3",
     "react-helmet-async": "^3.0.0",
     "react-phone-input-2": "^2.15.1",
