@@ -5,6 +5,9 @@ export const APP_VERSION = "v5.0.0-PRO";
 export const CONTACT_EMAIL = "admin@quickkitai.com";
 export const SUPPORT_EMAIL = "admin@quickkitai.com";
 export const WHATSAPP_NUMBER = "918260485230";
+export const WHATSAPP_USERNAME = "QUICKKIT_AI";
+export const WHATSAPP_DIRECT_URL = `https://wa.me/${WHATSAPP_NUMBER}`;
+export const WHATSAPP_QR_ASSET = "/quickkit-ai-whatsapp-qr.svg";
 
 // Public managed-system pricing source of truth.
 export const MANAGED_SYSTEMS = {
