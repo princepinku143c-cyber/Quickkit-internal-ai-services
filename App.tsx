@@ -3,15 +3,10 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db, isFirebaseConfigured } from './lib/firebase';
 import { generateSessionId } from './lib/utils';
-import { Language, UserProfile, ServiceItem, PlanTier, AIQuote } from './types';
+import { Language, UserProfile, ServiceItem, AIQuote } from './types';
 import { Routes, Route, Navigate, Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
-import type { LegalDocType } from './components/LegalModal';
 import { IndustryProvider } from './lib/IndustryContext';
-import { Onboarding } from './components/Onboarding';
-import { PublicNichePage } from './components/PublicNichePage';
-import { FloatingChatWidget } from './components/FloatingChatWidget';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { GlobalLoader } from './components/GlobalLoader';
@@ -24,8 +19,6 @@ const Testimonials = lazy(() => import('./components/Testimonials').then(m => ({
 const DemoBooking = lazy(() => import('./components/DemoBooking').then(m => ({ default: m.DemoBooking })));
 const BusinessImpact = lazy(() => import('./components/BusinessImpact').then(m => ({ default: m.BusinessImpact })));
 const ROICalculator = lazy(() => import('./components/ROICalculator').then(m => ({ default: m.ROICalculator })));
-const RoadmapModal = lazy(() => import('./components/catalog/RoadmapModal').then(m => ({ default: m.RoadmapModal })));
-const LeadForm = lazy(() => import('./components/LeadForm').then(m => ({ default: m.LeadForm })));
 const Login = lazy(() => import('./components/Login').then(m => ({ default: m.Login })));
 const ClientPortal = lazy(() => import('./components/ClientPortal').then(m => ({ default: m.ClientPortal })));
 const AdminPortal = lazy(() => import('./components/AdminPortal').then(m => ({ default: m.AdminPortal })));
@@ -33,14 +26,11 @@ const LegalPages = lazy(() => import('./components/legal/LegalPages').then(m => 
 const PainSection = lazy(() => import('./components/PainSection').then(m => ({ default: m.PainSection })));
 const SocialProofBar = lazy(() => import('./components/SocialProofBar').then(m => ({ default: m.SocialProofBar })));
 const SmartBot = lazy(() => import('./components/SmartBot').then(m => ({ default: m.SmartBot })));
-const FloatingActions = lazy(() => import('./components/FloatingActions').then(m => ({ default: m.FloatingActions })));
-const LegalModal = lazy(() => import('./components/LegalModal').then(m => ({ default: m.LegalModal })));
 const Blog = lazy(() => import('./components/seo/Blog').then(m => ({ default: m.Blog })));
 const ServicePage = lazy(() => import('./components/seo/ServicePage').then(m => ({ default: m.ServicePage })));
 const SEOAudit = lazy(() => import('./components/seo/SEOAudit').then(m => ({ default: m.SEOAudit })));
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
-  props!: { children: React.ReactNode };
   state = { hasError: false, error: null as any };
   static getDerivedStateFromError(error: any) { return { hasError: true, error }; }
   componentDidCatch(error: any, info: any) { console.error('GLOBAL ERROR:', error, info); }
@@ -51,7 +41,7 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { has
 }
 
 const App: React.FC = () => {
-  const [lang, setLang] = useState<Language>('en');
+  const [lang] = useState<Language>('en');
   const [architectPrompt, setArchitectPrompt] = useState<string | null>(null);
   const [selectedCatalogItem, setSelectedCatalogItem] = useState<ServiceItem | null>(null);
   const [isWidgetMode, setIsWidgetMode] = useState(false);
@@ -61,7 +51,6 @@ const App: React.FC = () => {
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [leadFormNotes, setLeadFormNotes] = useState('');
   const [currentAIQuote, setCurrentAIQuote] = useState<AIQuote | undefined>(undefined);
-  const [activeLegalModal, setActiveLegalModal] = useState<LegalDocType>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
@@ -77,20 +66,16 @@ const App: React.FC = () => {
           clearTimeout(safetyTimer);
           if (firebaseUser) {
             const userRef = doc(db as any, 'users', firebaseUser.uid);
-            const checkUserCredits = async () => {
-              if (!db || typeof (db as any).getFirestore !== 'function') return;
-              try {
-                const snap = await getDoc(userRef); const data = snap.data();
-                if (!snap.exists() || !data || data.credits === undefined || data.credits <= 0) await setDoc(userRef, {uid:firebaseUser.uid,email:firebaseUser.email,displayName:firebaseUser.displayName || 'Operator',credits:500,plan:'free',role:data?.role || 'client',createdAt:data?.createdAt || new Date().toISOString()}, {merge:true});
-              } catch (e) { console.error('Failed to check/update user credits:', e); }
-            };
-            checkUserCredits();
+            try {
+              const snap = await getDoc(userRef); const data = snap.data();
+              if (!snap.exists() || !data || data.credits === undefined || data.credits <= 0) await setDoc(userRef, {uid:firebaseUser.uid,email:firebaseUser.email,displayName:firebaseUser.displayName || 'Operator',credits:500,plan:'free',role:data?.role || 'client',createdAt:data?.createdAt || new Date().toISOString()}, {merge:true});
+            } catch (e) { console.error('Failed to check/update user credits:', e); }
             unSubMeta = onSnapshot(userRef, async (snap) => {
               const data = snap.data();
               try { localStorage.setItem('token', await firebaseUser.getIdToken()); } catch (e) {}
               setUser({uid:firebaseUser.uid,email:firebaseUser.email || '',displayName:firebaseUser.displayName || data?.displayName || 'User',role:data?.role || 'client',credits:data?.credits ?? 0,monthlyLimit:data?.monthlyLimit ?? 1000,tier:data?.tier ?? 'STARTER',industryType:data?.industryType || '',workspaceName:data?.workspaceName || '',operatorName:data?.operatorName || '',contactEmail:data?.contactEmail || '',crmInitialized:data?.crmInitialized || false,customFormSchema:data?.customFormSchema || []});
               setIsAuthenticated(true); setAuthLoading(false);
-            }, (err) => { console.error('User metadata sync failed:', err); setUser({uid:firebaseUser.uid,email:firebaseUser.email || '',displayName:'User',role:'client',credits:0,monthlyLimit:1000,tier:'FREE'}); setIsAuthenticated(true); setAuthLoading(false); });
+            }, () => { setUser({uid:firebaseUser.uid,email:firebaseUser.email || '',displayName:'User',role:'client',credits:0,monthlyLimit:1000,tier:'FREE'}); setIsAuthenticated(true); setAuthLoading(false); });
             metaListenerRef.current = unSubMeta;
           } else { localStorage.removeItem('token'); if (unSubMeta) unSubMeta(); setUser(null); setIsAuthenticated(false); setAuthLoading(false); }
         });
@@ -99,16 +84,15 @@ const App: React.FC = () => {
     return () => { unsubscribe(); if (unSubMeta) unSubMeta(); clearTimeout(safetyTimer); };
   }, []);
 
-  const handleLaunchArchitect = (prompt:string,isWidget:boolean=false) => { setIsWidgetMode(isWidget); if(prompt!==architectPrompt){setCachedRoadmap(null);setSessionRef(generateSessionId());} setArchitectPrompt(prompt); };
+  const handleLaunchArchitect = (prompt:string,isWidget=false) => { setIsWidgetMode(isWidget); if(prompt!==architectPrompt){setCachedRoadmap(null);setSessionRef(generateSessionId());} setArchitectPrompt(prompt); };
   const handleCatalogSelect = (item:ServiceItem) => { setIsWidgetMode(false);setCachedRoadmap(null);setSessionRef(generateSessionId());setSelectedCatalogItem(item); };
   const handleFinalBook = (quote:AIQuote,history:any[]) => { setResumeArchitect({prompt:architectPrompt || undefined,item:selectedCatalogItem || undefined});setArchitectPrompt(null);setSelectedCatalogItem(null);setCurrentAIQuote(quote);const historyText=history.map(h=>`${h.role==='user'?'CLIENT':'ARCHITECT'}: ${h.parts?.[0]?.text || '[Image]'} \n`).join('\n');setLeadFormNotes(`--- REF: ${sessionRef} ---\n\n--- ARCHITECT LOG ---\n${historyText}`);setShowLeadForm(true); };
-  const handleBackFromForm = () => { setShowLeadForm(false); if(resumeArchitect?.prompt)setArchitectPrompt(resumeArchitect.prompt); else if(resumeArchitect?.item)setSelectedCatalogItem(resumeArchitect.item); };
   const handleLogout = async () => { try { if(metaListenerRef.current){metaListenerRef.current();metaListenerRef.current=null;} setIsAuthenticated(false);setUser(null);localStorage.removeItem('token');await signOut(auth as any); } catch(e){console.error('Logout error:',e);setIsAuthenticated(false);setUser(null);} };
 
   const renderLandingView = () => <div className="bg-[#030712] min-h-screen font-sans text-slate-100 selection:bg-blue-500/30">
     <Helmet><title>QuickKit AI | Managed AI Agents for Indian Businesses</title><meta name="description" content="QuickKit AI builds, deploys, operates and maintains managed AI agent systems for Indian businesses across sales, support, CRM, WhatsApp, voice and business workflows."/><meta name="keywords" content="managed AI agents India, AI employees India, AI automation India, WhatsApp AI automation, CRM AI, business AI agents"/><link rel="canonical" href="https://quickkitai.com"/></Helmet>
     <Navbar onContact={()=>setShowLeadForm(true)} isAuthenticated={isAuthenticated}/><Hero lang={lang} onLaunchArchitect={handleLaunchArchitect}/>
-    <Suspense fallback={<div className="h-40 flex items-center justify-center"><GlobalLoader message="Loading System..."/></div>}><PainSection/><SocialProofBar/><Pricing lang={lang} onSelectPlan={plan=>{setLeadFormNotes(`I am interested in the ${plan} plan.`);setShowLeadForm(true);}}/><WhyQuickKit/><WhoIsItFor onBookDemo={()=>setShowLeadForm(true)}/><AIAgents onSelectAgent={handleCatalogSelect}/><Testimonials/><DemoBooking onBookDemo={()=>setShowLeadForm(true)}/><BusinessImpact/><ROICalculator lang={lang}/><FloatingActions/><SmartBot onOpenArchitect={()=>handleLaunchArchitect('Hi! I want to explore automation.',true)}/></Suspense>
+    <Suspense fallback={<div className="h-40 flex items-center justify-center"><GlobalLoader message="Loading System..."/></div>}><PainSection/><SocialProofBar/><Pricing lang={lang} onSelectPlan={plan=>{setLeadFormNotes(`I am interested in the ${plan} plan.`);setShowLeadForm(true);}}/><WhyQuickKit/><WhoIsItFor onBookDemo={()=>setShowLeadForm(true)}/><AIAgents onSelectAgent={handleCatalogSelect}/><Testimonials/><DemoBooking onBookDemo={()=>setShowLeadForm(true)}/><BusinessImpact/><ROICalculator lang={lang}/><SmartBot onOpenArchitect={()=>handleLaunchArchitect('Hi! I want to explore automation.',true)}/></Suspense>
     <footer className="bg-nexus-card border-t border-nexus-border py-12"><div className="container mx-auto px-6 text-center text-slate-500"><p className="text-xs font-mono tracking-widest uppercase mb-4 text-slate-600 font-black">Built with Advanced Agentic Architecture</p><div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-6 text-sm"><a href="mailto:admin@quickkitai.com" className="hover:text-blue-400 transition-colors">admin@quickkitai.com</a></div><div className="flex flex-wrap justify-center gap-6 mb-8 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400"><a href="#ai-agents" className="hover:text-blue-400 transition-colors">AI Agents</a><a href="#pricing" className="hover:text-blue-400 transition-colors">Pricing</a><Link to="/blog" className="hover:text-blue-400 transition-colors">Blog</Link><Link to="/seo-audit" className="hover:text-blue-400 transition-colors">SEO Audit</Link><Link to="/about" className="hover:text-blue-400 transition-colors">About Us</Link><Link to="/contact" className="hover:text-blue-400 transition-colors">Contact</Link><Link to="/privacy" className="hover:text-blue-400 transition-colors">Privacy Policy</Link><Link to="/terms" className="hover:text-blue-400 transition-colors">Terms of Service</Link></div><p>&copy; {new Date().getFullYear()} QuickKit AI. All rights reserved.</p></div></footer>
   </div>;
 
