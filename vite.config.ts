@@ -24,12 +24,10 @@ export default defineConfig(({ mode }) => {
     },
     build: {
       rollupOptions: {
-        output: {
-          manualChunks: {
-            react: ['react', 'react-dom', 'react-router-dom'],
-            ui: ['lucide-react', 'react-helmet-async']
-          }
-        }
+        // Keep Vite/Rollup's vendor graph automatic. The previous manual
+        // chunk map could force Rollup to resolve a native optional module
+        // through an incompatible dependency graph on Vercel's Linux build.
+        output: {}
       },
       chunkSizeWarningLimit: 650
     }
