@@ -3,7 +3,7 @@ import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
 import { auth, db, isFirebaseConfigured } from './lib/firebase';
 import { generateSessionId } from './lib/utils';
-import { Language, UserProfile, ServiceItem, AIQuote } from './types';
+import { Language, UserProfile, ServiceItem, AIQuote, PlanTier } from './types';
 import { Routes, Route, Navigate, Link } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import { QrCode, MessageCircle } from 'lucide-react';
@@ -11,6 +11,7 @@ import { IndustryProvider } from './lib/IndustryContext';
 import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { GlobalLoader } from './components/GlobalLoader';
+import { LeadForm } from './components/LeadForm';
 import { WHATSAPP_DIRECT_URL, WHATSAPP_QR_ASSET, WHATSAPP_USERNAME } from './constants';
 
 const Pricing = lazy(() => import('./components/Pricing').then(m => ({ default: m.Pricing })));
@@ -54,6 +55,7 @@ const App: React.FC = () => {
   const [sessionRef, setSessionRef] = useState<string>('');
   const [showLeadForm, setShowLeadForm] = useState(false);
   const [leadFormNotes, setLeadFormNotes] = useState('');
+  const [leadPlan, setLeadPlan] = useState<PlanTier>(PlanTier.STARTER);
   const [currentAIQuote, setCurrentAIQuote] = useState<AIQuote | undefined>(undefined);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -82,7 +84,9 @@ const App: React.FC = () => {
 
   const handleLaunchArchitect = (prompt:string,isWidget=false) => { setIsWidgetMode(isWidget); if(prompt!==architectPrompt){setCachedRoadmap(null);setSessionRef(generateSessionId());} setArchitectPrompt(prompt); };
   const handleCatalogSelect = (item:ServiceItem) => { setIsWidgetMode(false);setCachedRoadmap(null);setSessionRef(generateSessionId());setSelectedCatalogItem(item); };
-  const handleFinalBook = (quote:AIQuote,history:any[]) => { setResumeArchitect({prompt:architectPrompt || undefined,item:selectedCatalogItem || undefined});setArchitectPrompt(null);setSelectedCatalogItem(null);setCurrentAIQuote(quote);const historyText=history.map(h=>`${h.role==='user'?'CLIENT':'ARCHITECT'}: ${h.parts?.[0]?.text || '[Image]'} \n`).join('\n');setLeadFormNotes(`--- REF: ${sessionRef} ---\n\n--- ARCHITECT LOG ---\n${historyText}`);setShowLeadForm(true); };
+  const handleFinalBook = (quote:AIQuote,history:any[]) => { setResumeArchitect({prompt:architectPrompt || undefined,item:selectedCatalogItem || undefined});setArchitectPrompt(null);setSelectedCatalogItem(null);setCurrentAIQuote(quote);const historyText=history.map(h=>`${h.role==='user'?'CLIENT':'ARCHITECT'}: ${h.parts?.[0]?.text || '[Image]'} \n`).join('\n');setLeadFormNotes(`--- REF: ${sessionRef} ---\n\n--- ARCHITECT LOG ---\n${historyText}`);setLeadPlan(PlanTier.BUSINESS);setShowLeadForm(true); };
+  const handleOpenLeadForm = (plan: PlanTier = leadPlan, notes = leadFormNotes) => { setLeadPlan(plan); setLeadFormNotes(notes); setShowLeadForm(true); };
+  const handleCloseLeadForm = () => { setShowLeadForm(false); setCurrentAIQuote(undefined); setLeadFormNotes(''); };
   const handleLogout = async () => { try { if(metaListenerRef.current){metaListenerRef.current();metaListenerRef.current=null;} setIsAuthenticated(false);setUser(null);localStorage.removeItem('token');await signOut(auth as any); } catch(e){console.error('Logout error:',e);setIsAuthenticated(false);setUser(null);} };
 
   const renderLandingView = () => <div className="bg-[#030712] min-h-screen font-sans text-slate-100 selection:bg-blue-500/30">
@@ -93,8 +97,9 @@ const App: React.FC = () => {
       <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"/>
       <link rel="canonical" href="https://quickkitai.com"/>
     </Helmet>
-    <Navbar onContact={()=>setShowLeadForm(true)} isAuthenticated={isAuthenticated}/><Hero lang={lang} onLaunchArchitect={handleLaunchArchitect}/>
-    <Suspense fallback={<div className="h-40 flex items-center justify-center"><GlobalLoader message="Loading System..."/></div>}><PainSection/><SocialProofBar/><Pricing lang={lang} onSelectPlan={plan=>{setLeadFormNotes(`I am interested in the ${plan} plan.`);setShowLeadForm(true);}}/><WhyQuickKit/><WhoIsItFor onBookDemo={()=>setShowLeadForm(true)}/><AIAgents onSelectAgent={handleCatalogSelect}/><Testimonials/><DemoBooking onBookDemo={()=>setShowLeadForm(true)}/><BusinessImpact/><ROICalculator lang={lang}/><RealEstateCapabilityMatrix/><SmartBot onOpenArchitect={()=>handleLaunchArchitect('Hi! I want to explore automation.',true)}/></Suspense>
+    <Navbar onContact={()=>handleOpenLeadForm()} isAuthenticated={isAuthenticated}/><Hero lang={lang} onLaunchArchitect={handleLaunchArchitect}/>
+    <Suspense fallback={<div className="h-40 flex items-center justify-center"><GlobalLoader message="Loading System..."/></div>}><PainSection/><SocialProofBar/><Pricing lang={lang} onSelectPlan={plan=>handleOpenLeadForm(plan === 'KVM_8' ? PlanTier.PRO : PlanTier.STARTER, `I am interested in the ${plan} managed AI system.`)}/><WhyQuickKit/><WhoIsItFor onBookDemo={()=>handleOpenLeadForm()}/><AIAgents onSelectAgent={handleCatalogSelect}/><Testimonials/><DemoBooking onBookDemo={()=>handleOpenLeadForm()}/><BusinessImpact/><ROICalculator lang={lang}/><RealEstateCapabilityMatrix/><SmartBot onOpenArchitect={()=>handleLaunchArchitect('Hi! I want to explore automation.',true)}/></Suspense>
+    {showLeadForm && <LeadForm lang={lang} close={handleCloseLeadForm} initialData={{bizType:'Real Estate',plan:leadPlan}} prefilledNotes={leadFormNotes} aiFinancials={currentAIQuote} onVerified={handleCloseLeadForm}/>} 
     <footer className="bg-nexus-card border-t border-nexus-border py-12"><div className="container mx-auto px-6 text-center text-slate-500"><div className="max-w-xl mx-auto mb-10 rounded-2xl border border-emerald-500/15 bg-slate-950/60 p-6"><div className="flex flex-col sm:flex-row items-center justify-center gap-6"><a href={`${WHATSAPP_DIRECT_URL}?text=Hi%2C%20I%20want%20to%20discuss%20a%20managed%20AI%20system.`} target="_blank" rel="noopener noreferrer" className="shrink-0 rounded-xl bg-white p-3 shadow-lg" aria-label={`Scan QuickKit AI WhatsApp QR for @${WHATSAPP_USERNAME}`}><img src={WHATSAPP_QR_ASSET} alt={`QuickKit AI WhatsApp QR — @${WHATSAPP_USERNAME}`} className="w-36 h-36" /></a><div className="text-left"><p className="text-xs font-mono tracking-[0.2em] uppercase text-emerald-400 mb-2">Direct WhatsApp</p><h2 className="text-xl font-black text-white mb-1">@{WHATSAPP_USERNAME}</h2><p className="text-sm text-slate-400 mb-4">Scan the QR or message QuickKit AI directly.</p><div className="flex flex-wrap gap-2"><a href={`${WHATSAPP_DIRECT_URL}?text=Hi%2C%20I%20want%20to%20discuss%20a%20managed%20AI%20system.`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-black text-white hover:bg-emerald-500 transition-colors"><MessageCircle className="w-4 h-4" /> Message Now</a><a href={WHATSAPP_QR_ASSET} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg border border-slate-700 px-4 py-2 text-xs font-black text-slate-300 hover:bg-slate-800 transition-colors"><QrCode className="w-4 h-4" /> Open QR</a></div></div></div></div><p className="text-xs font-mono tracking-widest uppercase mb-4 text-slate-600 font-black">Built with Advanced Agentic Architecture</p><div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-6 text-sm"><a href="mailto:admin@quickkitai.com" className="hover:text-blue-400 transition-colors">admin@quickkitai.com</a></div><div className="flex flex-wrap justify-center gap-6 mb-8 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400"><a href="#ai-agents" className="hover:text-blue-400 transition-colors">AI Agents</a><a href="#pricing" className="hover:text-blue-400 transition-colors">Pricing</a><Link to="/blog" className="hover:text-blue-400 transition-colors">Blog</Link><Link to="/seo-audit" className="hover:text-blue-400 transition-colors">SEO Audit</Link><Link to="/about" className="hover:text-blue-400 transition-colors">About Us</Link><Link to="/contact" className="hover:text-blue-400 transition-colors">Contact</Link><Link to="/privacy" className="hover:text-blue-400 transition-colors">Privacy Policy</Link><Link to="/terms" className="hover:text-blue-400 transition-colors">Terms of Service</Link></div><p>&copy; {new Date().getFullYear()} QuickKit AI. All rights reserved.</p></div></footer>
   </div>;
 

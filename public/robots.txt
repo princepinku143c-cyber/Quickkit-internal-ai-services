@@ -1,5 +1,6 @@
 # QuickKit AI robots policy
-# Public pages are crawlable. Private, API and admin routes are blocked.
+# Public marketing, service and knowledge pages are crawlable.
+# Private application/admin/API paths are not intended for search indexing.
 
 User-agent: *
 Allow: /
@@ -10,8 +11,6 @@ Disallow: /client-portal
 Disallow: /api/
 Disallow: /scratch/
 
-# AI / answer-engine crawlers: public marketing content is intentionally crawlable.
-# Keep private routes blocked via the rules above.
 User-agent: GPTBot
 Allow: /
 Disallow: /dashboard
@@ -60,5 +59,4 @@ Disallow: /client
 Disallow: /client-portal
 Disallow: /api/
 
-# Sitemap
 Sitemap: https://quickkitai.com/sitemap.xml
