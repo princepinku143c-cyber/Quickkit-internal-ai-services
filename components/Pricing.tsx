@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Check, ArrowRight, Star, Sparkles, Server, Wrench, Cpu, Tag } from 'lucide-react';
+import { PlanTier } from '../types';
+import { LeadForm } from './LeadForm';
 
 interface PricingProps { lang?: string; onSelectPlan: (plan: string) => void; }
 
@@ -11,7 +13,16 @@ const colorMap: Record<string, string> = { blue: 'text-blue-400 bg-blue-500/10 b
 const checkColorMap: Record<string, string> = { blue: 'text-blue-400', purple: 'text-purple-400' };
 const btnColorMap: Record<string, string> = { blue: 'bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_30px_rgba(59,130,246,0.3)]', purple: 'bg-purple-600 hover:bg-purple-500 text-white' };
 
-export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => (
+export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
+  const [selectedPlan, setSelectedPlan] = useState<PlanTier | null>(null);
+
+  const choosePlan = (planId: string) => {
+    onSelectPlan(planId);
+    setSelectedPlan(planId === 'KVM_8' ? PlanTier.PRO : PlanTier.STARTER);
+  };
+
+  return (
+  <>
   <section id="pricing" className="py-32 bg-nexus-dark relative border-t border-nexus-border overflow-hidden">
     <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-blue-600/5 blur-[120px] rounded-full pointer-events-none" />
     <div className="container mx-auto px-4 md:px-6 relative z-10">
@@ -29,7 +40,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => (
           <div className="mb-6 pb-6 border-b border-slate-800"><div className="text-[10px] text-amber-300 font-black uppercase tracking-[0.18em] mb-2">Seasonal discount applied to setup</div><div className="flex items-baseline gap-1"><span className="text-4xl font-black text-white">₹{plan.setup.toLocaleString('en-IN')}</span><span className="text-slate-500 font-bold text-sm">one-time setup</span></div><p className="text-[11px] text-slate-500 font-bold mt-2 uppercase tracking-widest">{plan.infrastructure} infrastructure • Seasonal offer price</p><div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3"><div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3"><div className="flex items-center gap-2 text-slate-300 text-xs font-bold uppercase tracking-wider"><Server className="w-4 h-4" /> Setup</div><div className="text-white font-black text-lg mt-1">₹{plan.setup.toLocaleString('en-IN')}</div></div><div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3"><div className="flex items-center gap-2 text-slate-300 text-xs font-bold uppercase tracking-wider"><Wrench className="w-4 h-4" /> Maintenance</div><div className="text-white font-black text-lg mt-1">₹{plan.maintenance.toLocaleString('en-IN')}<span className="text-xs text-slate-500 font-bold">/month from month 2</span></div></div></div></div>
           <div className="flex-1 space-y-3 mb-8">{plan.features.map((f, i) => <div key={i} className="flex items-start gap-2.5"><Check className={`w-4 h-4 shrink-0 mt-0.5 ${checkColorMap[plan.color]}`} /><p className="text-sm text-slate-300 leading-snug">{f}</p></div>)}</div>
           <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4"><div className="flex items-center gap-2 text-amber-300 text-xs font-black uppercase tracking-wider mb-2"><Cpu className="w-4 h-4" /> Usage Billing</div><p className="text-sm text-slate-300 leading-relaxed">AI/API usage is <span className="text-white font-bold">separate and usage-based</span>. Typical usage may be around <span className="text-white font-bold">₹5,000–₹10,000+</span> depending on services and volume.</p></div>
-          <button onClick={() => onSelectPlan(plan.id)} className={`w-full py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition-all active:scale-95 flex items-center justify-center gap-2 hover:-translate-y-0.5 ${btnColorMap[plan.color]}`}>{plan.cta} <ArrowRight className="w-4 h-4" /></button>
+          <button onClick={() => choosePlan(plan.id)} className={`w-full py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition-all active:scale-95 flex items-center justify-center gap-2 hover:-translate-y-0.5 ${btnColorMap[plan.color]}`}>{plan.cta} <ArrowRight className="w-4 h-4" /></button>
         </div>)}
       </div>
 
@@ -38,4 +49,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => (
       <div className="max-w-4xl mx-auto mt-10 p-6 rounded-2xl border border-slate-800 bg-[#0a0f1c] flex flex-col md:flex-row items-center gap-6"><Server className="w-8 h-8 text-slate-500 shrink-0" /><div><h4 className="text-white font-bold mb-1">Need a custom setup?</h4><p className="text-slate-400 text-sm">For workloads beyond KVM 4 or KVM 8, contact us for a custom infrastructure and maintenance quote.</p></div></div>
     </div>
   </section>
-);
+  {selectedPlan && <LeadForm lang="en" close={() => setSelectedPlan(null)} initialData={{ bizType: '', plan: selectedPlan }} prefilledNotes={`I am interested in the ${selectedPlan === PlanTier.PRO ? 'KVM 8' : 'KVM 4'} managed AI system.`} />}
+  </>
+  );
+};
