@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShieldCheck, Server, Bot, ArrowRight, MessageCircle, QrCode } from 'lucide-react';
+import { ShieldCheck, Server, Bot, ArrowRight, MessageCircle, QrCode, Sparkles } from 'lucide-react';
 import { Language } from '../types';
 import { WHATSAPP_DIRECT_URL, WHATSAPP_USERNAME } from '../constants';
 
@@ -11,8 +11,11 @@ export const Hero: React.FC<HeroProps> = () => {
     window.open(`${WHATSAPP_DIRECT_URL}?text=${text}`, '_blank', 'noopener,noreferrer');
   };
 
-  const openWhatsAppQR = () => {
-    window.open('/quickkit-ai-whatsapp-qr.svg', '_blank', 'noopener,noreferrer');
+  const openWhatsAppQR = () => window.open('/quickkit-ai-whatsapp-qr.svg', '_blank', 'noopener,noreferrer');
+
+  const tryWithChatGPT = () => {
+    const prompt = encodeURIComponent('I am evaluating QuickKit AI for my real estate business in India. Explain what QuickKit AI offers for property lead generation, lead qualification, WhatsApp follow-up, AI calling, site-visit booking, CRM automation, managed AI agents, pricing, setup, maintenance, AI/API usage and how I can get started. Use the information available on https://quickkitai.com and clearly separate verified website information from anything you infer.');
+    window.open(`https://chatgpt.com/?q=${prompt}`, '_blank', 'noopener,noreferrer');
   };
 
   return (
@@ -25,10 +28,11 @@ export const Hero: React.FC<HeroProps> = () => {
         <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight tracking-tighter text-white animate-slide-up"><span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-emerald-400">AI Workforce for Real Estate</span><br />that captures, qualifies & follows up</h1>
         <p className="text-lg md:text-xl text-slate-400 max-w-3xl mx-auto mb-8 leading-relaxed">We build and manage AI systems for property developers, builders and brokerages — capturing leads, qualifying budget and location, replying on WhatsApp, making AI calls, booking site visits and updating your CRM 24/7.</p>
         <div className="flex flex-wrap justify-center gap-3 mb-10"><span className="px-4 py-2 rounded-full bg-slate-900/70 border border-slate-800 text-xs font-bold text-slate-300">Property Lead AI</span><span className="px-4 py-2 rounded-full bg-slate-900/70 border border-slate-800 text-xs font-bold text-slate-300">WhatsApp Follow-up</span><span className="px-4 py-2 rounded-full bg-slate-900/70 border border-slate-800 text-xs font-bold text-slate-300">AI Calling</span><span className="px-4 py-2 rounded-full bg-slate-900/70 border border-slate-800 text-xs font-bold text-slate-300">CRM Automation</span></div>
-        <div className="max-w-2xl mx-auto mb-10 flex flex-col sm:flex-row justify-center gap-4">
+        <div className="max-w-3xl mx-auto mb-6 flex flex-col sm:flex-row justify-center gap-4">
           <button onClick={() => document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })} className="px-10 py-4 bg-white text-nexus-dark rounded-xl font-black text-sm hover:bg-slate-100 transition-all flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(255,255,255,0.15)] uppercase tracking-widest">Get Your Real Estate AI Demo <ArrowRight className="w-4 h-4" /></button>
           <button onClick={openWhatsApp} className="px-10 py-4 bg-blue-600/10 border border-blue-500/30 text-blue-300 rounded-xl font-black text-sm hover:bg-blue-600/20 transition-all flex items-center justify-center gap-2 uppercase tracking-widest"><MessageCircle className="w-4 h-4" /> Talk on WhatsApp</button>
         </div>
+        <button onClick={tryWithChatGPT} className="mb-10 inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl border border-slate-700 bg-slate-900/60 text-slate-200 hover:border-blue-500/50 hover:bg-slate-900 transition-all text-xs font-black uppercase tracking-widest"><Sparkles className="w-4 h-4 text-blue-400" /> Try with ChatGPT</button>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3 mb-10 text-xs">
           <span className="text-slate-500">WhatsApp: <strong className="text-slate-300">@{WHATSAPP_USERNAME}</strong></span>
           <button onClick={openWhatsAppQR} className="inline-flex items-center gap-2 px-3 py-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 text-emerald-300 hover:bg-emerald-500/10 transition-colors" aria-label="Open QuickKit AI WhatsApp QR code"><QrCode className="w-4 h-4" /> Scan WhatsApp QR</button>
