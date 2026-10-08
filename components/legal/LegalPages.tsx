@@ -31,8 +31,8 @@ export const LegalPages = () => {
           <div className="flex items-center gap-4 text-emerald-500"><Shield className="w-8 h-8" /><span className="text-xs font-black uppercase tracking-[0.3em]">Company</span></div>
           <h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter leading-none">About Us</h1>
           <div className="space-y-6 leading-relaxed text-lg pt-8">
-            <p>QuickKit AI builds, deploys, operates and maintains managed AI agent systems for businesses. We focus on practical automation across sales, support, CRM, messaging, voice and internal workflows.</p>
-            <p>Our systems are configured around each customer's approved business processes, connected tools and operational requirements.</p>
+            <p>Raja AI Systems builds, deploys, operates and maintains managed AI workforce systems for high-ticket real estate and healthcare workflows, with a WhatsApp-first operating model.</p>
+            <p>The five-member workforce is configured around the customer's approved workflow, business rules and connected systems. Commercial/SLA terms are governed by the signed agreement.</p>
           </div>
         </section>
 
@@ -62,13 +62,13 @@ export const LegalPages = () => {
           <h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter leading-none">Terms of Service</h1>
           <div className="space-y-8 leading-relaxed text-lg pt-8">
             <div className="p-8 bg-slate-900/50 border border-slate-800 rounded-[2rem] space-y-7">
-              <div><h4 className="text-white font-bold uppercase mb-2">01. Setup & Scope</h4><p className="text-sm text-slate-400">KVM 4 setup is ₹19,999 and KVM 8 setup is ₹39,999. The selected setup covers the agreed managed AI system configuration and initial deployment scope. Custom work outside the agreed scope may be quoted separately.</p></div>
-              <div><h4 className="text-white font-bold uppercase mb-2">02. Managed Operation</h4><p className="text-sm text-slate-400">The first month of managed operation is included with the setup. From month 2, maintenance is ₹15,000/month for KVM 4 or ₹30,000/month for KVM 8 unless a different written plan is agreed.</p></div>
+              <div><h4 className="text-white font-bold uppercase mb-2">01. Setup & Scope</h4><p className="text-sm text-slate-400">Regular anchor is ₹70,000 implementation setup. The supplied Dussehra pilot offer is ₹35,000 upfront setup for up to 3 pilot clients, subject to the signed agreement.</p></div>
+              <div><h4 className="text-white font-bold uppercase mb-2">02. Managed Operation</h4><p className="text-sm text-slate-400">The Dussehra pilot monthly management retainer is ₹1,20,000/month and is described in the master ledger as locked for life under the agreed contract; billing/activation timing follows the signed terms.</p></div>
               <div><h4 className="text-white font-bold uppercase mb-2">03. AI & API Usage</h4><p className="text-sm text-slate-400">AI model usage and third-party API charges are separate from setup and maintenance and depend on actual usage and connected providers.</p></div>
-              <div><h4 className="text-white font-bold uppercase mb-2">04. Payments</h4><p className="text-sm text-slate-400">QuickKit AI currently accepts setup and applicable service payments through Razorpay. Payment status is confirmed by the payment provider before paid services are activated.</p></div>
+              <div><h4 className="text-white font-bold uppercase mb-2">04. Payments</h4><p className="text-sm text-slate-400">Payment method and activation are controlled by the commercial agreement and the confirmed payment process used for the pilot.</p></div>
               <div><h4 className="text-white font-bold uppercase mb-2">05. Third-Party Services</h4><p className="text-sm text-slate-400">Availability and pricing of external services, models, WhatsApp providers, voice providers, CRMs and APIs are controlled by their respective providers and are outside QuickKit AI's direct control.</p></div>
               <div><h4 className="text-white font-bold uppercase mb-2">06. Customer Responsibility</h4><p className="text-sm text-slate-400">Customers are responsible for providing accurate business requirements, approving automated actions, maintaining authorized accounts and ensuring their workflows comply with applicable laws and third-party platform rules.</p></div>
-              <div><h4 className="text-white font-bold uppercase mb-2">07. Intellectual Property</h4><p className="text-sm text-slate-400">QuickKit AI retains rights to its reusable platform, architecture and underlying automation components. Customers retain ownership of their supplied business data and customer-specific content, subject to third-party rights.</p></div>
+              <div><h4 className="text-white font-bold uppercase mb-2">07. Intellectual Property</h4><p className="text-sm text-slate-400">The supplied legal ledger states that client lead/customer data belongs to the client, while Raja AI Systems retains proprietary rights to reusable AI algorithms, Hermes prompt architecture, backend server configuration and underlying workflows. Exact rights are governed by the signed agreement.</p></div>
             </div>
           </div>
         </section>
