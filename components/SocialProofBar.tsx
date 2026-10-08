@@ -2,10 +2,10 @@ import React from 'react';
 import { Bot, ShieldCheck, Workflow, Wrench } from 'lucide-react';
 
 const items = [
-  [Bot, 'AI Workforce', 'Agents for real business workflows', 'text-blue-300'],
-  [Workflow, 'Connected Workflows', 'CRM, messaging, forms & operations', 'text-purple-300'],
-  [ShieldCheck, 'Controlled Automation', 'Verification, human escalation & guardrails', 'text-emerald-300'],
-  [Wrench, 'Managed Operations', 'Setup, monitoring & ongoing maintenance', 'text-amber-300'],
+  [Bot, '5-Agent Workforce', 'Autonomous acquisition + conversion + reputation', 'text-blue-300'],
+  [Workflow, 'WhatsApp-First', 'Voice note + text + booking workflows', 'text-purple-300'],
+  [ShieldCheck, 'Performance SLA', '10 visits / 15 consultations in 30 days*', 'text-emerald-300'],
+  [Wrench, 'Managed Operations', 'Deployment, monitoring & maintenance', 'text-amber-300'],
 ];
 
 export const SocialProofBar: React.FC = () => (
