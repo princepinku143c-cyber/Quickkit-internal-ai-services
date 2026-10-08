@@ -14,6 +14,7 @@ import { IntegrationMarquee } from './components/IntegrationMarquee';
 import { GlobalLoader } from './components/GlobalLoader';
 import { LeadForm } from './components/LeadForm';
 import { SystemWorkflow } from './components/SystemWorkflow';
+import { AdCampaignSection } from './components/AdCampaignSection';
 import { WHATSAPP_DIRECT_URL, WHATSAPP_QR_ASSET, WHATSAPP_USERNAME } from './constants';
 
 const Pricing = lazy(() => import('./components/Pricing').then(m => ({ default: m.Pricing })));
@@ -107,7 +108,7 @@ const App: React.FC = () => {
     <Suspense fallback={<div className="h-40 flex items-center justify-center"><GlobalLoader message="Loading System..."/></div>}>
       <PainSection/>
       <SocialProofBar/>
-      <SystemWorkflow/>
+      <SystemWorkflow/><AdCampaignSection/>
       <Pricing lang={lang} onSelectPlan={plan=>handleOpenLeadForm(PlanTier.BUSINESS, `I am interested in the ${plan} Raja AI Systems pilot.`)}/>
       <WhyQuickKit/>
       <WhoIsItFor onBookDemo={()=>handleOpenLeadForm()}/>
@@ -141,7 +142,7 @@ const App: React.FC = () => {
           <a href="mailto:admin@quickkitai.com" className="hover:text-blue-300 transition-colors">admin@quickkitai.com</a>
           <a href="#workflow" className="hover:text-blue-300 transition-colors">How It Works</a>
           <a href="#ai-agents" className="hover:text-blue-300 transition-colors">AI Team</a>
-          <a href="#pricing" className="hover:text-blue-300 transition-colors">Pricing</a>
+          <a href="#pricing" className="hover:text-blue-300 transition-colors">Pricing</a><a href="#ad" className="hover:text-blue-300 transition-colors">Ad Demo</a>
           <Link to="/blog" className="hover:text-blue-300 transition-colors">Blog</Link>
           <Link to="/seo-audit" className="hover:text-blue-300 transition-colors">SEO Audit</Link>
           <Link to="/about" className="hover:text-blue-300 transition-colors">About</Link>
