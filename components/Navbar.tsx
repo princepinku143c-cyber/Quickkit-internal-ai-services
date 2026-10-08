@@ -43,7 +43,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onContact, isAuthenticated }) =>
           <button onClick={() => scrollTo('industries')} className="text-[12px] font-bold text-slate-400 hover:text-white transition-colors">Solutions</button>
           <button onClick={() => scrollTo('pricing')} className="text-[12px] font-bold text-slate-400 hover:text-white transition-colors">Pricing</button>
           <button onClick={() => scrollTo('roi')} className="text-[12px] font-bold text-slate-400 hover:text-white transition-colors">ROI</button>
-          <Link to="/real-estate-ai-questions" className="text-[12px] font-bold text-slate-400 hover:text-white transition-colors">AI Answers</Link>
+          <button onClick={() => scrollTo('ad')} className="text-[12px] font-bold text-slate-400 hover:text-white transition-colors">Ad Demo</button><Link to="/real-estate-ai-questions" className="text-[12px] font-bold text-slate-400 hover:text-white transition-colors">AI Answers</Link>
           <Link to={portalPath} className="text-[12px] font-bold text-blue-300 hover:text-blue-200 transition-colors">{isAuthenticated ? 'Client Portal' : 'Client Login'}</Link>
           <button onClick={() => scrollTo('demo')} className="px-5 py-2.5 bg-white hover:bg-slate-100 text-slate-950 rounded-xl font-black text-[11px] uppercase tracking-wider transition-all shadow-[0_0_32px_rgba(255,255,255,.09)]">Build AI Workforce</button>
         </div>
@@ -62,7 +62,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onContact, isAuthenticated }) =>
           <button onClick={() => scrollTo('industries')} className="text-left text-base font-bold text-slate-300">Solutions</button>
           <button onClick={() => scrollTo('pricing')} className="text-left text-base font-bold text-slate-300">Pricing</button>
           <button onClick={() => scrollTo('roi')} className="text-left text-base font-bold text-slate-300">ROI</button>
-          <Link to="/real-estate-ai-questions" onClick={() => setIsOpen(false)} className="text-left text-base font-bold text-slate-300">AI Answers</Link>
+          <button onClick={() => scrollTo('ad')} className="text-left text-base font-bold text-slate-300">Ad Demo</button><Link to="/real-estate-ai-questions" onClick={() => setIsOpen(false)} className="text-left text-base font-bold text-slate-300">AI Answers</Link>
           <Link to={portalPath} onClick={() => setIsOpen(false)} className="text-left text-base font-bold text-blue-300 border-t border-slate-800 pt-4">{isAuthenticated ? 'Client Portal' : 'Client Login'}</Link>
           <button onClick={() => { setIsOpen(false); openContact(); }} className="text-left text-base font-black text-white pt-1">Talk to QuickKit AI →</button>
         </div>
