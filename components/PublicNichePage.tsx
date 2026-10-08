@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { SeoMeta } from './SeoMeta';
-import { Zap, Sparkles, CheckCircle2, MapPin, Clock, ArrowRight, Bot, MessageCircle, PhoneCall, CalendarCheck, Database, UserCheck } from 'lucide-react';
+import { Zap, Sparkles, CheckCircle2, MapPin, Clock, ArrowRight, Bot, MessageCircle, CalendarCheck, UserCheck, RefreshCw, ShieldCheck, Tag } from 'lucide-react';
 
 interface NicheDetails {
   title: string;
@@ -15,7 +15,7 @@ const NICHE_DATA: Record<string, NicheDetails> = {
   'real-estate': {
     title: 'Raja AI Systems — Autonomous AI Workforce for Luxury Real Estate in India',
     sub: 'Turn property enquiries into qualified conversations, follow-ups and site visits with managed AI agents built for builders, developers and brokerages.',
-    description: 'Raja AI Systems is positioned as a managed autonomous AI agency for high-ticket real estate and healthcare workflows. We build and manage AI agents for property lead generation, lead qualification, WhatsApp follow-ups, AI calling, site-visit booking and real estate CRM automation.',
+    description: 'Raja AI Systems is positioned as a managed autonomous AI agency for high-ticket real estate and healthcare workflows. We build and manage AI agents for property lead generation, lead qualification, WhatsApp follow-ups, WhatsApp voice-note, site-visit booking and real estate CRM automation.',
     keywords: 'real estate AI automation agency India, real estate AI agents India, AI for real estate India, property lead generation AI, real estate lead qualification AI, WhatsApp AI for real estate, real estate WhatsApp automation, AI calling for real estate, real estate CRM automation, property enquiry automation, site visit booking automation, builder AI automation, broker AI automation, real estate sales automation India, AI workforce for real estate, managed AI agents real estate',
     features: ['Capture property enquiries from website, ads and WhatsApp', 'Qualify budget, location, property type, timeline and buying intent', 'Automate WhatsApp replies, reminders and long-tail follow-ups', 'WhatsApp voice-note + text workflows for qualification and appointment handling', 'Book site visits and sales appointments automatically', 'Sync qualified lead context and activity into the configured CRM workflow']
   },
@@ -50,12 +50,11 @@ const NICHE_DATA: Record<string, NicheDetails> = {
 };
 
 const REAL_ESTATE_WORKFLOWS = [
-  { icon: Bot, title: 'Property Lead Agent', text: 'Captures and responds to enquiries from ads, landing pages, websites and WhatsApp.' },
-  { icon: UserCheck, title: 'Lead Qualification Agent', text: 'Collects budget, location, property preference, timeline and intent before routing the lead.' },
-  { icon: MessageCircle, title: 'WhatsApp Follow-up Agent', text: 'Runs personalized follow-ups so interested buyers do not disappear after the first enquiry.' },
-  { icon: PhoneCall, title: 'AI Calling Agent', text: 'Handles approved qualification and callback workflows and passes qualified conversations to sales.' },
-  { icon: CalendarCheck, title: 'Site Visit Agent', text: 'Coordinates appointment requests, reminders and handoff to the sales team.' },
-  { icon: Database, title: 'CRM Automation Agent', text: 'Keeps lead stages, notes, tasks and follow-up workflows synchronized.' }
+  { icon: MessageCircle, title: '12-Second WhatsApp Closer', text: 'Responds in WhatsApp voice note + text, qualifies intent and moves the prospect toward an appointment.' },
+  { icon: UserCheck, title: 'Apify Prospecting + Competitor Intelligence', text: 'Builds targeted prospect lists and competitive intelligence from approved public business/ad signals.' },
+  { icon: CalendarCheck, title: 'CRM Sentinel + No-Show Guard', text: 'Locks appointment context, sends the pre-visit location reminder and supports the no-show protection workflow.' },
+  { icon: RefreshCw, title: 'Dead Lead Reviver', text: 'Re-engages dormant databases with short conversational hooks and routes responses back into the sales workflow.' },
+  { icon: ShieldCheck, title: 'Reputation + Local SEO Sentinel', text: 'Routes positive feedback toward reviews and unhappy feedback toward a private escalation path while supporting local/AI-search visibility work.' }
 ];
 
 export const PublicNichePage: React.FC = () => {
