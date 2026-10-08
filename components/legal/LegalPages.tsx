@@ -49,7 +49,7 @@ export const LegalPages = () => {
           <div className="flex items-center gap-4 text-blue-500 mb-2"><Shield className="w-8 h-8" /><span className="text-xs font-black uppercase tracking-[0.3em]">Privacy</span></div>
           <h1 className="text-5xl md:text-7xl font-black text-white uppercase tracking-tighter leading-none">Privacy Policy</h1>
           <div className="space-y-6 leading-relaxed text-lg">
-            <p>QuickKit AI collects only information reasonably required to provide, configure and support its services, such as contact details, business requirements and information explicitly supplied for connected workflows.</p>
+            <p>Raja AI Systems collects only information reasonably required to provide, configure and support its services, such as contact details, business requirements and information explicitly supplied for connected workflows.</p>
             <p>We use appropriate technical and organizational safeguards to protect customer information. We do not sell customer data.</p>
             <p>When customers connect third-party services, data may also be processed under those providers' own terms and privacy policies. Customers remain responsible for granting only the permissions required for their configured workflows.</p>
             <p>AI model and third-party API providers may process data required to perform an enabled workflow. Customers should avoid sending sensitive information unless the relevant provider and configuration have been approved for that use.</p>
@@ -66,7 +66,7 @@ export const LegalPages = () => {
               <div><h4 className="text-white font-bold uppercase mb-2">02. Managed Operation</h4><p className="text-sm text-slate-400">The Dussehra pilot monthly management retainer is ₹1,20,000/month and is described in the master ledger as locked for life under the agreed contract; billing/activation timing follows the signed terms.</p></div>
               <div><h4 className="text-white font-bold uppercase mb-2">03. AI & API Usage</h4><p className="text-sm text-slate-400">AI model usage and third-party API charges are separate from setup and maintenance and depend on actual usage and connected providers.</p></div>
               <div><h4 className="text-white font-bold uppercase mb-2">04. Payments</h4><p className="text-sm text-slate-400">Payment method and activation are controlled by the commercial agreement and the confirmed payment process used for the pilot.</p></div>
-              <div><h4 className="text-white font-bold uppercase mb-2">05. Third-Party Services</h4><p className="text-sm text-slate-400">Availability and pricing of external services, models, WhatsApp providers, voice providers, CRMs and APIs are controlled by their respective providers and are outside QuickKit AI's direct control.</p></div>
+              <div><h4 className="text-white font-bold uppercase mb-2">05. Third-Party Services</h4><p className="text-sm text-slate-400">Availability and pricing of external services, models, WhatsApp providers, voice providers, CRMs and APIs are controlled by their respective providers and are outside Raja AI Systems's direct control.</p></div>
               <div><h4 className="text-white font-bold uppercase mb-2">06. Customer Responsibility</h4><p className="text-sm text-slate-400">Customers are responsible for providing accurate business requirements, approving automated actions, maintaining authorized accounts and ensuring their workflows comply with applicable laws and third-party platform rules.</p></div>
               <div><h4 className="text-white font-bold uppercase mb-2">07. Intellectual Property</h4><p className="text-sm text-slate-400">The supplied legal ledger states that client lead/customer data belongs to the client, while Raja AI Systems retains proprietary rights to reusable AI algorithms, Hermes prompt architecture, backend server configuration and underlying workflows. Exact rights are governed by the signed agreement.</p></div>
             </div>
@@ -75,7 +75,7 @@ export const LegalPages = () => {
       </div>
 
       <footer className="py-20 border-t border-slate-900 text-center">
-        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-700">QuickKit AI</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-700">Raja AI Systems</p>
       </footer>
     </div>
   );
