@@ -34,7 +34,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onContact, isAuthenticated }) =>
     <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#030712]/92 backdrop-blur-2xl border-b border-white/8 py-3' : 'bg-gradient-to-b from-[#030712]/75 to-transparent py-5'}`}>
       <div className="container mx-auto px-5 md:px-8 flex justify-between items-center">
         <button className="cursor-pointer bg-transparent border-0 p-0" onClick={() => scrollTo('hero')} aria-label="Go to homepage">
-          <Logo size={38} showText={true} />
+          <Logo size={38} showText={true} brandText="RAJA AI SYSTEMS" />
         </button>
 
         <div className="hidden lg:flex items-center gap-5">
