@@ -5,10 +5,11 @@ interface LogoProps {
   size?: number;
   className?: string;
   showText?: boolean;
+  brandText?: string;
   variant?: 'primary' | 'admin';
 }
 
-export const Logo: React.FC<LogoProps> = ({ size = 40, className = '', showText = false, variant = 'primary' }) => {
+export const Logo: React.FC<LogoProps> = ({ size = 40, className = '', showText = false, variant = 'primary', brandText = 'QuickKit AI' }) => {
   const gradientClass = variant === 'admin' ? 'from-red-500 to-orange-600' : 'from-blue-500 to-indigo-600';
   const glowColor = variant === 'admin' ? 'rgba(239,68,68,0.5)' : 'rgba(59,130,246,0.5)';
 
@@ -47,7 +48,7 @@ export const Logo: React.FC<LogoProps> = ({ size = 40, className = '', showText 
       
       {showText && (
         <span className="font-black text-white tracking-tighter uppercase" style={{ fontSize: size * 0.45 }}>
-          QuickKit <span className="text-blue-500">AI</span>
+          {brandText}
         </span>
       )}
     </div>

@@ -1,55 +1,86 @@
-import React, { useState } from 'react';
-import { Check, ArrowRight, Star, Sparkles, Server, Wrench, Cpu, Tag } from 'lucide-react';
-import { PlanTier } from '../types';
-import { LeadForm } from './LeadForm';
+import React from 'react';
+import { ArrowRight, CalendarCheck, Check, Clock3, Database, MessageCircle, ShieldCheck, Sparkles, Star, UsersRound, Workflow, Zap } from 'lucide-react';
+import { RAJA_COMMERCIAL_OFFER } from '../constants';
 
 interface PricingProps { lang?: string; onSelectPlan: (plan: string) => void; }
 
-const PLANS = [
-  { id: 'KVM_4', badge: 'Seasonal Offer', color: 'blue', title: 'KVM 4 AI System', setup: 19999, maintenance: 15000, popular: true, cta: 'Choose KVM 4', tagline: 'Complete managed AI system setup for growing businesses.', infrastructure: 'KVM 4', features: ['Full Hermes AI system setup', 'AI agent configuration & deployment', 'Memory and system configuration', 'Initial system testing & optimization', 'First month managed operation included at no extra maintenance fee', 'AI/API usage billed separately by actual usage', 'From month 2: ₹15,000/month maintenance'] },
-  { id: 'KVM_8', badge: 'Seasonal Offer', color: 'purple', title: 'KVM 8 AI System', setup: 39999, maintenance: 30000, popular: false, cta: 'Choose KVM 8', tagline: 'Higher-capacity managed AI infrastructure for larger workloads.', infrastructure: 'KVM 8', features: ['Full Hermes AI system setup', 'AI agent configuration & deployment', 'Memory and system configuration', 'Initial system testing & optimization', 'First month managed operation included at no extra maintenance fee', 'AI/API usage billed separately by actual usage', 'From month 2: ₹30,000/month maintenance'] },
+const FEATURES = [
+  '5-member autonomous AI workforce',
+  'WhatsApp voice-note + text speed-to-lead workflow',
+  'Prospecting + competitor intelligence workflow',
+  'CRM sentinel + no-show guard',
+  'Dormant lead reactivation workflow',
+  'Reputation + local/AI-search support workflow',
+  'Managed VPS deployment, monitoring and maintenance',
+  'Performance SLA: 10 qualified site visits / 15 qualified consultations in 30 days*',
 ];
-const colorMap: Record<string, string> = { blue: 'text-blue-400 bg-blue-500/10 border-blue-500/30', purple: 'text-purple-400 bg-purple-500/10 border-purple-500/30' };
-const checkColorMap: Record<string, string> = { blue: 'text-blue-400', purple: 'text-purple-400' };
-const btnColorMap: Record<string, string> = { blue: 'bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_30px_rgba(59,130,246,0.3)]', purple: 'bg-purple-600 hover:bg-purple-500 text-white' };
 
-export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
-  const [selectedPlan, setSelectedPlan] = useState<PlanTier | null>(null);
-
-  const choosePlan = (planId: string) => {
-    onSelectPlan(planId);
-    setSelectedPlan(planId === 'KVM_8' ? PlanTier.PRO : PlanTier.STARTER);
-  };
-
-  return (
-  <>
-  <section id="pricing" className="py-32 bg-nexus-dark relative border-t border-nexus-border overflow-hidden">
-    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[600px] bg-blue-600/5 blur-[120px] rounded-full pointer-events-none" />
-    <div className="container mx-auto px-4 md:px-6 relative z-10">
-      <div className="max-w-3xl mx-auto text-center mb-20">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/30 text-[10px] font-mono text-amber-300 mb-4 uppercase tracking-[0.2em] font-black"><Tag className="w-3 h-3" /> Seasonal Discount Offer</div>
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-[10px] font-mono text-blue-400 mb-8 uppercase tracking-[0.2em] font-black"><Sparkles className="w-3 h-3" /> India Pricing</div>
-        <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter">Managed AI System Setup</h2>
-        <p className="text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed">Seasonal offer pricing is currently available for new managed AI system setups. <span className="text-white font-bold">Setup is paid once.</span><br /><span className="text-emerald-400 font-bold text-sm">The first month of managed operation is included with your setup.</span></p>
+export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => (
+  <section id="offer" className="py-28 md:py-32 bg-[#030712] border-t border-white/6 relative overflow-hidden">
+    <div className="absolute left-1/2 -translate-x-1/2 -top-60 w-[1000px] h-[560px] rounded-full bg-amber-500/6 blur-[160px] pointer-events-none"/>
+    <div className="container mx-auto px-5 md:px-8 max-w-7xl relative z-10">
+      <div className="max-w-5xl mx-auto text-center mb-14">
+        <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/5 px-4 py-1.5 text-[10px] font-mono font-black uppercase tracking-[.24em] text-amber-300"><Sparkles className="w-3 h-3"/> Dussehra Festive Offer</div>
+        <h2 className="mt-7 text-4xl md:text-6xl font-black text-white tracking-[-.05em]">Enterprise AI workforce. Half-price pilot.</h2>
+        <p className="mt-5 text-lg leading-relaxed text-slate-400 max-w-3xl mx-auto">The master commercial plan uses a regular anchor of ₹70,000 setup + ₹2,40,000/month. The Dussehra pilot offer cuts both by 50% for up to 3 pilot clients, with the discounted retainer locked for the life of the agreed contract.</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-5xl mx-auto mb-24">
-        {PLANS.map(plan => <div key={plan.id} className={`relative flex flex-col rounded-[2rem] border p-8 transition-all duration-300 ${plan.popular ? 'bg-gradient-to-b from-blue-900/40 to-slate-900 border-blue-500/60 shadow-[0_0_50px_rgba(59,130,246,0.15)] md:-translate-y-4' : 'bg-gradient-to-b from-purple-900/20 to-slate-950 border-purple-500/30 hover:border-purple-500/50'}`}>
-          {plan.popular && <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-[10px] font-black uppercase tracking-widest px-5 py-1.5 rounded-full whitespace-nowrap shadow-lg flex items-center gap-1.5"><Star className="w-3 h-3 fill-white" /> Recommended</div>}
-          <div className="mb-6 mt-2"><span className={`text-[10px] font-black tracking-widest uppercase px-3 py-1 rounded-full border ${colorMap[plan.color]}`}>{plan.badge}</span><h3 className="text-2xl font-black text-white mt-5 leading-tight">{plan.title}</h3><p className="text-slate-500 text-sm mt-2 leading-relaxed">{plan.tagline}</p></div>
-          <div className="mb-6 pb-6 border-b border-slate-800"><div className="text-[10px] text-amber-300 font-black uppercase tracking-[0.18em] mb-2">Seasonal discount applied to setup</div><div className="flex items-baseline gap-1"><span className="text-4xl font-black text-white">₹{plan.setup.toLocaleString('en-IN')}</span><span className="text-slate-500 font-bold text-sm">one-time setup</span></div><p className="text-[11px] text-slate-500 font-bold mt-2 uppercase tracking-widest">{plan.infrastructure} infrastructure • Seasonal offer price</p><div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3"><div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3"><div className="flex items-center gap-2 text-slate-300 text-xs font-bold uppercase tracking-wider"><Server className="w-4 h-4" /> Setup</div><div className="text-white font-black text-lg mt-1">₹{plan.setup.toLocaleString('en-IN')}</div></div><div className="rounded-xl border border-slate-800 bg-slate-950/50 p-3"><div className="flex items-center gap-2 text-slate-300 text-xs font-bold uppercase tracking-wider"><Wrench className="w-4 h-4" /> Maintenance</div><div className="text-white font-black text-lg mt-1">₹{plan.maintenance.toLocaleString('en-IN')}<span className="text-xs text-slate-500 font-bold">/month from month 2</span></div></div></div></div>
-          <div className="flex-1 space-y-3 mb-8">{plan.features.map((f, i) => <div key={i} className="flex items-start gap-2.5"><Check className={`w-4 h-4 shrink-0 mt-0.5 ${checkColorMap[plan.color]}`} /><p className="text-sm text-slate-300 leading-snug">{f}</p></div>)}</div>
-          <div className="mb-6 rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4"><div className="flex items-center gap-2 text-amber-300 text-xs font-black uppercase tracking-wider mb-2"><Cpu className="w-4 h-4" /> Usage Billing</div><p className="text-sm text-slate-300 leading-relaxed">AI/API usage is <span className="text-white font-bold">separate and usage-based</span>. Typical usage may be around <span className="text-white font-bold">₹5,000–₹10,000+</span> depending on services and volume.</p></div>
-          <button onClick={() => choosePlan(plan.id)} className={`w-full py-4 rounded-2xl font-black uppercase tracking-widest text-sm transition-all active:scale-95 flex items-center justify-center gap-2 hover:-translate-y-0.5 ${btnColorMap[plan.color]}`}>{plan.cta} <ArrowRight className="w-4 h-4" /></button>
-        </div>)}
+      <div className="max-w-6xl mx-auto grid lg:grid-cols-[1.05fr_.95fr] gap-6 items-stretch">
+        <div className="rounded-[2.2rem] border border-amber-400/25 bg-gradient-to-b from-amber-500/[.07] via-slate-950/95 to-slate-950 p-7 md:p-10 shadow-[0_30px_120px_rgba(245,158,11,.08)]">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <span className="inline-flex items-center gap-2 rounded-full bg-amber-400/10 border border-amber-400/20 px-3.5 py-1.5 text-[9px] font-black uppercase tracking-[.2em] text-amber-300"><Star className="w-3 h-3 fill-amber-300"/> 3 pilot-client slots</span>
+            <span className="text-[10px] font-mono uppercase tracking-widest text-slate-600">50% lifetime lock*</span>
+          </div>
+
+          <h3 className="mt-7 text-3xl md:text-4xl font-black text-white">5-Member Autonomous AI Workforce</h3>
+          <p className="mt-3 text-slate-400 leading-relaxed">Built for high-ticket real estate developers/brokers and high-ticket aesthetic healthcare/dental clinics.</p>
+
+          <div className="mt-8 rounded-[1.7rem] border border-white/8 bg-black/25 p-6">
+            <div className="grid md:grid-cols-2 gap-5">
+              <div>
+                <div className="text-[9px] font-mono uppercase tracking-widest text-slate-600">Implementation</div>
+                <div className="mt-1 flex items-baseline gap-2"><span className="text-lg text-slate-600 line-through">₹{RAJA_COMMERCIAL_OFFER.regularSetupINR.toLocaleString('en-IN')}</span><span className="text-5xl font-black text-white">₹{RAJA_COMMERCIAL_OFFER.festiveSetupINR.toLocaleString('en-IN')}</span></div>
+                <div className="mt-2 text-xs text-slate-500">48-hour deployment target · paid upfront</div>
+              </div>
+              <div>
+                <div className="text-[9px] font-mono uppercase tracking-widest text-slate-600">Monthly management</div>
+                <div className="mt-1 flex items-baseline gap-2"><span className="text-lg text-slate-600 line-through">₹{RAJA_COMMERCIAL_OFFER.regularMonthlyINR.toLocaleString('en-IN')}</span><span className="text-4xl font-black text-emerald-300">₹{RAJA_COMMERCIAL_OFFER.festiveMonthlyINR.toLocaleString('en-IN')}</span></div>
+                <div className="mt-2 text-xs text-slate-500">Starts on Day 30 · locked for life*</div>
+              </div>
+            </div>
+            <div className="mt-5 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest">
+              <span className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-3 py-1.5 text-emerald-300">Save ₹35,000 setup</span>
+              <span className="rounded-full border border-emerald-400/20 bg-emerald-400/5 px-3 py-1.5 text-emerald-300">Save ₹1,20,000/mo</span>
+              <span className="rounded-full border border-blue-400/20 bg-blue-400/5 px-3 py-1.5 text-blue-300">50% off</span>
+            </div>
+          </div>
+
+          <div className="mt-7 grid md:grid-cols-2 gap-x-5 gap-y-3">
+            {FEATURES.map(f=><div key={f} className="flex items-start gap-2.5"><Check className="w-4 h-4 text-emerald-300 mt-0.5 shrink-0"/><span className="text-sm leading-relaxed text-slate-300">{f}</span></div>)}
+          </div>
+
+          <button onClick={()=>onSelectPlan('RAJA_DUSSEHRA')} className="mt-8 w-full rounded-2xl bg-white py-4 text-xs font-black uppercase tracking-[.16em] text-slate-950 hover:bg-slate-100 transition-all flex items-center justify-center gap-2 hover:-translate-y-0.5">Claim Pilot Slot <ArrowRight className="w-4 h-4"/></button>
+          <p className="mt-4 text-[10px] leading-relaxed text-slate-600">*The performance SLA and lifetime pricing lock are subject to the signed agreement, qualifying traffic/access conditions, proof rules and other commercial terms.</p>
+        </div>
+
+        <div className="rounded-[2.2rem] border border-slate-800 bg-slate-950/75 p-7 md:p-10 flex flex-col">
+          <div className="text-[10px] font-mono font-black uppercase tracking-[.24em] text-blue-300">Why the offer is structured this way</div>
+          <div className="mt-7 space-y-5">
+            {[
+              [UsersRound,'01','One team, not one bot','Five specialists cover acquisition, first response, no-show protection, reactivation and reputation.'],
+              [ShieldCheck,'02','Risk reversal','The public offer includes a 30-day performance SLA with a setup-fee refund trigger when its written conditions are met.'],
+              [Clock3,'03','Speed matters','The first teammate is designed around a 12-second WhatsApp response target for the critical first-contact window.'],
+              [Workflow,'04','Client-owned traffic','The master plan says clients run their own Meta/Google campaigns while Raja AI Systems monetizes the resulting inbound traffic.'],
+              [MessageCircle,'05','WhatsApp-native','The core customer interaction is built around WhatsApp voice notes + text rather than paid Vapi/Bland/Twilio calling APIs.'],
+              [Database,'06','Managed operations','Raja AI Systems handles the configured VPS/agent environment, maintenance and ongoing workflow operations.'],
+            ].map(([Icon,n,title,body])=><div key={String(n)} className="flex items-start gap-4"><div className="w-10 h-10 rounded-xl border border-blue-500/15 bg-blue-500/5 flex items-center justify-center shrink-0">{React.createElement(Icon as React.ElementType,{className:'w-5 h-5 text-blue-300'})}</div><div><div className="text-[9px] font-mono uppercase tracking-widest text-slate-600">{String(n)}</div><h4 className="mt-1 text-sm font-black text-white">{String(title)}</h4><p className="mt-1 text-xs leading-relaxed text-slate-500">{String(body)}</p></div></div>)}
+          </div>
+          <div className="mt-auto pt-8 grid grid-cols-2 gap-3">
+            <div className="rounded-2xl border border-emerald-400/15 bg-emerald-400/5 p-4 text-center"><CalendarCheck className="w-5 h-5 text-emerald-300 mx-auto mb-2"/><div className="text-lg font-black text-white">10 / 15</div><div className="text-[9px] uppercase tracking-widest text-slate-600">Visits / consultations*</div></div>
+            <div className="rounded-2xl border border-blue-400/15 bg-blue-400/5 p-4 text-center"><Zap className="w-5 h-5 text-blue-300 mx-auto mb-2"/><div className="text-lg font-black text-white">48h</div><div className="text-[9px] uppercase tracking-widest text-slate-600">Deployment target*</div></div>
+          </div>
+        </div>
       </div>
-
-      <div className="max-w-5xl mx-auto bg-nexus-card border border-slate-800 rounded-[2.5rem] p-8 md:p-12 relative overflow-hidden"><div className="absolute top-0 right-0 w-[400px] h-[400px] bg-emerald-600/5 rounded-full blur-[80px] pointer-events-none" /><div className="relative z-10"><div className="flex flex-col lg:flex-row gap-10 items-start"><div className="lg:w-1/3"><Sparkles className="w-12 h-12 text-emerald-400 mb-6" /><h3 className="text-2xl font-black text-white mb-4">First Month Included</h3><p className="text-slate-400 text-sm leading-relaxed mb-6">Your setup includes <strong className="text-white">one full month of managed operation</strong> at no extra maintenance fee. We monitor and operate the configured system during that first month.</p><div className="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-xl"><p className="text-xs text-emerald-400 font-bold uppercase tracking-wider mb-1">Maintenance Starts in Month 2</p><p className="text-xs text-slate-300">KVM 4: ₹15,000/month • KVM 8: ₹30,000/month. AI/API usage remains separate.</p></div></div><div className="lg:w-2/3 grid grid-cols-1 md:grid-cols-3 gap-6">{[{step:'1',title:'Setup',desc:'We configure the selected KVM infrastructure and complete Hermes-powered AI system.'},{step:'2',title:'Operate',desc:'We monitor and operate the system during the first month included with setup.'},{step:'3',title:'Maintain',desc:'From month 2, ongoing maintenance starts at ₹15,000/month or ₹30,000/month depending on KVM.'}].map(s=><div key={s.step} className="bg-slate-900/50 border border-slate-800 p-6 rounded-2xl relative"><div className="w-8 h-8 rounded-full bg-slate-800 text-white font-black flex items-center justify-center mb-4 absolute -top-4 -left-4 border border-slate-700 shadow-xl">{s.step}</div><h4 className="text-white font-bold mb-2 mt-2">{s.title}</h4><p className="text-sm text-slate-400">{s.desc}</p></div>)}</div></div></div></div>
-
-      <div className="max-w-4xl mx-auto mt-10 p-6 rounded-2xl border border-slate-800 bg-[#0a0f1c] flex flex-col md:flex-row items-center gap-6"><Server className="w-8 h-8 text-slate-500 shrink-0" /><div><h4 className="text-white font-bold mb-1">Need a custom setup?</h4><p className="text-slate-400 text-sm">For workloads beyond KVM 4 or KVM 8, contact us for a custom infrastructure and maintenance quote.</p></div></div>
     </div>
   </section>
-  {selectedPlan && <LeadForm lang="en" close={() => setSelectedPlan(null)} initialData={{ bizType: '', plan: selectedPlan }} prefilledNotes={`I am interested in the ${selectedPlan === PlanTier.PRO ? 'KVM 8' : 'KVM 4'} managed AI system.`} />}
-  </>
-  );
-};
+);

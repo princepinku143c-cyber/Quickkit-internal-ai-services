@@ -1,33 +1,45 @@
 import React from 'react';
-import { CheckCircle2, CalendarDays, BarChart4, Lightbulb, ShieldCheck, Mail, MessageCircle, ArrowUpRight } from 'lucide-react';
+import { ArrowUpRight, CalendarDays, CheckCircle2, Mail, MessageCircle, ShieldCheck, Sparkles, Timer, UsersRound, Workflow } from 'lucide-react';
 import { CONTACT_EMAIL, WHATSAPP_NUMBER } from '../constants';
 
 interface DemoBookingProps { onBookDemo?: () => void; }
 const CALENDLY_URL = 'https://calendly.com/princepinku143c/30min';
 
 export const DemoBooking: React.FC<DemoBookingProps> = ({ onBookDemo }) => (
-  <section id="demo" data-page="demo" className="py-24 bg-[#0a0f1c] relative border-t border-slate-800">
-    <div className="container mx-auto px-6 relative z-10">
-      <div className="text-center max-w-3xl mx-auto mb-14">
-        <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/20 text-xs font-mono text-blue-400 mb-6 uppercase tracking-widest font-black"><MessageCircle className="w-4 h-4" /> Talk to QuickKit AI</div>
-        <h2 className="text-4xl md:text-6xl font-black text-white mb-6 tracking-tighter">Talk to us directly. Book a call when you're ready.</h2>
-        <p className="text-lg text-slate-400 leading-relaxed max-w-2xl mx-auto">Message us on WhatsApp, send an email, or choose a time for a call. No embedded video-call screen and no broken calendar iframe on mobile.</p>
+  <section id="demo" className="py-28 bg-[#080d17] border-t border-white/6 relative overflow-hidden">
+    <div className="absolute -right-40 top-0 w-[520px] h-[520px] rounded-full bg-amber-500/5 blur-[130px] pointer-events-none"/>
+    <div className="container mx-auto px-5 md:px-8 max-w-7xl relative z-10">
+      <div className="max-w-4xl mx-auto text-center mb-14">
+        <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/5 px-4 py-1.5 text-[10px] font-mono font-black uppercase tracking-[.24em] text-amber-300"><Sparkles className="w-3 h-3"/> Founder-led pilot</div>
+        <h2 className="mt-7 text-4xl md:text-6xl font-black text-white tracking-[-.05em]">See the 5-Agent Workforce on your actual workflow.</h2>
+        <p className="mt-5 text-lg leading-relaxed text-slate-400 max-w-3xl mx-auto">Bring one real use case. We map the journey, demonstrate the relevant agent behavior and explain what is verified, what is configurable and what the signed SLA covers.</p>
       </div>
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8">
-        <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none"><Lightbulb className="w-64 h-64"/></div>
-          <div className="relative z-10"><h3 className="text-2xl font-black text-white mb-8 border-b border-slate-700/50 pb-4">What happens next</h3>
-            <ul className="space-y-6 mb-10"><li className="flex items-start gap-4"><div className="p-2.5 bg-blue-500/10 rounded-xl shrink-0 border border-blue-500/20"><CheckCircle2 className="w-5 h-5 text-blue-400"/></div><div><h4 className="text-white font-bold text-lg mb-1">Tell us what you need</h4><p className="text-sm text-slate-400 leading-relaxed">Explain your business workflow, automation requirement or AI agent idea in a message or email.</p></div></li>
-              <li className="flex items-start gap-4"><div className="p-2.5 bg-emerald-500/10 rounded-xl shrink-0 border border-emerald-500/20"><BarChart4 className="w-5 h-5 text-emerald-400"/></div><div><h4 className="text-white font-bold text-lg mb-1">We scope the right system</h4><p className="text-sm text-slate-400 leading-relaxed">We discuss suitable agents, integrations and the capacity required for your workflow.</p></div></li>
-              <li className="flex items-start gap-4"><div className="p-2.5 bg-purple-500/10 rounded-xl shrink-0 border border-purple-500/20"><ShieldCheck className="w-5 h-5 text-purple-400"/></div><div><h4 className="text-white font-bold text-lg mb-1">Book a 30-minute call</h4><p className="text-sm text-slate-400 leading-relaxed">Choose an available time on the booking page for a detailed walkthrough.</p></div></li></ul>
-            <div className="bg-nexus-dark/50 p-6 rounded-2xl border border-slate-700/50 space-y-2"><p className="text-sm text-white font-bold uppercase tracking-widest">₹19,999 KVM 4 · ₹39,999 KVM 8</p><p className="text-sm text-slate-400">First month managed operation included. AI/API usage is billed separately according to actual usage.</p></div>
+      <div className="grid lg:grid-cols-2 gap-6 max-w-6xl mx-auto">
+        <div className="rounded-[2rem] border border-slate-800 bg-slate-950/70 p-7 md:p-9">
+          <div className="grid grid-cols-3 gap-3 mb-8">
+            {[['12 sec','speed target',Timer],['5','core agents',UsersRound],['48h','deployment target',CheckCircle2]].map(([v,l,Icon])=><div key={String(l)} className="rounded-2xl border border-slate-800 bg-black/20 p-4 text-center">{React.createElement(Icon as React.ElementType,{className:'w-4 h-4 text-blue-300 mx-auto mb-2'})}<div className="text-xl font-black text-white">{String(v)}</div><div className="mt-1 text-[8px] font-mono uppercase tracking-widest text-slate-600">{String(l)}</div></div>)}
+          </div>
+          <p className="text-[10px] font-mono font-black uppercase tracking-[.22em] text-slate-600">The pilot path</p>
+          <div className="mt-6 space-y-5">
+            {[
+              [Workflow,'01','Map the revenue leak','Identify where leads slow down, where follow-up breaks and what the AI workforce should own.'],
+              [MessageCircle,'02','Run the WhatsApp-first demo','See the 12-second responder, qualification logic, voice-note flow and appointment path.'],
+              [ShieldCheck,'03','Confirm the SLA + proof rules','Review the 30-day performance target and the conditions used to define a qualified outcome.'],
+              [CheckCircle2,'04','Deploy + measure','Start the agreed pilot and measure the actual workflow rather than relying on marketing percentages.'],
+            ].map(([Icon,n,title,body])=><div key={String(n)} className="flex gap-4"><div className="w-10 h-10 rounded-xl border border-blue-500/15 bg-blue-500/5 flex items-center justify-center shrink-0">{React.createElement(Icon as React.ElementType,{className:'w-5 h-5 text-blue-300'})}</div><div><div className="text-[9px] font-mono uppercase tracking-widest text-slate-600">{String(n)} · {String(title)}</div><p className="mt-1 text-sm leading-relaxed text-slate-400">{String(body)}</p></div></div>)}
+          </div>
+          <div className="mt-8 rounded-2xl border border-amber-400/15 bg-amber-400/5 p-5">
+            <div className="text-[9px] font-mono font-black uppercase tracking-widest text-amber-300">Dussehra commercial</div>
+            <div className="mt-2 text-sm font-black text-white"><span className="text-slate-600 line-through">₹70,000</span> → ₹35,000 setup</div>
+            <div className="mt-1 text-sm font-black text-emerald-300"><span className="text-slate-600 line-through">₹2,40,000</span> → ₹1,20,000 / month</div>
+            <p className="mt-2 text-[10px] leading-relaxed text-slate-600">50% festive pricing for up to 3 pilot clients; discounted retainer is described in the supplied master ledger as locked for life under the agreed contract.</p>
           </div>
         </div>
-        <div className="bg-slate-900 border border-slate-800 rounded-[2.5rem] p-8 md:p-10 shadow-2xl flex flex-col justify-center gap-5">
-          <button type="button" onClick={onBookDemo} className="group flex items-center gap-5 p-6 rounded-2xl border border-blue-500/30 bg-blue-500/10 hover:bg-blue-500/15 hover:border-blue-500/50 transition-all text-left"><div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20"><MessageCircle className="w-7 h-7 text-blue-400"/></div><div className="flex-1"><p className="text-white font-black text-lg">Request a Demo</p><p className="text-sm text-slate-400">Send your business requirements to our team.</p></div><ArrowUpRight className="w-5 h-5 text-slate-500 group-hover:text-blue-400"/></button>
-          <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi, I want to discuss a managed AI system for my business.')}`} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-5 p-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 hover:border-emerald-500/40 transition-all"><div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20"><MessageCircle className="w-7 h-7 text-emerald-400"/></div><div className="flex-1"><p className="text-white font-black text-lg">Message on WhatsApp</p><p className="text-sm text-slate-400">Start a direct conversation with us.</p></div><ArrowUpRight className="w-5 h-5 text-slate-500 group-hover:text-emerald-400"/></a>
-          <a href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Managed AI System Inquiry')}`} className="group flex items-center gap-5 p-6 rounded-2xl border border-blue-500/20 bg-blue-500/5 hover:bg-blue-500/10 hover:border-blue-500/40 transition-all"><div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20"><Mail className="w-7 h-7 text-blue-400"/></div><div className="flex-1"><p className="text-white font-black text-lg">Send us an Email</p><p className="text-sm text-slate-400">{CONTACT_EMAIL}</p></div><ArrowUpRight className="w-5 h-5 text-slate-500 group-hover:text-blue-400"/></a>
-          <a href={CALENDLY_URL} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-5 p-6 rounded-2xl border border-purple-500/30 bg-purple-500/10 hover:bg-purple-500/15 hover:border-purple-500/50 transition-all"><div className="p-4 rounded-2xl bg-purple-500/10 border border-purple-500/20"><CalendarDays className="w-7 h-7 text-purple-400"/></div><div className="flex-1"><p className="text-white font-black text-lg">Book a 30-Minute Call</p><p className="text-sm text-slate-400">Open the secure booking page and choose your time.</p></div><ArrowUpRight className="w-5 h-5 text-slate-500 group-hover:text-purple-400"/></a>
+        <div className="rounded-[2rem] border border-slate-800 bg-slate-950/70 p-7 md:p-9 flex flex-col justify-center gap-4">
+          <button type="button" onClick={onBookDemo} className="group flex items-center gap-4 rounded-2xl border border-blue-500/25 bg-blue-500/8 p-5 text-left hover:bg-blue-500/12 transition-all"><div className="w-12 h-12 rounded-xl border border-blue-500/20 bg-blue-500/5 flex items-center justify-center"><Workflow className="w-5 h-5 text-blue-300"/></div><div className="flex-1"><p className="text-base font-black text-white">Claim a pilot slot</p><p className="mt-1 text-xs text-slate-500">Send your requirements and review the scope + SLA path.</p></div><ArrowUpRight className="w-5 h-5 text-slate-600"/></button>
+          <a href={`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent('Hi Raja, I want the 5-Agent AI Workforce demo and Dussehra pilot offer.')}`} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-4 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-5 hover:bg-emerald-500/10 transition-all"><div className="w-12 h-12 rounded-xl border border-emerald-500/20 bg-emerald-500/5 flex items-center justify-center"><MessageCircle className="w-5 h-5 text-emerald-300"/></div><div className="flex-1"><p className="text-base font-black text-white">Message Raja on WhatsApp</p><p className="mt-1 text-xs text-slate-500">Open the live demo conversation directly.</p></div><ArrowUpRight className="w-5 h-5 text-slate-600"/></a>
+          <a href={`mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent('Raja AI Systems — 5-Agent Workforce Pilot')}`} className="group flex items-center gap-4 rounded-2xl border border-slate-800 bg-slate-900/60 p-5 hover:border-blue-500/25 transition-all"><div className="w-12 h-12 rounded-xl border border-slate-800 bg-slate-950 flex items-center justify-center"><Mail className="w-5 h-5 text-slate-300"/></div><div className="flex-1"><p className="text-base font-black text-white">Email the team</p><p className="mt-1 text-xs text-slate-500">{CONTACT_EMAIL}</p></div><ArrowUpRight className="w-5 h-5 text-slate-600"/></a>
+          <a href={CALENDLY_URL} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-4 rounded-2xl border border-purple-500/20 bg-purple-500/5 p-5 hover:bg-purple-500/10 transition-all"><div className="w-12 h-12 rounded-xl border border-purple-500/20 bg-purple-500/5 flex items-center justify-center"><CalendarDays className="w-5 h-5 text-purple-300"/></div><div className="flex-1"><p className="text-base font-black text-white">Book the 15-minute demo</p><p className="mt-1 text-xs text-slate-500">Choose an available time.</p></div><ArrowUpRight className="w-5 h-5 text-slate-600"/></a>
         </div>
       </div>
     </div>

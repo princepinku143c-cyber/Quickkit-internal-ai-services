@@ -1,6 +1,9 @@
-name: Build
+name: Build & Verify
+
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
@@ -12,6 +15,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
       - run: npm install --legacy-peer-deps
       - run: npm run build

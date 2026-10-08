@@ -1,22 +1,26 @@
 import React from 'react';
+import { Bot, ShieldCheck, Workflow, Wrench } from 'lucide-react';
 
 const items = [
-  ['Managed Deployment', 'Configured around your business'],
-  ['AI Workforce', 'Agents for real business workflows'],
-  ['Human Control', 'Escalation when required'],
-  ['Managed Operations', 'Ongoing monitoring and maintenance'],
+  [Bot, '5-Agent Workforce', 'Autonomous acquisition + conversion + reputation', 'text-blue-300'],
+  [Workflow, 'WhatsApp-First', 'Voice note + text + booking workflows', 'text-purple-300'],
+  [ShieldCheck, 'Performance SLA', '10 visits / 15 consultations in 30 days*', 'text-emerald-300'],
+  [Wrench, 'Managed Operations', 'Deployment, monitoring & maintenance', 'text-amber-300'],
 ];
 
 export const SocialProofBar: React.FC = () => (
-  <div className="w-full border-t border-b border-white/5 bg-gradient-to-b from-blue-500/5 to-transparent relative overflow-hidden">
-    <div className="absolute inset-0 bg-grid opacity-30 pointer-events-none" />
-    <div className="max-w-7xl mx-auto px-4 py-8 relative z-10">
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-10">
-        {items.map(([title, desc], i) => (
-          <div key={title} className="text-center px-3 relative">
-            {i > 0 && <div className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 w-px h-12 bg-white/10" />}
-            <div className="text-sm md:text-base font-black text-white uppercase tracking-tight">{title}</div>
-            <div className="text-xs md:text-sm text-slate-400 mt-2 leading-relaxed">{desc}</div>
+  <div className="w-full border-y border-white/5 bg-slate-950/60 relative overflow-hidden">
+    <div className="absolute inset-0 bg-grid opacity-20 pointer-events-none" />
+    <div className="max-w-7xl mx-auto px-5 md:px-8 py-7 relative z-10">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-0">
+        {items.map(([Icon, title, desc, color], i) => (
+          <div key={String(title)} className="relative px-4 lg:px-7 py-2">
+            {i > 0 && <div className="hidden lg:block absolute left-0 top-1/2 -translate-y-1/2 w-px h-10 bg-white/10" />}
+            <div className="flex items-center justify-center lg:justify-start gap-2.5">
+              {React.createElement(Icon as React.ElementType, { className: `w-4 h-4 ${color}` })}
+              <div className="text-xs md:text-sm font-black text-white">{String(title)}</div>
+            </div>
+            <div className="text-[10px] md:text-xs text-slate-500 mt-2 leading-relaxed text-center lg:text-left">{String(desc)}</div>
           </div>
         ))}
       </div>
