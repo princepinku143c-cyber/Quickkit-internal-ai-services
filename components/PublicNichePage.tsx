@@ -68,14 +68,14 @@ export const PublicNichePage: React.FC = () => {
     '@type': 'Service',
     name: data.title,
     description: data.description,
-    provider: { '@type': 'Organization', name: 'QuickKit AI', url: 'https://quickkitai.com' },
+    provider: { '@type': 'Organization', name: 'Raja AI Systems', url: 'https://quickkitai.com' },
     areaServed: { '@type': 'Country', name: 'India' },
     serviceType: isRealEstate ? 'Real estate AI automation and managed AI agents' : 'AI automation and managed AI agent deployment'
   };
 
   return (
     <div className="bg-[#030712] min-h-screen text-slate-300 font-sans flex flex-col">
-      <SeoMeta title={`${data.title} | QuickKit AI`} description={data.description} keywords={data.keywords} schemaObj={schemaObj} />
+      <SeoMeta title={`${data.title} | Raja AI Systems`} description={data.description} keywords={data.keywords} schemaObj={schemaObj} />
       <header className="border-b border-slate-800/60 sticky top-0 z-50 backdrop-blur-md">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3"><div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center"><Zap className="text-white w-5 h-5" /></div><span className="font-bold text-white text-lg">Raja AI Systems</span></Link>
@@ -110,7 +110,7 @@ export const PublicNichePage: React.FC = () => {
 
         {!isRealEstate && <div className="grid sm:grid-cols-2 gap-5 max-w-4xl mx-auto mt-14 text-left">{data.features.map((feature) => <div key={feature} className="p-6 bg-slate-900/50 border border-slate-800 rounded-2xl flex gap-3"><CheckCircle2 className="w-5 h-5 text-blue-400 shrink-0" /><span className="text-sm text-slate-300 font-semibold">{feature}</span></div>)}</div>}
       </main>
-      <footer className="border-t border-slate-800/60 py-8"><div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-xs"><span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> India</span><span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Managed AI operations</span><span>© {new Date().getFullYear()} QuickKit AI. All rights reserved.</span></div></footer>
+      <footer className="border-t border-slate-800/60 py-8"><div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-xs"><span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> India</span><span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Managed AI operations</span><span>© {new Date().getFullYear()} Raja AI Systems. All rights reserved.</span></div></footer>
     </div>
   );
 };
