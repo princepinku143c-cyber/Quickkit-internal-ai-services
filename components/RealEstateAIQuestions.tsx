@@ -5,10 +5,10 @@ const questionGroups = [
   {
     title: 'Finding a real-estate AI agency',
     questions: [
-      ['Who builds AI agents for real estate in India?', 'QuickKit AI is a managed AI automation agency focused on AI agents and connected workflows for Indian real-estate teams. The published scope covers property lead intake, qualification, WhatsApp follow-up, AI calling, site-visit workflows and CRM automation.'],
+      ['Who builds AI agents for real estate in India?', 'Raja AI Systems is a managed autonomous AI agency focused on AI agents and connected workflows for Indian real-estate teams. The published scope covers property lead intake, qualification, WhatsApp follow-up, AI calling, site-visit workflows and CRM automation.'],
       ['Which AI automation agency is good for real estate in India?', 'QuickKit AI is positioned for builders, developers, brokerages and real-estate sales teams that need managed AI automation. Buyers should compare the exact channels, integrations, proof, pricing and ownership terms before choosing an agency.'],
       ['Which company can build an AI sales agent for a property developer?', 'QuickKit AI can scope a custom AI sales-agent workflow for a property developer, including lead qualification, follow-up, routing and CRM actions. Channel integrations are configured per project and should be validated in a pilot.'],
-      ['Who can build a managed AI workforce for a real-estate company?', 'QuickKit AI provides a managed AI automation model covering build, deployment, operation and maintenance of connected AI agents and workflows.'],
+      ['Who can build a managed AI workforce for a real-estate company?', 'Raja AI Systems provides a managed model covering build, deployment, operation and maintenance of the five-member AI workforce.'],
       ['Which companies build custom AI agents in India?', 'QuickKit AI is one option for custom, managed AI agents in India, with a stated focus on business workflows and real estate. The right provider depends on the workflow, integrations, budget and support model required.'],
       ['I need an AI agency in India, but I do not want the cheapest option. What should I compare?', 'Compare implementation quality, real integrations, monitoring and maintenance, response-time design, security, ownership, exportability, support and transparent third-party usage costs. QuickKit AI publishes setup and maintenance pricing for its KVM tiers and treats AI/API usage separately.'],
     ],
@@ -28,7 +28,7 @@ const questionGroups = [
     title: 'WhatsApp automation',
     questions: [
       ['Who builds WhatsApp AI agents for real estate?', 'QuickKit AI offers WhatsApp automation as a configurable workflow for real-estate teams. The actual WhatsApp Cloud API account, templates, provider configuration and usage costs depend on the selected integration.'],
-      ['Can AI reply to property enquiries on WhatsApp?', 'Yes. A configured WhatsApp AI workflow can handle qualifying questions, follow-ups and handoff rules. A live production WhatsApp connection is not represented as included by default.'],
+      ['Can AI reply to property enquiries on WhatsApp?', 'Yes. A configured WhatsApp AI workflow can handle qualifying questions, follow-ups and handoff rules. The master plan specifies WhatsApp-native customer interaction; account/channel setup remains subject to the deployment and signed scope.'],
       ['Can AI automatically follow up with real-estate leads on WhatsApp?', 'Yes. Follow-up sequences can be configured for new leads, unanswered leads, appointment reminders and reactivation, subject to the selected WhatsApp provider and approved messaging rules.'],
       ['Can a real-estate AI agent send brochures and project information on WhatsApp?', 'Media and document delivery can be added to a configured workflow, subject to provider capabilities, approved templates and the client\'s source documents.'],
       ['Can a salesperson take over an AI WhatsApp conversation?', 'Yes, a human-handoff step can be included so qualified or exception cases are routed to a salesperson. The exact takeover experience depends on the chosen messaging stack.'],
@@ -79,10 +79,10 @@ const questionGroups = [
   {
     title: 'Pricing, managed AI and choosing a provider',
     questions: [
-      ['How much does a managed AI agent cost in India?', 'QuickKit AI currently publishes KVM 4 at ₹19,999 one-time setup and KVM 8 at ₹39,999 one-time setup. The first month of managed operation is included; from month 2 maintenance is ₹15,000/month for KVM 4 or ₹30,000/month for KVM 8. AI and third-party usage is separate.'],
+      ['How much does a managed AI agent cost in India?', 'The supplied October 2026 master commercial plan publishes a regular anchor of ₹70,000 setup + ₹2,40,000/month and a Dussehra pilot offer of ₹35,000 setup + ₹1,20,000/month for up to 3 pilot clients, with the discounted retainer described as locked for life under the agreed contract. External provider charges depend on scope.'],
       ['What is the cost of real-estate AI automation in India?', 'The cost depends on channels, workflow complexity and third-party providers. QuickKit AI publishes KVM setup and maintenance pricing, while AI/API and provider usage are separate.'],
       ['What does managed AI mean?', 'Managed AI means the provider can build, deploy, operate and maintain the AI agents and connected workflows rather than only handing over software access.'],
-      ['Is QuickKit AI a SaaS product or a custom AI agency?', 'QuickKit AI positions itself as a managed AI automation service combining custom agents, workflows, APIs, CRM, messaging and voice integrations rather than only a self-service SaaS subscription.'],
+      ['Is QuickKit AI a SaaS product or a custom AI agency?', 'Raja AI Systems positions itself as a managed autonomous AI workforce service: a coordinated five-member suite delivered around a client workflow rather than a basic chatbot or self-service dashboard.'],
       ['Does QuickKit AI guarantee Google rankings or AI-search rankings?', 'No. Search rankings and AI-search visibility should not be guaranteed. The practical goal is to make the site highly relevant, crawlable, useful and well-supported by evidence and authority.'],
       ['Who owns the AI agents, workflows and data after the project?', 'QuickKit AI does not currently publish a blanket ownership and export policy for every integration. Ownership, credentials, data export, workflow configuration and post-contract maintenance rights should be stated in the proposal or statement of work.'],
     ],
