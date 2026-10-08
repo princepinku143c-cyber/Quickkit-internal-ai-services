@@ -93,8 +93,8 @@ const App: React.FC = () => {
 
   const renderLandingView = () => <div className="bg-[#030712] min-h-screen font-sans text-slate-100 selection:bg-blue-500/30">
     <Helmet>
-      <title>Real Estate AI Workforce India | Managed AI Automation | QuickKit AI</title>
-      <meta name="description" content="QuickKit AI builds and manages AI workforces for Indian real estate teams: lead capture, qualification, WhatsApp follow-up, voice, site visits and CRM workflows."/>
+      <title>Raja AI Systems | 5-Agent Autonomous AI Workforce | India</title>
+      <meta name="description" content="Raja AI Systems builds and manages a five-member autonomous AI workforce for high-ticket real estate and healthcare: WhatsApp speed-to-lead, prospecting, no-show protection, dormant-lead revival and reputation workflows."/>
       <meta name="keywords" content="real estate AI workforce India, managed AI agents real estate, property lead qualification AI, WhatsApp AI for real estate, AI calling for real estate, site visit automation, real estate CRM automation, builder AI automation, broker AI automation, AI workforce for real estate, managed AI agents real estate"/>
       <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"/>
       <link rel="canonical" href="https://quickkitai.com"/>
@@ -108,7 +108,7 @@ const App: React.FC = () => {
       <PainSection/>
       <SocialProofBar/>
       <SystemWorkflow/>
-      <Pricing lang={lang} onSelectPlan={plan=>handleOpenLeadForm(plan === 'KVM_8' ? PlanTier.PRO : PlanTier.STARTER, `I am interested in the ${plan} managed AI system.`)}/>
+      <Pricing lang={lang} onSelectPlan={plan=>handleOpenLeadForm(PlanTier.BUSINESS, `I am interested in the ${plan} Raja AI Systems pilot.`)}/>
       <WhyQuickKit/>
       <WhoIsItFor onBookDemo={()=>handleOpenLeadForm()}/>
       <AIAgents onSelectAgent={handleCatalogSelect}/>
@@ -149,8 +149,8 @@ const App: React.FC = () => {
           <Link to="/privacy" className="hover:text-blue-300 transition-colors">Privacy</Link>
           <Link to="/terms" className="hover:text-blue-300 transition-colors">Terms</Link>
         </div>
-        <p className="text-xs text-slate-700">Published managed-system pricing: KVM 4 ₹19,999 setup / ₹15,000 month 2+ maintenance · KVM 8 ₹39,999 setup / ₹30,000 month 2+ maintenance. AI/API and third-party provider usage is separate.</p>
-        <p className="mt-4 text-xs text-slate-700">&copy; {new Date().getFullYear()} QuickKit AI. All rights reserved.</p>
+        <p className="text-xs text-slate-700">Dussehra pilot: ₹35,000 setup + ₹1,20,000/month management; regular anchor ₹70,000 setup + ₹2,40,000/month. Up to 3 pilot clients; signed SLA conditions apply.</p>
+        <p className="mt-4 text-xs text-slate-700">&copy; {new Date().getFullYear()} Raja AI Systems. All rights reserved.</p>
       </div>
     </footer>
   </div>;
