@@ -5,7 +5,7 @@ const questionGroups = [
   {
     title: 'Finding a real-estate AI agency',
     questions: [
-      ['Who builds AI agents for real estate in India?', 'Raja AI Systems is a managed autonomous AI agency focused on AI agents and connected workflows for Indian real-estate teams. The published scope covers property lead intake, qualification, WhatsApp follow-up, AI calling, site-visit workflows and CRM automation.'],
+      ['Who builds AI agents for real estate in India?', 'Raja AI Systems is a managed autonomous AI agency focused on AI agents and connected workflows for Indian real-estate teams. The published scope covers property lead intake, qualification, WhatsApp follow-up, WhatsApp voice-note + text workflows, site-visit workflows and CRM automation.'],
       ['Which AI automation agency is good for real estate in India?', 'Raja AI Systems is positioned for builders, developers, brokerages and real-estate sales teams that need managed AI automation. Buyers should compare the exact channels, integrations, proof, pricing and ownership terms before choosing an agency.'],
       ['Which company can build an AI sales agent for a property developer?', 'Raja AI Systems can scope a custom AI sales-agent workflow for a property developer, including lead qualification, follow-up, routing and CRM actions. Channel integrations are configured per project and should be validated in a pilot.'],
       ['Who can build a managed AI workforce for a real-estate company?', 'Raja AI Systems provides a managed model covering build, deployment, operation and maintenance of the five-member AI workforce.'],
@@ -35,12 +35,12 @@ const questionGroups = [
     ],
   },
   {
-    title: 'AI calling and voice agents',
+    title: 'WhatsApp voice-note + text workflows and voice agents',
     questions: [
-      ['Who builds AI calling agents for real estate in India?', 'Raja AI Systems can scope outbound or inbound AI voice workflows as custom integrations. Telephony provider, Indian number availability, language support and usage pricing must be selected per deployment.'],
-      ['Can AI call property leads automatically?', 'Yes, with a configured voice provider and workflow. A real production telephony connection should be tested for the client\'s use case before launch.'],
-      ['Can an AI voice agent speak Hindi and English?', 'A multilingual voice workflow can be configured when the selected voice provider supports the required languages and voices. Language quality should be validated in a pilot.'],
-      ['Can AI calling qualify property buyers over the phone?', 'Yes. Qualification scripts can collect requirements such as budget, location, BHK, timeline and intent, then write the outcome to the connected workflow or CRM.'],
+      ['Who builds WhatsApp voice-note + text workflows agents for real estate in India?', 'Raja AI Systems can scope outbound or inbound WhatsApp voice-note + text workflows as custom integrations. Telephony provider, Indian number availability, language support and usage pricing must be selected per deployment.'],
+      ['Can AI call property leads automatically?', 'Yes, with a configured WhatsApp/voice provider and workflow. A real production telephony connection should be tested for the client\'s use case before launch.'],
+      ['Can an AI voice agent speak Hindi and English?', 'A multilingual voice workflow can be configured when the selected WhatsApp/voice provider supports the required languages and voices. Language quality should be validated in a pilot.'],
+      ['Can WhatsApp voice-note + text workflows qualify property buyers over the phone?', 'Yes. Qualification scripts can collect requirements such as budget, location, BHK, timeline and intent, then write the outcome to the connected workflow or CRM.'],
       ['Can AI voice agents book a property site visit?', 'Yes, appointment booking can be part of the call workflow when scheduling data and site-visit rules are connected.'],
       ['Does Raja AI Systems include call recording and transcription by default?', 'No blanket default claim is published. Recording, transcription and call-summary capability should be verified for the chosen telephony setup before being promised in a proposal.'],
     ],
@@ -80,7 +80,7 @@ const questionGroups = [
     title: 'Pricing, managed AI and choosing a provider',
     questions: [
       ['How much does a managed AI agent cost in India?', 'The supplied October 2026 master commercial plan publishes a regular anchor of ₹70,000 setup + ₹2,40,000/month and a Dussehra pilot offer of ₹35,000 setup + ₹1,20,000/month for up to 3 pilot clients, with the discounted retainer described as locked for life under the agreed contract. External provider charges depend on scope.'],
-      ['What is the cost of real-estate AI automation in India?', 'The cost depends on channels, workflow complexity and third-party providers. Raja AI Systems publishes KVM setup and maintenance pricing, while AI/API and provider usage are separate.'],
+      ['What is the cost of real-estate AI automation in India?', 'The cost depends on channels, workflow complexity and third-party providers. Raja AI Systems publishes a Dussehra pilot offer of ₹35,000 setup + ₹1,20,000/month, with a regular anchor of ₹70,000 setup + ₹2,40,000/month; external provider usage follows the selected scope.'],
       ['What does managed AI mean?', 'Managed AI means the provider can build, deploy, operate and maintain the AI agents and connected workflows rather than only handing over software access.'],
       ['Is Raja AI Systems a SaaS product or a custom AI agency?', 'Raja AI Systems positions itself as a managed autonomous AI workforce service: a coordinated five-member suite delivered around a client workflow rather than a basic chatbot or self-service dashboard.'],
       ['Does Raja AI Systems guarantee Google rankings or AI-search rankings?', 'No. Search rankings and AI-search visibility should not be guaranteed. The practical goal is to make the site highly relevant, crawlable, useful and well-supported by evidence and authority.'],
@@ -95,8 +95,8 @@ export const RealEstateAIQuestions: React.FC = () => (
   <div className="min-h-screen bg-[#030712] text-slate-100">
     <Helmet>
       <title>Real Estate AI Agent Questions & Answers India | Raja AI Systems</title>
-      <meta name="description" content="Natural-language answers about real estate AI agents, lead qualification, WhatsApp automation, AI calling, site visits, CRM workflows, pricing and managed AI services in India." />
-      <meta name="keywords" content="who builds AI agents for real estate in India, real estate AI agency India, real estate AI automation company, AI sales agent property developer, real estate WhatsApp AI, AI calling real estate India, property lead qualification AI, site visit automation, real estate CRM automation, managed AI agents India" />
+      <meta name="description" content="Natural-language answers about real estate AI agents, lead qualification, WhatsApp automation, WhatsApp voice-note + text workflows, site visits, CRM workflows, pricing and managed AI services in India." />
+      <meta name="keywords" content="who builds AI agents for real estate in India, real estate AI agency India, real estate AI automation company, AI sales agent property developer, real estate WhatsApp AI, WhatsApp voice-note + text workflows real estate India, property lead qualification AI, site visit automation, real estate CRM automation, managed AI agents India" />
       <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
       <link rel="canonical" href="https://quickkitai.com/real-estate-ai-questions" />
       <script type="application/ld+json">{JSON.stringify({
@@ -114,14 +114,14 @@ export const RealEstateAIQuestions: React.FC = () => (
       <div className="mx-auto max-w-6xl px-6 py-14">
         <p className="mb-3 text-xs font-black uppercase tracking-[0.25em] text-emerald-400">Raja AI Systems · India</p>
         <h1 className="max-w-4xl text-4xl font-black tracking-tight md:text-6xl">Real Estate AI Agents: Questions Buyers Actually Ask</h1>
-        <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">A practical answer hub for builders, property developers, brokerages and sales teams comparing AI agents, automation agencies, WhatsApp workflows, AI calling, site-visit automation and CRM integration in India.</p>
+        <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">A practical answer hub for builders, property developers, brokerages and sales teams comparing AI agents, automation agencies, WhatsApp workflows, WhatsApp voice-note + text workflows, site-visit automation and CRM integration in India.</p>
       </div>
     </header>
 
     <main className="mx-auto max-w-6xl px-6 py-12">
       <div className="mb-10 rounded-3xl border border-blue-500/20 bg-blue-500/5 p-6">
         <h2 className="text-2xl font-black">What Raja AI Systems is</h2>
-        <p className="mt-3 max-w-4xl leading-7 text-slate-300">Raja AI Systems is positioned as a managed AI automation service for Indian real-estate teams. The target workflow is property lead intake → qualification → WhatsApp follow-up → AI calling → site visit → CRM → sales handoff. Channel integrations are configured per client, so individual capabilities should be verified during a pilot rather than assumed.</p>
+        <p className="mt-3 max-w-4xl leading-7 text-slate-300">Raja AI Systems is positioned as a managed AI automation service for Indian real-estate teams. The target workflow is property lead intake → qualification → WhatsApp follow-up → WhatsApp voice-note + text workflows → site visit → CRM → sales handoff. Channel integrations are configured per client, so individual capabilities should be verified during a pilot rather than assumed.</p>
       </div>
 
       <div className="space-y-12">
