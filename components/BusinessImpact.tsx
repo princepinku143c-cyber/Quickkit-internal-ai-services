@@ -1,32 +1,37 @@
 import React from 'react';
+import { CalendarCheck, Database, Mail, MessageCircle, PhoneCall, Target, Workflow } from 'lucide-react';
 
-const ImpactCard = ({ title, desc, colorClass }: any) => (
-  <div className="glass-card rounded-2xl p-8 text-center group hover:border-blue-500/20 transition-all">
-    <div className={`mx-auto mb-6 w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center ${colorClass}`}>
-      <span className="text-2xl font-black">AI</span>
-    </div>
-    <h3 className={`text-lg font-bold mb-3 ${colorClass}`}>{title}</h3>
-    <p className="text-sm text-slate-400 leading-relaxed">{desc}</p>
-  </div>
-);
+export const BusinessImpact: React.FC = () => {
+  const cards = [
+    [Target,'Lead capture + qualification','Capture enquiries, collect required information, score or route them using the rules defined for the workflow.','text-blue-300'],
+    [MessageCircle,'WhatsApp + customer communication','Run approved replies, reminders, follow-up sequences and human escalation when the required provider/API is connected.','text-emerald-300'],
+    [PhoneCall,'Voice + callback workflows','Support configured qualification, callback, reminder or routing flows with the selected telephony provider.','text-cyan-300'],
+    [CalendarCheck,'Site visits + appointments','Move qualified prospects into booking, confirmation, reminder and rescheduling workflows around the connected calendar.','text-amber-300'],
+    [Database,'CRM + pipeline operations','Create or update records, stages, tasks and context in the configured CRM or API-connected system.','text-purple-300'],
+    [Mail,'Reactivation + operations','Trigger defined follow-up, email, internal alerts, reporting and dormant-lead workflows based on your business rules.','text-pink-300'],
+  ];
 
-export const BusinessImpact: React.FC = () => (
-  <section className="py-24 relative overflow-hidden bg-gradient-to-b from-transparent via-blue-900/5 to-transparent">
-    <div className="max-w-6xl mx-auto px-4 relative z-10">
-      <div className="text-center mb-16">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 text-sm font-medium mb-4"><span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" /> Business Impact</div>
-        <h2 className="text-3xl md:text-5xl font-bold text-white tracking-tight mb-6 mt-4">What Your AI Workforce Can Automate</h2>
-        <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-purple-600 mx-auto rounded-full mb-6" />
-        <p className="text-lg text-slate-400 max-w-2xl mx-auto">Instead of promising arbitrary percentages, we show the actual work your configured agents can take over.</p>
+  return (
+    <section className="py-28 bg-[#050912] relative overflow-hidden border-t border-white/6">
+      <div className="absolute right-[-180px] top-[-180px] w-[520px] h-[520px] rounded-full bg-blue-500/6 blur-[130px] pointer-events-none" />
+      <div className="container mx-auto px-5 md:px-8 max-w-7xl relative z-10">
+        <div className="max-w-4xl mx-auto text-center mb-14">
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-400/5 px-4 py-1.5 text-[10px] font-mono font-black uppercase tracking-[.24em] text-blue-300"><Workflow className="w-3 h-3" /> Business impact</div>
+          <h2 className="mt-7 text-4xl md:text-6xl font-black text-white tracking-[-.045em]">Turn repetitive work into a connected operating layer.</h2>
+          <p className="mt-5 text-lg leading-relaxed text-slate-400 max-w-3xl mx-auto">The value is operational: faster handling, clearer qualification, cleaner handoffs and less manual coordination. We do not promise arbitrary percentages or guaranteed revenue.</p>
+        </div>
+
+        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5 max-w-6xl mx-auto">
+          {cards.map(([Icon,title,desc,color])=><div key={String(title)} className="rounded-[1.6rem] border border-slate-800 bg-slate-950/65 p-7 hover:border-blue-500/20 hover:-translate-y-1 transition-all"><div className={`w-12 h-12 rounded-xl bg-white/[.03] border border-white/7 flex items-center justify-center ${color}`}>{React.createElement(Icon as React.ElementType,{className:'w-6 h-6'})}</div><h3 className={`mt-5 text-lg font-black ${color}`}>{String(title)}</h3><p className="mt-3 text-sm leading-relaxed text-slate-400">{String(desc)}</p></div>)}
+        </div>
+
+        <div className="mt-10 max-w-6xl mx-auto rounded-[2rem] border border-blue-400/15 bg-gradient-to-r from-blue-500/6 via-slate-950/80 to-emerald-500/5 p-7 md:p-9">
+          <div className="flex items-center gap-2 text-[10px] font-mono font-black uppercase tracking-[.22em] text-blue-300"><Workflow className="w-4 h-4" /> Revenue workflow pattern</div>
+          <div className="mt-6 grid grid-cols-2 md:grid-cols-6 gap-2">
+            {['Enquiry','Qualification','Follow-up','Appointment','CRM','Human close'].map((x,i)=><React.Fragment key={x}><div className="rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-3 text-center"><div className="text-[9px] font-mono text-slate-600">0{i+1}</div><div className="mt-1 text-xs font-black text-white">{x}</div></div>{i<5&&<div className="hidden md:flex items-center justify-center text-slate-700">→</div>}</React.Fragment>)}
+          </div>
+        </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-        <ImpactCard title="Lead Capture & Qualification" desc="Capture inbound enquiries, collect the required details, qualify leads and route them to the right workflow or human team member." colorClass="text-blue-400" />
-        <ImpactCard title="CRM & Data Operations" desc="Create or update records, move leads through defined stages, trigger follow-ups and keep connected business systems in sync." colorClass="text-emerald-400" />
-        <ImpactCard title="WhatsApp & Customer Communication" desc="Automate approved customer conversations, FAQs, follow-ups and routing where the required WhatsApp/API integrations are configured." colorClass="text-cyan-400" />
-        <ImpactCard title="Voice & Appointment Workflows" desc="Support configured voice workflows such as reception, qualification, reminders or appointment routing when the required voice provider is connected." colorClass="text-amber-400" />
-        <ImpactCard title="Email & Outreach" desc="Run configured email sequences, notifications, lead follow-ups and operational messages with appropriate provider limits and safeguards." colorClass="text-pink-400" />
-        <ImpactCard title="Reports & Internal Workflows" desc="Collect information, trigger routine processes, generate summaries and route tasks across the connected systems your business uses." colorClass="text-purple-400" />
-      </div>
-    </div>
-  </section>
-);
+    </section>
+  );
+};
