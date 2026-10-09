@@ -78,7 +78,7 @@ export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) =>
   const [showAdDemo, setShowAdDemo] = useState(false);
 
   const openWhatsApp = () => {
-    const message = encodeURIComponent('Hi Raja, I want to see the 5-Agent AI Workforce demo and the Dussehra pilot offer.');
+    const message = encodeURIComponent('Hi QuickKitAI × Raja AI Systems, I want to see the 5-Agent AI Workforce demo and the pilot offer.');
     window.open(`${WHATSAPP_DIRECT_URL}?text=${message}`, '_blank', 'noopener,noreferrer');
   };
 
@@ -98,8 +98,9 @@ export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) =>
               <Crown className="h-5 w-5" />
             </div>
             <div>
-              <div className="text-[14px] font-black tracking-[0.18em] text-white">RAJA</div>
-              <div className="text-[9px] font-bold tracking-[0.28em] text-amber-200/80">AI SYSTEMS</div>
+              <div className="text-[13px] font-black tracking-[0.10em] text-white">QUICKKITAI <span className="text-amber-300">×</span></div>
+              <div className="text-[9px] font-bold tracking-[0.16em] text-amber-200/90">RAJA AI SYSTEMS</div>
+              <div className="mt-0.5 text-[9px] tracking-[0.08em] text-slate-500">quickkitai.com</div>
             </div>
           </a>
           <div className="hidden items-center gap-7 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400 lg:flex">
@@ -125,7 +126,7 @@ export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) =>
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-200/[0.06] px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-amber-200">
               <Sparkles className="h-3.5 w-3.5" /> 5-agent managed AI workforce
             </div>
-            <p className="mb-4 text-[11px] font-black uppercase tracking-[0.34em] text-slate-500">RAJA AI SYSTEMS · INDIA</p>
+            <p className="mb-4 text-[11px] font-black uppercase tracking-[0.20em] text-slate-400">QUICKKITAI.COM <span className="text-amber-300">×</span> RAJA AI SYSTEMS · INDIA</p>
             <h1 className="max-w-4xl text-[3.35rem] font-black leading-[0.95] tracking-[-0.055em] sm:text-6xl lg:text-7xl xl:text-[5.35rem]">
               Your business,
               <span className="block bg-gradient-to-r from-white via-amber-100 to-amber-300 bg-clip-text text-transparent">with an AI team behind it.</span>
@@ -370,7 +371,7 @@ export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) =>
       <footer className="relative z-10 border-t border-white/[0.07] bg-black/20">
         <div className="mx-auto flex max-w-7xl flex-col gap-7 px-5 py-12 md:px-8 md:flex-row md:items-end md:justify-between">
           <div>
-            <div className="flex items-center gap-3"><div className="grid h-9 w-9 place-items-center rounded-lg bg-amber-200 text-black"><Crown className="h-4 w-4" /></div><div><div className="text-sm font-black tracking-[0.16em]">RAJA AI SYSTEMS</div><div className="text-[9px] uppercase tracking-[0.22em] text-slate-600">Managed AI workforce</div></div></div>
+            <div className="flex items-center gap-3"><div className="grid h-9 w-9 place-items-center rounded-lg bg-amber-200 text-black"><Crown className="h-4 w-4" /></div><div><div className="text-sm font-black tracking-[0.10em]">QUICKKITAI <span className="text-amber-300">×</span> RAJA AI SYSTEMS</div><div className="text-[9px] uppercase tracking-[0.18em] text-slate-500">quickkitai.com · Managed AI workforce</div></div></div>
             <p className="mt-4 max-w-xl text-xs leading-6 text-slate-600">Managed AI systems for high-response businesses. Public claims, integrations, SLAs and dependencies remain subject to the signed scope and actual verification.</p>
           </div>
           <div className="flex flex-wrap gap-2">
