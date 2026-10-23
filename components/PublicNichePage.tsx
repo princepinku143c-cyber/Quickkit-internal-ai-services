@@ -1,5 +1,5 @@
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, Navigate } from 'react-router-dom';
 import { SeoMeta } from './SeoMeta';
 import { Zap, Sparkles, CheckCircle2, MapPin, Clock, ArrowRight, Bot, MessageCircle, CalendarCheck, UserCheck, RefreshCw, ShieldCheck, Tag } from 'lucide-react';
 
@@ -59,8 +59,9 @@ const REAL_ESTATE_WORKFLOWS = [
 
 export const PublicNichePage: React.FC = () => {
   const { niche } = useParams<{ niche: string }>();
-  const data = NICHE_DATA[niche || ''] || NICHE_DATA['real-estate'];
-  const isRealEstate = niche === 'real-estate' || !niche;
+  if (!niche || !NICHE_DATA[niche]) return <Navigate to="/services/real-estate" replace />;
+  const data = NICHE_DATA[niche];
+  const isRealEstate = niche === 'real-estate';
 
   const schemaObj = {
     '@context': 'https://schema.org',
