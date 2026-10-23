@@ -95,9 +95,9 @@ const App: React.FC = () => {
 
   const renderLandingView = () => <div className="min-h-screen bg-[#050608] font-sans text-slate-100 selection:bg-amber-200/20">
     <Helmet>
-      <title>Raja AI Systems | 5-Agent Autonomous AI Workforce | India</title>
-      <meta name="description" content="Raja AI Systems builds and manages a five-member autonomous AI workforce for high-ticket real estate and healthcare: WhatsApp speed-to-lead, prospecting, no-show protection, dormant-lead revival and reputation workflows."/>
-      <meta name="keywords" content="Raja AI Systems, real estate AI workforce India, managed AI agents real estate, WhatsApp AI, site visit automation, healthcare AI automation, lead qualification AI"/>
+      <title>AI Automation for Real Estate Teams in India | Raja AI Systems</title>
+      <meta name="description" content="Raja AI Systems helps Indian real estate teams automate property lead qualification, WhatsApp follow-ups, site-visit scheduling and CRM workflows. Healthcare automation is available as a secondary service."/>
+      <meta name="keywords" content="Raja AI Systems, real estate AI automation India, property lead qualification AI, WhatsApp AI for real estate, site visit automation, real estate CRM automation, builder AI automation, broker AI automation"/>
       <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1"/>
       <link rel="canonical" href="https://quickkitai.com"/>
     </Helmet>
