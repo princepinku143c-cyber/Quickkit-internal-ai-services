@@ -34,6 +34,10 @@ The `BLOG_POSTS` dataset contains 87 entries. Several later `excerpt` values app
 
 This is a Vite + React single-page application. Several page-specific titles, descriptions, canonicals, and structured-data blocks are managed through React Helmet. The source audit cannot prove that every crawler receives the final rendered metadata in its initial HTML. Consider pre-rendering/static generation or server-side rendering for important public landing pages after a build/route test. Do not claim this is resolved by the current metadata changes alone.
 
+### High priority — dependency security review
+
+The latest inspected Vercel build log reported **21 npm audit findings (10 moderate and 11 high)** while installing 371 packages. The build log did not include the full package/advisory breakdown in the inspected section. Do not blindly run `npm audit fix --force`, because forced updates can introduce breaking changes. Before production merge, run a full dependency audit, identify direct versus transitive vulnerable packages, apply compatible targeted updates on the branch, then rebuild and retest.
+
 ### High priority — validate the latest deployment
 
 Vercel marked the preview for commit `9ba7ba51a8146f4ad248f99ab24e1c49ece84da0` as **READY**. Later branch commits change robots rules, shared metadata, and this report, so that READY status is not proof that the latest branch head has built successfully. Check the deployment attached to the newest commit and test these exact paths on that deployment:
@@ -62,7 +66,9 @@ No Google Search Console performance/indexing baseline or AI answer/citation bas
 - [x] Homepage and real-estate service copy prioritize real estate without deleting healthcare as a secondary service.
 - [x] Sitemap includes the existing real-estate and healthcare service routes.
 - [x] Shared metadata/schema helper uses consistent organization naming.
+- [x] Preview build executed the Vite production build and transformed 1,786 modules (latest deployment completion status still needs confirmation).
 - [ ] Latest branch-head Vercel deployment reaches READY.
+- [ ] Full npm audit results reviewed and compatible dependency fixes applied/tested.
 - [ ] Live/preview HTTP responses confirmed for robots, sitemap, and llms file.
 - [ ] All sitemap URLs return the intended status and canonical URL.
 - [ ] Blog detail route repaired and article content audited before individual posts are indexed.
