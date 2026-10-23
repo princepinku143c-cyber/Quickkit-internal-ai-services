@@ -1,5 +1,4 @@
 import React from 'react';
-import { Helmet } from 'react-helmet-async';
 import { SeoMeta } from '../SeoMeta';
 import { ArrowLeft, BookOpen, ShieldCheck, Building2, MessageCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -40,11 +39,6 @@ export const Blog = () => {
         keywords="real estate AI guide India, property lead qualification, AI WhatsApp follow-up, real estate CRM automation, site visit workflow"
         canonical="https://quickkitai.com/blog"
       />
-      <Helmet>
-        <title>Real Estate AI Knowledge Hub | Raja AI Systems</title>
-        <meta name="description" content="Practical resources on real-estate AI lead qualification, WhatsApp follow-up, site-visit workflows, CRM handoff, and managed AI automation in India." />
-        <link rel="canonical" href="https://quickkitai.com/blog" />
-      </Helmet>
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#030712]/80 backdrop-blur-md border-b border-slate-800">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 text-white font-black uppercase tracking-tighter hover:text-blue-400 transition-colors">
