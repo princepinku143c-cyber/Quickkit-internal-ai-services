@@ -98,6 +98,7 @@ No verified Google Search Console performance/indexing baseline or repeatable AI
 - [ ] Live/preview HTTP responses confirmed for robots, sitemap, and llms file.
 - [ ] All sitemap URLs return the intended status and canonical URL.
 - [x] Public blog listing no longer exposes broken `/blog/{id}` links or the thin legacy card set; it links to existing published resources.
+- [x] Unknown service slugs redirect to the canonical real-estate service route instead of serving duplicate content.
 - [ ] Legacy 87-entry blog dataset reviewed before any individual article routes are reintroduced.
 - [ ] Route-specific rendered metadata and structured data validated on each important page.
 - [ ] Search Console property verified; sitemap submitted; indexing/performance baseline recorded.
