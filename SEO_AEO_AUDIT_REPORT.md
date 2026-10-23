@@ -23,6 +23,8 @@ This is a technical and content foundation pass, not a completed AEO campaign an
 - Changed blog listing metadata to use the actual `BLOG_POSTS.length` rather than hard-coded article counts.
 - Cleaned 74 malformed blog card excerpts (IDs 11–84) and removed nonfunctional `/blog/{id}` links until complete article pages exist.
 - Aligned shared SEO titles and Organization structured data with **Raja AI Systems**, with **QuickKit AI** as an alternate name.
+- Removed route-mismatched global `Service` and `FAQPage` JSON-LD from the shared HTML shell; route-specific service/article/FAQ schema is managed by the relevant page components instead.
+- Replaced the no-JavaScript fallback's time-sensitive Dussehra pilot pricing with non-promotional service-scope copy so the static fallback does not advertise a potentially expired offer.
 - Added a top-level React `Suspense` boundary around lazy-loaded routes to support proper loading of lazy pages.
 - Added this report to record verified work and remaining blockers.
 
@@ -38,7 +40,7 @@ The `BLOG_POSTS` dataset contains 87 entries. Several later `excerpt` values app
 
 This is a Vite + React single-page application. Several page-specific titles, descriptions, canonicals, and structured-data blocks are managed through React Helmet. The source audit cannot prove that every crawler receives final route-specific metadata in its initial HTML. Consider pre-rendering/static generation or server-side rendering for important public landing pages after build/route tests. Do not claim that the current metadata edits solve this on their own.
 
-The static HTML shell currently contains Organization, Service, WebSite and FAQ structured data; because the same SPA shell is served for deep routes, route-specific structured-data delivery should be checked carefully. Validate which schema entities are actually present on each rendered URL and avoid duplicate or mismatched page schema.
+The static HTML shell now keeps only site-wide Organization and WebSite structured data. The global Service and FAQPage blocks were removed because the same SPA shell is served for deep routes and could make unrelated URLs inherit the wrong page schema. Route-specific schema still needs to be checked in rendered output for the homepage, service pages, guide and FAQ page, including duplicate Organization entities.
 
 ### High priority — dependency security review
 
@@ -81,9 +83,10 @@ No verified Google Search Console performance/indexing baseline or repeatable AI
 - [x] Homepage and real-estate service copy prioritize real estate without deleting healthcare as a secondary service.
 - [x] Sitemap includes the existing real-estate and healthcare service routes and the new guide.
 - [x] Shared metadata/schema helper uses consistent organization naming.
+- [x] Removed global Service/FAQ schema from the shared HTML shell and removed time-sensitive Dussehra pricing from the no-JavaScript fallback.
 - [x] A practical real-estate lead qualification guide is authored and route-registered.
 - [x] A React `Suspense` boundary is now present around lazy-loaded routes.
-- [ ] Latest branch-head Vercel deployment reaches READY.
+- [ ] Latest branch-head Vercel deployment reaches READY after the newest shared-HTML schema cleanup.
 - [ ] Full npm audit findings reviewed and compatible dependency fixes applied/tested.
 - [ ] Live/preview HTTP responses confirmed for robots, sitemap, and llms file.
 - [ ] All sitemap URLs return the intended status and canonical URL.
