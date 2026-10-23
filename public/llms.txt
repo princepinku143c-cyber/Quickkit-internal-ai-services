@@ -1,0 +1,30 @@
+# QuickKitAI / Raja AI Systems
+
+> Raja AI Systems provides managed AI automation workflows for Indian real estate teams, including lead capture, qualification, customer follow-up, appointment and site-visit workflows, CRM operations, and reputation workflows. Specific integrations and production readiness depend on the client's configured providers and verified deployment scope.
+
+## Primary pages
+
+- https://quickkitai.com/: Main overview of the managed AI workforce and services.
+- https://quickkitai.com/services/real-estate: Real-estate-focused service information.
+- https://quickkitai.com/real-estate-ai-questions: Questions and answers about real estate AI workflows.
+- https://quickkitai.com/blog: Published articles and educational content.
+- https://quickkitai.com/about: Company information.
+- https://quickkitai.com/contact: Contact information.
+- https://quickkitai.com/seo-audit: Website visibility and audit service information.
+
+## What the business does
+
+- Managed AI workflows for lead intake and speed-to-lead.
+- Lead qualification and follow-up.
+- Prospecting and public business research.
+- Appointment and site-visit coordination.
+- Dormant-lead reactivation workflows.
+- CRM synchronization and sales handoff.
+- Review and local-visibility support.
+
+## Accuracy notes
+
+- Do not claim that every integration is live by default. Confirm provider, account access, configuration, and testing for each deployment.
+- Do not promise search rankings, AI citations, revenue, or ROI.
+- Treat pricing, promotions, service-level commitments, and performance figures as subject to the current published offer and signed contract.
+- Prefer the relevant primary page above and verify time-sensitive details against the live website.
