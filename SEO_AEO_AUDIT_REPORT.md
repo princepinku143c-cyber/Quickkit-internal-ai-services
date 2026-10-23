@@ -21,7 +21,8 @@ This is a technical and content foundation pass, not a completed AEO campaign an
 - Added a useful public guide on real-estate AI lead qualification in India, including an Article schema, FAQ schema, internal links, and practical safety/measurement guidance.
 - Added the guide link to the real-estate service page and `llms.txt`.
 - Changed blog listing metadata to use the actual `BLOG_POSTS.length` rather than hard-coded article counts.
-- Cleaned 74 malformed blog card excerpts (IDs 11–84) and removed nonfunctional `/blog/{id}` links until complete article pages exist.
+- Replaced the thin 87-card blog listing with a curated knowledge hub linking only to existing public guide, real-estate Q&A, and service pages; no nonfunctional `/blog/{id}` links are exposed.
+- Cleaned 74 legacy blog card excerpts (IDs 11–84); the legacy 87-entry dataset is no longer rendered in the public listing and must be reviewed before reuse.
 - Aligned shared SEO titles and Organization structured data with **Raja AI Systems**, with **QuickKit AI** as an alternate name.
 - Removed route-mismatched global `Service` and `FAQPage` JSON-LD from the shared HTML shell; route-specific service/article/FAQ schema is managed by the relevant page components instead.
 - Normalized fallback canonicals to the production `https://quickkitai.com` hostname and pathname, excluding query-string tracking parameters and fragments.
@@ -34,11 +35,11 @@ This is a technical and content foundation pass, not a completed AEO campaign an
 
 ## Important findings still to resolve
 
-### High priority — blog navigation and content quality
+### High priority — legacy blog dataset (public-listing risk mitigated)
 
-The blog listing links cards to `/blog/{id}`, but the current route table only registers `/blog`; the catch-all route redirects unknown paths to the homepage. Those detail links therefore do not resolve to individual article pages.
+The public `/blog` page now acts as a curated knowledge hub linking to three existing, reader-facing resources: the authored lead-qualification guide, the real-estate Q&A page, and the real-estate service overview. It no longer renders the legacy cards or links to `/blog/{id}`, which previously fell through to the homepage because only `/blog` was registered.
 
-The `BLOG_POSTS` dataset contains 87 entries. Several later `excerpt` values appear to contain raw front matter, drafting notes, or prompt-like text rather than clean reader-facing summaries. Do not generate or index 87 article URLs from this data until article bodies and excerpts are cleaned and detail routes are implemented. The new guide is a separate, authored public page; it does not repair the existing blog-detail route.
+The legacy `BLOG_POSTS` dataset still contains 87 entries and must not be reactivated as individual indexable articles until full article bodies, unique factual value, publication dates, and excerpts have been reviewed. The old summaries were not evidence of complete articles. The authored guide is a separate public page.
 
 ### High priority — search-engine rendering and route-level metadata
 
@@ -96,7 +97,8 @@ No verified Google Search Console performance/indexing baseline or repeatable AI
 - [ ] Full npm audit findings reviewed and compatible dependency fixes applied/tested.
 - [ ] Live/preview HTTP responses confirmed for robots, sitemap, and llms file.
 - [ ] All sitemap URLs return the intended status and canonical URL.
-- [ ] Blog detail route repaired and article content audited before individual posts are indexed.
+- [x] Public blog listing no longer exposes broken `/blog/{id}` links or the thin legacy card set; it links to existing published resources.
+- [ ] Legacy 87-entry blog dataset reviewed before any individual article routes are reintroduced.
 - [ ] Route-specific rendered metadata and structured data validated on each important page.
 - [ ] Search Console property verified; sitemap submitted; indexing/performance baseline recorded.
 - [ ] AI-search prompt set created and baseline citations recorded across ChatGPT Search, Gemini, and Perplexity.
