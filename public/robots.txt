@@ -11,6 +11,15 @@ Disallow: /client-portal
 Disallow: /api/
 Disallow: /scratch/
 
+# OpenAI search crawler: allow public pages to be considered for ChatGPT Search.
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /client
+Disallow: /client-portal
+Disallow: /api/
+
 User-agent: GPTBot
 Allow: /
 Disallow: /dashboard
