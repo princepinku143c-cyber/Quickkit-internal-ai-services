@@ -8,10 +8,10 @@ import { BLOG_POSTS } from '../../data/blog-posts';
 export const Blog = () => {
   return (
     <div className="min-h-screen bg-[#030712] text-slate-300 font-sans">
-      <SeoMeta title="AI Automation Blog 2026 | QuickKit AI" description="84 articles on AI agents, CRM automation, and workflow automation." keywords="AI agents, CRM automation, AI blog, QuickKit AI" ogType="blog" />
+      <SeoMeta title="AI Automation Blog 2026 | QuickKit AI" description={`Explore ${BLOG_POSTS.length} guides on AI agents, CRM automation, and workflow automation.`} keywords="AI agents, CRM automation, AI blog, QuickKit AI" ogType="blog" />
       <Helmet>
         <title>AI Automation Blog 2026 | QuickKit AI</title>
-        <meta name="description" content="Read the latest guides on AI agents, free AI CRM, workflow automation from QuickKit AI. 80+ articles." />
+        <meta name="description" content={`Read ${BLOG_POSTS.length} guides on AI agents, CRM automation, and workflow automation from QuickKit AI.`} />
         <link rel="canonical" href="https://quickkitai.com/blog" />
       </Helmet>
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#030712]/80 backdrop-blur-md border-b border-slate-800">
