@@ -26,6 +26,7 @@ This is a technical and content foundation pass, not a completed AEO campaign an
 - Removed route-mismatched global `Service` and `FAQPage` JSON-LD from the shared HTML shell; route-specific service/article/FAQ schema is managed by the relevant page components instead.
 - Normalized fallback canonicals to the production `https://quickkitai.com` hostname and pathname, excluding query-string tracking parameters and fragments.
 - Added stable `@id` values for Organization and WebSite structured data so the static shell and React Helmet metadata can reference the same entities.
+- Removed the `SearchAction` structured-data claim because the linked question-and-answer page is not a verified site-search interface.
 - Removed the automatic current-time `datePublished` fallback from generic Article schema; publication dates are emitted only when explicitly supplied.
 - Replaced the no-JavaScript fallback's time-sensitive Dussehra pilot pricing with non-promotional service-scope copy so the static fallback does not advertise a potentially expired offer.
 - Added a top-level React `Suspense` boundary around lazy-loaded routes to support proper loading of lazy pages.
@@ -87,7 +88,7 @@ No verified Google Search Console performance/indexing baseline or repeatable AI
 - [x] Sitemap includes the existing real-estate and healthcare service routes and the new guide.
 - [x] Shared metadata/schema helper uses consistent organization naming.
 - [x] Removed global Service/FAQ schema from the shared HTML shell and removed time-sensitive Dussehra pricing from the no-JavaScript fallback.
-- [x] Normalized fallback canonical URLs to the production domain and added stable IDs for global Organization/WebSite schema.
+- [x] Normalized fallback canonical URLs to the production domain, added stable IDs for global Organization/WebSite schema, and removed unsupported SearchAction schema.
 - [x] Removed dynamic current-time publication dates from generic Article schema.
 - [x] A practical real-estate lead qualification guide is authored and route-registered.
 - [x] A React `Suspense` boundary is now present around lazy-loaded routes.
