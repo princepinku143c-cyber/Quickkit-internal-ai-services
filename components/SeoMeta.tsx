@@ -20,7 +20,8 @@ export const SeoMeta: React.FC<SeoMetaProps> = ({
 }) => {
   const siteName = 'Raja AI Systems';
   const defaultOgImage = ogImage || 'https://quickkitai.com/og-image.png';
-  const canonicalUrl = canonical || (typeof window !== 'undefined' ? window.location.href : 'https://quickkitai.com');
+  // Canonicals must always point to the production domain and exclude query/hash tracking parameters.
+  const canonicalUrl = canonical || (typeof window !== 'undefined' ? `https://quickkitai.com${window.location.pathname}` : 'https://quickkitai.com');
   const hasBrand = /Raja AI Systems|QuickKit AI/i.test(title);
   const fullTitle = hasBrand ? title : `${title} | Raja AI Systems`;
 
@@ -31,13 +32,14 @@ export const SeoMeta: React.FC<SeoMetaProps> = ({
     description,
     articleBody,
     author: { '@type': 'Organization', name: authorName },
-    datePublished: datePublished || new Date().toISOString(),
-    publisher: { '@type': 'Organization', name: siteName }
+    ...(datePublished ? { datePublished } : {}),
+    publisher: { '@type': 'Organization', '@id': 'https://quickkitai.com/#organization', name: siteName, url: 'https://quickkitai.com' }
   } : null;
 
   const organizationSchema = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
+    '@id': 'https://quickkitai.com/#organization',
     name: siteName,
     alternateName: 'QuickKit AI',
     url: 'https://quickkitai.com',
