@@ -16,12 +16,14 @@ interface SeoMetaProps {
 
 export const SeoMeta: React.FC<SeoMetaProps> = ({
   title, description, keywords, ogImage, ogType = 'website',
-  canonical, schemaObj, articleBody, datePublished, authorName = 'QuickKit AI'
+  canonical, schemaObj, articleBody, datePublished, authorName = 'Raja AI Systems'
 }) => {
-  const siteName = 'QuickKit AI';
+  const siteName = 'Raja AI Systems';
   const defaultOgImage = ogImage || 'https://quickkitai.com/og-image.png';
-  const canonicalUrl = canonical || (typeof window !== 'undefined' ? window.location.href : 'https://quickkitai.com');
-  const fullTitle = title.includes('QuickKit') ? title : `${title} | QuickKit AI`;
+  // Canonicals must always point to the production domain and exclude query/hash tracking parameters.
+  const canonicalUrl = canonical || (typeof window !== 'undefined' ? `https://quickkitai.com${window.location.pathname}` : 'https://quickkitai.com');
+  const hasBrand = /Raja AI Systems|QuickKit AI/i.test(title);
+  const fullTitle = hasBrand ? title : `${title} | Raja AI Systems`;
 
   const articleSchema = articleBody ? {
     '@context': 'https://schema.org',
@@ -30,16 +32,18 @@ export const SeoMeta: React.FC<SeoMetaProps> = ({
     description,
     articleBody,
     author: { '@type': 'Organization', name: authorName },
-    datePublished: datePublished || new Date().toISOString(),
-    publisher: { '@type': 'Organization', name: siteName }
+    ...(datePublished ? { datePublished } : {}),
+    publisher: { '@type': 'Organization', '@id': 'https://quickkitai.com/#organization', name: siteName, url: 'https://quickkitai.com' }
   } : null;
 
   const organizationSchema = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
+    '@id': 'https://quickkitai.com/#organization',
     name: siteName,
+    alternateName: 'QuickKit AI',
     url: 'https://quickkitai.com',
-    description: 'Managed AI agents and AI workforce systems for Indian businesses, including sales, support, CRM, WhatsApp, voice and business automation.'
+    description: 'Managed AI automation for Indian real-estate teams, with healthcare and other workflow automation available as secondary or project-specific services. Integrations are configured and verified per deployment.'
   };
 
   return (
