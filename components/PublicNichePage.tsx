@@ -100,6 +100,11 @@ export const PublicNichePage: React.FC = () => {
             <h2 className="text-3xl md:text-4xl font-black text-white text-center">What your real estate AI workforce can handle</h2>
             <div className="grid sm:grid-cols-2 gap-4 mt-8">{data.features.map((feature) => <div key={feature} className="p-5 bg-slate-900/40 border border-slate-800 rounded-2xl flex gap-3"><CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" /><span className="text-sm text-slate-300 font-semibold">{feature}</span></div>)}</div>
           </section>
+          <section className="mt-12 rounded-2xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+            <h2 className="text-xl md:text-2xl font-black text-white">Practical guide: AI lead qualification for real estate in India</h2>
+            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-400">Learn how to structure property enquiries, qualification questions, CRM handoff, and site-visit booking without promising unverified integrations or results.</p>
+            <Link to="/guides/real-estate-ai-lead-qualification" className="inline-flex mt-5 rounded-xl border border-emerald-500/30 px-5 py-3 text-sm font-bold text-emerald-300 hover:bg-emerald-500/10">Read the practical guide <ArrowRight className="ml-2 h-4 w-4" /></Link>
+          </section>
           <section className="mt-16 rounded-3xl border border-blue-500/20 bg-blue-500/5 p-8 md:p-12 text-center">
             <h2 className="text-3xl font-black text-white">Stop losing property leads after the first enquiry.</h2>
             <p className="max-w-2xl mx-auto mt-4 text-slate-400">Raja AI Systems can deploy the 5-member workforce around your lead source, WhatsApp, sales process and CRM, with the signed SLA defining the applicable performance conditions.</p>
