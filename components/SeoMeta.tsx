@@ -16,12 +16,13 @@ interface SeoMetaProps {
 
 export const SeoMeta: React.FC<SeoMetaProps> = ({
   title, description, keywords, ogImage, ogType = 'website',
-  canonical, schemaObj, articleBody, datePublished, authorName = 'QuickKit AI'
+  canonical, schemaObj, articleBody, datePublished, authorName = 'Raja AI Systems'
 }) => {
-  const siteName = 'QuickKit AI';
+  const siteName = 'Raja AI Systems';
   const defaultOgImage = ogImage || 'https://quickkitai.com/og-image.png';
   const canonicalUrl = canonical || (typeof window !== 'undefined' ? window.location.href : 'https://quickkitai.com');
-  const fullTitle = title.includes('QuickKit') ? title : `${title} | QuickKit AI`;
+  const hasBrand = /Raja AI Systems|QuickKit AI/i.test(title);
+  const fullTitle = hasBrand ? title : `${title} | Raja AI Systems`;
 
   const articleSchema = articleBody ? {
     '@context': 'https://schema.org',
@@ -38,8 +39,9 @@ export const SeoMeta: React.FC<SeoMetaProps> = ({
     '@context': 'https://schema.org',
     '@type': 'Organization',
     name: siteName,
+    alternateName: 'QuickKit AI',
     url: 'https://quickkitai.com',
-    description: 'Managed AI agents and AI workforce systems for Indian businesses, including sales, support, CRM, WhatsApp, voice and business automation.'
+    description: 'Managed AI automation for Indian real-estate teams, with healthcare and other workflow automation available as secondary or project-specific services. Integrations are configured and verified per deployment.'
   };
 
   return (
