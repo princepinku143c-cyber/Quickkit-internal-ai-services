@@ -7,6 +7,7 @@
 - https://quickkitai.com/: Main overview of the managed AI workforce and services.
 - https://quickkitai.com/services/real-estate: Real-estate-focused service information.
 - https://quickkitai.com/real-estate-ai-questions: Questions and answers about real estate AI workflows.
+- https://quickkitai.com/guides/real-estate-ai-lead-qualification: A practical guide to property lead qualification, follow-up, CRM handoff and site-visit booking.
 - https://quickkitai.com/blog: Published articles and educational content.
 - https://quickkitai.com/about: Company information.
 - https://quickkitai.com/contact: Contact information.
