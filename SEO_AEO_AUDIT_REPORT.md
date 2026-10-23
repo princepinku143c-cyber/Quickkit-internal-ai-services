@@ -21,6 +21,7 @@ This is a technical and content foundation pass, not a completed AEO campaign an
 - Added a useful public guide on real-estate AI lead qualification in India, including an Article schema, FAQ schema, internal links, and practical safety/measurement guidance.
 - Added the guide link to the real-estate service page and `llms.txt`.
 - Changed blog listing metadata to use the actual `BLOG_POSTS.length` rather than hard-coded article counts.
+- Cleaned 74 malformed blog card excerpts (IDs 11–84) and removed nonfunctional `/blog/{id}` links until complete article pages exist.
 - Aligned shared SEO titles and Organization structured data with **Raja AI Systems**, with **QuickKit AI** as an alternate name.
 - Added a top-level React `Suspense` boundary around lazy-loaded routes to support proper loading of lazy pages.
 - Added this report to record verified work and remaining blockers.
