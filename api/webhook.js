@@ -14,7 +14,8 @@ export default async function handler(req, res) {
   }
 
   if (req.method !== 'POST') {
-    return error(res, "Method Not Allowed: Webhook requires POST requests.", 450);
+    res.setHeader('Allow', 'POST, OPTIONS');
+    return error(res, "Method Not Allowed: Webhook requires POST requests.", 405);
   }
 
   // Parse client_id or uid to match query formats

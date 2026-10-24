@@ -27,6 +27,10 @@ export default async (req, res) => {
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     const { action } = req.query;
+    if (action === 'lead' && req.method !== 'POST') {
+        res.setHeader('Allow', 'POST, OPTIONS');
+        return error(res, 'Method Not Allowed', 405);
+    }
     const authHeader = req.headers.authorization;
 
     let userId = null;
