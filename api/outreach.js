@@ -1,5 +1,4 @@
 import admin from "./_lib/firebaseAdmin.js";
-import fetch from "node-fetch";
 import nodemailer from "nodemailer";
 import dns from "dns";
 

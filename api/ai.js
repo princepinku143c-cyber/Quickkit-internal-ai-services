@@ -48,7 +48,7 @@ export default async function handler(req, res) {
 }
 
 async function handleKelly(req, res, userId) {
-  const { message, history } = req.body;
+  const { message, history } = req.body || {};
   if (!message) return error(res, "Payload missing: Neural context required.", 400);
 
   try {
