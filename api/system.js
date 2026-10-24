@@ -1,18 +1,8 @@
 
-import admin from 'firebase-admin';
+import admin from './_lib/firebaseAdmin.js';
 import nodemailer from 'nodemailer';
 import { askAI } from './services/aiService.js';
 
-// Initialize Firebase Admin if not already initialized
-if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert({
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        })
-    });
-}
 
 const success = (res, data) => res.status(200).json(data);
 const error = (res, msg, code = 400) => res.status(code).json({ error: msg });
