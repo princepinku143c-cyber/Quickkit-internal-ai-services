@@ -41,6 +41,15 @@ assert.match(seoMeta, /https:\/\/quickkitai\.com\$\{window\.location\.pathname\}
 assert.doesNotMatch(seoMeta, /new Date\(\)\.toISOString\(\)/, 'Article date must not be fabricated at runtime');
 assert.match(seoMeta, /https:\/\/quickkitai\.com\/#organization/);
 const vercelConfig = JSON.parse(vercelConfigText);
+for (const [source, destination] of [
+  ['/privacy-policy', 'https://quickkitai.com/privacy'],
+  ['/terms-of-service', 'https://quickkitai.com/terms'],
+]) {
+  assert.ok(
+    vercelConfig.redirects.some((rule) => rule.source === source && rule.destination === destination && rule.permanent === true),
+    source + ' should permanently redirect to its canonical legal page',
+  );
+}
 for (const path of ['/services/real-estate','/services/healthcare','/guides/real-estate-ai-lead-qualification','/real-estate-ai-questions','/blog','/about','/contact','/seo-audit','/privacy','/terms']) {
   const routeIndex = vercelConfig.rewrites.findIndex((r) => r.source === path && r.destination === `${path}/index.html`);
   const slashIndex = vercelConfig.rewrites.findIndex((r) => r.source === `${path}/` && r.destination === `${path}/index.html`);

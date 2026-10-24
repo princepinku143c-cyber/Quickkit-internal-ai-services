@@ -67,6 +67,16 @@
   ],
   "redirects": [
     {
+      "source": "/privacy-policy",
+      "destination": "https://quickkitai.com/privacy",
+      "permanent": true
+    },
+    {
+      "source": "/terms-of-service",
+      "destination": "https://quickkitai.com/terms",
+      "permanent": true
+    },
+    {
       "source": "/:path*",
       "has": [
         {
