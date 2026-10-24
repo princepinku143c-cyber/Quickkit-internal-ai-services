@@ -1,118 +1,83 @@
-# QuickKitAI / Raja AI Systems — SEO & AEO Readiness Audit
+# QuickKitAI / Raja AI Systems — SEO, Security & Performance Readiness Report
 
 **Audit date:** 23 October 2026  
 **Repository:** `princepinku143c-cyber/Quickkit-internal-ai-services`  
-**Audit branch:** `aeo/quickkitai-readiness`  
-**Production status:** This branch has not been merged into `main`; no production deployment was intentionally triggered as part of this audit.
+**Follow-up branch:** `fix/consolidated-security-performance-audit`
+**Production status:** The earlier SEO/AEO PR is already merged into `main`. This follow-up branch is still being prepared locally and has **not** yet been pushed, merged or deployed. A successful local build is not proof of a production rollout.
 
 ## Executive summary
 
-This is a technical and content foundation pass, not a completed AEO campaign and not a guarantee of inclusion in ChatGPT, Gemini, Perplexity, Google, or another search surface. The branch adds optional LLM-facing guidance, crawler rules, real-estate-focused metadata, a practical real-estate guide, and a deployment checklist. Search visibility and rankings have not been measured with Search Console or a repeatable AI-citation test set.
+This follow-up pass targets four classes of risk: vulnerable dependencies, an oversized initial JavaScript bundle, route-specific HTML/metadata not guaranteed in a Vite SPA’s initial response, and unsubstantiated commercial/performance copy. Local validation now passes for the SEO asset source checks, all 10 generated prerendered documents, TypeScript, API JavaScript syntax and the full npm audit. The new branch still needs a pushed Vercel preview, clean-install verification and direct HTTP/browser checks before one consolidated production rollout.
 
-## Work prepared on the audit branch
+This is not a ranking or AI-citation guarantee. No verified Google Search Console baseline or repeatable AI-search citation baseline has been collected.
 
-- Added `public/llms.txt` with a factual description of the business, primary public pages, and limits on claims about integrations/results.
-- Added an explicit `OAI-SearchBot` group to `public/robots.txt`.
-- Ensured named crawler groups and the wildcard rules disallow private/internal paths including `/scratch/`, dashboard/admin/client/API paths.
-- Changed homepage SEO metadata to make real-estate automation the primary positioning and healthcare automation a secondary service.
-- Aligned homepage React-rendered metadata with the HTML shell metadata.
-- Clarified the real-estate service page description while retaining healthcare as a secondary service.
-- Added `/services/healthcare` and `/guides/real-estate-ai-lead-qualification` to `public/sitemap.xml`; both routes are registered in the app.
-- Added a useful public guide on real-estate AI lead qualification in India, including an Article schema, FAQ schema, internal links, and practical safety/measurement guidance.
-- Added the guide link to the real-estate service page and `llms.txt`.
-- Changed blog listing metadata to use the actual `BLOG_POSTS.length` rather than hard-coded article counts.
-- Replaced the thin 87-card blog listing with a curated knowledge hub linking only to existing public guide, real-estate Q&A, and service pages; no nonfunctional `/blog/{id}` links are exposed.
-- Cleaned 74 legacy blog card excerpts (IDs 11–84); the legacy 87-entry dataset is no longer rendered in the public listing and must be reviewed before reuse.
-- Aligned shared SEO titles and Organization structured data with **Raja AI Systems**, with **QuickKit AI** as an alternate name.
-- Removed route-mismatched global `Service` and `FAQPage` JSON-LD from the shared HTML shell; route-specific service/article/FAQ schema is managed by the relevant page components instead.
-- Normalized fallback canonicals to the production `https://quickkitai.com` hostname and pathname, excluding query-string tracking parameters and fragments.
-- Added stable `@id` values for Organization and WebSite structured data so the static shell and React Helmet metadata can reference the same entities.
-- Removed the `SearchAction` structured-data claim because the linked question-and-answer page is not a verified site-search interface.
-- Removed the automatic current-time `datePublished` fallback from generic Article schema; publication dates are emitted only when explicitly supplied.
-- Replaced the no-JavaScript fallback's time-sensitive Dussehra pilot pricing with non-promotional service-scope copy so the static fallback does not advertise a potentially expired offer.
-- Added a top-level React `Suspense` boundary around lazy-loaded routes to support proper loading of lazy pages.
-- Added this report to record verified work and remaining blockers.
+## Fixes prepared
 
-## Important findings still to resolve
+### Dependency security
 
-### High priority — legacy blog dataset (public-listing risk mitigated)
+The earlier Vercel logs reported npm vulnerabilities. After targeted dependency updates and a scoped `@grpc/grpc-js` override, the full local `npm audit` reports **0 vulnerabilities** (info, low, moderate, high and critical all zero). The branch also migrates the PostCSS/Tailwind integration to Tailwind CSS v4 and adds `package-lock.json`. No blind `npm audit fix --force` was used.
 
-The public `/blog` page now acts as a curated knowledge hub linking to three existing, reader-facing resources: the authored lead-qualification guide, the real-estate Q&A page, and the real-estate service overview. It no longer renders the legacy cards or links to `/blog/{id}`, which previously fell through to the homepage because only `/blog` was registered.
+**Still required:** run `npm ci` from the committed lockfile, repeat audit/build in the pushed branch/preview, and smoke-test the flows affected by Firebase Admin, Nodemailer, Sharp, PostCSS and Tailwind changes.
 
-The legacy `BLOG_POSTS` dataset still contains 87 entries and must not be reactivated as individual indexable articles until full article bodies, unique factual value, publication dates, and excerpts have been reviewed. The old summaries were not evidence of complete articles. The authored guide is a separate public page.
+### Initial-load performance
 
-### High priority — search-engine rendering and route-level metadata
+The previously reported main JavaScript entry was about **1.09 MB minified (297.34 kB gzip)**. The new local build reports the initial app entry at about **451.28 kB minified (126.78 kB gzip)**. The Firebase Firestore SDK is now a separately fetched async chunk at about **668.70 kB minified (173.20 kB gzip)**; it is intended to load only for Firestore/authenticated workflows. `LeadForm` and `PremiumLanding` are lazy-loaded, and Firestore imports are deferred.
 
-This is a Vite + React single-page application. Several page-specific titles, descriptions, canonicals, and structured-data blocks are managed through React Helmet. The source audit cannot prove that every crawler receives final route-specific metadata in its initial HTML. Consider pre-rendering/static generation or server-side rendering for important public landing pages after build/route tests. Do not claim that the current metadata edits solve this on their own.
+Vite built 1,787 modules in about five seconds with no chunk-size warning at the documented 700 kB threshold. Do not keep raising the threshold if bundle size grows. The browser still needs to be exercised for the signed-out landing page, login/lead form and authenticated Firestore paths.
 
-The static HTML shell now keeps only site-wide Organization and WebSite structured data, with stable `@id` values. The global Service and FAQPage blocks were removed because the same SPA shell is served for deep routes and could make unrelated URLs inherit the wrong page schema. Shared React SEO metadata now uses the production hostname for fallback canonicals, removes tracking/query strings, and no longer invents an Article publication date when none is supplied. Route-specific schema still needs to be checked in rendered output for the homepage, service pages, guide and FAQ page.
+### Route-level search rendering
 
-### High priority — dependency security review
+The app uses Vite + React, so React Helmet alone does not ensure that a crawler receives route-specific metadata before JavaScript executes. A build-time prerender script now emits **10 route-specific static HTML files**:
 
-The inspected Vercel install log reported **21 npm audit findings (10 moderate and 11 high)** while installing 371 packages. The inspected log section did not include the full package/advisory breakdown. Before production merge, run a full dependency audit, identify direct versus transitive vulnerable packages, apply compatible targeted updates on the branch, then rebuild and retest. Do not blindly run `npm audit fix --force`, since forced upgrades can introduce breaking changes.
-
-### High priority — validate the latest deployment and public URLs
-
-A Vercel preview for commit `f8bcdbf7bc78299a03dab90bb567b385e261d1ad` was marked **READY** and its Vite build transformed 1,786 modules. Further code and documentation commits followed, so that status is not proof that the current branch head has built successfully. Check the deployment attached to the latest commit and test these paths:
-- `/`
-- `/robots.txt`
-- `/sitemap.xml`
-- `/llms.txt`
 - `/services/real-estate`
 - `/services/healthcare`
 - `/guides/real-estate-ai-lead-qualification`
 - `/real-estate-ai-questions`
 - `/blog`
-- `/blog/1` (known routing blocker until the blog-detail route is fixed)
+- `/about`
+- `/contact`
+- `/seo-audit`
+- `/privacy`
+- `/terms`
 
-The Vercel API build state does not by itself prove that each public URL returns the intended HTTP status, the correct canonical, or the intended rendered page. Direct HTTP checks could not be completed from the current audit environment, so these remain pending.
+Each generated file has its own title, description, canonical, OpenGraph/Twitter metadata, `WebPage` JSON-LD and a readable summary with relevant internal links before the interactive React app mounts. The shared HTML shell keeps only site-wide Organization/WebSite schema; route-specific Service/FAQ schema remains with its appropriate page component.
 
-### Initial discoverability observation — not a ranking baseline
+`npm run build` successfully generated the static snapshots locally. `npm run test:seo` passed the sitemap/crawler checks and validation of all 10 static HTML snapshots. **These changes have not been deployed yet.** Preview HTTP tests are required to confirm Vercel serves the route-specific files rather than the SPA fallback shell.
 
-A public web-search lookup returned the main `quickkitai.com` homepage and showed it had been crawled in the previous week. The specific lookup did not surface separate service/FAQ URL results; that is not proof those pages are unindexed and does not establish Google ranking or AI-platform citation status. A repeatable Search Console and AI-answer baseline is still required.
+### Commercial and performance claims
 
-### Published performance and offer claims
+Seasonal Dussehra wording and unsupported speed/conversion/savings promises were removed from the landing page, legacy hero/pricing/demo/ad components, FAQ, legal page, capability matrix, and generated outreach templates. Price amounts remain the published reference values; discounts, availability, any continuing price lock, and SLA/refund targets are conditional on the current written offer and signed agreement. Generated outreach now recommends measuring outcomes against a client’s recorded baseline rather than promising unsupported percentage uplifts.
 
-The public homepage surfaces numerical claims and a time-limited pilot offer (for example, response-time/lead workflow metrics and visit/consultation commitments). Before using these in client proposals, confirm the precise definition, measurement method, conditions, evidence, and expiry date. Label targets as targets, not measured customer outcomes, and ensure the written SLA matches the site.
+The public blog remains a curated resource hub. The 87-entry legacy blog dataset is not exposed as individual articles until complete articles are reviewed. Search rankings, citations, leads and ROI are not guaranteed.
 
-### Measurement setup — not completed
+### API test safety and code checks
 
-No verified Google Search Console performance/indexing baseline or repeatable AI answer/citation baseline has been established in this audit. The site owner must verify the Search Console property and grant appropriate access before these metrics can be measured.
+`tests/api-test.js` now requires an explicit `TEST_BASE_URL`, refuses `quickkitai.com` production domains, and requires explicit opt-in for remote non-production APIs. The integration suite has **not** been executed against a backend: it submits test leads and calls AI endpoints, and no isolated staging/test backend was configured. Syntax checks are not a substitute for endpoint integration tests.
 
-## Validation checklist
+The existing `ErrorBoundary` typing diagnostic was corrected. `npx tsc --noEmit`, `node --check` for API JavaScript files, and `node --check tests/api-test.js` pass locally.
 
-- [x] Changes isolated on a dedicated branch.
-- [x] `llms.txt` added and linked to the practical guide.
-- [x] Explicit OpenAI search crawler policy present.
-- [x] Private paths consistently disallowed for the named crawler groups.
-- [x] Homepage and real-estate service copy prioritize real estate without deleting healthcare as a secondary service.
-- [x] Sitemap includes the existing real-estate and healthcare service routes and the new guide.
-- [x] Shared metadata/schema helper uses consistent organization naming.
-- [x] Removed global Service/FAQ schema from the shared HTML shell and removed time-sensitive Dussehra pricing from the no-JavaScript fallback.
-- [x] Normalized fallback canonical URLs to the production domain, added stable IDs for global Organization/WebSite schema, and removed unsupported SearchAction schema.
-- [x] Removed dynamic current-time publication dates from generic Article schema.
-- [x] A practical real-estate lead qualification guide is authored and route-registered.
-- [x] A React `Suspense` boundary is now present around lazy-loaded routes.
-- [ ] Latest branch-head Vercel deployment reaches READY after the newest canonical/schema cleanup commits.
-- [ ] Full npm audit findings reviewed and compatible dependency fixes applied/tested.
-- [ ] Live/preview HTTP responses confirmed for robots, sitemap, and llms file.
-- [ ] All sitemap URLs return the intended status and canonical URL.
-- [x] Public blog listing no longer exposes broken `/blog/{id}` links or the thin legacy card set; it links to existing published resources.
-- [x] Unknown service slugs redirect to the canonical real-estate service route instead of serving duplicate content.
-- [ ] Legacy 87-entry blog dataset reviewed before any individual article routes are reintroduced.
-- [ ] Route-specific rendered metadata and structured data validated on each important page.
-- [ ] Search Console property verified; sitemap submitted; indexing/performance baseline recorded.
-- [ ] AI-search prompt set created and baseline citations recorded across ChatGPT Search, Gemini, and Perplexity.
-- [ ] Published performance and seasonal-offer claims reviewed against supporting evidence and contract terms.
+## Local validation results
 
-## Reporting rules
+- `npm run build`: **PASS** — Vite build and 10 prerendered route snapshots generated.
+- `npm run test:seo`: **PASS** — 11 unique sitemap URLs checked; crawler policy, `llms.txt`, schema/route source checks, and all 10 generated HTML pages validated.
+- `npx tsc --noEmit`: **PASS**.
+- API JS syntax checks and test-file syntax check: **PASS**.
+- `npm audit`: **0 reported vulnerabilities**.
+- Main JS initial entry: **451.28 kB minified / 126.78 kB gzip**.
+- Firestore async chunk: **668.70 kB minified / 173.20 kB gzip**.
 
-- Do not give a made-up percentage chance of ranking or being cited.
-- Track technical checklist completion separately from search visibility.
-- For AI-search measurement, use a fixed set of relevant prompts and record whether the business is cited, the cited URL, context/position, date, and platform. Repeat the same prompt set over time because answers vary.
-- For search-engine measurement, compare clicks, impressions, CTR, average position, indexed pages, and qualified enquiries over comparable date ranges.
-- Do not claim rankings, citations, leads, revenue, or ROI are guaranteed.
+## Remaining blockers before production
+
+1. Push the fix branch and wait for its Vercel preview to reach `READY`.
+2. Confirm `npm ci`, build and validators pass from the lockfile/preview build.
+3. Directly test `robots.txt`, `sitemap.xml`, `llms.txt`, all sitemap URLs, route-specific titles/canonicals, `WebPage` schema and initial HTML summaries on the **new preview**.
+4. Browser-smoke-test public navigation, the lead form, login and authenticated Firestore updates.
+5. Run integration tests only against a deliberately configured isolated staging backend.
+6. Check current published prices, offer availability and every SLA/refund/price-lock condition against signed commercial terms.
+7. Verify Google Search Console access, submit the sitemap, record indexing/performance metrics and build a fixed prompt set for future ChatGPT Search/Gemini/Perplexity citation tracking.
+
+Previous production curl checks returned HTTP 200 for the homepage, `robots.txt`, `sitemap.xml`, `llms.txt`, the existing service pages, guide, Q&A and blog. Those checks were against the **older deployed main commit**, so they do not validate this follow-up branch.
 
 ## Rollout recommendation
 
-Keep this work on the audit branch until the newest preview is READY and the priority findings above have been resolved or explicitly accepted. Review the final diff and test URLs before merging. Production merge/deployment remains a separate approval step.
+Keep this branch unmerged until the preview is `READY`, initial HTML and routes are verified, and browser checks are complete. Then review one consolidated PR, merge it once, allow one automatic production deployment, and verify the same endpoints on the live domain. Do not create per-file deployments. Continue tracking technical readiness separately from actual rankings and AI citations.

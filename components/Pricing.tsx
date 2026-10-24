@@ -20,16 +20,16 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => (
     <div className="absolute left-1/2 -translate-x-1/2 -top-60 w-[1000px] h-[560px] rounded-full bg-amber-500/6 blur-[160px] pointer-events-none"/>
     <div className="container mx-auto px-5 md:px-8 max-w-7xl relative z-10">
       <div className="max-w-5xl mx-auto text-center mb-14">
-        <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/5 px-4 py-1.5 text-[10px] font-mono font-black uppercase tracking-[.24em] text-amber-300"><Sparkles className="w-3 h-3"/> Dussehra Festive Offer</div>
+        <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/5 px-4 py-1.5 text-[10px] font-mono font-black uppercase tracking-[.24em] text-amber-300"><Sparkles className="w-3 h-3"/> Current Pilot Offer</div>
         <h2 className="mt-7 text-4xl md:text-6xl font-black text-white tracking-[-.05em]">Enterprise AI workforce. Half-price pilot.</h2>
-        <p className="mt-5 text-lg leading-relaxed text-slate-400 max-w-3xl mx-auto">The master commercial plan uses a regular anchor of ₹70,000 setup + ₹2,40,000/month. The Dussehra pilot offer cuts both by 50% for up to 3 pilot clients, with the discounted retainer locked for the life of the agreed contract.</p>
+        <p className="mt-5 text-lg leading-relaxed text-slate-400 max-w-3xl mx-auto">Reference pricing is ₹70,000 setup + ₹2,40,000/month. The pilot offer is ₹35,000 setup + ₹1,20,000/month for up to 3 pilot clients. Availability and any ongoing price lock must be confirmed in the current written offer and signed agreement.</p>
       </div>
 
       <div className="max-w-6xl mx-auto grid lg:grid-cols-[1.05fr_.95fr] gap-6 items-stretch">
         <div className="rounded-[2.2rem] border border-amber-400/25 bg-gradient-to-b from-amber-500/[.07] via-slate-950/95 to-slate-950 p-7 md:p-10 shadow-[0_30px_120px_rgba(245,158,11,.08)]">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <span className="inline-flex items-center gap-2 rounded-full bg-amber-400/10 border border-amber-400/20 px-3.5 py-1.5 text-[9px] font-black uppercase tracking-[.2em] text-amber-300"><Star className="w-3 h-3 fill-amber-300"/> 3 pilot-client slots</span>
-            <span className="text-[10px] font-mono uppercase tracking-widest text-slate-600">50% lifetime lock*</span>
+            <span className="text-[10px] font-mono uppercase tracking-widest text-slate-600">50% pilot discount*</span>
           </div>
 
           <h3 className="mt-7 text-3xl md:text-4xl font-black text-white">5-Member Autonomous AI Workforce</h3>
@@ -45,7 +45,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => (
               <div>
                 <div className="text-[9px] font-mono uppercase tracking-widest text-slate-600">Monthly management</div>
                 <div className="mt-1 flex items-baseline gap-2"><span className="text-lg text-slate-600 line-through">₹{RAJA_COMMERCIAL_OFFER.regularMonthlyINR.toLocaleString('en-IN')}</span><span className="text-4xl font-black text-emerald-300">₹{RAJA_COMMERCIAL_OFFER.festiveMonthlyINR.toLocaleString('en-IN')}</span></div>
-                <div className="mt-2 text-xs text-slate-500">Starts on Day 30 · locked for life*</div>
+                <div className="mt-2 text-xs text-slate-500">Starts on Day 30 · subject to signed agreement*</div>
               </div>
             </div>
             <div className="mt-5 flex flex-wrap gap-2 text-[10px] font-black uppercase tracking-widest">

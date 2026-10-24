@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { doc, updateDoc } from 'firebase/firestore';
-import { db } from './firebase';
+import { app } from './firebaseCore';
 
 interface IndustryContextType {
   industryType: string;
@@ -28,9 +27,11 @@ export const IndustryProvider: React.FC<{ children: React.ReactNode; initialIndu
 
   const updateIndustryInFirebase = async (uid: string, type: string) => {
     setIndustryType(type);
-    if (db && Object.keys(db).length > 0 && uid) {
+    if (uid) {
       try {
-        const userRef = doc(db as any, 'users', uid);
+        const { doc, updateDoc, getFirestore } = await import('firebase/firestore');
+        if (!app) return;
+        const userRef = doc(getFirestore(app as any), 'users', uid);
         await updateDoc(userRef, {
           industryType: type,
           updated_at: new Date().toISOString(),

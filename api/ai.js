@@ -8,6 +8,15 @@ import { askAI } from "./services/aiService.js";
  * Handles: Kelly Architect, Agent Deployment, and VPS Execution.
  */
 export default async function handler(req, res) {
+  if (req.method === "OPTIONS") {
+    res.setHeader("Allow", "POST, OPTIONS");
+    return res.status(204).end();
+  }
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST, OPTIONS");
+    return error(res, "Method Not Allowed", 405);
+  }
+
   const { action } = req.query;
 
   try {
@@ -39,7 +48,7 @@ export default async function handler(req, res) {
 }
 
 async function handleKelly(req, res, userId) {
-  const { message, history } = req.body;
+  const { message, history } = req.body || {};
   if (!message) return error(res, "Payload missing: Neural context required.", 400);
 
   try {

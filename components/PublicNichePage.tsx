@@ -50,7 +50,7 @@ const NICHE_DATA: Record<string, NicheDetails> = {
 };
 
 const REAL_ESTATE_WORKFLOWS = [
-  { icon: MessageCircle, title: '12-Second WhatsApp Closer', text: 'Responds in WhatsApp voice note + text, qualifies intent and moves the prospect toward an appointment.' },
+  { icon: MessageCircle, title: 'WhatsApp Lead Qualification', text: 'Responds in WhatsApp voice note + text, qualifies intent and moves the prospect toward an appointment.' },
   { icon: UserCheck, title: 'Apify Prospecting + Competitor Intelligence', text: 'Builds targeted prospect lists and competitive intelligence from approved public business/ad signals.' },
   { icon: CalendarCheck, title: 'CRM Sentinel + No-Show Guard', text: 'Locks appointment context, sends the pre-visit location reminder and supports the no-show protection workflow.' },
   { icon: RefreshCw, title: 'Dead Lead Reviver', text: 'Re-engages dormant databases with short conversational hooks and routes responses back into the sales workflow.' },

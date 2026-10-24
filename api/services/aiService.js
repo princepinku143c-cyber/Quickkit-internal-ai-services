@@ -1,4 +1,3 @@
-import fetch from "node-fetch";
 
 /**
  * Hardened AI Intelligence Service.

@@ -16,7 +16,7 @@ const agents = [
     name: 'Speed-to-Lead Closer',
     tone: 'violet',
     icon: Zap,
-    metric: '≤ 12 sec',
+    metric: 'Fast reply',
     subtitle: 'WhatsApp qualification + booking',
     bullets: ['Instant reply', 'Voice + text', 'Buyer qualification', 'Appointment booking'],
   },
@@ -25,7 +25,7 @@ const agents = [
     name: 'Lead Prospector',
     tone: 'cyan',
     icon: Target,
-    metric: '50 / day',
+    metric: 'Daily research',
     subtitle: 'Prospecting + competitor intelligence',
     bullets: ['Targeted research', 'Public business data', 'Competitor monitoring', 'Daily lead reports'],
   },
@@ -34,7 +34,7 @@ const agents = [
     name: 'CRM Sentinel',
     tone: 'emerald',
     icon: CalendarCheck2,
-    metric: '24 / 7',
+    metric: 'Always-on',
     subtitle: 'Booking + no-show protection',
     bullets: ['Calendar lock', 'Location reminder', 'Travel link', 'Sales handoff'],
   },
@@ -43,7 +43,7 @@ const agents = [
     name: 'Dead Lead Reviver',
     tone: 'amber',
     icon: Wand2,
-    metric: '8–15%',
+    metric: 'Measured uplift',
     subtitle: 'Dormant database reactivation',
     bullets: ['Old lead revival', 'Smart follow-up', 'Conversation hooks', 'Reactivation campaigns'],
   },
@@ -52,7 +52,7 @@ const agents = [
     name: 'Reputation Sentinel',
     tone: 'rose',
     icon: Star,
-    metric: '5★',
+    metric: 'Review care',
     subtitle: 'Reviews + local visibility support',
     bullets: ['Review requests', 'Negative escalation', 'Positive routing', 'Local visibility'],
   },
@@ -315,7 +315,7 @@ export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) =>
                 ['05–18s','AGITATE','Leads arrive while the sales desk sleeps.'],
                 ['18–38s','PROOF','Show the five-agent workforce in action.'],
                 ['38–48s','SLA','Show the written performance conditions.'],
-                ['48–60s','CTA','Dussehra offer → direct WhatsApp.'],
+                ['48–60s','CTA','Current pilot offer → direct WhatsApp.'],
               ].map(([time,kicker,text],i) => (
                 <div key={time} className="flex gap-4 border-b border-white/[0.06] py-4 last:border-0 last:pb-1">
                   <div className="w-14 shrink-0 font-mono text-[9px] font-black text-slate-600">{time}</div>
@@ -332,21 +332,21 @@ export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) =>
           <div className="overflow-hidden rounded-[2.25rem] border border-amber-300/15 bg-gradient-to-br from-amber-300/[0.09] via-white/[0.03] to-rose-400/[0.06] p-6 md:p-10">
             <div className="grid gap-10 lg:grid-cols-[1fr_.9fr] lg:items-center">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-black/20 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-amber-200"><Sparkles className="h-3.5 w-3.5" /> Dussehra pilot · up to {RAJA_COMMERCIAL_OFFER.pilotClientSlots} clients</div>
+                <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-black/20 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-amber-200"><Sparkles className="h-3.5 w-3.5" /> Pilot offer · up to {RAJA_COMMERCIAL_OFFER.pilotClientSlots} clients</div>
                 <h2 className="mt-5 max-w-3xl text-4xl font-black tracking-[-0.045em] md:text-6xl">Premium execution without the messy agency layer.</h2>
-                <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-400">One managed workforce covering the five core jobs, with the deployment scope, traffic conditions, integrations and written SLA defined before production.</p>
+                <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-400">One managed workforce covering five core jobs. Scope, traffic conditions, integrations and any measurable performance targets are agreed in writing before production; example metrics are not a promise of outcomes.</p>
                 <div className="mt-7 grid gap-3 sm:grid-cols-2">
                   {['5 specialized AI agents','WhatsApp-first customer journey','Managed deployment + operations','Verification before live'].map(item => <div key={item} className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-black/20 px-4 py-3 text-xs font-bold text-slate-300"><Check className="h-4 w-4 text-emerald-300" />{item}</div>)}
                 </div>
               </div>
 
               <div className="rounded-[2rem] border border-white/[0.09] bg-[#090b10]/90 p-6 shadow-[0_30px_80px_rgba(0,0,0,.35)]">
-                <div className="flex items-center justify-between"><span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-600">Pilot pricing</span><span className="rounded-full bg-emerald-400/10 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-emerald-200">50% OFF</span></div>
+                <div className="flex items-center justify-between"><span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-600">Pilot pricing</span><span className="rounded-full bg-emerald-400/10 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-emerald-200">50% PILOT DISCOUNT</span></div>
                 <div className="mt-6 grid grid-cols-2 gap-3">
                   <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4"><div className="text-[9px] font-black uppercase tracking-widest text-slate-600">Regular</div><div className="mt-3 text-2xl font-black line-through decoration-white/25">₹70,000</div><div className="mt-1 text-[10px] text-slate-500">setup</div><div className="mt-4 text-lg font-black">₹2,40,000</div><div className="text-[10px] text-slate-500">per month</div></div>
                   <div className="rounded-2xl border border-amber-200/20 bg-gradient-to-br from-amber-200/10 to-rose-300/10 p-4"><div className="text-[9px] font-black uppercase tracking-widest text-amber-200">Pilot</div><div className="mt-3 text-2xl font-black text-white">₹35,000</div><div className="mt-1 text-[10px] text-slate-400">setup</div><div className="mt-4 text-lg font-black text-amber-100">₹1,20,000</div><div className="text-[10px] text-slate-400">per month</div></div>
                 </div>
-                <div className="mt-4 rounded-2xl border border-emerald-300/10 bg-emerald-400/[0.05] p-4"><div className="flex items-center gap-2 text-xs font-black text-emerald-100"><ShieldCheck className="h-4 w-4" /> Performance SLA</div><div className="mt-2 text-sm text-slate-400">Real estate: {RAJA_COMMERCIAL_OFFER.realEstateSlaVisits} qualified physical site visits in {RAJA_COMMERCIAL_OFFER.slaDays} days. Healthcare: {RAJA_COMMERCIAL_OFFER.healthcareSlaConsultations} qualified consultations in {RAJA_COMMERCIAL_OFFER.slaDays} days. Written conditions apply.</div></div>
+                <div className="mt-4 rounded-2xl border border-emerald-300/10 bg-emerald-400/[0.05] p-4"><div className="flex items-center gap-2 text-xs font-black text-emerald-100"><ShieldCheck className="h-4 w-4" /> Performance SLA</div><div className="mt-2 text-sm text-slate-400">Real estate: {RAJA_COMMERCIAL_OFFER.realEstateSlaVisits} qualified physical site visits in {RAJA_COMMERCIAL_OFFER.slaDays} days. Healthcare: {RAJA_COMMERCIAL_OFFER.healthcareSlaConsultations} qualified consultations in {RAJA_COMMERCIAL_OFFER.slaDays} days. The targets are binding only when explicitly included in the signed SLA; availability and eligibility are confirmed in writing.</div></div>
                 <button onClick={onBookDemo} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3.5 text-xs font-black uppercase tracking-widest text-black transition hover:bg-amber-100">Claim the Pilot <ArrowRight className="h-4 w-4" /></button>
                 <button onClick={openWhatsApp} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-5 py-3.5 text-xs font-black uppercase tracking-widest text-white transition hover:bg-white/[0.06]"><MessageCircle className="h-4 w-4 text-emerald-300" /> Chat on WhatsApp</button>
               </div>
@@ -394,7 +394,7 @@ export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) =>
                 ['05–18','AGITATION','The lead is shopping while your team sleeps.'],
                 ['18–38','PROOF','Show the 5 agents moving the lead forward.'],
                 ['38–48','SLA','Show the written performance story and conditions.'],
-                ['48–60','CTA','Dussehra pilot → WhatsApp → free demo.'],
+                ['48–60','CTA','Pilot scope → WhatsApp → free demo.'],
               ].map(([time,kicker,line],i) => <div key={time} className="flex gap-4 rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4"><div className="w-14 shrink-0 font-mono text-[10px] font-black text-slate-600">{time}</div><div><div className={`text-[9px] font-black tracking-[0.18em] ${i===4?'text-amber-200':'text-cyan-200'}`}>{kicker}</div><div className="mt-1 text-sm font-bold text-slate-200">{line}</div></div></div>)}
             </div>
             <div className="flex flex-col gap-3 border-t border-white/[0.07] p-6 sm:flex-row">

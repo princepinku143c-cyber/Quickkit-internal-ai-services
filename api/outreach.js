@@ -1,5 +1,4 @@
 import admin from "./_lib/firebaseAdmin.js";
-import fetch from "node-fetch";
 import nodemailer from "nodemailer";
 import dns from "dns";
 
@@ -291,28 +290,28 @@ Website Scraped Context:
 
   const painPoints = [
     {
-      title: isIndia ? "24x7 WhatsApp Handling" : "24/7 Automated Support",
+      title: isIndia ? "WhatsApp Lead Handling" : "Automated Customer Follow-up",
       before: isIndia
         ? "Customer raat ko message karta hai, subah tak competitor se book ho chuka hota hai."
         : "Leads inquire outside office hours and wait overnight, dropping off to competitors who reply faster.",
       after: isIndia
         ? "Raat 2 baje bhi 10 second mein professional reply. Package details, pricing, availability instantly share hoti hai."
-        : "Instant professional responses 24/7 within 10 seconds via WhatsApp/Email. Sharing quotes, itineraries, and booking links dynamically.",
+        : "Automated WhatsApp/Email responses using the configured business information, with relevant quotes, itineraries and booking links where supported.",
       result: isIndia
-        ? "Result: Sirf yeh ek feature monthly bookings 20-30% badha sakta hai."
-        : "Result: Captures and converts up to 25% more after-hours inquiries.",
+        ? "Result: Follow-up consistency and booking impact should be measured against the client's recorded baseline during the pilot."
+        : "Result: Measure how after-hours enquiries are handled and converted against the client's recorded baseline; do not promise an uplift without evidence.",
     },
     {
       title: isIndia ? "Smart Lead Qualification" : "Automated Lead Scoring",
       before: isIndia
         ? "Staff 50 logon se baat karta hai — 45 sirf 'puch rahe the' — 5 genuine customers miss ho jaate hain."
-        : "Sales team spends 80% of their time chatting with low-intent leads, leaving key customers unattended.",
+        : "Sales staff may spend time on low-intent leads while high-intent buyers wait; confirm this workflow problem with the prospect before presenting it as fact.",
       after: isIndia
         ? "AI budget, dates, group size qualify karke, hot leads staff ko instantly forward kar deta hai."
         : "AI pre-qualifies budget, preferences, and timeline, alerting your team only for high-value sales opportunities.",
       result: isIndia
-        ? "Result: Staff productivity 3 guna — same team se 3x zyada bookings."
-        : "Result: Decreases response time by 90% and triples lead-to-booking rates.",
+        ? "Result: Automation may reduce repetitive manual handling; quantify productivity changes from the client's pilot data."
+        : "Result: Measure response time and lead-to-booking rate against a recorded baseline; do not promise a percentage increase without evidence.",
     },
     {
       title: parsedAI.customPainPoint.title,

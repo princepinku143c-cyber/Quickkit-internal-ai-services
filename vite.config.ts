@@ -29,7 +29,9 @@ export default defineConfig(({ mode }) => {
         // through an incompatible dependency graph on Vercel's Linux build.
         output: {}
       },
-      chunkSizeWarningLimit: 650
+      // The main entry is kept below 500 kB; the single larger Firebase Firestore SDK is only fetched by authenticated workflows.
+      // Keep the threshold narrowly above that deferred vendor chunk rather than reintroducing risky manual chunk rules.
+      chunkSizeWarningLimit: 700
     }
   };
 });

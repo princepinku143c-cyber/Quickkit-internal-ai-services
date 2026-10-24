@@ -6,7 +6,7 @@ import { RAJA_COMMERCIAL_OFFER, WHATSAPP_DIRECT_URL, WHATSAPP_USERNAME } from '.
 interface HeroProps { lang: Language; onLaunchArchitect: (prompt: string) => void; }
 
 const workflow = [
-  { icon: MessageCircle, label:'Speed-to-lead', value:'≤ 12 sec' },
+  { icon: MessageCircle, label:'Speed-to-lead', value:'Fast reply' },
   { icon: Bot, label:'AI workforce', value:'5 agents' },
   { icon: Workflow, label:'Follow-up', value:'WhatsApp' },
   { icon: CheckCircle2, label:'Performance', value:'10 visits*' },
@@ -15,7 +15,7 @@ const workflow = [
 
 export const Hero: React.FC<HeroProps> = () => {
   const openWhatsApp = () => {
-    const text = encodeURIComponent('Hi Raja, I want to see the 5-Agent AI Workforce demo and the Dussehra offer.');
+    const text = encodeURIComponent('Hi Raja, I want to see the 5-Agent AI Workforce demo and the current pilot offer.');
     window.open(`${WHATSAPP_DIRECT_URL}?text=${text}`, '_blank', 'noopener,noreferrer');
   };
   const openQR = () => window.open('/quickkit-ai-whatsapp-qr.svg', '_blank', 'noopener,noreferrer');
@@ -30,7 +30,7 @@ export const Hero: React.FC<HeroProps> = () => {
         <div className="grid lg:grid-cols-[1.05fr_.95fr] gap-12 xl:gap-20 items-center">
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/5 px-4 py-2 text-[10px] font-mono font-black uppercase tracking-[.22em] text-amber-300 mb-7">
-              <Sparkles className="w-3 h-3" /> Dussehra · 3 pilot slots · 50% lifetime lock
+              <Sparkles className="w-3 h-3" /> Pilot offer · up to 3 clients · 50% discount*
             </div>
 
             <div className="text-xs md:text-sm font-black tracking-[.38em] text-slate-500 uppercase mb-5">RAJA AI SYSTEMS</div>
@@ -46,7 +46,7 @@ export const Hero: React.FC<HeroProps> = () => {
 
             <div className="mt-7 grid grid-cols-2 sm:grid-cols-4 gap-2 max-w-2xl">
               {[
-                ['12 sec','speed-to-lead',Timer],
+                ['Configured','response target',Timer],
                 ['5','AI teammates',UsersRound],
                 ['10','site visits*',CheckCircle2],
                 ['48h','target deployment',Zap],
@@ -84,9 +84,9 @@ export const Hero: React.FC<HeroProps> = () => {
               <div className="flex items-center justify-between border-b border-white/8 px-5 py-4"><div className="flex items-center gap-3"><div className="flex gap-1.5"><span className="w-2.5 h-2.5 rounded-full bg-red-400/70"/><span className="w-2.5 h-2.5 rounded-full bg-amber-400/70"/><span className="w-2.5 h-2.5 rounded-full bg-emerald-400/70"/></div><span className="text-xs font-mono font-bold text-slate-500">RAJA AI · WORKFORCE CONTROL</span></div><span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/20 bg-emerald-400/5 px-2.5 py-1 text-[9px] font-black uppercase tracking-wider text-emerald-300"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400"/> ONLINE</span></div>
               <div className="p-5 md:p-6">
                 <div className="rounded-2xl border border-amber-400/15 bg-amber-400/5 p-5">
-                  <div className="text-[10px] font-mono uppercase tracking-widest text-amber-300">DUSSEHRA OFFER</div>
+                  <div className="text-[10px] font-mono uppercase tracking-widest text-amber-300">CURRENT PILOT OFFER</div>
                   <div className="mt-2 flex flex-wrap items-baseline gap-2"><span className="text-xl font-bold text-slate-600 line-through">₹{RAJA_COMMERCIAL_OFFER.regularSetupINR.toLocaleString('en-IN')}</span><span className="text-4xl font-black text-white">₹{RAJA_COMMERCIAL_OFFER.festiveSetupINR.toLocaleString('en-IN')}</span><span className="text-xs font-bold text-slate-500">one-time setup</span></div>
-                  <div className="mt-2 text-sm font-black text-emerald-300">₹{RAJA_COMMERCIAL_OFFER.festiveMonthlyINR.toLocaleString('en-IN')} / month <span className="text-slate-500 font-medium">retainer · locked for life*</span></div>
+                  <div className="mt-2 text-sm font-black text-emerald-300">₹{RAJA_COMMERCIAL_OFFER.festiveMonthlyINR.toLocaleString('en-IN')} / month <span className="text-slate-500 font-medium">retainer · subject to signed agreement*</span></div>
                 </div>
                 <div className="mt-4 rounded-2xl border border-white/8 bg-black/20 p-4"><div className="flex items-center justify-between mb-4"><div><div className="text-sm font-black text-white">5-Agent Lead-to-Visit System</div><div className="text-[10px] text-slate-500 mt-1">Example real-estate customer journey</div></div><BarChart3 className="w-5 h-5 text-indigo-400"/></div>
                   <div className="grid grid-cols-5 gap-2">{workflow.map(({icon:Icon,label,value},i)=><div key={label} className="relative"><div className="rounded-xl border border-white/8 bg-slate-900/70 p-2.5 h-full"><Icon className="w-4 h-4 text-blue-300 mb-2"/><div className="text-[8px] font-black uppercase tracking-wider text-slate-500">{label}</div><div className="text-[10px] font-bold text-slate-200 mt-1">{value}</div></div>{i<workflow.length-1&&<div className="hidden xl:block absolute -right-2 top-1/2 w-2 h-px bg-blue-400/40"/>}</div>)}</div>

@@ -78,9 +78,31 @@ export const IntegrationsView: React.FC<IntegrationsProps> = ({ user }) => {
   const [copied, setCopied] = useState(false);
   const [showWebhookModal, setShowWebhookModal] = useState(false);
   const [testingHook, setTestingHook] = useState(false);
+  const [webhookSecret, setWebhookSecret] = useState('');
+  const [copiedSecret, setCopiedSecret] = useState(false);
 
   // Generate unique Webhook URL
   const webhookUrl = `${window.location.protocol}//${window.location.host}/api/webhook?client_id=${user.uid}`;
+  const ensureWebhookSecret = async () => {
+    if (webhookSecret) return webhookSecret;
+    if (!db || !user.uid) throw new Error('Connect your account database before creating a webhook secret.');
+    const bytes = new Uint8Array(32);
+    window.crypto.getRandomValues(bytes);
+    const secret = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    await setDoc(doc(db as any, 'users', user.uid), { webhookSecret: secret }, { merge: true });
+    setWebhookSecret(secret);
+    return secret;
+  };
+  const handleOpenWebhook = async () => {
+    try { await ensureWebhookSecret(); setShowWebhookModal(true); }
+    catch (err: any) { alert(`Could not prepare a secure webhook: ${err?.message || err}`); }
+  };
+  const handleCopySecret = async () => {
+    if (!webhookSecret) return;
+    await navigator.clipboard.writeText(webhookSecret);
+    setCopiedSecret(true);
+    setTimeout(() => setCopiedSecret(false), 2000);
+  };
 
   const handleTriggerTestPayload = async () => {
     setTestingHook(true);
@@ -88,7 +110,8 @@ export const IntegrationsView: React.FC<IntegrationsProps> = ({ user }) => {
       const response = await fetch(`/api/webhook?uid=${user.uid}`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'X-Webhook-Secret': webhookSecret
         },
         body: JSON.stringify({
           name: `Jane Doe (Test Lead ${Math.floor(Math.random() * 1000)})`,
@@ -128,9 +151,8 @@ export const IntegrationsView: React.FC<IntegrationsProps> = ({ user }) => {
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           const data = docSnap.data();
-          if (data.integrations) {
-            setIntegrations(data.integrations);
-          }
+          if (data.integrations) setIntegrations(data.integrations);
+          if (typeof data.webhookSecret === 'string') setWebhookSecret(data.webhookSecret);
         }
       } catch (e) {
         console.error("Failed to load integrations:", e);
@@ -262,7 +284,7 @@ export const IntegrationsView: React.FC<IntegrationsProps> = ({ user }) => {
 
           <div className="pt-6 border-t border-[#1e293b]/40 mt-6 space-y-2.5">
             <button
-              onClick={() => setShowWebhookModal(true)}
+              onClick={handleOpenWebhook}
               className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-600/15 flex items-center justify-center gap-1.5"
             >
               <Link className="w-4 h-4" /> Get Webhook URL
@@ -380,10 +402,20 @@ export const IntegrationsView: React.FC<IntegrationsProps> = ({ user }) => {
                 </button>
               </div>
 
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Required HTTP header: X-Webhook-Secret</label>
+                <div className="p-4 bg-slate-950 border border-emerald-500/20 rounded-2xl flex items-center gap-3">
+                  <input type="text" readOnly value={webhookSecret} className="bg-transparent border-none outline-none text-xs text-emerald-300 w-full font-mono" />
+                  <button type="button" onClick={handleCopySecret} className="p-2 bg-emerald-600/10 hover:bg-emerald-600 text-emerald-300 hover:text-white rounded-lg border border-emerald-500/20">
+                    {copiedSecret ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                  </button>
+                </div>
+                <p className="text-[11px] text-amber-300">Treat this as a password. Add it as an HTTP header in your external automation; never put it in the URL.</p>
+              </div>
               <div className="p-5 bg-blue-500/5 border border-blue-500/10 rounded-2xl space-y-3">
                 <h4 className="text-[10px] font-black text-blue-400 uppercase tracking-widest flex items-center gap-1.5"><AlertCircle className="w-3.5 h-3.5" /> Integration Instructions</h4>
                 <p className="text-xs text-slate-400 leading-relaxed">
-                  Paste this URL into **Shopify Webhooks**, **Facebook Ads Manager (Zapier/Make)**, or **ClickFunnels Webhook settings**. When external leads trigger this webhook, they will instantly populate as a card inside your Opportunities Kanban board!
+                  Paste this URL into your external automation and configure the HTTP header **X-Webhook-Secret** using the secret above. Keep the secret private. Requests without a valid account secret are rejected; successful requests create a lead card in your Opportunities Kanban board.
                 </p>
               </div>
 

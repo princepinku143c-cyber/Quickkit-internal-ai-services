@@ -1,18 +1,9 @@
 
-import admin from 'firebase-admin';
+import admin from './_lib/firebaseAdmin.js';
 import nodemailer from 'nodemailer';
 import { askAI } from './services/aiService.js';
+import { checkRateLimit } from './_lib/security.js';
 
-// Initialize Firebase Admin if not already initialized
-if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert({
-            projectId: process.env.FIREBASE_PROJECT_ID,
-            clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-            privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-        })
-    });
-}
 
 const success = (res, data) => res.status(200).json(data);
 const error = (res, msg, code = 400) => res.status(code).json({ error: msg });
@@ -27,6 +18,10 @@ export default async (req, res) => {
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     const { action } = req.query;
+    if (action === 'lead' && req.method !== 'POST') {
+        res.setHeader('Allow', 'POST, OPTIONS');
+        return error(res, 'Method Not Allowed', 405);
+    }
     const authHeader = req.headers.authorization;
 
     let userId = null;
@@ -76,7 +71,11 @@ export default async (req, res) => {
 
 async function handleLead(req, res, userId) {
     const data = req.body;
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return error(res, 'Invalid lead payload', 400);
     try {
+        const forwarded = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown');
+        const clientIp = forwarded.split(',').map((part) => part.trim()).filter(Boolean).pop() || 'unknown';
+        await checkRateLimit(admin, clientIp, 'system-lead', 5);
         const leadRef = admin.firestore().collection('leads').doc();
         const projectRef = admin.firestore().collection('projects').doc();
 
@@ -220,7 +219,7 @@ async function handleLead(req, res, userId) {
 
         return success(res, { status: "LEAD_CREATED", projectId: projectRef.id });
     } catch (e) {
-        return error(res, e.message, 500);
+        return error(res, e.message, e.status || 500);
     }
 }
 
