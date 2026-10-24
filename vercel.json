@@ -68,23 +68,4 @@
   "redirects": [
     {
       "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "www.quickkitai.com"
-        }
-      ],
-      "destination": "https://quickkitai.com/:path*",
-      "permanent": true
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/((?!assets/|sitemap\\.xml|robots\\.txt|favicon).*)",
-      "destination": "/index.html"
-    }
-  ],
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
-  "installCommand": "npm install"
-}
+      "has": ¶»§q«^

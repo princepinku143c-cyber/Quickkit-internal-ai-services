@@ -1,7 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
-
+@import "tailwindcss";
+@config "./tailwind.config.js";
 @layer base {
   html {
     scroll-behavior: smooth;
@@ -38,29 +36,4 @@
   #initial-loader { @apply flex flex-col items-center justify-center h-screen bg-[#030712]; }
   .spinner-container { @apply relative w-24 h-24 flex items-center justify-center; }
   .glow-bg { @apply absolute inset-0 rounded-full blur-3xl bg-blue-500/30 animate-pulse; }
-  .spin-1 { @apply absolute w-full h-full; animation: spin 5s linear infinite; }
-  .spin-2 { @apply absolute w-16 h-16; animation: spin-reverse 6s ease-in-out infinite; }
-  .center-icon { @apply w-8 h-8 bg-gradient-to-br from-blue-500 to-emerald-500 rounded-lg animate-pulse flex items-center justify-center text-white font-sans font-black text-[10px]; }
-  .loader-text { @apply mt-6 text-[#e2e8f0] font-sans font-bold tracking-widest uppercase text-sm; }
-
-  /* Premium, low-motion reveal system: smooth on desktop and respectful on mobile. */
-  .reveal-up { animation: reveal-up 700ms cubic-bezier(.22,1,.36,1) both; }
-  .reveal-fade { animation: reveal-fade 600ms ease-out both; }
-  .float-soft { animation: float-soft 6s ease-in-out infinite; }
-}
-
-@keyframes spin { 100% { transform: rotate(360deg); } }
-@keyframes spin-reverse { 100% { transform: rotate(-360deg); } }
-@keyframes pulse-glow { 0%,100% { opacity:.22; transform:scale(1); } 50% { opacity:.55; transform:scale(1.06); } }
-@keyframes reveal-up { from { opacity:0; transform:translate3d(0,18px,0); } to { opacity:1; transform:translate3d(0,0,0); } }
-@keyframes reveal-fade { from { opacity:0; } to { opacity:1; } }
-@keyframes float-soft { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-6px); } }
-
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
-}
-
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: #030712; }
-::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 20px; }
-::-webkit-scrollbar-thumb:hover { background: #334155; }
+  .spin-1 { @apply absolute ¶»§q«^
