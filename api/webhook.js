@@ -1,12 +1,12 @@
 import admin, { db } from "./_lib/firebaseAdmin.js";
 import { timingSafeEqual } from "node:crypto";
 import { checkRateLimit } from "./_lib/security.js";
+import { getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from "./_lib/input.js";
 import { success, error } from "./_lib/response.js";
 import { askAI } from "./services/aiService.js";
 
 export default async function handler(req, res) {
   // CORS configuration
-  res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Webhook-Secret');
@@ -21,12 +21,13 @@ export default async function handler(req, res) {
   }
 
   // Parse client_id or uid to match query formats
-  const targetUid = req.query.client_id || req.query.uid;
+  const targetUid = safeText(req.query.client_id || req.query.uid, 128);
   if (!targetUid) {
     return error(res, "Bad Request: Missing client_id/uid verification parameter.", 400);
   }
-
-  const data = req.body || {};
+  const data = req.body;
+  if (!isPlainObject(data)) return error(res, "Invalid webhook payload.", 400);
+  if (payloadTooLarge(data)) return error(res, "Webhook payload is too large.", 413);
 
   try {
     if (!db) {
@@ -43,33 +44,31 @@ export default async function handler(req, res) {
     if (expectedBytes.length !== suppliedBytes.length || !timingSafeEqual(expectedBytes, suppliedBytes)) {
       return error(res, "Unauthorized: a valid X-Webhook-Secret is required.", 401);
     }
-    const forwarded = String(req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "unknown");
-    const clientIp = forwarded.split(",").map((part) => part.trim()).filter(Boolean).pop() || "unknown";
-    await checkRateLimit(admin, `${targetUid}:${clientIp}`, "webhook", 10);
+    await checkRateLimit(admin, String(targetUid) + ":" + getClientIp(req), "webhook", 10);
     const leadRef = db.collection('leads').doc();
     const projectRef = db.collection('projects').doc();
 
-    const budgetVal = Number(data.budget) || Number(data.price) || 0;
+    const budgetVal = safeNumber(data.budget) || safeNumber(data.price) || 0;
 
-    // Bundle custom metadata fields (excluding standard keys)
-    const standardKeys = ['name', 'email', 'phone', 'businessName', 'company', 'projectName', 'price', 'budget', 'requirement', 'notes'];
-    const custom_metadata = data.custom_metadata || {};
-    
-    Object.entries(data).forEach(([key, val]) => {
-      if (!standardKeys.includes(key) && typeof val !== 'object') {
-        custom_metadata[key] = val;
-      }
+    // Keep only bounded scalar metadata; never mutate an untrusted nested value.
+    const standardKeys = ['name', 'email', 'phone', 'businessName', 'company', 'projectName', 'price', 'budget', 'requirement', 'notes', 'custom_metadata'];
+    const extraMetadata = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (!standardKeys.includes(key) && ['string', 'number', 'boolean'].includes(typeof value)) extraMetadata[key] = value;
+    }
+    const custom_metadata = safeMetadata({
+      ...(isPlainObject(data.custom_metadata) ? data.custom_metadata : {}),
+      ...extraMetadata
     });
-
     const leadData = {
-      name: data.name || 'Webhook Inbound Lead',
-      email: data.email || '',
-      phone: data.phone || '',
-      businessName: data.businessName || data.company || 'Unknown Company',
-      projectName: data.projectName || 'External Webhook Sync',
+      name: safeText(data.name, 120) || 'Webhook Inbound Lead',
+      email: safeText(data.email, 254),
+      phone: safeText(data.phone, 48),
+      businessName: safeText(data.businessName || data.company, 160) || 'Unknown Company',
+      projectName: safeText(data.projectName, 180) || 'External Webhook Sync',
       price: budgetVal,
       budget: budgetVal,
-      requirement: data.requirement || data.notes || 'Lead ingested automatically via universal API webhook.',
+      requirement: safeText(data.requirement || data.notes, 3000) || 'Lead ingested automatically via universal API webhook.',
       userId: targetUid,
       status: 'NEW',
       custom_metadata,
@@ -189,6 +188,12 @@ export default async function handler(req, res) {
 
     return success(res, { status: "LEAD_INGESTED", leadId: leadRef.id, projectId: projectRef.id });
   } catch (e) {
-    return error(res, e.message, e.status || 500);
+    if (e?.status === 429) {
+      if (e.retryAfter) res.setHeader('Retry-After', String(e.retryAfter));
+      return error(res, 'Too many webhook requests. Please retry shortly.', 429);
+    }
+    if (e?.status === 503) return error(res, 'Webhook service is temporarily unavailable.', 503);
+    console.error('WEBHOOK_ERROR:', e);
+    return error(res, 'Webhook processing failed. Please retry later.', 500);
   }
 }

@@ -1,0 +1,18 @@
+import assert from "node:assert/strict";
+import { escapeHtml, getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from "../api/_lib/input.js";
+assert.equal(isPlainObject({ a: 1 }), true);
+assert.equal(isPlainObject([]), false);
+assert.equal(isPlainObject(null), false);
+assert.equal(safeText({ a: 1 }, 10), "");
+assert.equal(safeText("  abc  ", 3), "abc");
+assert.equal(safeNumber("125.5"), 125.5);
+assert.equal(safeNumber("Infinity", 0), 0);
+assert.deepEqual(safeMetadata(["not", "an", "object"]), {});
+const metadata = JSON.parse('{"allowed":"ok","count":3,"flag":true,"huge":{"nested":true},"__proto__":"blocked","has spaces":"blocked"}');
+assert.deepEqual(safeMetadata(metadata), { allowed: "ok", count: 3, flag: true });
+assert.equal(payloadTooLarge({ x: "a".repeat(100) }, 50), true);
+assert.equal(payloadTooLarge({ x: "small" }, 100), false);
+assert.equal(getClientIp({ headers: { "x-real-ip": "203.0.113.7", "x-forwarded-for": "198.51.100.8, 203.0.113.7" } }), "203.0.113.7");
+assert.equal(getClientIp({ headers: { "x-forwarded-for": "198.51.100.8, 203.0.113.7" } }), "198.51.100.8");
+assert.equal(escapeHtml("<img src=\"x\" onerror='x'>"), "&lt;img src=&quot;x&quot; onerror=&#39;x&#39;&gt;");
+console.log("Security input-helper tests passed.");
