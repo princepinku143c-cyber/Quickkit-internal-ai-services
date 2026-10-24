@@ -36,8 +36,8 @@ jobs:
           npm install --package-lock-only --ignore-scripts --no-audit --no-fund
           npm ci --ignore-scripts --no-audit --no-fund
           npm audit --audit-level=low
-          npm run test:seo
           npm run build
+          npm run test:seo
           npx tsc --noEmit
 
       - name: Commit verified source changes
