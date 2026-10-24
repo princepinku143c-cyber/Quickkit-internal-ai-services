@@ -1,4 +1,6 @@
 import admin, { db } from "./_lib/firebaseAdmin.js";
+import { timingSafeEqual } from "node:crypto";
+import { checkRateLimit } from "./_lib/security.js";
 import { success, error } from "./_lib/response.js";
 import { askAI } from "./services/aiService.js";
 
@@ -7,7 +9,7 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Credentials', true);
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Webhook-Secret');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -28,9 +30,22 @@ export default async function handler(req, res) {
 
   try {
     if (!db) {
-      return error(res, "Database Offline: Firestore admin instance is unavailable.", 500);
+      return error(res, "Database Offline: Firestore admin instance is unavailable.", 503);
     }
-
+    const userSnap = await db.collection("users").doc(String(targetUid)).get();
+    const expectedSecret = userSnap.exists ? userSnap.data()?.webhookSecret : null;
+    const suppliedSecret = req.headers["x-webhook-secret"];
+    if (typeof expectedSecret !== "string" || !expectedSecret || typeof suppliedSecret !== "string" || !suppliedSecret) {
+      return error(res, "Unauthorized: a valid X-Webhook-Secret is required.", 401);
+    }
+    const expectedBytes = Buffer.from(expectedSecret, "utf8");
+    const suppliedBytes = Buffer.from(suppliedSecret, "utf8");
+    if (expectedBytes.length !== suppliedBytes.length || !timingSafeEqual(expectedBytes, suppliedBytes)) {
+      return error(res, "Unauthorized: a valid X-Webhook-Secret is required.", 401);
+    }
+    const forwarded = String(req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "unknown");
+    const clientIp = forwarded.split(",").map((part) => part.trim()).filter(Boolean).pop() || "unknown";
+    await checkRateLimit(admin, `${targetUid}:${clientIp}`, "webhook", 10);
     const leadRef = db.collection('leads').doc();
     const projectRef = db.collection('projects').doc();
 
@@ -174,6 +189,6 @@ export default async function handler(req, res) {
 
     return success(res, { status: "LEAD_INGESTED", leadId: leadRef.id, projectId: projectRef.id });
   } catch (e) {
-    return error(res, e.message, 500);
+    return error(res, e.message, e.status || 500);
   }
 }

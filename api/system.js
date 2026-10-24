@@ -2,6 +2,7 @@
 import admin from './_lib/firebaseAdmin.js';
 import nodemailer from 'nodemailer';
 import { askAI } from './services/aiService.js';
+import { checkRateLimit } from './_lib/security.js';
 
 
 const success = (res, data) => res.status(200).json(data);
@@ -70,7 +71,11 @@ export default async (req, res) => {
 
 async function handleLead(req, res, userId) {
     const data = req.body;
+    if (!data || typeof data !== 'object' || Array.isArray(data)) return error(res, 'Invalid lead payload', 400);
     try {
+        const forwarded = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown');
+        const clientIp = forwarded.split(',').map((part) => part.trim()).filter(Boolean).pop() || 'unknown';
+        await checkRateLimit(admin, clientIp, 'system-lead', 5);
         const leadRef = admin.firestore().collection('leads').doc();
         const projectRef = admin.firestore().collection('projects').doc();
 
@@ -214,7 +219,7 @@ async function handleLead(req, res, userId) {
 
         return success(res, { status: "LEAD_CREATED", projectId: projectRef.id });
     } catch (e) {
-        return error(res, e.message, 500);
+        return error(res, e.message, e.status || 500);
     }
 }
 

@@ -1,15 +1,6 @@
-import admin from 'firebase-admin';
+import admin from './_lib/firebaseAdmin.js';
 import nodemailer from 'nodemailer';
-
-if (!admin.apps.length) {
-  admin.initializeApp({
-    credential: admin.credential.cert({
-      projectId: process.env.FIREBASE_PROJECT_ID,
-      clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-      privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-    }),
-  });
-}
+import { checkRateLimit } from './_lib/security.js';
 
 const json = (res, status, body) => res.status(status).json(body);
 const esc = (value = '') => String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -30,6 +21,9 @@ export default async function handler(req, res) {
   const fromEmail = process.env.EMAIL_USER || adminEmail;
 
   try {
+    const forwarded = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown');
+    const clientIp = forwarded.split(',').map((part) => part.trim()).filter(Boolean).pop() || 'unknown';
+    await checkRateLimit(admin, clientIp, 'lead-submit', 5);
     const leadRef = admin.firestore().collection('leads').doc();
     const lead = {
       id: leadRef.id,
@@ -79,6 +73,8 @@ export default async function handler(req, res) {
     return json(res, 200, { status: 'LEAD_CREATED', leadId: lead.id, adminNotified: true, clientConfirmationSent: true });
   } catch (error) {
     console.error('LEAD_SUBMIT_ERROR:', error);
+    if (error?.status === 429) return json(res, 429, { error: 'Too many requests. Please wait a minute and try again.' });
+    if (error?.status === 503) return json(res, 503, { error: 'Lead intake is temporarily unavailable. Please try again shortly.' });
     return json(res, 500, { error: 'Unable to submit the request right now. Please try again or contact admin@quickkitai.com.' });
   }
 }

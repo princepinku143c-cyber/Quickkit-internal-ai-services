@@ -2,8 +2,14 @@ import * as dotenv from 'dotenv';
 dotenv.config({ path: '.env.local' });
 
 const BASE_URL = (process.env.TEST_BASE_URL || '').replace(/\/$/, '');
+const TEST_WEBHOOK_SECRET = process.env.TEST_WEBHOOK_SECRET || '';
+const TEST_WEBHOOK_UID = process.env.TEST_WEBHOOK_UID || '';
 if (!BASE_URL) {
   console.error('Set TEST_BASE_URL to a dedicated local Vercel Dev/staging API before running this integration suite. It submits test leads and calls AI endpoints; it intentionally has no implicit localhost/production default.');
+  process.exit(2);
+}
+if (!TEST_WEBHOOK_SECRET || !TEST_WEBHOOK_UID) {
+  console.error('Set TEST_WEBHOOK_SECRET and TEST_WEBHOOK_UID for a dedicated staging user before running the webhook integration test.');
   process.exit(2);
 }
 const testUrl = new URL(BASE_URL);
@@ -20,9 +26,9 @@ if (!['localhost', '127.0.0.1', '::1'].includes(testUrl.hostname) && process.env
 async function testUniversalWebhook() {
   console.log('Running Test A: Universal Webhook...');
   try {
-    const res = await fetch(`${BASE_URL}/api/webhook?uid=test_uid`, {
+    const res = await fetch(`${BASE_URL}/api/webhook?uid=${encodeURIComponent(TEST_WEBHOOK_UID)}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'X-Webhook-Secret': TEST_WEBHOOK_SECRET },
       body: JSON.stringify({
         name: 'Mock Webhook Lead',
         email: 'test-webhook@example.com',
