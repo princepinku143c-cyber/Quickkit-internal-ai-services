@@ -10,7 +10,8 @@
     "test:api": "node tests/api-test.js",
     "validate:seo": "node scripts/validate-seo-assets.mjs",
     "validate:prerender": "node scripts/validate-prerendered-pages.mjs",
-    "test:seo": "npm run validate:seo && npm run validate:prerender"
+    "test:seo": "npm run validate:seo && npm run validate:prerender",
+    "test:security": "node tests/input-test.js"
   },
   "dependencies": {
     "@google/genai": "^1.38.0",

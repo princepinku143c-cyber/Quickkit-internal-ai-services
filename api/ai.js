@@ -1,6 +1,7 @@
 import admin from "./_lib/firebaseAdmin.js";
 import { success, error } from "./_lib/response.js";
 import { checkRateLimit } from "./_lib/security.js";
+import { getClientIp, isPlainObject, safeText } from "./_lib/input.js";
 import { askAI } from "./services/aiService.js";
 
 /**
@@ -17,6 +18,9 @@ export default async function handler(req, res) {
     return error(res, "Method Not Allowed", 405);
   }
 
+  if (req.body !== undefined && !isPlainObject(req.body)) {
+    return error(res, "Invalid request payload", 400);
+  }
   const { action } = req.query;
 
   try {
@@ -48,15 +52,23 @@ export default async function handler(req, res) {
 }
 
 async function handleKelly(req, res, userId) {
-  const { message, history } = req.body || {};
-  if (!message) return error(res, "Payload missing: Neural context required.", 400);
+  const body = req.body || {};
+  const rawMessage = body.message;
+  if (typeof rawMessage !== "string" || !rawMessage.trim()) {
+    return error(res, "Payload missing: a text message is required.", 400);
+  }
+  if (rawMessage.length > 5000) return error(res, "Message is too long (maximum 5000 characters).", 413);
+  const message = safeText(rawMessage, 5000);
+  const history = Array.isArray(body.history)
+    ? body.history
+        .filter((item) => isPlainObject(item) && ["user", "assistant"].includes(item.role) && typeof item.content === "string")
+        .slice(-5)
+        .map((item) => ({ role: item.role, content: safeText(item.content, 2000) }))
+        .filter((item) => item.content)
+    : [];
 
   try {
-    // Protect both authenticated and anonymous AI usage before any model call.
-    // Authenticated users are keyed by Firebase UID; guests use a bounded client key.
-    const forwarded = req.headers["x-forwarded-for"];
-    const clientIp = String(forwarded || req.socket?.remoteAddress || "unknown").split(",")[0].trim();
-    const rateKey = userId ? `uid:${userId}` : `guest:${clientIp.slice(0, 96)}`;
+    const rateKey = userId ? "uid:" + userId : "guest:" + getClientIp(req);
     await checkRateLimit(admin, rateKey, "kelly", userId ? 30 : 5);
 
     if (userId) {
@@ -82,7 +94,7 @@ async function handleKelly(req, res, userId) {
     }
 
     const messages = [
-      ...(Array.isArray(history) ? history : []).map(m => ({ role: m.role || 'user', content: m.content || '' })),
+      ...history,
       { role: 'user', content: message }
     ].slice(-6);
 
@@ -95,16 +107,13 @@ async function handleKelly(req, res, userId) {
 }
 
 async function handleDeploy(req, res, userId) {
-  const { agentId, config } = req.body;
-  return success(res, { status: "PROVISIONING", task: "deploy", timestamp: Date.now() });
+  return error(res, "Agent deployment backend is not configured. No deployment was started.", 501);
 }
 
 async function handleExecute(req, res, userId) {
-  const { command } = req.body;
-  return success(res, { status: "QUEUED", command, output: "Mock VPS execution acknowledged." });
+  return error(res, "Command execution backend is not configured. No command was executed.", 501);
 }
 
 async function handleVPSTest(req, res, userId) {
-  const { endpoint, token } = req.body;
-  return success(res, { status: "CONNECTED", endpoint });
+  return error(res, "VPS connectivity adapter is not configured. No connection was verified.", 501);
 }

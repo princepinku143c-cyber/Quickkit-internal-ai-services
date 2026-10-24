@@ -3,6 +3,7 @@ import admin from './_lib/firebaseAdmin.js';
 import nodemailer from 'nodemailer';
 import { askAI } from './services/aiService.js';
 import { checkRateLimit } from './_lib/security.js';
+import { escapeHtml, getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from './_lib/input.js';
 
 
 const success = (res, data) => res.status(200).json(data);
@@ -10,7 +11,6 @@ const error = (res, msg, code = 400) => res.status(code).json({ error: msg });
 
 export default async (req, res) => {
     // Enable CORS
-    res.setHeader('Access-Control-Allow-Credentials', true);
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
@@ -71,24 +71,35 @@ export default async (req, res) => {
 
 async function handleLead(req, res, userId) {
     const data = req.body;
-    if (!data || typeof data !== 'object' || Array.isArray(data)) return error(res, 'Invalid lead payload', 400);
+    if (!isPlainObject(data)) return error(res, 'Invalid lead payload', 400);
+    if (payloadTooLarge(data)) return error(res, 'Lead payload is too large', 413);
     try {
-        const forwarded = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown');
-        const clientIp = forwarded.split(',').map((part) => part.trim()).filter(Boolean).pop() || 'unknown';
-        await checkRateLimit(admin, clientIp, 'system-lead', 5);
+        await checkRateLimit(admin, getClientIp(req), 'system-lead', 5);
         const leadRef = admin.firestore().collection('leads').doc();
         const projectRef = admin.firestore().collection('projects').doc();
-
-        await leadRef.set({
-            ...data,
-            userId: userId || data.userId || null,
+        const leadData = {
+            name: safeText(data.name, 120) || 'Guest',
+            email: safeText(data.email, 254),
+            phone: safeText(data.phone, 48),
+            businessName: safeText(data.businessName, 160) || 'Unknown Company',
+            projectName: safeText(data.projectName, 180) || 'Custom Build',
+            price: safeNumber(data.price ?? data.budget),
+            budget: safeNumber(data.budget ?? data.price),
+            requirement: safeText(data.requirement || data.notes, 3000),
+            niche_type: safeText(data.niche_type, 80),
+            notes: safeText(data.notes, 4000),
+            custom_metadata: safeMetadata(data.custom_metadata),
+            userId: userId || null,
+            source: userId ? 'crm' : 'public-chat',
+            status: 'NEW',
             createdAt: new Date().toISOString()
-        });
+        };
+        await leadRef.set(leadData);
 
         // Asynchronously call the askAI service to draft a welcome email
         const leadId = leadRef.id;
-        const leadName = data.name || 'Guest';
-        const projectName = data.projectName || 'Custom Build';
+        const leadName = leadData.name;
+        const projectName = leadData.projectName;
         (async () => {
             try {
                 const prompt = `Write a short, highly professional 3-sentence welcome email for a new lead named ${leadName} inquiring about ${projectName}. Offer to schedule a quick call.`;
@@ -103,14 +114,14 @@ async function handleLead(req, res, userId) {
         })();
 
         await projectRef.set({
-            userId: userId || data.userId || null,
-            clientEmail: data.email,
-            clientName: data.name || data.businessName || 'Guest',
-            projectName: data.projectName || 'Custom Build',
-            businessName: data.businessName || 'Unknown',
+            userId: userId || null,
+            clientEmail: leadData.email,
+            clientName: leadData.name || leadData.businessName || 'Guest',
+            projectName: leadData.projectName,
+            businessName: leadData.businessName,
             status: 'pending',
             progress: 0,
-            price: data.price || 0,
+            price: leadData.price,
             advancePaid: false,
             createdAt: new Date().toISOString()
         });
@@ -126,12 +137,12 @@ async function handleLead(req, res, userId) {
             subject: `🚀 New Lead/Project: ${data.projectName || 'Custom Build'}`,
             html: `
                 <h3>New Lead Submission</h3>
-                <p><strong>Name:</strong> ${data.name}</p>
-                <p><strong>Email:</strong> ${data.email}</p>
-                <p><strong>Phone:</strong> ${data.phone}</p>
-                <p><strong>Project:</strong> ${data.projectName || 'Custom Build'}</p>
-                <p><strong>Requirements:</strong> ${data.requirement || data.notes || 'N/A'}</p>
-                <p><strong>Price:</strong> $${data.price || 0}</p>
+                <p><strong>Name:</strong> ${escapeHtml(leadData.name)}</p>
+                <p><strong>Email:</strong> ${escapeHtml(leadData.email)}</p>
+                <p><strong>Phone:</strong> ${escapeHtml(leadData.phone)}</p>
+                <p><strong>Project:</strong> ${escapeHtml(leadData.projectName)}</p>
+                <p><strong>Requirements:</strong> ${escapeHtml(leadData.requirement || 'N/A')}</p>
+                <p><strong>Price:</strong> ${leadData.price}</p>
             `
         });
 
@@ -165,7 +176,7 @@ async function handleLead(req, res, userId) {
                 if (uid) {
                     // Step B: Create crm.lead
                     let clientNiche = "Unknown";
-                    const targetUid = userId || data.userId || null;
+                    const targetUid = userId || null;
                     if (targetUid) {
                         try {
                             const userSnap = await admin.firestore().collection('users').doc(targetUid).get();

@@ -1,6 +1,7 @@
 import admin from './_lib/firebaseAdmin.js';
 import nodemailer from 'nodemailer';
 import { checkRateLimit } from './_lib/security.js';
+import { getClientIp, isPlainObject, payloadTooLarge, safeNumber, safeText } from './_lib/input.js';
 
 const json = (res, status, body) => res.status(status).json(body);
 const esc = (value = '') => String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
@@ -12,18 +13,32 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(204).end();
   if (req.method !== 'POST') return json(res, 405, { error: 'Method not allowed' });
 
-  const data = req.body || {};
+  const rawData = req.body;
+  if (!isPlainObject(rawData)) return json(res, 400, { error: 'Invalid lead payload' });
+  if (payloadTooLarge(rawData)) return json(res, 413, { error: 'Lead payload is too large' });
+  const data = {
+    name: safeText(rawData.name, 120),
+    phone: safeText(rawData.phone, 48),
+    email: safeText(rawData.email, 254),
+    businessName: safeText(rawData.businessName, 160),
+    businessType: safeText(rawData.businessType, 100),
+    plan: safeText(rawData.plan, 100),
+    projectName: safeText(rawData.projectName || rawData.plan, 180),
+    requirement: safeText(rawData.requirement, 3000),
+    price: safeNumber(rawData.price),
+    maintenance: safeNumber(rawData.maintenance),
+    aiFinancials: isPlainObject(rawData.aiFinancials) ? rawData.aiFinancials : null,
+  };
   const required = ['name', 'phone', 'email', 'businessName', 'businessType', 'plan'];
-  const missing = required.filter(k => !String(data[k] || '').trim());
-  if (missing.length) return json(res, 400, { error: `Missing required fields: ${missing.join(', ')}` });
+  const missing = required.filter(k => !data[k]);
+  if (missing.length) return json(res, 400, { error: 'Missing required fields: ' + missing.join(', ') });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return json(res, 400, { error: 'Please provide a valid email address' });
 
   const adminEmail = process.env.LEAD_NOTIFY_EMAIL || process.env.EMAIL_USER || 'admin@quickkitai.com';
   const fromEmail = process.env.EMAIL_USER || adminEmail;
 
   try {
-    const forwarded = String(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown');
-    const clientIp = forwarded.split(',').map((part) => part.trim()).filter(Boolean).pop() || 'unknown';
-    await checkRateLimit(admin, clientIp, 'lead-submit', 5);
+    await checkRateLimit(admin, getClientIp(req), 'lead-submit', 5);
     const leadRef = admin.firestore().collection('leads').doc();
     const lead = {
       id: leadRef.id,
@@ -35,11 +50,11 @@ export default async function handler(req, res) {
       plan: String(data.plan).trim(),
       projectName: String(data.projectName || data.plan).trim(),
       requirement: String(data.requirement || '').trim(),
-      price: Number(data.price || 0),
-      maintenance: Number(data.maintenance || 0),
+      price: safeNumber(data.price),
+      maintenance: safeNumber(data.maintenance),
       aiFinancials: data.aiFinancials || null,
-      userId: data.userId || null,
-      source: data.source || 'website',
+      userId: null, // Public website submissions stay unassigned until authenticated internally.
+      source: 'website',
       status: 'NEW',
       createdAt: new Date().toISOString(),
     };
