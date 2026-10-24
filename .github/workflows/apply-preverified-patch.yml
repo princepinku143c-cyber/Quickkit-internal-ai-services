@@ -10,12 +10,12 @@ permissions:
 
 jobs:
   reconstruct:
-    if: github.event.head_commit.message == 'recovery: stage validated source patch chunks'
+    if: startsWith(github.event.head_commit.message, 'recovery:')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: \${{ github.ref_name }}
+          ref: ${{ github.ref_name }}
           fetch-depth: 0
 
       - name: Reconstruct and apply integrity-checked patch
@@ -48,4 +48,4 @@ jobs:
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add -A
           git commit -m 'fix: consolidate security, performance and SEO audit'
-          git push origin "HEAD:\${{ github.ref_name }}"
+          git push origin "HEAD:${{ github.ref_name }}"
