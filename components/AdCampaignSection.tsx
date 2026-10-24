@@ -6,8 +6,8 @@ const scenes = [
   ['00–05s','THE HOOK','Luxury property + late-night lead notification.','STOP BURNING ADS!'],
   ['05–18s','THE AGITATION','Buyer messages at night while the human sales desk is offline.','The lead is already shopping elsewhere.'],
   ['18–38s','THE 5-AGENT SOLUTION','WhatsApp response, booking, GPS reminder, dormant-lead revival and reputation workflow.','Meet Raja AI Systems.'],
-  ['38–48s','THE GUARANTEE','Performance shield with the written 30-day SLA and setup-refund message.','10 QUALIFIED SITE VISITS*'],
-  ['48–60s','THE PRICE + CTA','Dussehra 50% offer with regular anchor, discounted setup and monthly management.','₹35K SETUP · ₹1.20L/MO*'],
+  ['38–48s','THE WRITTEN SLA','Explain the signed performance conditions and refund terms, if included.','TARGETS ONLY WHEN SIGNED'],
+  ['48–60s','PILOT PRICING + CTA','current 50% pilot offer with regular anchor, discounted setup and monthly management.','₹35K SETUP · ₹1.20L/MO*'],
 ];
 
 export const AdCampaignSection: React.FC = () => (
@@ -16,8 +16,8 @@ export const AdCampaignSection: React.FC = () => (
     <div className="container mx-auto px-5 md:px-8 max-w-7xl relative z-10">
       <div className="max-w-4xl mx-auto text-center mb-14">
         <div className="inline-flex items-center gap-2 rounded-full border border-amber-400/20 bg-amber-400/5 px-4 py-1.5 text-[10px] font-mono font-black uppercase tracking-[.24em] text-amber-300"><Sparkles className="w-3 h-3"/> 60-second campaign</div>
-        <h2 className="mt-7 text-4xl md:text-6xl font-black text-white tracking-[-.05em]">The ad tells the same story as the product.</h2>
-        <p className="mt-5 text-lg leading-relaxed text-slate-400 max-w-3xl mx-auto">The supplied master ad blueprint is built for inbound WhatsApp DMs: pain → live 5-agent proof → performance SLA → Dussehra offer → founder CTA.</p>
+        <h2 className="mt-7 text-4xl md:text-6xl font-black text-white tracking-[-.05em]">The campaign reflects the agreed scope and signed offer.</h2>
+        <p className="mt-5 text-lg leading-relaxed text-slate-400 max-w-3xl mx-auto">The supplied master ad blueprint is built for inbound WhatsApp DMs: pain → live 5-agent proof → performance SLA → current pilot offer → founder CTA.</p>
       </div>
 
       <div className="max-w-6xl mx-auto grid lg:grid-cols-[1.1fr_.9fr] gap-6">
@@ -34,11 +34,11 @@ export const AdCampaignSection: React.FC = () => (
           </div>
 
           <div className="rounded-[2rem] border border-amber-400/20 bg-amber-400/5 p-7">
-            <div className="flex items-center gap-2 text-[10px] font-mono font-black uppercase tracking-[.22em] text-amber-300"><Tag className="w-4 h-4"/> Dussehra offer</div>
+            <div className="flex items-center gap-2 text-[10px] font-mono font-black uppercase tracking-[.22em] text-amber-300"><Tag className="w-4 h-4"/> current pilot offer</div>
             <div className="mt-4 text-sm text-slate-500 line-through">Regular ₹70,000 setup + ₹2,40,000/month</div>
             <div className="mt-1 text-3xl font-black text-white">₹35,000 setup</div>
             <div className="mt-1 text-xl font-black text-emerald-300">₹1,20,000/month</div>
-            <p className="mt-3 text-xs leading-relaxed text-slate-600">50% pilot pricing for up to 3 clients; the supplied master ledger describes the discounted retainer as locked for life under the agreed contract.</p>
+            <p className="mt-3 text-xs leading-relaxed text-slate-600">50% pilot pricing for up to 3 clients; any ongoing price lock applies only if explicitly stated in the signed agreement.</p>
           </div>
 
           <div className="rounded-[2rem] border border-blue-400/15 bg-blue-400/5 p-7">
@@ -49,7 +49,7 @@ export const AdCampaignSection: React.FC = () => (
       </div>
 
       <div className="mt-8 max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-3 gap-3">
-        {[['5','agents'],['12 sec','response target'],['30 days','SLA window'],['10 / 15','visits / consultations'],['₹35k','setup'],['₹1.20L','monthly']].map(([v,l])=><div key={l} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-center"><div className="text-xl font-black text-white">{v}</div><div className="mt-1 text-[9px] font-mono uppercase tracking-widest text-slate-600">{l}</div></div>)}
+        {[['5','agents'],['Configured','response target'],['30 days','SLA window'],['10 / 15','visits / consultations'],['₹35k','setup'],['₹1.20L','monthly']].map(([v,l])=><div key={l} className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4 text-center"><div className="text-xl font-black text-white">{v}</div><div className="mt-1 text-[9px] font-mono uppercase tracking-widest text-slate-600">{l}</div></div>)}
       </div>
     </div>
   </section>

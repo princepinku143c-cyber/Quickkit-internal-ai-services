@@ -6,7 +6,7 @@ export const ComparisonTable: React.FC = () => {
     const data = [
         { feature: 'Setup & Implementation', quickkit: 'Done-for-you (3 Days)', others: 'You do everything', highlight: true },
         { feature: 'Core AI Agents', quickkit: 'Native Neural Agents', others: 'Basic API Scripts', highlight: false },
-        { feature: 'Maintenance Cost', quickkit: 'Flat 90% Cheaper', others: 'Per-task pricing (Expensive)', highlight: true },
+        { feature: 'Maintenance Cost', quickkit: 'Clearly scoped pricing', others: 'Pricing varies by provider and scope', highlight: true },
         { feature: 'Custom Logic Integration', quickkit: 'Infinite (Private VPS)', others: 'Limited by platform', highlight: false },
         { feature: 'Dedicated Support', quickkit: 'Architect Support', others: 'Ticket bot', highlight: false },
     ];

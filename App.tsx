@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, onSnapshot, getDoc, setDoc } from 'firebase/firestore';
-import { auth, db, isFirebaseConfigured } from './lib/firebase';
+import { app, auth, isFirebaseConfigured } from './lib/firebaseCore';
 import { generateSessionId } from './lib/utils';
 import { Language, UserProfile, ServiceItem, AIQuote, PlanTier } from './types';
 import { Routes, Route, Navigate, Link } from 'react-router-dom';
@@ -12,12 +11,12 @@ import { Navbar } from './components/Navbar';
 import { Hero } from './components/Hero';
 import { IntegrationMarquee } from './components/IntegrationMarquee';
 import { GlobalLoader } from './components/GlobalLoader';
-import { LeadForm } from './components/LeadForm';
 import { SystemWorkflow } from './components/SystemWorkflow';
 import { AdCampaignSection } from './components/AdCampaignSection';
-import { PremiumLanding } from './components/PremiumLanding';
 import { WHATSAPP_DIRECT_URL, WHATSAPP_QR_ASSET, WHATSAPP_USERNAME } from './constants';
 
+const LeadForm = lazy(() => import('./components/LeadForm').then(m => ({ default: m.LeadForm })));
+const PremiumLanding = lazy(() => import('./components/PremiumLanding').then(m => ({ default: m.PremiumLanding })));
 const Pricing = lazy(() => import('./components/Pricing').then(m => ({ default: m.Pricing })));
 const WhyQuickKit = lazy(() => import('./components/WhyQuickKit').then(m => ({ default: m.WhyQuickKit })));
 const WhoIsItFor = lazy(() => import('./components/WhoIsItFor').then(m => ({ default: m.WhoIsItFor })));
@@ -41,6 +40,7 @@ const RealEstateAIQuestions = lazy(() => import('./components/RealEstateAIQuesti
 const RealEstateLeadQualificationGuide = lazy(() => import('./components/seo/RealEstateLeadQualificationGuide').then(m => ({ default: m.RealEstateLeadQualificationGuide })));
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
+  declare props: Readonly<{ children: React.ReactNode }>;
   state = { hasError: false, error: null as any };
   static getDerivedStateFromError(error: any) { return { hasError: true, error }; }
   componentDidCatch(error: any, info: any) { console.error('GLOBAL ERROR:', error, info); }
@@ -76,7 +76,8 @@ const App: React.FC = () => {
         unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
           clearTimeout(safetyTimer);
           if (firebaseUser) {
-            const userRef = doc(db as any, 'users', firebaseUser.uid);
+            const { doc, onSnapshot, getDoc, setDoc, getFirestore } = await import('firebase/firestore');
+            const userRef = doc(getFirestore(app as any), 'users', firebaseUser.uid);
             try { const snap = await getDoc(userRef); const data = snap.data(); if (!snap.exists() || !data || data.credits === undefined || data.credits <= 0) await setDoc(userRef, {uid:firebaseUser.uid,email:firebaseUser.email,displayName:firebaseUser.displayName || 'Operator',credits:500,plan:'free',role:data?.role || 'client',createdAt:data?.createdAt || new Date().toISOString()}, {merge:true}); } catch (e) { console.error('Failed to check/update user credits:', e); }
             unSubMeta = onSnapshot(userRef, async (snap) => { const data = snap.data(); try { localStorage.setItem('token', await firebaseUser.getIdToken()); } catch (e) {} setUser({uid:firebaseUser.uid,email:firebaseUser.email || '',displayName:firebaseUser.displayName || data?.displayName || 'User',role:data?.role || 'client',credits:data?.credits ?? 0,monthlyLimit:data?.monthlyLimit ?? 1000,tier:data?.tier ?? 'STARTER',industryType:data?.industryType || '',workspaceName:data?.workspaceName || '',operatorName:data?.operatorName || '',contactEmail:data?.contactEmail || '',crmInitialized:data?.crmInitialized || false,customFormSchema:data?.customFormSchema || []}); setIsAuthenticated(true); setAuthLoading(false); }, () => { setUser({uid:firebaseUser.uid,email:firebaseUser.email || '',displayName:'User',role:'client',credits:0,monthlyLimit:1000,tier:'FREE'}); setIsAuthenticated(true); setAuthLoading(false); });
             metaListenerRef.current = unSubMeta;
@@ -103,7 +104,7 @@ const App: React.FC = () => {
       <link rel="canonical" href="https://quickkitai.com"/>
     </Helmet>
 
-    <PremiumLanding onBookDemo={() => handleOpenLeadForm(PlanTier.BUSINESS, 'I want to book the Raja AI Systems 5-Agent Workforce demo and review the Dussehra pilot.')} />
+    <PremiumLanding onBookDemo={() => handleOpenLeadForm(PlanTier.BUSINESS, 'I want to book the Raja AI Systems 5-Agent Workforce demo and discuss the current pilot offer.')} />
 
     {showLeadForm && (
       <LeadForm
