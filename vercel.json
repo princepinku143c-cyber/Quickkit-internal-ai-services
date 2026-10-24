@@ -68,4 +68,103 @@
   "redirects": [
     {
       "source": "/:path*",
-      "has": ¶»§q«^
+      "has": [
+        {
+          "type": "host",
+          "value": "www.quickkitai.com"
+        }
+      ],
+      "destination": "https://quickkitai.com/:path*",
+      "permanent": true
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/services/real-estate",
+      "destination": "/services/real-estate/index.html"
+    },
+    {
+      "source": "/services/real-estate/",
+      "destination": "/services/real-estate/index.html"
+    },
+    {
+      "source": "/services/healthcare",
+      "destination": "/services/healthcare/index.html"
+    },
+    {
+      "source": "/services/healthcare/",
+      "destination": "/services/healthcare/index.html"
+    },
+    {
+      "source": "/guides/real-estate-ai-lead-qualification",
+      "destination": "/guides/real-estate-ai-lead-qualification/index.html"
+    },
+    {
+      "source": "/guides/real-estate-ai-lead-qualification/",
+      "destination": "/guides/real-estate-ai-lead-qualification/index.html"
+    },
+    {
+      "source": "/real-estate-ai-questions",
+      "destination": "/real-estate-ai-questions/index.html"
+    },
+    {
+      "source": "/real-estate-ai-questions/",
+      "destination": "/real-estate-ai-questions/index.html"
+    },
+    {
+      "source": "/blog",
+      "destination": "/blog/index.html"
+    },
+    {
+      "source": "/blog/",
+      "destination": "/blog/index.html"
+    },
+    {
+      "source": "/about",
+      "destination": "/about/index.html"
+    },
+    {
+      "source": "/about/",
+      "destination": "/about/index.html"
+    },
+    {
+      "source": "/contact",
+      "destination": "/contact/index.html"
+    },
+    {
+      "source": "/contact/",
+      "destination": "/contact/index.html"
+    },
+    {
+      "source": "/seo-audit",
+      "destination": "/seo-audit/index.html"
+    },
+    {
+      "source": "/seo-audit/",
+      "destination": "/seo-audit/index.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/privacy/index.html"
+    },
+    {
+      "source": "/privacy/",
+      "destination": "/privacy/index.html"
+    },
+    {
+      "source": "/terms",
+      "destination": "/terms/index.html"
+    },
+    {
+      "source": "/terms/",
+      "destination": "/terms/index.html"
+    },
+    {
+      "source": "/((?!assets/|sitemap\\.xml|robots\\.txt|llms\\.txt|manifest\\.json|favicon|services/real-estate|services/healthcare|guides/real-estate-ai-lead-qualification|real-estate-ai-questions|blog|about|contact|seo-audit|privacy|terms).*)",
+      "destination": "/index.html"
+    }
+  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "installCommand": "npm install"
+}
