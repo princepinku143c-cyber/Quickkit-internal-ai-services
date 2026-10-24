@@ -37,6 +37,7 @@
     "vite": "^6.2.0"
   },
   "overrides": {
-    "@grpc/grpc-js": "^1.14.6"
+    "@grpc/grpc-js": "^1.14.6",
+    "jwks-rsa": "2.1.5"
   }
 }
