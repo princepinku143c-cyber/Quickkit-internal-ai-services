@@ -1,28 +1,47 @@
-import admin from "firebase-admin";
+import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { getAuth } from "firebase-admin/auth";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 
-if (!admin.apps.length) {
+const credentials = {
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, "\n"),
+};
+
+let app = getApps()[0] || null;
+
+if (!app) {
+  if (!credentials.projectId || !credentials.clientEmail || !credentials.privateKey) {
+    console.error("Firebase Admin credentials are not configured for this environment.");
+  } else {
     try {
-      const { FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, FIREBASE_PRIVATE_KEY } = process.env;
-      
-      if (!FIREBASE_PROJECT_ID || !FIREBASE_CLIENT_EMAIL || !FIREBASE_PRIVATE_KEY) {
-        console.error("🚨 Missing Critical Backend Credentials: Check FIREBASE_PROJECT_ID, FIREBASE_CLIENT_EMAIL, and FIREBASE_PRIVATE_KEY in Vercel.");
-      } else {
-
-      const privateKey = FIREBASE_PRIVATE_KEY.replace(/\\n/g, '\n');
-
-      admin.initializeApp({
-        credential: admin.credential.cert({
-          projectId: FIREBASE_PROJECT_ID,
-          clientEmail: FIREBASE_CLIENT_EMAIL,
-          privateKey: privateKey,
-        }),
+      app = initializeApp({
+        credential: cert(credentials),
+        projectId: credentials.projectId,
       });
-        console.log("✅ Firebase Operational: Neural Node Connected.");
-      }
-    } catch (e) {
-      console.error("❌ Firebase Initialization Failure:", e.message);
+      console.log("Firebase Admin initialized.");
+    } catch (error) {
+      console.error("Firebase Admin initialization failed:", error instanceof Error ? error.message : error);
     }
+  }
 }
 
-export const db = admin.apps.length ? admin.firestore() : null;
+function firestore() {
+  if (!app) throw new Error("Firebase Admin is not configured for this environment.");
+  return getFirestore(app);
+}
+firestore.FieldValue = FieldValue;
+
+const admin = {
+  get apps() {
+    return getApps();
+  },
+  auth() {
+    if (!app) throw new Error("Firebase Admin is not configured for this environment.");
+    return getAuth(app);
+  },
+  firestore,
+};
+
+export const db = app ? getFirestore(app) : null;
 export default admin;
