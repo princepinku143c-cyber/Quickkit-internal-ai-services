@@ -11,7 +11,7 @@ const shell = await readFile(join(dist, 'index.html'), 'utf8');
 const pages = [
   {
     path: 'services/real-estate',
-    title: 'Raja AI Systems — Autonomous AI Workforce for Luxury Real Estate in India',
+    title: 'AI Automation for Real Estate Teams in India | Raja AI Systems',
     description: 'Raja AI Systems helps Indian real estate teams automate property lead qualification, WhatsApp follow-ups, site-visit coordination and CRM workflows. Healthcare automation is available as a secondary service; integrations are configured and verified per deployment.',
     keywords: 'real estate AI automation India, property lead qualification, WhatsApp follow-up, site visit coordination, real estate CRM workflows',
     heading: 'AI Automation for Real Estate Teams in India',
