@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - fix/firebase-admin-v14-compat
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
