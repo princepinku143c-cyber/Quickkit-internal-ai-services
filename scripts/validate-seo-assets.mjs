@@ -23,7 +23,7 @@ for (const u of urls) {
   assert.equal(parsed.search, '', `sitemap URLs should not include tracking query strings: ${u}`);
   assert.equal(parsed.hash, '', `sitemap URLs should not include fragments: ${u}`);
 }
-for (const path of ['/services/real-estate','/services/healthcare','/guides/real-estate-ai-lead-qualification','/real-estate-ai-questions','/blog']) {
+for (const path of ['/services/real-estate','/services/healthcare','/guides/real-estate-ai-lead-qualification','/real-estate-ai-questions','/blog','/ai-visibility']) {
   assert.ok(urls.includes(`https://quickkitai.com${path}`), `missing important URL from sitemap: ${path}`);
 }
 assert.match(robots, /User-agent:\s*OAI-SearchBot/i, 'robots.txt should define the OpenAI Search crawler');
@@ -50,7 +50,7 @@ for (const [source, destination] of [
     source + ' should permanently redirect to its canonical legal page',
   );
 }
-for (const path of ['/services/real-estate','/services/healthcare','/guides/real-estate-ai-lead-qualification','/real-estate-ai-questions','/blog','/about','/contact','/seo-audit','/privacy','/terms']) {
+for (const path of ['/services/real-estate','/services/healthcare','/guides/real-estate-ai-lead-qualification','/real-estate-ai-questions','/blog','/about','/contact','/ai-visibility','/seo-audit','/privacy','/terms']) {
   const routeIndex = vercelConfig.rewrites.findIndex((r) => r.source === path && r.destination === `${path}/index.html`);
   const slashIndex = vercelConfig.rewrites.findIndex((r) => r.source === `${path}/` && r.destination === `${path}/index.html`);
   const fallbackIndex = vercelConfig.rewrites.findIndex((r) => r.destination === '/index.html');

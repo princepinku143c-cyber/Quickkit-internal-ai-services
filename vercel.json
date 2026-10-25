@@ -146,6 +146,14 @@
       "destination": "/contact/index.html"
     },
     {
+      "source": "/ai-visibility",
+      "destination": "/ai-visibility/index.html"
+    },
+    {
+      "source": "/ai-visibility/",
+      "destination": "/ai-visibility/index.html"
+    },
+    {
       "source": "/seo-audit",
       "destination": "/seo-audit/index.html"
     },

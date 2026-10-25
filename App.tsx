@@ -38,6 +38,7 @@ const PublicNichePage = lazy(() => import('./components/PublicNichePage').then(m
 const RealEstateCapabilityMatrix = lazy(() => import('./components/RealEstateCapabilityMatrix').then(m => ({ default: m.RealEstateCapabilityMatrix })));
 const RealEstateAIQuestions = lazy(() => import('./components/RealEstateAIQuestions').then(m => ({ default: m.RealEstateAIQuestions })));
 const RealEstateLeadQualificationGuide = lazy(() => import('./components/seo/RealEstateLeadQualificationGuide').then(m => ({ default: m.RealEstateLeadQualificationGuide })));
+const AIVisibility = lazy(() => import('./components/AIVisibility').then(m => ({ default: m.AIVisibility })));
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
   declare props: Readonly<{ children: React.ReactNode }>;
@@ -118,7 +119,7 @@ const App: React.FC = () => {
     )}
   </div>;
 
-  return <ErrorBoundary><IndustryProvider><Suspense fallback={<div className="min-h-screen bg-[#030712] text-slate-300 flex items-center justify-center">Loading page…</div>}><Routes><Route path="/" element={renderLandingView()}/><Route path="/real-estate-ai-questions" element={<RealEstateAIQuestions/>}/><Route path="/guides/real-estate-ai-lead-qualification" element={<RealEstateLeadQualificationGuide/>}/><Route path="/about" element={<LegalPages/>}/><Route path="/contact" element={<LegalPages/>}/><Route path="/privacy" element={<LegalPages/>}/><Route path="/terms" element={<LegalPages/>}/><Route path="/login" element={<Login/>}/><Route path="/client" element={isAuthenticated?<ClientPortal user={user} onLogout={handleLogout}/>:<Navigate to="/login" replace/>}/><Route path="/admin" element={isAuthenticated&&user?.role==='admin'?<AdminPortal user={user} onLogout={handleLogout}/>:<Navigate to="/login" replace/>}/><Route path="/blog" element={<Blog/>}/><Route path="/services/:niche" element={<PublicNichePage/>}/><Route path="/seo-audit" element={<SEOAudit/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes></Suspense></IndustryProvider></ErrorBoundary>;
+  return <ErrorBoundary><IndustryProvider><Suspense fallback={<div className="min-h-screen bg-[#030712] text-slate-300 flex items-center justify-center">Loading page…</div>}><Routes><Route path="/" element={renderLandingView()}/><Route path="/real-estate-ai-questions" element={<RealEstateAIQuestions/>}/><Route path="/guides/real-estate-ai-lead-qualification" element={<RealEstateLeadQualificationGuide/>}/><Route path="/ai-visibility" element={<AIVisibility/>}/><Route path="/about" element={<LegalPages/>}/><Route path="/contact" element={<LegalPages/>}/><Route path="/privacy" element={<LegalPages/>}/><Route path="/terms" element={<LegalPages/>}/><Route path="/login" element={<Login/>}/><Route path="/client" element={isAuthenticated?<ClientPortal user={user} onLogout={handleLogout}/>:<Navigate to="/login" replace/>}/><Route path="/admin" element={isAuthenticated&&user?.role==='admin'?<AdminPortal user={user} onLogout={handleLogout}/>:<Navigate to="/login" replace/>}/><Route path="/blog" element={<Blog/>}/><Route path="/services/:niche" element={<PublicNichePage/>}/><Route path="/seo-audit" element={<SEOAudit/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes></Suspense></IndustryProvider></ErrorBoundary>;
 };
 
 export default App;

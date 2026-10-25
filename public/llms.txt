@@ -13,6 +13,7 @@
 - https://quickkitai.com/about: Company information.
 - https://quickkitai.com/contact: Contact information.
 - https://quickkitai.com/seo-audit: Website visibility and audit service information.
+- https://quickkitai.com/ai-visibility: AI visibility and AEO service plans, pricing and measured-proof boundaries.
 
 ## What the business does
 

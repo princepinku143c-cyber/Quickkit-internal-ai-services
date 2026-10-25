@@ -20,6 +20,7 @@ View your app in AI Studio: https://ai.studio/apps/drive/1ZINtAlJSPAOEpU0suZeSdA
    `npm run dev`
 
 ## 🔍 SEO/AEO/GEO Status
+- ✅ AI Visibility page: `/ai-visibility`
 - ✅ SEO Strategy: `seo_aeo_geo/SEO_STRATEGY.md`
 - ✅ AEO Strategy: `seo_aeo_geo/AEO_STRATEGY.md`
 - ✅ GEO Strategy: `seo_aeo_geo/GEO_STRATEGY.md`

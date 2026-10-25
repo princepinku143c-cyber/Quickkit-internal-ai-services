@@ -10,6 +10,15 @@ const shell = await readFile(join(dist, 'index.html'), 'utf8');
 // They are deliberately short summaries, not substitutes for the interactive React pages.
 const pages = [
   {
+    path: 'ai-visibility',
+    title: 'AI Visibility and AEO Services in India | Raja AI Systems',
+    description: 'Evidence-first AI visibility and AEO services for ChatGPT, Perplexity, Gemini, Claude and Google surfaces. Audit, monitor, improve and report measured outcomes without ranking guarantees.',
+    keywords: 'AEO services India, AI visibility audit, generative engine optimization, ChatGPT visibility, Perplexity citations, AI search monitoring',
+    heading: 'AI Visibility and AEO Services',
+    summary: 'Raja AI Systems measures how businesses are understood across AI and search surfaces, then applies approved technical, content, schema and entity improvements with before-and-after evidence.',
+    links: [['/seo-audit','Review the SEO and AI-search audit'], ['/services/real-estate','See the real-estate workflow'], ['/contact','Discuss a pilot']]
+  },
+  {
     path: 'services/real-estate',
     title: 'Raja AI Systems — Autonomous AI Workforce for Luxury Real Estate in India',
     description: 'Raja AI Systems helps Indian real estate teams automate property lead qualification, WhatsApp follow-ups, site-visit coordination and CRM workflows. Healthcare automation is available as a secondary service; integrations are configured and verified per deployment.',
