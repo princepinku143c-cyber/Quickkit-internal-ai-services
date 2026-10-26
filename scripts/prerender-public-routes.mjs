@@ -30,6 +30,16 @@ const pages = [
   },
 
   {
+    path: 'live-demo',
+    title: 'Live AI Workflow Demonstration | Raja AI Systems',
+    description: 'Transparent controlled demonstration of lead qualification, CRM handoff and site-visit workflow. Capability demonstration only; client performance metrics require a controlled pilot.',
+    keywords: 'live AI workflow demo, real estate AI demonstration, WhatsApp lead qualification demo, Raja AI Systems',
+    heading: 'Live AI Workflow Demonstration',
+    summary: 'A transparent controlled demonstration of the workflow and evidence a live acceptance test must produce. It does not claim client leads, bookings, revenue or production results.',
+    links: [['/proof-of-value','Review the proof-of-value method'], ['/services/real-estate','See the real-estate workflow'], ['/contact','Discuss a controlled pilot']]
+  },
+
+  {
     path: 'services/real-estate',
     title: 'Raja AI Systems — Autonomous AI Workforce for Luxury Real Estate in India',
     description: 'Raja AI Systems helps Indian real estate teams automate property lead qualification, WhatsApp follow-ups, site-visit coordination and CRM workflows. Healthcare automation is available as a secondary service; integrations are configured and verified per deployment.',
