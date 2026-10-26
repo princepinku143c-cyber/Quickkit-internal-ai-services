@@ -14,6 +14,7 @@ import { GlobalLoader } from './components/GlobalLoader';
 import { SystemWorkflow } from './components/SystemWorkflow';
 import { AdCampaignSection } from './components/AdCampaignSection';
 import { WHATSAPP_DIRECT_URL, WHATSAPP_QR_ASSET, WHATSAPP_USERNAME } from './constants';
+import { AEOAnswerSection } from './components/AEOAnswerSection';
 
 const LeadForm = lazy(() => import('./components/LeadForm').then(m => ({ default: m.LeadForm })));
 const PremiumLanding = lazy(() => import('./components/PremiumLanding').then(m => ({ default: m.PremiumLanding })));
@@ -109,6 +110,7 @@ const App: React.FC = () => {
       <span className="font-black">New: AI Visibility and AEO Services</span><span className="mx-2 text-amber-200/60">·</span><span className="text-amber-100/80">Measured audit, monitoring and approved growth plans</span>{' '}<Link to="/ai-visibility" className="ml-2 inline-flex items-center font-black text-white underline underline-offset-4 hover:text-amber-200">View plans →</Link>
     </section>
     <PremiumLanding onBookDemo={() => handleOpenLeadForm(PlanTier.BUSINESS, 'I want to book the Raja AI Systems 5-Agent Workforce demo and discuss the current pilot offer.')} />
+    <AEOAnswerSection />
 
     {showLeadForm && (
       <LeadForm

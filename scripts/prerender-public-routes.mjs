@@ -4,7 +4,8 @@ import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
 const dist = join(root, 'dist');
-const shell = await readFile(join(dist, 'index.html'), 'utf8');
+const html = await readFile(join(dist, 'index.html'), 'utf8');
+const shell = html;
 
 // Keep these entries aligned with the public sitemap and route-level SEO components.
 // They are deliberately short summaries, not substitutes for the interactive React pages.
@@ -130,6 +131,10 @@ function replaceTagContent(html, opening, closing, replacement) {
 for (const page of pages) {
   const canonical = `https://quickkitai.com/${page.path}`;
   let html = shell;
+  if (page.path !== '') {
+    html = html.replace(/\s*<script type="application\/ld\+json">\s*\{"@context":"https:\/\/schema\.org","@type":"FAQPage"[\s\S]*?<\/script>/, '');
+    html = html.replace(/\s*<script type="application\/ld\+json">\s*\{"@context":"https:\/\/schema\.org","@type":"SpeakableSpecification"[\s\S]*?<\/script>/, '');
+  }
   html = replaceTagContent(html, '<title>', '</title>', page.title);
   html = replaceMeta(html, 'name', 'description', page.description);
   html = replaceMeta(html, 'name', 'keywords', page.keywords);
@@ -149,7 +154,7 @@ for (const page of pages) {
 
   const links = page.links.map(([href, label]) => `<li><a href="${href}">${htmlEscape(label)}</a></li>`).join('');
   const readableSummary = `<main id="seo-prerendered-summary" aria-label="Page summary"><h1>${htmlEscape(page.heading)}</h1><p>${htmlEscape(page.summary)}</p><nav aria-label="Related pages"><ul>${links}</ul></nav><p>Interactive controls and complete page features load with JavaScript. Offer availability, integration status and measurable outcomes are confirmed for each written scope.</p></main>`;
-  html = html.replace('<div id="root"></div>', `<div id="root">${readableSummary}</div>`);
+  html = html.replace(/<div id="root">[\s\S]*?<\/div>/, `<div id="root">${readableSummary}</div>`);
 
   const webpageSchema = {
     '@context': 'https://schema.org',
