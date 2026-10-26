@@ -36,7 +36,9 @@ for (const href of urls.filter((u) => !u.endsWith('/privacy') && !u.endsWith('/t
 }
 assert.match(html, /"@type":"Organization"/);
 assert.match(html, /"@type":"WebSite"/);
-assert.doesNotMatch(html, /"@type":"Service"|"@type":"FAQPage"|"@type":"SearchAction"/, 'shared HTML shell must not assert route-specific schema for every URL');
+assert.match(html, /"@type":"FAQPage"/);
+assert.match(html, /"@type":"SpeakableSpecification"/);
+assert.doesNotMatch(html, /"@type":"Service"|"@type":"SearchAction"/, 'shared HTML shell must not assert route-specific schema for every URL');
 assert.match(seoMeta, /https:\/\/quickkitai\.com\$\{window\.location\.pathname\}/, 'canonical fallback must use the production host and path');
 assert.doesNotMatch(seoMeta, /new Date\(\)\.toISOString\(\)/, 'Article date must not be fabricated at runtime');
 assert.match(seoMeta, /https:\/\/quickkitai\.com\/#organization/);
