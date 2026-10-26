@@ -105,6 +105,9 @@ const App: React.FC = () => {
       <link rel="canonical" href="https://quickkitai.com"/>
     </Helmet>
 
+    <section className="relative z-10 border-b border-amber-300/15 bg-amber-300/[.06] px-5 py-3 text-center text-sm text-amber-100 md:px-8">
+      <span className="font-black">New: AI Visibility and AEO Services</span><span className="mx-2 text-amber-200/60">·</span><span className="text-amber-100/80">Measured audit, monitoring and approved growth plans</span>{' '}<Link to="/ai-visibility" className="ml-2 inline-flex items-center font-black text-white underline underline-offset-4 hover:text-amber-200">View plans →</Link>
+    </section>
     <PremiumLanding onBookDemo={() => handleOpenLeadForm(PlanTier.BUSINESS, 'I want to book the Raja AI Systems 5-Agent Workforce demo and discuss the current pilot offer.')} />
 
     {showLeadForm && (

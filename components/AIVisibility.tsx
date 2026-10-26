@@ -58,7 +58,7 @@ export const AIVisibility: React.FC = () => (
         <Link to="/" className="text-xs font-black uppercase tracking-[.25em] text-slate-400 hover:text-white">← Raja AI Systems</Link>
         <div className="mt-10 max-w-4xl">
           <p className="text-xs font-black uppercase tracking-[.3em] text-amber-300">AI visibility and AEO services</p>
-          <h1 className="mt-5 text-4xl font-black leading-tight tracking-tight md:text-7xl">Be easier to discover, understand and cite.</h1>
+          <h1 className="mt-5 text-4xl font-black leading-tight tracking-tight text-white md:text-7xl">Be easier to discover, understand and cite.</h1>
           <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300 md:text-xl">Evidence-first visibility work for ChatGPT, Perplexity, Gemini, Claude and Google surfaces. We measure the baseline, apply approved improvements and report what was actually observed.</p>
           <div className="mt-8 flex flex-wrap gap-4">
             <Link to="/contact" className="inline-flex items-center gap-2 rounded-xl bg-white px-5 py-3 text-sm font-black text-slate-950 hover:bg-slate-100">Start with an audit <ArrowRight size={16} /></Link>
