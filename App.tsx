@@ -38,6 +38,7 @@ const PublicNichePage = lazy(() => import('./components/PublicNichePage').then(m
 const RealEstateCapabilityMatrix = lazy(() => import('./components/RealEstateCapabilityMatrix').then(m => ({ default: m.RealEstateCapabilityMatrix })));
 const RealEstateAIQuestions = lazy(() => import('./components/RealEstateAIQuestions').then(m => ({ default: m.RealEstateAIQuestions })));
 const RealEstateLeadQualificationGuide = lazy(() => import('./components/seo/RealEstateLeadQualificationGuide').then(m => ({ default: m.RealEstateLeadQualificationGuide })));
+const AIVisibility = lazy(() => import('./components/AIVisibility').then(m => ({ default: m.AIVisibility })));
 
 class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { hasError: boolean, error: any }> {
   declare props: Readonly<{ children: React.ReactNode }>;
@@ -104,6 +105,9 @@ const App: React.FC = () => {
       <link rel="canonical" href="https://quickkitai.com"/>
     </Helmet>
 
+    <section className="relative z-10 border-b border-amber-300/15 bg-amber-300/[.06] px-5 py-3 text-center text-sm text-amber-100 md:px-8">
+      <span className="font-black">New: AI Visibility and AEO Services</span><span className="mx-2 text-amber-200/60">·</span><span className="text-amber-100/80">Measured audit, monitoring and approved growth plans</span>{' '}<Link to="/ai-visibility" className="ml-2 inline-flex items-center font-black text-white underline underline-offset-4 hover:text-amber-200">View plans →</Link>
+    </section>
     <PremiumLanding onBookDemo={() => handleOpenLeadForm(PlanTier.BUSINESS, 'I want to book the Raja AI Systems 5-Agent Workforce demo and discuss the current pilot offer.')} />
 
     {showLeadForm && (
@@ -118,7 +122,7 @@ const App: React.FC = () => {
     )}
   </div>;
 
-  return <ErrorBoundary><IndustryProvider><Suspense fallback={<div className="min-h-screen bg-[#030712] text-slate-300 flex items-center justify-center">Loading page…</div>}><Routes><Route path="/" element={renderLandingView()}/><Route path="/real-estate-ai-questions" element={<RealEstateAIQuestions/>}/><Route path="/guides/real-estate-ai-lead-qualification" element={<RealEstateLeadQualificationGuide/>}/><Route path="/about" element={<LegalPages/>}/><Route path="/contact" element={<LegalPages/>}/><Route path="/privacy" element={<LegalPages/>}/><Route path="/terms" element={<LegalPages/>}/><Route path="/login" element={<Login/>}/><Route path="/client" element={isAuthenticated?<ClientPortal user={user} onLogout={handleLogout}/>:<Navigate to="/login" replace/>}/><Route path="/admin" element={isAuthenticated&&user?.role==='admin'?<AdminPortal user={user} onLogout={handleLogout}/>:<Navigate to="/login" replace/>}/><Route path="/blog" element={<Blog/>}/><Route path="/services/:niche" element={<PublicNichePage/>}/><Route path="/seo-audit" element={<SEOAudit/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes></Suspense></IndustryProvider></ErrorBoundary>;
+  return <ErrorBoundary><IndustryProvider><Suspense fallback={<div className="min-h-screen bg-[#030712] text-slate-300 flex items-center justify-center">Loading page…</div>}><Routes><Route path="/" element={renderLandingView()}/><Route path="/real-estate-ai-questions" element={<RealEstateAIQuestions/>}/><Route path="/guides/real-estate-ai-lead-qualification" element={<RealEstateLeadQualificationGuide/>}/><Route path="/ai-visibility" element={<AIVisibility/>}/><Route path="/about" element={<LegalPages/>}/><Route path="/contact" element={<LegalPages/>}/><Route path="/privacy" element={<LegalPages/>}/><Route path="/terms" element={<LegalPages/>}/><Route path="/login" element={<Login/>}/><Route path="/client" element={isAuthenticated?<ClientPortal user={user} onLogout={handleLogout}/>:<Navigate to="/login" replace/>}/><Route path="/admin" element={isAuthenticated&&user?.role==='admin'?<AdminPortal user={user} onLogout={handleLogout}/>:<Navigate to="/login" replace/>}/><Route path="/blog" element={<Blog/>}/><Route path="/services/:niche" element={<PublicNichePage/>}/><Route path="/seo-audit" element={<SEOAudit/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes></Suspense></IndustryProvider></ErrorBoundary>;
 };
 
 export default App;

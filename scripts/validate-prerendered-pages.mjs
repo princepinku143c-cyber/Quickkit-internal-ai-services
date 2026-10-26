@@ -7,6 +7,7 @@ const pages = [
   ['guides/real-estate-ai-lead-qualification', 'AI Lead Qualification for Real Estate in India: A Practical Workflow | Raja AI Systems'],
   ['real-estate-ai-questions', 'Real Estate AI Agent Questions & Answers India | Raja AI Systems'],
   ['blog', 'Real Estate AI Knowledge Hub | Raja AI Systems'],
+  ['ai-visibility', 'AI Visibility and AEO Services in India | Raja AI Systems'],
   ['about', 'About Raja AI Systems | Managed AI Automation in India'],
   ['contact', 'Contact Raja AI Systems | Discuss an AI Pilot'],
   ['seo-audit', 'SEO & AI Search Readiness Audit | Raja AI Systems'],
