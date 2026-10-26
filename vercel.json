@@ -154,6 +154,14 @@
       "destination": "/ai-visibility/index.html"
     },
     {
+      "source": "/proof-of-value",
+      "destination": "/proof-of-value/index.html"
+    },
+    {
+      "source": "/proof-of-value/",
+      "destination": "/proof-of-value/index.html"
+    },
+    {
       "source": "/seo-audit",
       "destination": "/seo-audit/index.html"
     },
@@ -178,7 +186,7 @@
       "destination": "/terms/index.html"
     },
     {
-      "source": "/((?!assets/|sitemap\\.xml|robots\\.txt|llms\\.txt|favicon|services/real-estate(?:/.*)?$|services/healthcare(?:/.*)?$|guides/real-estate-ai-lead-qualification(?:/.*)?$|real-estate-ai-questions(?:/.*)?$|blog(?:/.*)?$|about(?:/.*)?$|contact(?:/.*)?$|seo-audit(?:/.*)?$|privacy(?:/.*)?$|terms(?:/.*)?$).*)",
+      "source": "/((?!assets/|sitemap\\.xml|robots\\.txt|llms\\.txt|favicon|services/real-estate(?:/.*)?$|services/healthcare(?:/.*)?$|guides/real-estate-ai-lead-qualification(?:/.*)?$|real-estate-ai-questions(?:/.*)?$|blog(?:/.*)?$|about(?:/.*)?$|contact(?:/.*)?$|ai-visibility(?:/.*)?$|proof-of-value(?:/.*)?$|seo-audit(?:/.*)?$|privacy(?:/.*)?$|terms(?:/.*)?$).*)",
       "destination": "/index.html"
     }
   ],

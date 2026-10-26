@@ -20,6 +20,16 @@ const pages = [
     links: [['/seo-audit','Review the SEO and AI-search audit'], ['/services/real-estate','See the real-estate workflow'], ['/contact','Discuss a pilot']]
   },
   {
+    path: 'proof-of-value',
+    title: 'Proof of Value: AI Automation and AI Visibility | Raja AI Systems',
+    description: 'Evidence-first proof-of-value page for Raja AI Systems: current QuickKitAI AEO audit results, measurement method and business metrics still pending a controlled pilot.',
+    keywords: 'AI automation proof of value, QuickKitAI AEO audit, real estate AI pilot metrics, AI visibility evidence',
+    heading: 'Proof of Value for AI Automation and AI Visibility',
+    summary: 'Raja AI Systems separates live technical AEO evidence from business outcomes. The current QuickKitAI audit score, measurement method and pilot metrics are documented without ranking, citation, lead or revenue guarantees.',
+    links: [['/ai-visibility','Review AI Visibility plans'], ['/services/real-estate','See the real-estate workflow'], ['/contact','Discuss a controlled pilot']]
+  },
+
+  {
     path: 'services/real-estate',
     title: 'Raja AI Systems — Autonomous AI Workforce for Luxury Real Estate in India',
     description: 'Raja AI Systems helps Indian real estate teams automate property lead qualification, WhatsApp follow-ups, site-visit coordination and CRM workflows. Healthcare automation is available as a secondary service; integrations are configured and verified per deployment.',
