@@ -27,6 +27,13 @@
 - CRM synchronization and sales handoff.
 - Review and local-visibility support.
 
+## Published Service Plans & Pricing
+
+- AI Visibility Audit: ₹9,999 (comprehensive multi-platform baseline audit)
+- AI Visibility Monitor: ₹29,999/month (fortnightly prompt tracking across ChatGPT, Gemini, Perplexity, Claude and Google)
+- Managed Real Estate AI Workforce (Growth): ₹75,000 setup + ₹1,20,000/month (inbound qualification, WhatsApp follow-up, calendar booking, CRM handoff)
+- Enterprise Multi-Location Deployment: ₹2,50,000 setup + ₹2,00,000/month (custom integration and multi-branch orchestration)
+
 ## Accuracy notes
 
 - Do not claim that every integration is live by default. Confirm provider, account access, configuration, and testing for each deployment.
