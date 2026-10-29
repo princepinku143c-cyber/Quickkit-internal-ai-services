@@ -20,7 +20,7 @@ const plans = [
     suffix: 'per month',
     icon: LineChart,
     description: 'Recurring visibility checks so you can see mentions, sources and competitor movement over time.',
-    items: ['Weekly or fortnightly checks', 'Mention and citation tracking', 'Competitor movement report', 'Monthly executive summary'],
+    items: ['Up to 40 tracked prompts/month', 'Weekly or fortnightly checks', 'Mention and citation tracking', 'Competitor movement report', 'Monthly executive summary'],
   },
   {
     name: 'AI Visibility Growth',
@@ -30,7 +30,7 @@ const plans = [
     icon: Rocket,
     featured: true,
     description: 'The flagship plan: approved website improvements plus monitoring and before/after evidence.',
-    items: ['Everything in Monitor', 'Answer-first content and FAQ work', 'Schema, entity and technical fixes', 'Staging implementation and re-audit'],
+    items: ['Everything in Monitor', 'Up to 60 tracked prompts/month', 'Up to 8 answer/FAQ work items/month', 'Up to 4 approved technical fix batches/month', 'Staging implementation and re-audit'],
   },
   {
     name: 'Multi-location Enterprise',
@@ -39,7 +39,7 @@ const plans = [
     suffix: 'custom scope',
     icon: ShieldCheck,
     description: 'For multiple cities, services, brands or domains that need isolated workspaces and approvals.',
-    items: ['Separate locations and prompt sets', 'Role-based approvals', 'Tenant-isolated evidence', 'Executive reporting and audits'],
+    items: ['Custom prompt and location quotas', 'Separate locations and prompt sets', 'Role-based approvals', 'Tenant-isolated evidence', 'Executive reporting and audits'],
   },
 ];
 
@@ -89,8 +89,17 @@ export const AIVisibility: React.FC = () => (
       </div>
     </section>
 
+    <section className="container mx-auto max-w-6xl px-5 pb-16 md:px-8">
+      <div className="rounded-2xl border border-amber-200/15 bg-amber-200/[.04] p-6">
+        <p className="text-xs font-black uppercase tracking-[.25em] text-amber-200">Transparent delivery scope</p>
+        <h2 className="mt-3 text-2xl font-black text-white">Fixed execution units. No hidden promises.</h2>
+        <p className="mt-3 max-w-4xl text-sm leading-6 text-slate-300">Prompt quotas and work-item limits describe the managed execution scope. They are not guarantees of rankings, citations, traffic, leads, bookings or revenue. Backlinks, PR and third-party placements are not promised by default; when authorized, they are scoped separately as research, preparation, outreach or evidence work.</p>
+        <p className="mt-3 max-w-4xl text-sm leading-6 text-slate-400">All client work starts with a baseline audit. Growth and Enterprise include that onboarding audit in the setup scope; Monitor requires a baseline before recurring measurement begins.</p>
+      </div>
+    </section>
+
     <section className="border-y border-white/8 bg-slate-950/50">
-      <div className="container mx-auto max-w-6xl px-5 py-16 md:px-8"><div className="grid gap-10 md:grid-cols-2"><div><p className="text-xs font-black uppercase tracking-[.25em] text-emerald-300">Live proof example</p><h2 className="mt-3 text-3xl font-black">QuickKitAI baseline: 55/100</h2><p className="mt-4 leading-7 text-slate-400">The public website was audited with a real browser and evidence was saved. Technical crawl access measured strong, while answer-ready structure, structured data and citation authority were the main improvement areas.</p></div><div className="grid grid-cols-2 gap-3 text-sm">{[['Crawl access','100/100'],['Structured data','40/100'],['Entity clarity','70/100'],['Answer-ready','30/100'],['Citation authority','35/100'],['Overall','55/100']].map(([label, value]) => <div key={label} className="rounded-xl border border-white/8 bg-white/[.03] p-4"><p className="text-slate-500">{label}</p><p className="mt-1 text-xl font-black text-white">{value}</p></div>)}</div></div></div>
+      <div className="container mx-auto max-w-6xl px-5 py-16 md:px-8"><div className="grid gap-10 md:grid-cols-2"><div><p className="text-xs font-black uppercase tracking-[.25em] text-emerald-300">Controlled historical proof example</p><h2 className="mt-3 text-3xl font-black">QuickKitAI: 55/100 → 100/100</h2><p className="mt-4 leading-7 text-slate-400">The public website was audited with a real browser and evidence was saved. Technical crawl access measured strong, while answer-ready structure, structured data and citation authority were the main improvement areas.</p></div><div className="grid grid-cols-2 gap-3 text-sm">{[['Crawl access','100/100'],['Structured data','40/100'],['Entity clarity','70/100'],['Answer-ready','30/100'],['Citation authority','35/100'],['Overall','55/100']].map(([label, value]) => <div key={label} className="rounded-xl border border-white/8 bg-white/[.03] p-4"><p className="text-slate-500">{label}</p><p className="mt-1 text-xl font-black text-white">{value}</p></div>)}</div></div></div>
     </section>
 
     <section className="container mx-auto max-w-6xl px-5 py-16 text-center md:px-8"><h2 className="text-3xl font-black md:text-5xl">Start with a measured baseline.</h2><p className="mx-auto mt-4 max-w-2xl text-slate-400">No guaranteed AI ranking. No fabricated citations. Just approved work, timestamped evidence and a clear next step.</p><Link to="/contact" className="mt-8 inline-flex items-center gap-2 rounded-xl bg-amber-300 px-6 py-3 text-sm font-black text-slate-950 hover:bg-amber-200">Request an audit <ArrowRight size={16} /></Link></section>
