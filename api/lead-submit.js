@@ -61,31 +61,45 @@ export default async function handler(req, res) {
 
     await leadRef.set(lead);
 
-    const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: { user: fromEmail, pass: process.env.EMAIL_PASS },
-    });
-
     const setup = lead.price ? `₹${lead.price.toLocaleString('en-IN')}` : 'Custom quote';
     const maintenance = lead.maintenance ? `₹${lead.maintenance.toLocaleString('en-IN')}/month from month 2` : 'Custom';
+    let adminNotified = false;
+    let clientConfirmationSent = false;
 
-    await transporter.sendMail({
-      from: `QuickKit AI Website <${fromEmail}>`,
-      to: adminEmail,
-      replyTo: lead.email,
-      subject: `🚀 New ${lead.plan} Lead — ${lead.businessName}`,
-      html: `<h2>New QuickKit AI Plan Request</h2><p><b>Name:</b> ${esc(lead.name)}</p><p><b>Phone / WhatsApp:</b> ${esc(lead.phone)}</p><p><b>Email:</b> ${esc(lead.email)}</p><p><b>Business:</b> ${esc(lead.businessName)}</p><p><b>Industry:</b> ${esc(lead.businessType)}</p><p><b>Selected Plan:</b> ${esc(lead.plan)}</p><p><b>Setup:</b> ${setup}</p><p><b>Maintenance:</b> ${maintenance}</p><p><b>Requirements:</b><br/>${esc(lead.requirement || 'Not provided')}</p><p><b>Lead ID:</b> ${esc(lead.id)}</p>`
-    });
+    // Email is a best-effort notification. A Gmail/SMTP outage must not
+    // discard a lead that has already been safely saved to Firestore.
+    if (process.env.EMAIL_PASS) {
+      try {
+        const transporter = nodemailer.createTransport({
+          service: 'gmail',
+          auth: { user: fromEmail, pass: process.env.EMAIL_PASS },
+        });
 
-    await transporter.sendMail({
-      from: `QuickKit AI <${fromEmail}>`,
-      to: lead.email,
-      replyTo: adminEmail,
-      subject: `We received your QuickKit AI ${lead.plan} request`,
-      html: `<h2>Thanks, ${esc(lead.name)}.</h2><p>We received your request for the <b>${esc(lead.plan)}</b> managed AI system.</p><p>Our team will contact you on <b>${esc(lead.phone)}</b> and email you at this address to discuss the setup.</p><p><b>Setup:</b> ${setup}<br/><b>First month:</b> Managed operation included<br/><b>From month 2:</b> ${maintenance}<br/><b>AI/API usage:</b> billed separately according to actual usage.</p><p>— QuickKit AI<br/>${esc(adminEmail)}</p>`
-    });
+        await transporter.sendMail({
+          from: `QuickKit AI Website <${fromEmail}>`,
+          to: adminEmail,
+          replyTo: lead.email,
+          subject: `🚀 New ${lead.plan} Lead — ${lead.businessName}`,
+          html: `<h2>New QuickKit AI Plan Request</h2><p><b>Name:</b> ${esc(lead.name)}</p><p><b>Phone / WhatsApp:</b> ${esc(lead.phone)}</p><p><b>Email:</b> ${esc(lead.email)}</p><p><b>Business:</b> ${esc(lead.businessName)}</p><p><b>Industry:</b> ${esc(lead.businessType)}</p><p><b>Selected Plan:</b> ${esc(lead.plan)}</p><p><b>Setup:</b> ${setup}</p><p><b>Maintenance:</b> ${maintenance}</p><p><b>Requirements:</b><br/>${esc(lead.requirement || 'Not provided')}</p><p><b>Lead ID:</b> ${esc(lead.id)}</p>`
+        });
+        adminNotified = true;
 
-    return json(res, 200, { status: 'LEAD_CREATED', leadId: lead.id, adminNotified: true, clientConfirmationSent: true });
+        await transporter.sendMail({
+          from: `QuickKit AI <${fromEmail}>`,
+          to: lead.email,
+          replyTo: adminEmail,
+          subject: `We received your QuickKit AI ${lead.plan} request`,
+          html: `<h2>Thanks, ${esc(lead.name)}.</h2><p>We received your request for the <b>${esc(lead.plan)}</b> managed AI system.</p><p>Our team will contact you on <b>${esc(lead.phone)}</b> and email you at this address to discuss the setup.</p><p><b>Setup:</b> ${setup}<br/><b>First month:</b> Managed operation included<br/><b>From month 2:</b> ${maintenance}<br/><b>AI/API usage:</b> billed separately according to actual usage.</p><p>— QuickKit AI<br/>${esc(adminEmail)}</p>`
+        });
+        clientConfirmationSent = true;
+      } catch (emailError) {
+        console.error('LEAD_EMAIL_NOTIFICATION_ERROR:', emailError);
+      }
+    } else {
+      console.warn('LEAD_EMAIL_SKIPPED: EMAIL_PASS is not configured.');
+    }
+
+    return json(res, 200, { status: 'LEAD_CREATED', leadId: lead.id, adminNotified, clientConfirmationSent });
   } catch (error) {
     console.error('LEAD_SUBMIT_ERROR:', error);
     if (error?.status === 429) return json(res, 429, { error: 'Too many requests. Please wait a minute and try again.' });
