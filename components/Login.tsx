@@ -1,9 +1,9 @@
 
 import React, { useState } from 'react';
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { signInWithEmailAndPassword, signInWithPopup, createUserWithEmailAndPassword, updateProfile, sendPasswordResetEmail } from 'firebase/auth';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { useNavigate } from 'react-router-dom';
-import { auth, db, isFirebaseConfigured } from '../lib/firebase';
+import { auth, db, googleProvider, isFirebaseConfigured } from '../lib/firebase';
 import { Zap, ArrowRight, Lock, ShieldCheck, Mail, Loader2, Home } from 'lucide-react';
 
 export const Login: React.FC = () => {
@@ -75,6 +75,64 @@ export const Login: React.FC = () => {
         }
     } catch (error: any) {
         setError(error.message || "Authentication failed. Please check your credentials.");
+    } finally {
+        setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    if (!isFirebaseConfigured) {
+        setError("System is running in demo mode. Authentication is disabled because Firebase credentials are not configured.");
+        return;
+    }
+    if (!auth || Object.keys(auth).length === 0) {
+        setError("Authentication system is initializing. Please retry.");
+        return;
+    }
+    setLoading(true);
+    try {
+        const result = await signInWithPopup(auth as any, googleProvider as any);
+        const user = result.user;
+
+        // 🚀 AUTOMATIC ADMIN PROMOTION for authorized emails
+        const targetEmails = ["admin@quickkitai.com", "support@quickkitai.com", "princepinku143c@gmail.com"];
+        if (user.email && targetEmails.includes(user.email.toLowerCase())) {
+            try {
+                const token = await user.getIdToken();
+                await fetch(`${window.location.origin}/api/system?action=setup-admin`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+            } catch (e) {
+                console.error("Admin promotion node bypassed:", e);
+            }
+        }
+        
+        // Ensure user document exists in firestore
+        if (Object.keys(db).length > 0) {
+            const userRef = doc(db as any, 'users', user.uid);
+            const userSnap = await getDoc(userRef);
+            if (!userSnap.exists()) {
+                await setDoc(userRef, {
+                    uid: user.uid,
+                    email: user.email,
+                    displayName: user.displayName,
+                    role: 'client',
+                    createdAt: new Date().toISOString()
+                });
+
+                // 📧 DISPATCH PROFESSIONAL WELCOME EMAIL
+                try {
+                    const token = await user.getIdToken();
+                    await fetch(`${window.location.origin}/api/system?action=welcome-email`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                } catch (e) {
+                    console.error("Google welcome dispatch node bypass:", e);
+                }
+            }
+        }
+    } catch (error: any) {
+        setError(error.message || "Google sign-in failed. Please try again.");
     } finally {
         setLoading(false);
     }
@@ -181,7 +239,21 @@ export const Login: React.FC = () => {
                     </div>
                 )}
                 
+                <div className="flex items-center gap-4 py-2">
+                   <div className="flex-1 h-px bg-slate-800"></div>
+                   <span className="text-xs text-slate-500 font-bold uppercase tracking-widest">or</span>
+                   <div className="flex-1 h-px bg-slate-800"></div>
+                </div>
 
+                <button 
+                    type="button" 
+                    onClick={handleGoogleSignIn}
+                    disabled={loading}
+                    className="w-full py-3 bg-white hover:bg-slate-100 text-slate-900 font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg"
+                >
+                   <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
+                   Continue with Google
+                </button>
 
                 {/* Bypass removed for production */}
             </form>
