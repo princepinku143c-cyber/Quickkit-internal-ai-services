@@ -360,7 +360,7 @@ export const SEOAudit = () => {
           "url": "https://quickkitai.com/seo-audit",
           "publisher": { "@type": "Organization", "name": "QuickKit AI", "url": "https://quickkitai.com" },
           "datePublished": "2026-05-18",
-          "dateModified": "2026-05-18"
+          "dateModified": "2026-10-30"
         })}</script>
       </Helmet>
 
@@ -381,7 +381,7 @@ export const SEOAudit = () => {
       {/* ── Header ── */}
       <div className="pt-20 pb-6 border-b border-slate-800">
         <div className="container mx-auto px-4 sm:px-6 max-w-4xl">
-          <p className="font-mono text-[10px] text-slate-500 uppercase tracking-[0.3em] mb-2">QUICKKITAI.COM — UPDATED MAY 2026</p>
+          <p className="font-mono text-[10px] text-slate-500 uppercase tracking-[0.3em] mb-2">QUICKKITAI.COM — HISTORICAL SEO SNAPSHOT: MAY 2026</p>
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-none">
             <span className="text-cyan-400">QuickKit AI</span>
             <span className="text-slate-600"> — </span>
@@ -391,7 +391,7 @@ export const SEOAudit = () => {
           {/* Score Banner */}
           <div className="mt-4 inline-flex items-center gap-2 bg-red-950/60 border border-red-800/50 text-red-400 rounded-full px-4 py-1.5 text-xs font-mono font-bold">
             <AlertTriangle size={12} />
-            Overall Score: 34/100 — Needs Urgent Fixes
+            Historical SEO snapshot: 34/100 (May 2026)
           </div>
 
           {/* Top Navigation */}
@@ -450,7 +450,7 @@ export const SEOAudit = () => {
             </p>
             <div className="mt-8 grid grid-cols-3 gap-4 text-center">
               {[
-                { label: 'SEO Score',    value: '34/100', color: 'text-red-400' },
+                { label: 'Historical SEO', value: '34/100', color: 'text-red-400' },
                 { label: 'Pages',        value: '12',     color: 'text-cyan-400' },
                 { label: 'Backlinks',    value: '~5',     color: 'text-orange-400' },
               ].map((s, i) => (
@@ -459,6 +459,26 @@ export const SEOAudit = () => {
                   <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest mt-1">{s.label}</p>
                 </div>
               ))}
+            </div>
+            <div className="mt-6 rounded-xl border border-cyan-800/60 bg-cyan-950/20 p-5 text-left">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h3 className="text-sm font-bold text-cyan-300">Latest Technical AEO Audit</h3>
+                <span className="font-mono text-[10px] text-slate-400">30 OCTOBER 2026 · READ-ONLY REPORT</span>
+              </div>
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-4xl font-black font-mono text-cyan-300">100/100</span>
+                <span className="text-xs text-slate-400">Technical readiness score</span>
+              </div>
+              <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-slate-300">
+                {['Technical Crawl','Structured Data','Entity Clarity','Answer-Ready Structure','Citation-Proof & Authority'].map((item) => (
+                  <div key={item} className="rounded-lg bg-slate-800/60 px-3 py-2 flex items-center justify-between gap-3">
+                    <span>{item}</span><span className="font-mono font-bold text-cyan-300">100/100</span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-4 text-[11px] leading-relaxed text-slate-400">
+                These are two different measurements: 34/100 is a historical editorial SEO snapshot from May 2026; 100/100 is the latest reported technical AEO audit. The technical score does not prove AI-platform mentions, recommendations, citations, Google rankings, traffic, leads, or revenue, and is not a performance guarantee.
+              </p>
             </div>
           </div>
         )}
@@ -471,7 +491,7 @@ export const SEOAudit = () => {
       {/* ── Footer ── */}
       <footer className="border-t border-slate-800/60 py-8 text-center">
         <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-slate-700">
-          QuickKit AI — SEO Audit Report — Created by Prince — May 2026
+          QuickKit AI — SEO Audit — Historical SEO snapshot: May 2026 · Technical AEO audit: 30 October 2026
         </p>
       </footer>
     </div>
