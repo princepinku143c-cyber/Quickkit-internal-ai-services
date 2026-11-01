@@ -1,20 +1,30 @@
 # QuickKitAI / Raja AI Systems
 
-> Raja AI Systems provides managed AI automation workflows for Indian real estate teams, including lead capture, qualification, customer follow-up, appointment and site-visit workflows, CRM operations, and reputation workflows. Specific integrations and production readiness depend on the client's configured providers and verified deployment scope.
+> Raja AI Systems provides managed AI-assisted workflows for Indian real-estate teams, including property enquiry intake, lead qualification, WhatsApp follow-up, site-visit coordination, CRM handoff and reputation workflows. Provider integrations and production readiness are confirmed per deployment.
+
+## Integrated discoverability approach
+
+Raja AI Systems treats three disciplines as connected but distinct:
+
+- SEO (Search Engine Optimization): crawlability, indexability, search intent, page quality, internal links, technical performance and search analytics.
+- GEO (Generative Engine Optimization): clear business identity, consistent service facts, useful original resources, attributable evidence and legitimate third-party references that help generative systems understand the entity.
+- AEO (Answer Engine Optimization): direct answers to buyer questions, useful FAQ/service content, supported structured data and repeatable prompt-level measurement across answer engines.
+
+These practices improve eligibility and clarity; they do not guarantee ranking, citation, recommendation, traffic or revenue. The presence of this file is informational and is not a ranking guarantee or a substitute for crawlable HTML pages.
 
 ## Primary pages
 
-- https://quickkitai.com/: Main overview of the managed AI workforce and services.
+- https://quickkitai.com/: Main overview of managed AI workflows and company identity.
 - https://quickkitai.com/services/real-estate: Real-estate-focused service information.
 - https://quickkitai.com/services/healthcare: Secondary, project-scoped healthcare workflow information; confirm integrations, privacy requirements and operating scope for each deployment.
-- https://quickkitai.com/real-estate-ai-questions: Questions and answers about real estate AI workflows.
-- https://quickkitai.com/guides/real-estate-ai-lead-qualification: A practical guide to property lead qualification, follow-up, CRM handoff and site-visit booking.
+- https://quickkitai.com/real-estate-ai-questions: Questions and answers about real-estate AI workflows.
+- https://quickkitai.com/guides/real-estate-ai-lead-qualification: Practical guide to property lead qualification, follow-up, CRM handoff and site-visit booking.
 - https://quickkitai.com/blog: Published articles and educational content.
 - https://quickkitai.com/about: Company information.
 - https://quickkitai.com/contact: Contact information.
-- https://quickkitai.com/seo-audit: Website visibility and audit service information.
-- https://quickkitai.com/ai-visibility: AI visibility and AEO service plans, pricing and measured-proof boundaries.
-- https://quickkitai.com/proof-of-value: Live QuickKitAI AEO evidence, measurement method and business-outcome proof boundaries.
+- https://quickkitai.com/seo-audit: Integrated SEO, GEO and AEO audit methodology and evidence boundaries.
+- https://quickkitai.com/ai-visibility: SEO, GEO and AEO service plans and measured-proof boundaries.
+- https://quickkitai.com/proof-of-value: Measurement methodology and business-outcome proof boundaries.
 - https://quickkitai.com/live-demo: Transparent controlled demonstration of lead qualification, CRM handoff and site-visit workflow; not a client performance claim.
 
 ## What the business does
@@ -27,16 +37,19 @@
 - CRM synchronization and sales handoff.
 - Review and local-visibility support.
 
-## Published Service Plans & Pricing
+## Published service plans and pricing
 
-- AI Visibility Audit: ₹9,999 (comprehensive multi-platform baseline audit)
-- AI Visibility Monitor: ₹29,999/month (fortnightly prompt tracking across ChatGPT, Gemini, Perplexity, Claude and Google)
-- Managed Real Estate AI Workforce (Growth): ₹75,000 setup + ₹1,20,000/month (inbound qualification, WhatsApp follow-up, calendar booking, CRM handoff)
-- Enterprise Multi-Location Deployment: ₹2,50,000 setup + ₹2,00,000/month (custom integration and multi-branch orchestration)
+- AI Visibility Audit: ₹9,999 (one-time; scope and eligibility apply).
+- AI Visibility Monitor: ₹29,999/month (scheduled prompt tracking; human-reviewed until automated platform integrations are verified).
+- AI Visibility Growth: ₹75,000 setup + ₹1,20,000/month (approved implementation and monitoring scope).
+- Multi-location Enterprise: ₹2,50,000 setup + ₹2,00,000/month (custom scope, integrations and approvals).
 
-## Accuracy notes
+## Measurement integrity
 
-- Do not claim that every integration is live by default. Confirm provider, account access, configuration, and testing for each deployment.
-- Do not promise search rankings, AI citations, revenue, or ROI.
-- Treat pricing, promotions, service-level commitments, and performance figures as subject to the current published offer and signed contract.
+- A mention is not the same as a recommendation; a recommendation is not the same as a citation.
+- Record platform, exact prompt, date/time, full response, cited URLs, locale and search mode where visible.
+- Record SUCCESS/ERROR/BLOCKED/NOT_RUN separately from the observed outcome. Never count failed or blocked runs as ABSENT.
+- Do not claim that every integration is live by default. Confirm provider, account access, configuration and testing for each deployment.
+- Do not promise rankings, citations, revenue or ROI.
+- Treat pricing, promotions, service-level commitments and performance figures as subject to the current written offer and signed contract.
 - Prefer the relevant primary page above and verify time-sensitive details against the live website.
