@@ -27,6 +27,11 @@ for (const path of ['/services/real-estate','/services/healthcare','/guides/real
   assert.ok(urls.includes(`https://quickkitai.com${path}`), `missing important URL from sitemap: ${path}`);
 }
 assert.match(robots, /User-agent:\s*OAI-SearchBot/i, 'robots.txt should define the OpenAI Search crawler');
+assert.match(robots, /User-agent:\s*Claude-SearchBot/i, 'robots.txt should define the Anthropic search crawler');
+assert.match(robots, /User-agent:\s*Claude-User/i, 'robots.txt should define the Anthropic user-requested fetcher');
+assert.match(llms, /SEO \(Search Engine Optimization\)/, 'llms.txt should describe SEO');
+assert.match(llms, /GEO \(Generative Engine Optimization\)/, 'llms.txt should describe GEO');
+assert.match(llms, /AEO \(Answer Engine Optimization\)/, 'llms.txt should describe AEO');
 assert.match(robots, /Sitemap:\s*https:\/\/quickkitai\.com\/sitemap\.xml/i, 'robots.txt should reference the sitemap');
 for (const denied of ['/api/','/scratch/','/admin','/client-portal']) assert.ok(robots.includes(`Disallow: ${denied}`), `robots.txt missing ${denied} deny rule`);
 for (const href of urls.filter((u) => !u.endsWith('/privacy') && !u.endsWith('/terms'))) {
