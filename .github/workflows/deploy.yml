@@ -21,14 +21,13 @@ jobs:
           cache: npm
       - name: Install locked dependencies
         run: npm ci
-      - name: Dependency security audit
-        run: npm audit --audit-level=low
       - name: Production build and route prerender
         run: npm run build
       - name: SEO and prerender validation
         run: npm run test:seo
       - name: TypeScript validation
         run: npx tsc --noEmit
-
       - name: Security input regression tests
         run: npm run test:security
+      - name: Dependency security audit
+        run: npm audit --audit-level=low
