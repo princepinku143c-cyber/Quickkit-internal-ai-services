@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/prerender-public-routes.mjs",
+    "build": "vite build && node scripts/prerender-public-routes.mjs && npm run test:seo",
     "preview": "vite preview",
     "test:api": "node tests/api-test.js",
     "validate:seo": "node scripts/validate-seo-assets.mjs",
