@@ -1,28 +1,57 @@
 #!/usr/bin/env python3
-"""AEO (Answer Engine Optimization) Agent"""
-import json, os, sys, time, urllib.request
+"""Generate AEO question-and-answer content using the configured OpenCode API."""
+import json
+import os
+import sys
+import urllib.error
+import urllib.request
+
+
+API_URL = "https://opencode.ai/zen/v1/chat/completions"
+MODEL = "deepseek-v4-flash-free"
+
 
 def generate_qa_pairs(keyword, count=5):
-    prompt = f"Generate {count} Q&A pairs about \"{keyword}\" for LLM training. Return JSON array."
+    api_key = os.environ.get("OPENCODE_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENCODE_API_KEY is not configured")
+
+    prompt = (
+        f'Generate {count} Q&A pairs about "{keyword}" for answer-engine '
+        "optimization. Return a JSON array with question and answer fields."
+    )
     payload = {
-        "model": "deepseek-v4-flash-free",
+        "model": MODEL,
         "messages": [{"role": "user", "content": prompt}],
         "max_tokens": 1000
     }
+    request = urllib.request.Request(
+        API_URL,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+            "User-Agent": "QuickKitAI-AEO-Agent/1.0"
+        },
+        method="POST"
+    )
+
     try:
-        data = json.dumps(payload).encode()
-        req = urllib.request.Request(
-            "https://opencode.ai/zen/v1/chat/completions", data=data,
-            headers={"Authorization": "Bearer sk-MLPOiMIdGnxlMHhBL8GVPKCUB3NBEMT8Bx2j2gr5VbROqaaaKvTdHxqW8d0ClbP7",
-                     "Content-Type": "application/json",
-                     "User-Agent": "OpenCode/1.0 (Zen Client)"},
-            method="POST")
-        resp = urllib.request.urlopen(req, timeout=30)
-        result = json.loads(resp.read().decode())
-        return result["choices"][0]["message"].get("content", "")
-    except:
-        return "[]"
+        with urllib.request.urlopen(request, timeout=30) as response:
+            result = json.loads(response.read().decode("utf-8"))
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+        raise RuntimeError("AEO provider request failed") from exc
+
+    choices = result.get("choices") or []
+    if not choices:
+        raise RuntimeError("AEO provider returned no completion")
+    return choices[0].get("message", {}).get("content", "")
+
 
 if __name__ == "__main__":
-    kw = sys.argv[1] if len(sys.argv) > 1 else "AI agents for business"
-    print(generate_qa_pairs(kw))
+    keyword = sys.argv[1] if len(sys.argv) > 1 else "AI agents for business"
+    try:
+        print(generate_qa_pairs(keyword))
+    except RuntimeError as error:
+        print(f"AEO agent error: {error}", file=sys.stderr)
+        sys.exit(1)
