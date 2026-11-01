@@ -12,11 +12,11 @@ const shell = html;
 const pages = [
   {
     path: 'ai-visibility',
-    title: 'AI Visibility and AEO Services in India | Raja AI Systems',
-    description: 'Evidence-first AI visibility and AEO services for ChatGPT, Perplexity, Gemini, Claude and Google surfaces. Audit, monitor, improve and report measured outcomes without ranking guarantees.',
-    keywords: 'AEO services India, AI visibility audit, generative engine optimization, ChatGPT visibility, Perplexity citations, AI search monitoring',
-    heading: 'AI Visibility and AEO Services',
-    summary: 'Raja AI Systems measures how businesses are understood across AI and search surfaces, then applies approved technical, content, schema and entity improvements with before-and-after evidence.',
+    title: 'SEO, GEO and AEO Services in India | Raja AI Systems',
+    description: 'Integrated SEO, generative engine optimization and answer engine optimization for web search and AI discovery. Evidence-led audits and human-reviewed visibility measurement without ranking guarantees.',
+    keywords: 'SEO GEO AEO services India, AI visibility audit, generative engine optimization, answer engine optimization, AI search monitoring',
+    heading: 'SEO, GEO and AEO Services',
+    summary: 'Raja AI Systems combines technical search optimization, generative entity clarity and answer-engine readiness, then measures approved improvements with documented evidence.',
     links: [['/seo-audit','Review the SEO and AI-search audit'], ['/services/real-estate','See the real-estate workflow'], ['/contact','Discuss a pilot']]
   },
   {
@@ -104,11 +104,11 @@ const pages = [
   },
   {
     path: 'seo-audit',
-    title: 'SEO & AI Search Readiness Audit | Raja AI Systems',
-    description: 'Review technical crawlability, page metadata, sitemap coverage, structured data and AI-search readiness. Search rankings and AI citations are not guaranteed.',
-    keywords: 'SEO audit, AI search readiness, AEO, technical SEO India, structured data',
-    heading: 'SEO & AI Search Readiness Audit',
-    summary: 'A readiness review can assess technical crawlability, metadata consistency, sitemap and structured-data issues. Search performance must be measured against a baseline; rankings and AI citations cannot be guaranteed.',
+    title: 'SEO, GEO and AEO Audit | Raja AI Systems',
+    description: 'Review technical SEO, generative entity authority and answer-engine readiness for web search and AI discovery. Rankings and citations are not guaranteed.',
+    keywords: 'SEO audit, GEO audit, AEO audit, AI visibility audit India, structured data',
+    heading: 'SEO, GEO and AEO Audit',
+    summary: 'An integrated audit reviews search crawlability, entity clarity, answer-ready content, structured data and measured AI citation evidence. Rankings and citations are not guaranteed.',
     links: [['/blog','Explore published resources'], ['/contact','Discuss a site review']]
   },
   {
