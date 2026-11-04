@@ -23,10 +23,15 @@ for (const u of urls) {
   assert.equal(parsed.search, '', `sitemap URLs should not include tracking query strings: ${u}`);
   assert.equal(parsed.hash, '', `sitemap URLs should not include fragments: ${u}`);
 }
-for (const path of ['/services/real-estate','/services/healthcare','/guides/real-estate-ai-lead-qualification','/real-estate-ai-questions','/blog','/ai-visibility','/proof-of-value']) {
+for (const path of ['/services/real-estate','/services/healthcare','/guides/real-estate-ai-lead-qualification','/real-estate-ai-questions','/blog','/ai-visibility','/proof-of-value','/live-demo']) {
   assert.ok(urls.includes(`https://quickkitai.com${path}`), `missing important URL from sitemap: ${path}`);
 }
 assert.match(robots, /User-agent:\s*OAI-SearchBot/i, 'robots.txt should define the OpenAI Search crawler');
+assert.match(robots, /User-agent:\s*Claude-SearchBot/i, 'robots.txt should define the Anthropic search crawler');
+assert.match(robots, /User-agent:\s*Claude-User/i, 'robots.txt should define the Anthropic user-requested fetcher');
+assert.match(llms, /SEO \(Search Engine Optimization\)/, 'llms.txt should describe SEO');
+assert.match(llms, /GEO \(Generative Engine Optimization\)/, 'llms.txt should describe GEO');
+assert.match(llms, /AEO \(Answer Engine Optimization\)/, 'llms.txt should describe AEO');
 assert.match(robots, /Sitemap:\s*https:\/\/quickkitai\.com\/sitemap\.xml/i, 'robots.txt should reference the sitemap');
 for (const denied of ['/api/','/scratch/','/admin','/client-portal']) assert.ok(robots.includes(`Disallow: ${denied}`), `robots.txt missing ${denied} deny rule`);
 for (const href of urls.filter((u) => !u.endsWith('/privacy') && !u.endsWith('/terms'))) {
@@ -52,7 +57,7 @@ for (const [source, destination] of [
     source + ' should permanently redirect to its canonical legal page',
   );
 }
-for (const path of ['/services/real-estate','/services/healthcare','/guides/real-estate-ai-lead-qualification','/real-estate-ai-questions','/blog','/about','/contact','/ai-visibility','/proof-of-value','/seo-audit','/privacy','/terms']) {
+for (const path of ['/services/real-estate','/services/healthcare','/guides/real-estate-ai-lead-qualification','/real-estate-ai-questions','/blog','/about','/contact','/ai-visibility','/proof-of-value','/live-demo','/seo-audit','/privacy','/terms']) {
   const routeIndex = vercelConfig.rewrites.findIndex((r) => r.source === path && r.destination === `${path}/index.html`);
   const slashIndex = vercelConfig.rewrites.findIndex((r) => r.source === `${path}/` && r.destination === `${path}/index.html`);
   const fallbackIndex = vercelConfig.rewrites.findIndex((r) => r.destination === '/index.html');
@@ -61,9 +66,9 @@ for (const path of ['/services/real-estate','/services/healthcare','/guides/real
   assert.ok(routeIndex < fallbackIndex && slashIndex < fallbackIndex, `Specific prerender rewrites for ${path} must precede the SPA fallback`);
 }
 const spaFallback = vercelConfig.rewrites.find((r) => r.destination === '/index.html');
-assert.ok(spaFallback && ['llms','services/real-estate','services/healthcare','guides/real-estate-ai-lead-qualification','real-estate-ai-questions','blog','proof-of-value'].every((route) => spaFallback.source.includes(route)), 'SPA fallback must exclude llms.txt and prerendered routes');
+assert.ok(spaFallback && ['llms','services/real-estate','services/healthcare','guides/real-estate-ai-lead-qualification','real-estate-ai-questions','blog','proof-of-value','live-demo'].every((route) => spaFallback.source.includes(route)), 'SPA fallback must exclude llms.txt and prerendered routes');
 const fallbackMatcher = new RegExp(`^${spaFallback.source}`);
-for (const path of ['/services/real-estate','/services/real-estate/index.html','/services/healthcare','/guides/real-estate-ai-lead-qualification/index.html','/real-estate-ai-questions/index.html','/blog/index.html','/proof-of-value','/proof-of-value/index.html','/llms.txt']) assert.ok(!fallbackMatcher.test(path), `SPA fallback must not rewrite static route/file ${path}`);
+for (const path of ['/services/real-estate','/services/real-estate/index.html','/services/healthcare','/guides/real-estate-ai-lead-qualification/index.html','/real-estate-ai-questions/index.html','/blog/index.html','/proof-of-value','/proof-of-value/index.html','/live-demo','/live-demo/index.html','/llms.txt']) assert.ok(!fallbackMatcher.test(path), `SPA fallback must not rewrite static route/file ${path}`);
 assert.ok(fallbackMatcher.test('/services/not-a-real-niche'), 'unknown service slugs must still reach the React route handler');
 assert.match(app, /<Route path="\/guides\/real-estate-ai-lead-qualification"/);
 assert.match(app, /<Route path="\/services\/:niche"/);

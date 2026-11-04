@@ -5,8 +5,8 @@ const faqs = [
     answer: 'Raja AI Systems builds and manages AI-assisted workflows for property enquiry intake, lead qualification, WhatsApp follow-up, site-visit coordination and CRM operations. The exact channels, integrations and service terms are confirmed in each client agreement.',
   },
   {
-    question: 'What is AI visibility and AEO?',
-    answer: 'AI visibility and answer-engine optimisation help a business publish clear, well-structured, evidence-supported information that can be understood by search engines and AI answer systems. Visibility, citations, leads and revenue are measured outcomes, not guaranteed rankings.',
+    question: 'What are SEO, GEO and AEO?',
+    answer: 'SEO helps search engines discover and rank useful pages. GEO makes the business identity, expertise and evidence clearer to generative systems. AEO structures direct answers to buyer questions and measures how answer engines mention, recommend or cite a business. None guarantees rankings or citations.',
   },
   {
     question: 'How does the QuickKitAI AI Visibility service work?',
@@ -23,9 +23,9 @@ export const AEOAnswerSection: React.FC = () => (
     <section id="ai-visibility-explained" className="border-t border-white/10 bg-slate-950/70 px-5 py-20 md:px-8">
       <div className="mx-auto max-w-6xl">
         <div id="aeo-answer-intro" className="max-w-3xl">
-          <p className="text-xs font-black uppercase tracking-[.24em] text-amber-300">Clear answers, measured evidence</p>
+          <p className="text-xs font-black uppercase tracking-[.24em] text-amber-300">SEO + GEO + AEO: clear answers, trusted sources and measurable evidence</p>
           <h2 className="mt-3 text-3xl font-black tracking-tight text-white md:text-5xl">What does Raja AI Systems help businesses automate?</h2>
-          <p className="mt-5 text-base leading-8 text-slate-300 md:text-lg">Raja AI Systems helps Indian real estate teams organise property enquiries, qualify leads, manage WhatsApp follow-ups, coordinate site visits and keep CRM operations consistent with AI-assisted workflows. AI visibility is measured separately through audits, monitoring and documented evidence.</p>
+          <p className="mt-5 text-base leading-8 text-slate-300 md:text-lg">Raja AI Systems helps Indian real estate teams organise property enquiries, qualify leads, manage WhatsApp follow-ups, coordinate site visits and keep CRM operations consistent with AI-assisted workflows. SEO, GEO and AEO are measured separately through search analytics, source evidence and prompt-level observations.</p>
         </div>
 
         <div className="mt-12 overflow-x-auto rounded-2xl border border-white/10 bg-white/[.03]">

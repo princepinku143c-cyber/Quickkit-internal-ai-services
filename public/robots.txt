@@ -1,4 +1,4 @@
-# QuickKit AI robots policy
+# QuickKitAI / Raja AI Systems crawler policy
 # Public marketing, service and knowledge pages are crawlable.
 # Private application/admin/API paths are not intended for search indexing.
 
@@ -11,7 +11,7 @@ Disallow: /client-portal
 Disallow: /api/
 Disallow: /scratch/
 
-# OpenAI search crawler: allow public pages to be considered for ChatGPT Search.
+# OpenAI Search: allow discovery in ChatGPT Search.
 User-agent: OAI-SearchBot
 Allow: /
 Disallow: /dashboard
@@ -21,6 +21,8 @@ Disallow: /client-portal
 Disallow: /api/
 Disallow: /scratch/
 
+# GPTBot is separate from OAI-SearchBot and controls training-data crawling.
+# This explicit allow preserves the current site-wide public-crawl policy.
 User-agent: GPTBot
 Allow: /
 Disallow: /dashboard
@@ -30,6 +32,7 @@ Disallow: /client-portal
 Disallow: /api/
 Disallow: /scratch/
 
+# User-initiated page retrieval for ChatGPT.
 User-agent: ChatGPT-User
 Allow: /
 Disallow: /dashboard
@@ -39,6 +42,7 @@ Disallow: /client-portal
 Disallow: /api/
 Disallow: /scratch/
 
+# Perplexity search crawler.
 User-agent: PerplexityBot
 Allow: /
 Disallow: /dashboard
@@ -48,6 +52,26 @@ Disallow: /client-portal
 Disallow: /api/
 Disallow: /scratch/
 
+# Anthropic search and user-requested retrieval crawlers.
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /client
+Disallow: /client-portal
+Disallow: /api/
+Disallow: /scratch/
+
+User-agent: Claude-User
+Allow: /
+Disallow: /dashboard
+Disallow: /admin
+Disallow: /client
+Disallow: /client-portal
+Disallow: /api/
+Disallow: /scratch/
+
+# Anthropic model-training crawler; kept consistent with current public-crawl policy.
 User-agent: ClaudeBot
 Allow: /
 Disallow: /dashboard
