@@ -1,0 +1,208 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://quickkitai.com/schemas/aeo-observation-v2.schema.json",
+  "title": "AEO Platform Observation V2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "observation_id",
+    "prompt_id",
+    "prompt_version",
+    "platform",
+    "observed_at",
+    "locale",
+    "method",
+    "exact_prompt",
+    "run_status",
+    "outcome",
+    "brand_signals",
+    "competitors",
+    "citations",
+    "evidence_ref",
+    "confidence",
+    "limitations"
+  ],
+  "properties": {
+    "observation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "prompt_id": {
+      "type": "string",
+      "pattern": "^RE-[0-9]{3}$"
+    },
+    "prompt_version": {
+      "type": "string",
+      "const": "V2"
+    },
+    "platform": {
+      "type": "string",
+      "enum": [
+        "ChatGPT",
+        "Gemini",
+        "Perplexity",
+        "Copilot",
+        "Google AI surface",
+        "Other"
+      ]
+    },
+    "platform_model_version": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "locale": {
+      "type": "string",
+      "description": "BCP-47 locale, e.g. en-IN"
+    },
+    "method": {
+      "type": "string",
+      "enum": [
+        "manual_browser",
+        "approved_api",
+        "other_documented"
+      ]
+    },
+    "exact_prompt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_status": {
+      "type": "string",
+      "enum": [
+        "SUCCESS",
+        "ERROR",
+        "BLOCKED",
+        "NOT_RUN"
+      ]
+    },
+    "outcome": {
+      "type": "string",
+      "enum": [
+        "MENTIONED",
+        "RECOMMENDED",
+        "CITED",
+        "ABSENT",
+        "AMBIGUOUS",
+        "NOT_ASSESSED"
+      ]
+    },
+    "brand_signals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "brand",
+        "mentioned",
+        "recommended",
+        "cited",
+        "evidence_excerpt"
+      ],
+      "properties": {
+        "brand": {
+          "type": "string",
+          "const": "QuickKitAI"
+        },
+        "mentioned": {
+          "type": "boolean"
+        },
+        "recommended": {
+          "type": "boolean"
+        },
+        "cited": {
+          "type": "boolean"
+        },
+        "evidence_excerpt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "competitors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "name",
+          "context",
+          "evidence_excerpt"
+        ],
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "context": {
+            "type": "string",
+            "enum": [
+              "mentioned",
+              "recommended",
+              "compared",
+              "cited"
+            ]
+          },
+          "evidence_excerpt": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        }
+      }
+    },
+    "citations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "url",
+          "domain",
+          "is_official_domain"
+        ],
+        "properties": {
+          "url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "domain": {
+            "type": "string"
+          },
+          "is_official_domain": {
+            "type": "boolean"
+          }
+        }
+      }
+    },
+    "evidence_ref": {
+      "type": "string",
+      "minLength": 1
+    },
+    "confidence": {
+      "type": "string",
+      "enum": [
+        "HIGH",
+        "MEDIUM",
+        "LOW"
+      ]
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notes": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  }
+}

@@ -186,7 +186,15 @@
       "destination": "/terms/index.html"
     },
     {
-      "source": "/((?!assets/|sitemap\\.xml|robots\\.txt|llms\\.txt|favicon|services/real-estate(?:/.*)?$|services/healthcare(?:/.*)?$|guides/real-estate-ai-lead-qualification(?:/.*)?$|real-estate-ai-questions(?:/.*)?$|blog(?:/.*)?$|about(?:/.*)?$|contact(?:/.*)?$|ai-visibility(?:/.*)?$|proof-of-value(?:/.*)?$|seo-audit(?:/.*)?$|privacy(?:/.*)?$|terms(?:/.*)?$).*)",
+      "source": "/live-demo",
+      "destination": "/live-demo/index.html"
+    },
+    {
+      "source": "/live-demo/",
+      "destination": "/live-demo/index.html"
+    },
+    {
+      "source": "/((?!assets/|sitemap\\.xml|robots\\.txt|llms\\.txt|favicon|services/real-estate(?:/.*)?$|services/healthcare(?:/.*)?$|guides/real-estate-ai-lead-qualification(?:/.*)?$|real-estate-ai-questions(?:/.*)?$|blog(?:/.*)?$|about(?:/.*)?$|contact(?:/.*)?$|ai-visibility(?:/.*)?$|proof-of-value(?:/.*)?$|live-demo(?:/.*)?$|seo-audit(?:/.*)?$|privacy(?:/.*)?$|terms(?:/.*)?$).*)",
       "destination": "/index.html"
     }
   ],
