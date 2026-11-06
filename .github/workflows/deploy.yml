@@ -32,6 +32,8 @@ jobs:
         run: npx tsc --noEmit
       - name: Security input regression tests
         run: npm run test:security
+      - name: User provisioning security tests
+        run: npm run test:user-provision
       - name: AEO OpenCode agent unit tests
         run: npm run test:aeo-agent
       - name: AEO API and provider contract tests
