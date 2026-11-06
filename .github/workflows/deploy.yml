@@ -34,5 +34,7 @@ jobs:
         run: npm run test:security
       - name: AEO OpenCode agent unit tests
         run: npm run test:aeo-agent
+      - name: AEO API and provider contract tests
+        run: npm run test:aeo-api
       - name: Dependency security audit
         run: npm audit --audit-level=low
