@@ -13,7 +13,8 @@
     "test:seo": "npm run validate:seo && npm run validate:prerender",
     "test:security": "node tests/input-test.js",
     "test:rank-tracker": "node tests/rank-tracker-test.js",
-    "test:aeo-agent": "python3 -m unittest tests/test_aeo_agent.py -v"
+    "test:aeo-agent": "python3 -m unittest tests/test_aeo_agent.py -v",
+    "test:aeo-api": "node tests/opencode-service-test.js && node tests/aeo-endpoint-test.js"
   },
   "dependencies": {
     "@google/genai": "^1.38.0",
