@@ -19,6 +19,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Install locked dependencies
         run: npm ci
       - name: Production build and route prerender
@@ -29,5 +32,7 @@ jobs:
         run: npx tsc --noEmit
       - name: Security input regression tests
         run: npm run test:security
+      - name: AEO OpenCode agent unit tests
+        run: npm run test:aeo-agent
       - name: Dependency security audit
         run: npm audit --audit-level=low
