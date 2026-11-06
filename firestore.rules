@@ -15,9 +15,7 @@ service cloud.firestore {
     // only be changed by trusted server code using the Admin SDK.
     match /users/{userId} {
       allow read: if isAuthenticated() && request.auth.uid == userId;
-      allow create: if isAuthenticated()
-        && request.auth.uid == userId
-        && request.resource.data.role == 'client';
+      allow create: if isAdmin();
       allow update: if isAuthenticated()
         && request.auth.uid == userId
         && !request.resource.data.diff(resource.data).affectedKeys()
