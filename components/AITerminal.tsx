@@ -17,6 +17,8 @@ interface LogEntry {
   model?: string;
   cost?: number;
   cmdPreview?: string;
+  jobId?: string;
+  jobArgs?: Record<string, string>;
   cmdStatus?: 'pending' | 'running' | 'success' | 'failed' | 'blocked';
   cmdResult?: string;
 }
@@ -28,14 +30,7 @@ interface ModelInfo {
   context_length: number;
 }
 
-const SYSTEM_PERSONA = `You are "QuickKit Agent", an advanced AI Operating System working inside an enterprise CRM with direct VPS execution privileges.
-
-RULES:
-- Answer in a professional but friendly tone.
-- If a user asks to run a server command (e.g. "restart server", "check uptime", "list files", "deploy app"), you MUST put the EXACT corresponding linux command inside <command></command> tags.
-- Example: "Here is the command to restart the server: <command>pm2 restart all</command>"
-- Keep answers concise (max 2-3 sentences).
-- If you don't know something, say so honestly.`;
+const SYSTEM_PERSONA = 'You are QuickKit Agent, a helpful operations assistant in a business dashboard.\n\nRULES:\n- Be professional, friendly, and concise (normally 2-3 sentences).\n- Never claim to have run an operation. Only the operator can approve and run a task from the approved task list.\n- You may suggest a read-only server task using exactly one tag when relevant: <job>uptime</job>, <job>disk_usage</job>, <job>memory_usage</job>, <job>docker_status</job>, <job>docker_containers</job>, or <job>service_status:docker</job>, <job>service_status:n8n</job>, <job>service_status:quickkit-worker</job>.\n- Never output a <command> tag, a raw shell command intended for execution, or a task ID outside that list.\n- Do not recommend destructive, mutating, privilege-changing, or arbitrary shell operations. Explain that the action is not enabled and requires a reviewed workflow.\n- If a user asks to deploy an agent, explain that deployment requires a configured and verified deployment runner; do not claim deployment succeeded.\n- Only add the <job> tag if the request clearly asks for an approved read-only server check.';
 
 const STORAGE_KEY = 'ai_terminal_logs';
 const MODEL_STORAGE_KEY = 'ai_terminal_model';
@@ -59,7 +54,15 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
   const [modelsLoading, setModelsLoading] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [keyError, setKeyError] = useState(false);
+  const [vpsTesting, setVpsTesting] = useState(false);
+  const [vpsStatus, setVpsStatus] = useState<'idle' | 'connected' | 'unavailable'>('idle');
+  const [vpsStatusMessage, setVpsStatusMessage] = useState('Not checked');
+  const [displayCredits, setDisplayCredits] = useState<number>(user.credits);
   const logsEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setDisplayCredits(user.credits);
+  }, [user.credits]);
 
   useEffect(() => {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -144,34 +147,34 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
     await updateDoc(userRef, {
       credits: increment(-amount)
     });
+    setDisplayCredits((current) => Math.max(0, current - amount));
   };
 
-  const handleExecute = async (logId: string, command: string) => {
-    if (user.credits < 10) {
-      addLog({
-        role: 'error',
-        text: 'Insufficient credits for VPS execution (10cr required).',
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      });
+  const handleExecute = async (logId: string, jobId: string, jobArgs: Record<string, string> = {}) => {
+    const approvedJobs = ['uptime', 'disk_usage', 'memory_usage', 'docker_status', 'docker_containers', 'service_status'];
+    if (!approvedJobs.includes(jobId)) {
+      updateLog(logId, { cmdStatus: 'blocked', cmdResult: 'Task is not in the approved read-only allowlist.' });
       return;
     }
-
     updateLog(logId, { cmdStatus: 'running' });
     try {
-      const res = await apiCall('/api/ai?action=execute', { command });
-      await deductCredits(10);
-      
-      updateLog(logId, { 
-        cmdStatus: 'success', 
-        cmdResult: res.output || 'Success (No output)' 
+      const res = await apiCall('/api/ai?action=execute', {
+        jobId,
+        args: jobArgs,
+        requestId: crypto.randomUUID()
+      });
+      if (Number.isFinite(res.creditsRemaining)) setDisplayCredits(res.creditsRemaining);
+      updateLog(logId, {
+        cmdStatus: 'success',
+        cmdResult: res.output || 'Task completed with no output.'
       });
       addLog({
         role: 'system',
-        text: `Command executed. 10 credits deducted.`,
+        text: 'Approved read-only task completed. ' + (res.creditCost || 10) + ' credits charged by the server.',
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
       });
     } catch (e: any) {
-      updateLog(logId, { cmdStatus: 'failed', cmdResult: e.message });
+      updateLog(logId, { cmdStatus: 'failed', cmdResult: e.message || 'Task failed.' });
     }
   };
 
@@ -179,7 +182,7 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
     e.preventDefault();
     if (!input.trim() || isProcessing) return;
 
-    if (user.credits < 2) {
+    if (displayCredits < 2) {
         addLog({
           role: 'error',
           text: 'Insufficient credits for Chat (2cr required).',
@@ -199,7 +202,7 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
     }
 
     const userMsg = input.trim();
-    const isCommandRequest = userMsg.toLowerCase().includes('run') || userMsg.toLowerCase().includes('exec') || userMsg.toLowerCase().includes('ls');
+    const isCommandRequest = /\b(run|execute|exec|terminal|server|vps|docker|uptime|disk|memory|deploy)\b/i.test(userMsg);
     const creditCost = isCommandRequest ? 5 : 2;
 
     setInput('');
@@ -240,20 +243,37 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
       const data = await response.json();
       if (data.error) throw new Error(data.error.message || 'AI request failed');
 
-      const text = data.choices[0].message.content;
-      const cmdMatch = text.match(/<command>([\s\S]*?)<\/command>/);
-      const cmdPreview = cmdMatch ? cmdMatch[1].trim() : undefined;
+      const text = data.choices?.[0]?.message?.content;
+      if (typeof text !== 'string') throw new Error('AI provider returned an empty or invalid response.');
+      const taskMatch = text.match(/<job>([a-z_]+)(?::([a-z0-9_-]+))?<\/job>/i);
+      const allowedJobs: Record<string, string> = {
+        uptime: 'Check server uptime',
+        disk_usage: 'Check disk usage',
+        memory_usage: 'Check memory usage',
+        docker_status: 'Check Docker status',
+        docker_containers: 'List Docker containers',
+        service_status: 'Check an approved service'
+      };
+      const candidateJob = taskMatch?.[1]?.toLowerCase();
+      const candidateService = taskMatch?.[2]?.toLowerCase();
+      const allowedServices = ['docker', 'n8n', 'quickkit-worker'];
+      const validServiceArgs = candidateJob !== 'service_status' || allowedServices.includes(candidateService || '');
+      const jobId = candidateJob && Object.prototype.hasOwnProperty.call(allowedJobs, candidateJob) && validServiceArgs ? candidateJob : undefined;
+      const jobArgs = jobId === 'service_status' && candidateService ? { service: candidateService } : {};
+      const cmdPreview = jobId ? allowedJobs[jobId] + (jobArgs.service ? ' (' + jobArgs.service + ')' : '') : undefined;
 
-      // Deduct Credits
+      // The API response is charged after a valid provider response is received.
       await deductCredits(creditCost);
 
       addLog({
         role: 'agent',
-        text: text.replace(/<command>[\s\S]*?<\/command>/g, '').trim() || (cmdPreview ? `Command suggested: ${cmdPreview}` : ''),
+        text: text.replace(/<job>[\s\S]*?<\/job>/gi, '').replace(/<command>[\s\S]*?<\/command>/gi, 'An arbitrary shell command was blocked. Only approved read-only tasks can be run.').trim() || (cmdPreview ? 'Suggested approved task: ' + cmdPreview : ''),
         time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         model: data.model,
         cmdPreview,
-        cmdStatus: cmdPreview ? 'pending' : undefined
+        jobId,
+        jobArgs,
+        cmdStatus: jobId ? 'pending' : undefined
       });
 
     } catch (e: any) {
@@ -264,6 +284,28 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
       });
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleVpsTest = async () => {
+    if (vpsTesting) return;
+    setVpsTesting(true);
+    setVpsStatusMessage('Checking worker...');
+    try {
+      const result = await apiCall('/api/ai?action=vps-test', {});
+      if (result.status !== 'CONNECTED') throw new Error('The VPS worker did not confirm connectivity.');
+      setVpsStatus('connected');
+      setVpsStatusMessage('Connected · v' + (result.version || 'unknown'));
+      addLog({
+        role: 'system',
+        text: 'VPS worker connection verified. Approved read-only tasks are available when configured.',
+        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+      });
+    } catch (e: any) {
+      setVpsStatus('unavailable');
+      setVpsStatusMessage(e.message || 'VPS worker connection could not be verified.');
+    } finally {
+      setVpsTesting(false);
     }
   };
 
@@ -315,9 +357,28 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
           )}
         </div>
         <div className="flex items-center gap-3">
+            <div className="flex flex-col items-end">
+              <button
+                type="button"
+                onClick={handleVpsTest}
+                disabled={vpsTesting}
+                title="Check the configured VPS worker without running a server task"
+                className="flex items-center gap-1.5 px-2 py-1.5 rounded-lg border border-slate-700 text-[10px] font-bold text-slate-300 hover:border-blue-500/60 hover:text-white disabled:opacity-60"
+              >
+                <Server className="w-3 h-3" />
+                {vpsTesting ? 'Checking...' : 'Test VPS'}
+                <RefreshCw className={"w-3 h-3 " + (vpsTesting ? 'animate-spin' : '')} />
+              </button>
+              <span
+                className={"mt-1 max-w-40 truncate text-[9px] " + (vpsStatus === 'connected' ? 'text-emerald-400' : vpsStatus === 'unavailable' ? 'text-amber-400' : 'text-slate-600')}
+                title={vpsStatusMessage}
+              >
+                {vpsStatusMessage}
+              </span>
+            </div>
             <div className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 rounded-lg flex items-center gap-2">
                 <DollarSign className="w-3 h-3 text-emerald-400" />
-                <span className="text-[10px] font-black text-emerald-400">{user.credits} CR</span>
+                <span className="text-[10px] font-black text-emerald-400">{displayCredits} CR</span>
             </div>
             <span className="text-[10px] text-slate-600">
               {models.length > 0 ? `${models.length} models` : 'Loading...'}
@@ -343,14 +404,14 @@ export const AITerminal: React.FC<AITerminalProps> = ({ user }) => {
                       <div className="bg-purple-500/5 border border-purple-500/10 rounded-xl p-3 mt-1">
                         <div className="flex items-center justify-between mb-1.5 text-purple-400 font-bold text-[10px]"><Bot className="w-3 h-3" /> QuickKit Agent</div>
                         <div className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">{log.text}</div>
-                        {log.cmdPreview && (
+                        {log.cmdPreview && log.jobId && (
                           <div className="mt-3 bg-[#050810] border border-[#1e293b] rounded-lg overflow-hidden">
-                             <div className="bg-[#0B1120] px-3 py-1.5 flex justify-between items-center text-[10px] font-bold text-slate-400"><span>Suggested Command</span></div>
-                             <div className="p-3 text-emerald-400 font-mono text-[11px]">$ {log.cmdPreview}</div>
+                             <div className="bg-[#0B1120] px-3 py-1.5 flex justify-between items-center text-[10px] font-bold text-slate-400"><span>Approved Read-only Task</span></div>
+                             <div className="p-3 text-emerald-400 font-mono text-[11px]">{log.cmdPreview}</div>
                              {log.cmdStatus === 'pending' && (
                                 <div className="p-2 bg-[#0B1120]/50 flex gap-2 justify-end border-t border-[#1e293b]">
                                    <button onClick={() => updateLog(log.id!, { cmdStatus: 'failed', cmdResult: 'Cancelled.' })} className="px-3 py-1.5 text-xs text-slate-400 hover:text-red-400">Cancel</button>
-                                   <button onClick={() => handleExecute(log.id!, log.cmdPreview!)} className="px-3 py-1.5 rounded-md text-xs font-bold bg-amber-500/10 text-amber-500 border border-amber-500/30">Execute (10cr)</button>
+                                   <button onClick={() => log.jobId && handleExecute(log.id!, log.jobId, log.jobArgs)} className="px-3 py-1.5 rounded-md text-xs font-bold bg-amber-500/10 text-amber-500 border border-amber-500/30">Run task (10cr)</button>
                                 </div>
                              )}
                              {log.cmdStatus === 'running' && (<div className="p-3 text-amber-400 text-[11px] font-mono"><Loader2 className="w-3 h-3 animate-spin inline mr-2"/> [Running...]</div>)}

@@ -32,3 +32,12 @@ jobs:
 
       - name: Security input regression tests
         run: npm run test:security
+
+      - name: Install isolated VPS worker dependencies
+        run: npm ci --prefix vps-automation
+      - name: VPS adapter and execution policy regression tests
+        run: npm run test:automation
+      - name: VPS worker integration tests
+        run: node tests/vps-worker-integration-test.js
+      - name: VPS worker dependency audit
+        run: npm audit --prefix vps-automation --audit-level=low
