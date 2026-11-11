@@ -2,6 +2,7 @@
 import admin from './_lib/firebaseAdmin.js';
 import nodemailer from 'nodemailer';
 import { askAI } from '../services/aiService.js';
+import { buildCreditRequestNotification } from '../services/creditRequestNotification.js';
 import { checkRateLimit } from './_lib/security.js';
 import { escapeHtml, getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from './_lib/input.js';
 
@@ -39,12 +40,17 @@ export default async (req, res) => {
 
     let userId = null;
     let userData = null;
+    let authIdentity = { email: '', displayName: '' };
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
         try {
             const token = authHeader.split(' ')[1];
             const decodedToken = await admin.auth().verifyIdToken(token);
             userId = decodedToken.uid;
+            authIdentity = {
+                email: typeof decodedToken.email === 'string' ? decodedToken.email : '',
+                displayName: typeof decodedToken.name === 'string' ? decodedToken.name : ''
+            };
             const userSnap = await admin.firestore().collection('users').doc(userId).get();
             userData = userSnap.data();
         } catch {
@@ -78,7 +84,7 @@ export default async (req, res) => {
         if (adminActions.includes(action) && userData?.role !== 'admin') {
             return error(res, "Forbidden: Admin access required", 403);
         }
-        return await actionMap[action](req, res, userId);
+        return await actionMap[action](req, res, userId, authIdentity);
     }
 
     return error(res, "Invalid Action", 400);
@@ -309,23 +315,32 @@ async function handleRedeemCode(req, res, userId) {
     }
 }
 
-async function handleCreditRequest(req, res, userId) {
-    const { amount, email, displayName } = req.body;
-    if (!amount) return error(res, "Amount required", 400);
+async function handleCreditRequest(req, res, userId, authIdentity = {}) {
+    const amount = req.body && req.body.amount;
+    let notification;
+    try {
+        notification = buildCreditRequestNotification({
+            amount,
+            email: authIdentity.email,
+            displayName: authIdentity.displayName
+        });
+    } catch {
+        return error(res, "A valid positive amount is required.", 400);
+    }
 
     try {
         const requestRef = admin.firestore().collection('payment_requests').doc();
         await requestRef.set({
             userId,
-            userEmail: email,
-            displayName,
-            price: Number(amount),
-            credits: Number(amount) * 10,
+            userEmail: notification.email,
+            displayName: notification.displayName,
+            price: notification.amount,
+            credits: notification.credits,
             status: 'pending',
             createdAt: new Date().toISOString()
         });
 
-        // 📧 Notify Admin
+        // Notify admin using verified Firebase identity claims and escaped HTML.
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
@@ -333,16 +348,9 @@ async function handleCreditRequest(req, res, userId) {
 
         await transporter.sendMail({
             from: `"QuickKit Billing" <${process.env.EMAIL_USER}>`,
-            to: process.env.EMAIL_USER, // Send to self/admin
-            subject: `💳 New Credit Request: ${displayName} ($${amount})`,
-            html: `
-                <h3>New Credit Purchase Request</h3>
-                <p><strong>Client:</strong> ${displayName} (${email})</p>
-                <p><strong>Amount:</strong> $${amount}</p>
-                <p><strong>Credits to Inject:</strong> ${amount * 10}</p>
-                <hr/>
-                <p>Please log in to the Admin Portal to approve this request and send a payment link.</p>
-            `
+            to: process.env.EMAIL_USER,
+            subject: notification.subject,
+            html: notification.html
         });
 
         return success(res, { status: "REQUEST_SENT" });
