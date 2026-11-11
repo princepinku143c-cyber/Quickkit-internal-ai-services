@@ -32,6 +32,8 @@ jobs:
         run: npm install --no-save --package-lock=false @firebase/rules-unit-testing@5.0.0
       - name: Firestore Emulator security rules tests
         run: npx --yes firebase-tools@15.35.0 emulators:exec --only firestore --project demo-quickkit-firestore-rules --non-interactive "node tests/firestore-rules-test.mjs"
+      - name: Firebase client configuration guard tests
+        run: node tests/firebase-config-test.js
       - name: Production build and route prerender
         run: npm run build
       - name: SEO and prerender validation
