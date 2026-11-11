@@ -205,7 +205,24 @@ try {
   );
   assert.match(projectsRules, /allow update, delete:\s*if isAdmin\(\);/);
 
-  console.log("Firestore rules contract passed: project creation is admin-only; owner reads and admin-only mutations remain explicit.");
+  // Client lead views are read-only; all lead writes must stay admin-only.
+  const leadsRuleMatch = firestoreRules.match(/match \/leads\/\{leadId\}\\s*\\{([\\s\\S]*?)^\\s*\\}/m);
+  assert.ok(leadsRuleMatch, "Leads Firestore rule block must exist.");
+  const leadsRules = leadsRuleMatch[1];
+  const leadAccessRules = Array.from(
+    leadsRules.matchAll(/allow\\s+([\\w,\\s]+):\\s*if\\s*([^;]+);/g)
+  );
+  const leadWriteRules = leadAccessRules.filter(([, operations]) =>
+    operations.split(",").some((operation) => ["create", "update", "delete"].includes(operation.trim()))
+  );
+  assert.equal(leadWriteRules.length, 2, "Leads must define create and update/delete write rules.");
+  assert.ok(
+    leadWriteRules.every(([, , condition]) => /isAdmin\\(\\)/.test(condition) && !/request\\.auth\\.uid/.test(condition)),
+    "Only admins may create, update, or delete leads; owner access is read-only."
+  );
+  assert.match(leadsRules, /allow read:\\s*if isAuthenticated\\(\\)/);
+
+  console.log("Firestore rules contract passed: project creation is admin-only; admin-only lead mutations remain explicit.");
   console.log("System API authorization tests passed: admin-only aggregate stats, project-owner payment verification, and cross-user denial.");
 } finally {
   admin.auth = originalAuth;
