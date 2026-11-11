@@ -27,8 +27,9 @@ export default async function handler(req, res) {
     }
 
     return error(res, "Lifecycle Action Not Allowed", 405);
-  } catch (err) {
-    console.error("PROJECT_ENGINE_CRASH:", err);
+  } catch {
+    // Firebase verifier diagnostics can contain project/auth details; never log the exception.
+    console.error("PROJECT_ENGINE_CRASH");
     return error(res, "Build Logic Verification Failure", 403);
   }
 }
