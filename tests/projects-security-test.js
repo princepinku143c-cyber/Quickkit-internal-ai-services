@@ -36,7 +36,10 @@ try {
     success: false,
     message: "Build Logic Verification Failure",
   });
-  assert.deepEqual(capturedErrors, [["PROJECT_ENGINE_CRASH"]]);
+  assert.deepEqual(capturedErrors, [
+    ["PROJECT_ENGINE_CRASH"],
+    ["[API_ERROR] 403: Build Logic Verification Failure"],
+  ]);
   assert.equal(JSON.stringify(capturedErrors).includes("private Firebase verifier diagnostic"), false);
 
   console.log("Project API security tests passed: Firebase verifier diagnostics are redacted and the existing response contract is preserved.");
