@@ -57,6 +57,22 @@ try {
   }, forbiddenResponse);
   assert.equal(forbiddenResponse.statusCode, 403);
   assert.equal(forbiddenResponse.body.success, false);
+
+  // A stale server-signed admin claim must not override a demoted Firestore role.
+  admin.auth = () => ({
+    verifyIdToken: async (token) => {
+      assert.equal(token, "stale-admin-claim-token");
+      return { uid: "ordinary-client", admin: true };
+    },
+  });
+  const staleClaimResponse = mockResponse();
+  await handler({
+    method: "POST",
+    headers: { authorization: "Bearer stale-admin-claim-token" },
+    body: { keyword: "test", count: 1 },
+  }, staleClaimResponse);
+  assert.equal(staleClaimResponse.statusCode, 403);
+  assert.equal(staleClaimResponse.body.success, false);
 } finally {
   admin.auth = originalAuth;
   admin.firestore = originalFirestore;
