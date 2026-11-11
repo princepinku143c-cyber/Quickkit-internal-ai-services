@@ -3,7 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import { checkRateLimit } from "./_lib/security.js";
 import { getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from "./_lib/input.js";
 import { success, error } from "./_lib/response.js";
-import { askAI } from "./services/aiService.js";
+import { askAI } from "../services/aiService.js";
 
 export default async function handler(req, res) {
   // CORS configuration
