@@ -23,7 +23,7 @@ export const AdminLeads: React.FC = () => {
     setIsPostingUpdate(true);
     try {
         await addDoc(collection(db as any, 'logs'), {
-            user_id: selectedLead.userId,
+            userId: selectedLead.userId,
             agent_id: 'ARCHITECT',
             action: updateMessage,
             time: new Date().toLocaleTimeString(),
