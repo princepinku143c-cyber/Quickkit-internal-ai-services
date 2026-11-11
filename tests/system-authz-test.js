@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import admin from "../api/_lib/firebaseAdmin.js";
+import nodemailer from "nodemailer";
 import handler from "../api/system.js";
 
 function mockResponse() {
@@ -18,12 +19,13 @@ function mockResponse() {
 
 const originalAuth = admin.auth;
 const originalFirestore = admin.firestore;
+const originalCreateTransport = nodemailer.createTransport;
 
-function setIdentity(uid) {
+function setIdentity(uid, claims = {}) {
   admin.auth = () => ({
     verifyIdToken: async (token) => {
       assert.equal(token, "test-id-token");
-      return { uid };
+      return { uid, ...claims };
     },
   });
 }
@@ -208,6 +210,79 @@ try {
   assert.equal(ownerVerify.body.status, "VERIFIED");
   assert.equal(ownerUpdates, 1);
 
+  // Credit requests use the verified Firebase identity, not client-supplied
+  // email/name fields, and escape identity data before embedding it in HTML.
+  setIdentity("client-1", {
+    email: "verified@example.com",
+    name: "<img src=x onerror=alert(1)>",
+  });
+  let savedCreditRequest = null;
+  let sentCreditNotification = null;
+  admin.firestore = () => ({
+    collection(name) {
+      if (name === "users") {
+        return {
+          doc: () => ({ get: async () => ({ data: () => ({ role: "client" }) }) }),
+        };
+      }
+      if (name === "payment_requests") {
+        return {
+          doc: () => ({ set: async (value) => { savedCreditRequest = value; } }),
+        };
+      }
+      throw new Error("Unexpected collection: " + name);
+    },
+  });
+  nodemailer.createTransport = () => ({
+    sendMail: async (message) => {
+      sentCreditNotification = message;
+      return { messageId: "test-message" };
+    },
+  });
+  const creditRequest = mockResponse();
+  await handler({
+    method: "POST",
+    query: { action: "credit-request" },
+    headers: { authorization: "Bearer test-id-token" },
+    body: {
+      amount: "25.50",
+      email: "spoofed@attacker.example",
+      displayName: "<script>alert(1)</script>",
+    },
+  }, creditRequest);
+  assert.equal(creditRequest.statusCode, 200);
+  assert.equal(savedCreditRequest.userEmail, "verified@example.com");
+  assert.equal(savedCreditRequest.displayName, "<img src=x onerror=alert(1)>");
+  assert.equal(savedCreditRequest.price, 25.5);
+  assert.equal(savedCreditRequest.credits, 255);
+  assert.ok(sentCreditNotification);
+  assert.doesNotMatch(sentCreditNotification.html, /<img\\b|<script\\b/i);
+  assert.match(sentCreditNotification.html, /&lt;img/);
+  assert.doesNotMatch(sentCreditNotification.subject, /<img|<script/i);
+
+  // Invalid monetary input is rejected before creating a payment request.
+  let paymentRequestWrites = 0;
+  admin.firestore = () => ({
+    collection(name) {
+      if (name === "users") {
+        return { doc: () => ({ get: async () => ({ data: () => ({ role: "client" }) }) }) };
+      }
+      if (name === "payment_requests") {
+        return { doc: () => ({ set: async () => { paymentRequestWrites += 1; } }) };
+      }
+      throw new Error("Unexpected collection: " + name);
+    },
+  });
+  const invalidCreditRequest = mockResponse();
+  await handler({
+    method: "POST",
+    query: { action: "credit-request" },
+    headers: { authorization: "Bearer test-id-token" },
+    body: { amount: "<script>alert(1)</script>" },
+  }, invalidCreditRequest);
+  assert.equal(invalidCreditRequest.statusCode, 400);
+  assert.equal(paymentRequestWrites, 0);
+
   // Static Firestore rules contract: direct project creation is admin-only.
   // Runtime authorization is enforced by Firestore; this assertion prevents the
   // permissive owner-create rule from silently returning in future changes.
@@ -245,4 +320,5 @@ try {
 } finally {
   admin.auth = originalAuth;
   admin.firestore = originalFirestore;
+  nodemailer.createTransport = originalCreateTransport;
 }
