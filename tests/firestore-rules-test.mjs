@@ -22,6 +22,7 @@ const testEnv = await initializeTestEnvironment({
 
 const anonymousDb = testEnv.unauthenticatedContext().firestore();
 const clientOneDb = testEnv.authenticatedContext("client-1").firestore();
+const spoofedAdminDb = testEnv.authenticatedContext("client-1", { role: "admin", admin: true }).firestore();
 const adminDb = testEnv.authenticatedContext("admin-1").firestore();
 
 try {
@@ -47,6 +48,47 @@ try {
 
   // Anonymous users cannot read protected user data.
   await assertFails(getDoc(doc(anonymousDb, "users/client-1")));
+  // Anonymous callers cannot read any protected collection.
+  await Promise.all([
+    assertFails(getDoc(doc(anonymousDb, "leads/lead-client-1"))),
+    assertFails(getDoc(doc(anonymousDb, "projects/project-client-1"))),
+    assertFails(getDoc(doc(anonymousDb, "payments/payment-client-1"))),
+    assertFails(getDoc(doc(anonymousDb, "logs/log-client-1"))),
+    assertFails(getDoc(doc(anonymousDb, "agents/agent-client-1"))),
+    assertFails(getDoc(doc(anonymousDb, "leads_outreach/outreach-1"))),
+  ]);
+
+  // Anonymous callers cannot create, update, or delete protected records.
+  await Promise.all([
+    assertFails(setDoc(doc(anonymousDb, "users/anonymous-created"), { role: "client" })),
+    assertFails(updateDoc(doc(anonymousDb, "users/client-1"), { operatorName: "Anonymous" })),
+    assertFails(deleteDoc(doc(anonymousDb, "users/client-1"))),
+    assertFails(setDoc(doc(anonymousDb, "leads/anonymous-created"), { userId: "client-1" })),
+    assertFails(updateDoc(doc(anonymousDb, "leads/lead-client-1"), { status: "tampered" })),
+    assertFails(deleteDoc(doc(anonymousDb, "leads/lead-client-1"))),
+    assertFails(setDoc(doc(anonymousDb, "projects/anonymous-created"), { userId: "client-1" })),
+    assertFails(updateDoc(doc(anonymousDb, "projects/project-client-1"), { name: "tampered" })),
+    assertFails(deleteDoc(doc(anonymousDb, "projects/project-client-1"))),
+    assertFails(setDoc(doc(anonymousDb, "payments/anonymous-created"), { userId: "client-1", amount: 1 })),
+    assertFails(updateDoc(doc(anonymousDb, "payments/payment-client-1"), { amount: 1 })),
+    assertFails(deleteDoc(doc(anonymousDb, "payments/payment-client-1"))),
+    assertFails(setDoc(doc(anonymousDb, "logs/anonymous-created"), { userId: "client-1" })),
+    assertFails(updateDoc(doc(anonymousDb, "logs/log-client-1"), { message: "tampered" })),
+    assertFails(deleteDoc(doc(anonymousDb, "logs/log-client-1"))),
+    assertFails(setDoc(doc(anonymousDb, "agents/anonymous-created"), { userId: "client-1" })),
+    assertFails(updateDoc(doc(anonymousDb, "agents/agent-client-1"), { name: "tampered" })),
+    assertFails(deleteDoc(doc(anonymousDb, "agents/agent-client-1"))),
+    assertFails(setDoc(doc(anonymousDb, "leads_outreach/anonymous-created"), { status: "queued" })),
+    assertFails(updateDoc(doc(anonymousDb, "leads_outreach/outreach-1"), { status: "sent" })),
+    assertFails(deleteDoc(doc(anonymousDb, "leads_outreach/outreach-1"))),
+  ]);
+
+  // Client-supplied custom claims do not grant admin access; the server-managed
+  // Firestore profile role remains the authority for this ruleset.
+  await assertFails(setDoc(doc(spoofedAdminDb, "leads/claim-spoof-created"), { userId: "client-1" }));
+  await assertFails(setDoc(doc(spoofedAdminDb, "projects/claim-spoof-created"), { userId: "client-1" }));
+  await assertFails(getDoc(doc(spoofedAdminDb, "leads_outreach/outreach-1")));
+
 
   // Users can read only their own profile and cannot self-create or self-promote.
   await assertSucceeds(getDoc(doc(clientOneDb, "users/client-1")));
@@ -54,6 +96,8 @@ try {
   await assertFails(setDoc(doc(clientOneDb, "users/client-new"), { role: "client" }));
   await assertFails(updateDoc(doc(clientOneDb, "users/client-1"), { role: "admin" }));
   await assertFails(updateDoc(doc(clientOneDb, "users/client-1"), { credits: 999 }));
+  await assertFails(updateDoc(doc(clientOneDb, "users/client-1"), { tenantId: "tenant-victim" }));
+  await assertFails(updateDoc(doc(clientOneDb, "users/client-1"), { workspaceId: "workspace-victim" }));
   await assertSucceeds(updateDoc(doc(clientOneDb, "users/client-1"), { operatorName: "Updated Name" }));
 
   // Leads are owner-readable but all client-side mutations are denied.
@@ -106,7 +150,7 @@ try {
   await assertSucceeds(getDoc(doc(adminDb, "leads_outreach/outreach-1")));
   await assertSucceeds(setDoc(doc(adminDb, "leads_outreach/admin-write"), { userId: "client-1" }));
 
-  console.log("Firestore Emulator rules tests passed: users, leads, projects, payments, logs, agents, and leads_outreach.");
+  console.log("Firestore Emulator rules tests passed: users, leads, projects, payments, logs, agents, and leads_outreach, including anonymous denial and role/tenant spoofing checks.");
 } finally {
   await testEnv.cleanup();
 }

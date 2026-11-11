@@ -22,7 +22,7 @@ service cloud.firestore {
           .hasAny([
             'uid', 'role', 'credits', 'plan', 'tier', 'status', 'provider',
             'monthlyLimit', 'admin', 'isAdmin', 'permissions', 'billingStatus',
-            'subscriptionId', 'createdAt'
+            'subscriptionId', 'createdAt', 'tenantId', 'workspaceId'
           ]);
       allow delete: if false;
     }
