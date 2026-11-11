@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { setDoc, doc } from 'firebase/firestore';
 import { signInWithPopup } from 'firebase/auth';
 import { db, auth, googleProvider } from '../lib/firebase';
@@ -12,7 +12,10 @@ import 'react-phone-input-2/lib/style.css';
 
 interface Props { lang: Language; close: () => void; onBack?: () => void; onVerified?: (data:any)=>void; initialData:{bizType:string;plan:PlanTier}; prefilledNotes?:string; aiFinancials?:AIQuote; }
 
+const createSubmissionKey = () => globalThis.crypto?.randomUUID?.() || [Date.now(), Math.random().toString(36).slice(2), Math.random().toString(36).slice(2)].join('-');
+
 export const LeadForm: React.FC<Props> = ({ close, onBack, onVerified, initialData, prefilledNotes = '', aiFinancials }) => {
+  const submissionKey = useRef(createSubmissionKey());
   const [submitted,setSubmitted]=useState(false); const [isSending,setIsSending]=useState(false);
   const [formData,setFormData]=useState({name:'',phone:'',email:'',businessName:'',businessType:initialData.bizType||'',notes:'',country:'IN'});
   useEffect(()=>{ if(prefilledNotes) setFormData(prev=>({...prev,notes:prefilledNotes})); if(auth.currentUser){const u=auth.currentUser;setFormData(prev=>({...prev,name:prev.name||u.displayName||'',email:prev.email||u.email||''}));}},[prefilledNotes]);
@@ -24,7 +27,7 @@ export const LeadForm: React.FC<Props> = ({ close, onBack, onVerified, initialDa
     if(!formData.businessName.trim()) return alert('Please enter your business name.');
     if(!formData.businessType.trim()) return alert('Please enter your business type.');
     setIsSending(true);
-    const newLead={name:formData.name.trim(),phone:formData.phone,email:formData.email.trim(),businessName:formData.businessName.trim(),businessType:formData.businessType.trim(),projectName:'Raja AI Systems — 5-Agent Workforce',plan:'Managed AI Pilot — 50% Offer',requirement:formData.notes.trim(),price:RAJA_COMMERCIAL_OFFER.festiveSetupINR,maintenance:RAJA_COMMERCIAL_OFFER.festiveMonthlyINR,regularPrice:{setup:RAJA_COMMERCIAL_OFFER.regularSetupINR,monthly:RAJA_COMMERCIAL_OFFER.regularMonthlyINR},aiFinancials,userId:auth.currentUser?.uid||null,source:'raja-ai-systems-managed-pilot-offer',submittedAt:new Date().toISOString()};
+    const newLead={idempotencyKey:submissionKey.current,name:formData.name.trim(),phone:formData.phone,email:formData.email.trim(),businessName:formData.businessName.trim(),businessType:formData.businessType.trim(),projectName:'Raja AI Systems — 5-Agent Workforce',plan:'Managed AI Pilot — 50% Offer',requirement:formData.notes.trim(),price:RAJA_COMMERCIAL_OFFER.festiveSetupINR,maintenance:RAJA_COMMERCIAL_OFFER.festiveMonthlyINR,regularPrice:{setup:RAJA_COMMERCIAL_OFFER.regularSetupINR,monthly:RAJA_COMMERCIAL_OFFER.regularMonthlyINR},aiFinancials,userId:auth.currentUser?.uid||null,source:'raja-ai-systems-managed-pilot-offer',submittedAt:new Date().toISOString()};
     try{await apiCall(`${window.location.origin}/api/lead-submit`,newLead,{allowGuest:true});setSubmitted(true);setIsSending(false);if(aiFinancials&&onVerified)setTimeout(()=>onVerified(newLead),900);else setTimeout(()=>close(),2200);}catch(err:any){console.error('Submission error:',err);alert(err?.message||`Unable to submit right now. Please email ${CONTACT_EMAIL}.`);setIsSending(false);}
   };
   const handleGoogleAutofill=async()=>{try{const result=await signInWithPopup(auth as any,googleProvider as any);const u=result.user;setFormData(prev=>({...prev,name:u.displayName||'',email:u.email||''}));if(db)await setDoc(doc(db as any,'users',u.uid),{uid:u.uid,email:u.email,displayName:u.displayName,role:'client',updatedAt:new Date().toISOString()},{merge:true});}catch(e){console.error('Google sync failed:',e);}};
