@@ -4,9 +4,9 @@ import dns from "dns";
 
 // CORS Headers Configuration
 const setCorsHeaders = (res) => {
-  res.setHeader("Access-Control-Allow-Credentials", true);
+  // This endpoint uses explicit bearer/webhook secrets, not cookie credentials.
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,PATCH,DELETE,POST,PUT");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",
     "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization"
@@ -18,7 +18,14 @@ const error = (res, msg, code = 400) => res.status(code).json({ error: msg });
 
 export default async function handler(req, res) {
   setCorsHeaders(res);
-  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method === "OPTIONS") {
+    res.setHeader("Allow", "POST, OPTIONS");
+    return res.status(200).end();
+  }
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST, OPTIONS");
+    return error(res, "Method not allowed.", 405);
+  }
 
   const { action } = req.query;
 
@@ -35,27 +42,35 @@ export default async function handler(req, res) {
       return handleTelegramWebhook(req, res);
     }
 
-    // 2. Resolve user authentication
+    // 2. Resolve user authentication. Vercel's x-vercel-cron header is
+    // informational and can be spoofed by public callers, so it is never an
+    // authorization credential. A cron invocation must present a configured
+    // high-entropy CRON_SECRET as a bearer token.
     let userData = null;
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
+    const authHeader = typeof req.headers?.authorization === "string"
+      ? req.headers.authorization
+      : "";
+    const configuredCronSecret = process.env.CRON_SECRET || "";
+    const isCron = configuredCronSecret.length >= 32
+      && authHeader === `Bearer ${configuredCronSecret}`;
+
+    if (authHeader.startsWith("Bearer ") && !isCron) {
       try {
-        const token = authHeader.split(' ')[1];
+        const token = authHeader.slice(7);
         const decodedToken = await admin.auth().verifyIdToken(token);
-        const userSnap = await admin.firestore().collection('users').doc(decodedToken.uid).get();
+        const userSnap = await admin.firestore().collection("users").doc(decodedToken.uid).get();
         userData = userSnap.data();
       } catch (e) {
         console.error("Auth verification failed in outreach:", e.message);
       }
     }
 
-    const isAdmin = userData?.role === 'admin';
+    const isAdmin = userData?.role === "admin";
 
-    // 3. process-queue can run via Admin or Cron
+    // 3. process-queue can run via an authenticated admin or a secret-backed cron.
     if (action === "process-queue") {
-      const isCron = req.headers['x-vercel-cron'] === '1' || (process.env.CRON_SECRET && authHeader === `Bearer ${process.env.CRON_SECRET}`);
       if (!isCron && !isAdmin) {
-        return error(res, "Forbidden: Administrative access or Cron execution required.", 403);
+        return error(res, "Forbidden: Administrative access or configured cron secret required.", 403);
       }
       return handleProcessQueue(req, res);
     }
