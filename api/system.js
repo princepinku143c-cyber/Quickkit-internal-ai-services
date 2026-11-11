@@ -47,8 +47,10 @@ export default async (req, res) => {
             userId = decodedToken.uid;
             const userSnap = await admin.firestore().collection('users').doc(userId).get();
             userData = userSnap.data();
-        } catch (e) {
-            return error(res, "Authentication Failed: " + e.message, 401);
+        } catch {
+            // Do not disclose Firebase token-verification diagnostics to API callers.
+            console.warn("SYSTEM_API_AUTH_FAILED");
+            return error(res, "Authentication failed.", 401);
         }
     }
 
