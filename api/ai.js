@@ -2,7 +2,7 @@ import admin from "./_lib/firebaseAdmin.js";
 import { success, error } from "./_lib/response.js";
 import { checkRateLimit } from "./_lib/security.js";
 import { getClientIp, isPlainObject, safeText } from "./_lib/input.js";
-import { askAI } from "./services/aiService.js";
+import { askAI } from "../services/aiService.js";
 
 /**
  * Unified AI Intelligence & Execution Cluster.
