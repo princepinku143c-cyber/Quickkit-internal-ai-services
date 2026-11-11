@@ -69,6 +69,24 @@ try {
   admin.auth = originalAuth;
   admin.firestore = originalFirestore;
 
+  // Firebase verifier diagnostics must never be returned to an API caller.
+  admin.auth = () => ({
+    verifyIdToken: async () => { throw new Error("sensitive verifier diagnostic"); },
+  });
+  admin.firestore = () => { throw new Error("Database must not be accessed after token rejection."); };
+  const invalidToken = mockResponse();
+  await handler({
+    method: "GET",
+    query: { action: "stats" },
+    headers: { authorization: "Bearer invalid-token" },
+  }, invalidToken);
+  assert.equal(invalidToken.statusCode, 401);
+  assert.deepEqual(invalidToken.body, { error: "Authentication failed." });
+  assert.doesNotMatch(JSON.stringify(invalidToken.body), /sensitive verifier diagnostic/);
+
+  admin.auth = originalAuth;
+  admin.firestore = originalFirestore;
+
   // Aggregate lead/project counts must never be available to ordinary clients.
   setIdentity("client-1");
   let aggregateReads = 0;
