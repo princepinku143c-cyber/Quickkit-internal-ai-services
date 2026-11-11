@@ -15,7 +15,8 @@
     "test:rank-tracker": "node tests/rank-tracker-test.js",
     "test:aeo-agent": "python3 -m unittest tests/test_aeo_agent.py -v",
     "test:aeo-api": "node tests/opencode-service-test.js && node tests/aeo-endpoint-test.js",
-    "test:user-provision": "node tests/user-provision-test.js"
+    "test:user-provision": "node tests/user-provision-test.js",
+    "test:system-authz": "node tests/system-authz-test.js"
   },
   "dependencies": {
     "@google/genai": "^1.38.0",

@@ -59,7 +59,7 @@ export default async (req, res) => {
         }
 
         // Admin only actions
-        const adminActions = ['add-credits', 'generate-payment-token', 'project-quote', 'project-update'];
+        const adminActions = ['stats', 'add-credits', 'generate-payment-token', 'project-quote', 'project-update'];
         if (adminActions.includes(action) && userData?.role !== 'admin') {
             return error(res, "Forbidden: Admin access required", 403);
         }
@@ -351,19 +351,40 @@ async function handleGenerateToken(req, res, adminId) {
 }
 
 async function handleVerifyToken(req, res, userId) {
-    const { projectId, token } = req.body;
+    const { projectId, token } = req.body || {};
+    if (typeof projectId !== 'string' || !projectId.trim() ||
+        typeof token !== 'string' || !token.trim()) {
+        return error(res, "Project ID and payment token are required", 400);
+    }
+
     try {
-        const projectRef = admin.firestore().collection('projects').doc(projectId);
-        const snap = await projectRef.get();
-        if (snap.data().paymentToken === token) {
-            await projectRef.update({ 
-                status: 'accepted', 
-                advancePaid: true,
-                paymentToken: null 
-            });
-            return success(res, { status: "VERIFIED" });
+        const db = admin.firestore();
+        const projectRef = db.collection('projects').doc(projectId);
+        const [userSnap, projectSnap] = await Promise.all([
+            db.collection('users').doc(userId).get(),
+            projectRef.get()
+        ]);
+
+        if (!projectSnap.exists) {
+            return error(res, "Project not found", 404);
         }
-        return error(res, "Invalid Token", 400);
+
+        const isAdmin = userSnap.data()?.role === 'admin';
+        const projectData = projectSnap.data() || {};
+        if (!isAdmin && projectData.userId !== userId) {
+            return error(res, "Unauthorized project access", 403);
+        }
+
+        if (typeof projectData.paymentToken !== 'string' || projectData.paymentToken !== token) {
+            return error(res, "Invalid Token", 400);
+        }
+
+        await projectRef.update({
+            status: 'accepted',
+            advancePaid: true,
+            paymentToken: null
+        });
+        return success(res, { status: "VERIFIED" });
     } catch (e) {
         return error(res, e.message, 500);
     }
