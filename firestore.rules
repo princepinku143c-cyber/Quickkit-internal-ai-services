@@ -1,59 +1,76 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // 1. User Profile Rules
+
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated()
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // Users may update ordinary profile fields only. Privileged and identity
+    // fields are managed by trusted server code using the Admin SDK.
     match /users/{userId} {
-      allow read, create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && request.auth.uid == userId &&
-        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'credits', 'plan', 'tier']));
+      allow read: if isAuthenticated() && request.auth.uid == userId;
+      allow create: if isAdmin();
+      allow update: if isAuthenticated()
+        && request.auth.uid == userId
+        && !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny([
+            'uid', 'role', 'credits', 'plan', 'tier', 'status', 'provider',
+            'monthlyLimit', 'admin', 'isAdmin', 'permissions', 'billingStatus',
+            'subscriptionId', 'createdAt'
+          ]);
+      allow delete: if false;
     }
 
-    // 2. Leads Rules (Public can write, client-side access restricted to owner or admin)
+    // Public lead intake is handled by the server API (Admin SDK).
     match /leads/{leadId} {
-      allow create: if true; 
-      allow read, update, delete: if request.auth != null && (
-        resource.data.userId == request.auth.uid || 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
-      );
+      allow create: if isAdmin();
+      allow read, delete: if isAuthenticated()
+        && (resource.data.userId == request.auth.uid || isAdmin());
+      allow update: if isAuthenticated()
+        && (isAdmin() || (
+          resource.data.userId == request.auth.uid
+          && request.resource.data.userId == resource.data.userId
+        ));
     }
 
-    // 3. Projects Rules (Client can read their own, Admin can do anything)
     match /projects/{projectId} {
-      allow read: if request.auth != null && (
-        resource.data.userId == request.auth.uid || 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
-      );
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow read: if isAuthenticated()
+        && (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if isAuthenticated()
+        && (request.resource.data.userId == request.auth.uid || isAdmin());
+      allow update, delete: if isAdmin();
     }
 
-    // 4. Payments Rules (Secure)
     match /payments/{paymentId} {
-      allow read: if request.auth != null && (
-        resource.data.userId == request.auth.uid || 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
-      );
-      // Writes only via Backend API (Service Account bypasses these rules)
-      allow write: if false; 
+      allow read: if isAuthenticated()
+        && (resource.data.userId == request.auth.uid || isAdmin());
+      allow write: if false;
     }
 
-    // 5. Logs & Agents
     match /logs/{logId} {
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow write: if false; 
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAdmin() && request.resource.data.userId is string;
+      allow update, delete: if false;
     }
 
     match /agents/{agentId} {
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow write: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow read, delete: if isAuthenticated()
+        && resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated()
+        && resource.data.userId == request.auth.uid
+        && request.resource.data.userId == resource.data.userId;
+      allow create: if isAuthenticated()
+        && request.resource.data.userId == request.auth.uid;
     }
 
-    // 6. Outreach Leads Rules (Admin only)
     match /leads_outreach/{leadId} {
-      allow read, write: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow read, write: if isAdmin();
     }
   }
 }
