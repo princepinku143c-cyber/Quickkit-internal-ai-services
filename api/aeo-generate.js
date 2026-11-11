@@ -1,7 +1,7 @@
 import admin from "./_lib/firebaseAdmin.js";
 import { checkRateLimit } from "./_lib/security.js";
 import { isPlainObject, payloadTooLarge, safeText } from "./_lib/input.js";
-import { generateAeoQaPairs } from "./services/opencodeService.js";
+import { generateAeoQaPairs } from "../services/opencodeService.js";
 
 const sendError = (res, status, message, code) =>
   res.status(status).json({ success: false, error: message, ...(code ? { code } : {}) });
