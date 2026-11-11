@@ -18,6 +18,7 @@ function mockResponse() {
 const originalAuth = admin.auth;
 const originalFirestore = admin.firestore;
 const originalCronSecret = process.env.CRON_SECRET;
+const originalConsoleError = console.error;
 
 try {
   delete process.env.CRON_SECRET;
@@ -132,10 +133,29 @@ try {
   assert.equal(adminResponse.statusCode, 200);
   assert.equal(adminResponse.body.status, "PAUSED");
 
+  // Internal service diagnostics must not be returned to callers or copied into logs.
+  const capturedErrors = [];
+  console.error = (...args) => capturedErrors.push(args);
+  process.env.CRON_SECRET = "test-cron-secret-with-at-least-thirty-two-characters";
+  admin.firestore = () => {
+    throw new Error("sensitive database connection detail");
+  };
+  const internalFailureResponse = mockResponse();
+  await handler({
+    method: "POST",
+    query: { action: "process-queue" },
+    headers: { authorization: `Bearer ${process.env.CRON_SECRET}` },
+  }, internalFailureResponse);
+  assert.equal(internalFailureResponse.statusCode, 500);
+  assert.deepEqual(internalFailureResponse.body, { error: "Internal server error." });
+  assert.doesNotMatch(JSON.stringify(capturedErrors), /sensitive database connection detail/);
+  console.error = originalConsoleError;
+
   console.log("Outreach authorization tests passed: POST-only routing, spoofed cron-header denial, strong CRON_SECRET requirement, and admin access.");
 } finally {
   admin.auth = originalAuth;
   admin.firestore = originalFirestore;
+  console.error = originalConsoleError;
   if (originalCronSecret === undefined) delete process.env.CRON_SECRET;
   else process.env.CRON_SECRET = originalCronSecret;
 }
