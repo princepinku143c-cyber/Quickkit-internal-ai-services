@@ -256,7 +256,7 @@ try {
   assert.equal(savedCreditRequest.price, 25.5);
   assert.equal(savedCreditRequest.credits, 255);
   assert.ok(sentCreditNotification);
-  assert.doesNotMatch(sentCreditNotification.html, /<img\\b|<script\\b/i);
+  assert.doesNotMatch(sentCreditNotification.html, /<img\b|<script\b/i);
   assert.match(sentCreditNotification.html, /&lt;img/);
   assert.doesNotMatch(sentCreditNotification.subject, /<img|<script/i);
 
