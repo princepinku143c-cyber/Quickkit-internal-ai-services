@@ -166,7 +166,7 @@ export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) =>
               <div className="flex items-center justify-between border-b border-white/[0.07] pb-5">
                 <div>
                   <div className="text-[9px] font-black uppercase tracking-[0.22em] text-emerald-200">CONTROL ROOM</div>
-                  <div className="mt-1 text-lg font-black">AI Workforce Online</div>
+                  <div className="mt-1 text-lg font-black">Workflow Preview</div>
                 </div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/15 bg-emerald-400/[0.07] px-3 py-1.5 text-[9px] font-black uppercase tracking-widest text-emerald-200">
                   <span className="h-2 w-2 rounded-full bg-amber-300" /> Illustrative
@@ -208,7 +208,7 @@ export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) =>
                 ))}
               </div>
               <div className="mt-4 flex items-center justify-between rounded-2xl border border-amber-300/10 bg-amber-300/[0.045] px-4 py-3">
-                <span className="text-[10px] font-bold text-amber-100">5 agents → 1 revenue workflow</span>
+                <span className="text-[10px] font-bold text-amber-100">Illustrative flow: 5 agents → 1 revenue workflow</span>
                 <BarChart3 className="h-4 w-4 text-amber-200" />
               </div>
             </div>
@@ -244,7 +244,7 @@ export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) =>
                       <p className="mt-2 text-xs leading-5 text-slate-500">{agent.subtitle}</p>
                     </div>
                     <div className="mt-5 rounded-xl border border-white/[0.06] bg-white/[0.025] p-3">
-                      <div className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-600">Primary metric</div>
+                      <div className="text-[9px] font-black uppercase tracking-[0.18em] text-slate-600">Primary capability</div>
                       <div className="mt-1 text-lg font-black text-white">{agent.metric}</div>
                     </div>
                     <div className="mt-5 space-y-2">
