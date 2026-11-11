@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import admin from "../api/_lib/firebaseAdmin.js";
 import nodemailer from "nodemailer";
 import handler from "../api/system.js";
+import aiHandler from "../api/ai.js";
 
 function mockResponse() {
   return {
@@ -282,6 +283,134 @@ try {
   }, invalidCreditRequest);
   assert.equal(invalidCreditRequest.statusCode, 400);
   assert.equal(paymentRequestWrites, 0);
+
+  // Kelly AI provider and authentication failures must not expose internal diagnostics.
+  const aiOriginalAuth = admin.auth;
+  const aiOriginalFirestore = admin.firestore;
+  const aiOriginalFetch = globalThis.fetch;
+  const aiOriginalConsoleError = console.error;
+  const aiOriginalEnv = {
+    key: process.env.NEURAL_NODE_KEY,
+    endpoint: process.env.NEURAL_NODE_ENDPOINT,
+    engine: process.env.NEURAL_NODE_ENGINE,
+  };
+  const capturedAiErrors = [];
+  const makeRateLimitFirestore = (count = 0) => () => ({
+    collection(name) {
+      assert.equal(name, "rate_limits");
+      return { doc: () => ({}) };
+    },
+    runTransaction: async (callback) => callback({
+      get: async () => ({ data: () => ({ count, firstCall: Date.now() }) }),
+      set: () => {},
+    }),
+  });
+
+  try {
+    process.env.NEURAL_NODE_KEY = "test-only-placeholder";
+    process.env.NEURAL_NODE_ENDPOINT = "https://provider.example.invalid/v1/chat/completions";
+    process.env.NEURAL_NODE_ENGINE = "test-model";
+    console.error = (...args) => capturedAiErrors.push(args);
+    admin.auth = aiOriginalAuth;
+    admin.firestore = makeRateLimitFirestore(0);
+
+    // Provider error payloads are never returned to callers or written to logs.
+    globalThis.fetch = async () => ({
+      ok: false,
+      status: 502,
+      json: async () => ({ error: "sensitive provider response diagnostic" }),
+    });
+    const providerFailure = mockResponse();
+    await aiHandler({
+      method: "POST",
+      query: { action: "kelly" },
+      headers: { "x-real-ip": "203.0.113.10" },
+      body: { message: "Test provider failure" },
+    }, providerFailure);
+    assert.equal(providerFailure.statusCode, 500);
+    assert.deepEqual(providerFailure.body, {
+      success: false,
+      message: "Unable to process your request right now.",
+    });
+    assert.ok(capturedAiErrors.some(([label, details]) =>
+      label === "NEURAL_NODE_ERROR" && details?.status === 502
+    ));
+
+    // Network exception text is also kept out of the response and logs.
+    capturedAiErrors.length = 0;
+    globalThis.fetch = async () => {
+      throw new Error("sensitive network credential diagnostic");
+    };
+    const networkFailure = mockResponse();
+    await aiHandler({
+      method: "POST",
+      query: { action: "kelly" },
+      headers: { "x-real-ip": "203.0.113.10" },
+      body: { message: "Test network failure" },
+    }, networkFailure);
+    assert.equal(networkFailure.statusCode, 500);
+    assert.deepEqual(networkFailure.body, {
+      success: false,
+      message: "Unable to process your request right now.",
+    });
+    assert.doesNotMatch(JSON.stringify(capturedAiErrors), /sensitive network credential diagnostic/);
+
+    // Firebase token-verifier diagnostics must not be written to logs.
+    capturedAiErrors.length = 0;
+    admin.auth = () => ({
+      verifyIdToken: async () => {
+        throw new Error("sensitive Firebase verifier diagnostic");
+      },
+    });
+    admin.firestore = () => {
+      throw new Error("Firestore must not be accessed after token rejection.");
+    };
+    const verifierFailure = mockResponse();
+    await aiHandler({
+      method: "POST",
+      query: { action: "kelly" },
+      headers: { authorization: "Bearer invalid-test-token" },
+      body: { message: "Test verifier failure" },
+    }, verifierFailure);
+    assert.equal(verifierFailure.statusCode, 403);
+    assert.deepEqual(verifierFailure.body, {
+      success: false,
+      message: "Identity Verification Failure",
+    });
+    assert.doesNotMatch(JSON.stringify(capturedAiErrors), /sensitive Firebase verifier diagnostic/);
+
+    // Preserve safe 429 rate-limit semantics and the Retry-After header.
+    capturedAiErrors.length = 0;
+    admin.auth = aiOriginalAuth;
+    admin.firestore = makeRateLimitFirestore(30);
+    const rateLimited = mockResponse();
+    await aiHandler({
+      method: "POST",
+      query: { action: "kelly" },
+      headers: { "x-real-ip": "203.0.113.11" },
+      body: { message: "Test rate limit" },
+    }, rateLimited);
+    assert.equal(rateLimited.statusCode, 429);
+    assert.match(rateLimited.headers["Retry-After"], /^\\d+$/);
+    assert.deepEqual(rateLimited.body, {
+      success: false,
+      message: "Rate limit exceeded. Please try again shortly.",
+    });
+    assert.doesNotMatch(JSON.stringify(capturedAiErrors), /sensitive|diagnostic|credential/i);
+  } finally {
+    admin.auth = aiOriginalAuth;
+    admin.firestore = aiOriginalFirestore;
+    globalThis.fetch = aiOriginalFetch;
+    console.error = aiOriginalConsoleError;
+    if (aiOriginalEnv.key === undefined) delete process.env.NEURAL_NODE_KEY;
+    else process.env.NEURAL_NODE_KEY = aiOriginalEnv.key;
+    if (aiOriginalEnv.endpoint === undefined) delete process.env.NEURAL_NODE_ENDPOINT;
+    else process.env.NEURAL_NODE_ENDPOINT = aiOriginalEnv.endpoint;
+    if (aiOriginalEnv.engine === undefined) delete process.env.NEURAL_NODE_ENGINE;
+    else process.env.NEURAL_NODE_ENGINE = aiOriginalEnv.engine;
+  }
+
+  console.log("Kelly AI error-handling tests passed: provider/network/Firebase diagnostics are private and 429 Retry-After is preserved.");
 
   // Static Firestore rules contract: direct project creation is admin-only.
   // Runtime authorization is enforced by Firestore; this assertion prevents the
