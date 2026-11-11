@@ -1,7 +1,7 @@
 
 import admin from './_lib/firebaseAdmin.js';
 import nodemailer from 'nodemailer';
-import { askAI } from './services/aiService.js';
+import { askAI } from '../services/aiService.js';
 import { checkRateLimit } from './_lib/security.js';
 import { escapeHtml, getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from './_lib/input.js';
 
