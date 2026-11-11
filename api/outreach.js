@@ -16,6 +16,25 @@ const setCorsHeaders = (res) => {
 const success = (res, data) => res.status(200).json(data);
 const error = (res, msg, code = 400) => res.status(code).json({ error: msg });
 
+function safeErrorMetadata(err) {
+  const name = typeof err?.name === "string" && /^[A-Za-z][A-Za-z0-9]{0,63}$/.test(err.name)
+    ? err.name
+    : "Error";
+  const code = typeof err?.code === "string" && /^[A-Z0-9_-]{1,32}$/.test(err.code)
+    ? err.code
+    : undefined;
+  return code ? { name, code } : { name };
+}
+
+function logSafeError(label, err) {
+  console.error(label, safeErrorMetadata(err));
+}
+
+function internalError(res, label, err) {
+  logSafeError(label, err);
+  return error(res, "Internal server error.", 500);
+}
+
 export default async function handler(req, res) {
   setCorsHeaders(res);
   if (req.method === "OPTIONS") {
@@ -89,8 +108,7 @@ export default async function handler(req, res) {
 
     return error(res, "Invalid Action", 400);
   } catch (err) {
-    console.error("OUTREACH_CRASH:", err);
-    return error(res, err.message, 500);
+    return internalError(res, "OUTREACH_CRASH", err);
   }
 }
 
@@ -102,7 +120,7 @@ async function loadOutreachConfig() {
       return configSnap.data();
     }
   } catch (err) {
-    console.error("Error loading outreach config:", err.message);
+    logSafeError("OUTREACH_CONFIG_LOAD_FAILED", err);
   }
   return null;
 }
@@ -172,8 +190,7 @@ async function handleAnalyze(req, res) {
 
     return success(res, { leadId, status: "PENDING_APPROVAL", analysis });
   } catch (err) {
-    console.error("ANALYZE_ERROR:", err);
-    return error(res, err.message, 500);
+    return internalError(res, "ANALYZE_ERROR", err);
   }
 }
 
@@ -213,8 +230,8 @@ async function scrapeWebsite(url) {
     if (lowerHtml.includes("wix.com") || lowerHtml.includes("wixstatic")) techTags.push("Wix");
     return { title, description, techTags };
   } catch (err) {
-    console.error(`Scraper timed out or failed for ${targetUrl}:`, err.message);
-    return { title: "", description: "", techTags: [], error: err.message };
+    logSafeError("OUTREACH_SCRAPE_FAILED", err);
+    return { title: "", description: "", techTags: [], error: "Website metadata could not be fetched." };
   }
 }
 
@@ -417,8 +434,7 @@ async function handleApprove(req, res) {
       return success(res, { status: "APPROVED", leadId: id, scheduledSendTime: scheduledTime });
     }
   } catch (err) {
-    console.error("APPROVE_ERROR:", err);
-    return error(res, err.message, 500);
+    return internalError(res, "APPROVE_ERROR", err);
   }
 }
 
@@ -434,8 +450,7 @@ async function handleReject(req, res) {
     });
     return success(res, { status: "REJECTED", leadId: id });
   } catch (err) {
-    console.error("REJECT_ERROR:", err);
-    return error(res, err.message, 500);
+    return internalError(res, "REJECT_ERROR", err);
   }
 }
 
@@ -463,8 +478,7 @@ async function handleAddLead(req, res) {
     const docRef = await admin.firestore().collection("leads_outreach").add(dbEntry);
     return success(res, { leadId: docRef.id, status: "QUEUED" });
   } catch (err) {
-    console.error("ADD_LEAD_ERROR:", err);
-    return error(res, err.message, 500);
+    return internalError(res, "ADD_LEAD_ERROR", err);
   }
 }
 
@@ -525,8 +539,7 @@ async function handleProcessQueue(req, res) {
       dispatch: dispatchResult
     });
   } catch (err) {
-    console.error("PROCESS_QUEUE_ERROR:", err);
-    return error(res, err.message, 500);
+    return internalError(res, "PROCESS_QUEUE_ERROR", err);
   }
 }
 
