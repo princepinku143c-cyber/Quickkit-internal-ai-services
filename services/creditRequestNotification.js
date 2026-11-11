@@ -47,14 +47,14 @@ export function buildCreditRequestNotification({ amount, email, displayName } = 
     credits,
     email: safeEmail,
     displayName: safeDisplayName,
-    subject: \`New Credit Purchase Request ($\${amountLabel})\`,
-    html: \`
+    subject: `New Credit Purchase Request ($${amountLabel})`,
+    html: `
       <h3>New Credit Purchase Request</h3>
-      <p><strong>Client:</strong> \${escapeHtml(safeDisplayName)} (\${escapeHtml(safeEmail)})</p>
-      <p><strong>Amount:</strong> $\${amountLabel}</p>
-      <p><strong>Credits to Inject:</strong> \${creditsLabel}</p>
+      <p><strong>Client:</strong> ${escapeHtml(safeDisplayName)} (${escapeHtml(safeEmail)})</p>
+      <p><strong>Amount:</strong> $${amountLabel}</p>
+      <p><strong>Credits to Inject:</strong> ${creditsLabel}</p>
       <hr/>
       <p>Please log in to the Admin Portal to approve this request and send a payment link.</p>
-    \`,
+    `,
   };
 }
