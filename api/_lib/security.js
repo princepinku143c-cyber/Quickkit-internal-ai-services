@@ -46,7 +46,7 @@ export async function checkRateLimit(admin, userId, action, limitCount = 10) {
     if (err?.status === 429) throw err;
 
     // Do not silently bypass abuse controls when the limiter backend is unavailable.
-    console.error("RATE_LIMIT_UNAVAILABLE", err?.message || err);
+    console.error("RATE_LIMIT_UNAVAILABLE");
     const unavailableError = new Error("Rate limiting is temporarily unavailable.");
     unavailableError.status = 503;
     throw unavailableError;
