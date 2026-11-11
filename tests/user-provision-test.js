@@ -17,6 +17,7 @@ function mockResponse() {
 
 const originalAuth = admin.auth;
 const originalFirestore = admin.firestore;
+const originalConsoleError = console.error;
 
 try {
   const getResponse = mockResponse();
@@ -34,6 +35,25 @@ try {
   await handler({ method: "POST", headers: {}, body: {} }, unauthenticatedResponse);
   assert.equal(unauthenticatedResponse.statusCode, 401);
   assert.equal(unauthenticatedResponse.body.success, false);
+
+  // Firebase verifier diagnostics must not be written to application logs.
+  const capturedErrors = [];
+  console.error = (...args) => capturedErrors.push(args);
+  admin.auth = () => ({
+    verifyIdToken: async () => {
+      throw new Error("private Firebase verifier diagnostic");
+    },
+  });
+  const verifierFailureResponse = mockResponse();
+  await handler({
+    method: "POST",
+    headers: { authorization: "Bearer invalid-test-token" },
+    body: {},
+  }, verifierFailureResponse);
+  console.error = originalConsoleError;
+  assert.equal(verifierFailureResponse.statusCode, 503);
+  assert.deepEqual(capturedErrors, [["USER_PROVISION_FAILED"]]);
+  assert.equal(JSON.stringify(capturedErrors).includes("private Firebase verifier diagnostic"), false);
 
   admin.auth = () => ({
     verifyIdToken: async (token) => {
@@ -102,8 +122,9 @@ try {
   assert.equal(existingResponse.statusCode, 200);
   assert.equal(existingResponse.body.data.created, false);
 
-  console.log("User provisioning tests passed: method/auth guards, client-only role, fixed starter credits, and idempotency.");
+  console.log("User provisioning tests passed: method/auth guards, safe failure logging, client-only role, fixed starter credits, and idempotency.");
 } finally {
   admin.auth = originalAuth;
   admin.firestore = originalFirestore;
+  console.error = originalConsoleError;
 }
