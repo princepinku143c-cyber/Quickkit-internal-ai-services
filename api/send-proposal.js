@@ -1,27 +1,29 @@
 import nodemailer from "nodemailer";
 import { success, error } from "./_lib/response.js";
+import { isPlainObject } from "./_lib/input.js";
 import admin from "./_lib/firebaseAdmin.js";
+import { buildProposalEmail } from "../services/proposalEmail.js";
 
 /**
  * Administrative Proposal Transmission Endpoint.
- * Allows the orchestrator to manually dispatch finalized custom pricing and blueprint features
- * directly to the lead via the primary AI neural channel.
+ * Only a verified administrator may send a proposal to a validated recipient.
  */
 export default async function handler(req, res) {
-  if (req.method !== 'POST') return error(res, "Method Not Allowed", 405);
+  if (req.method !== "POST") return error(res, "Method Not Allowed", 405);
 
-  // Authenticate user & role
-  const authHeader = req.headers.authorization;
+  const authHeader = typeof req.headers?.authorization === "string"
+    ? req.headers.authorization
+    : "";
   let isAdmin = false;
 
-  if (authHeader && authHeader.startsWith('Bearer ')) {
+  if (authHeader.startsWith("Bearer ")) {
     try {
-      const token = authHeader.split(' ')[1];
-      const decodedToken = await admin.auth().verifyIdToken(token);
-      const userSnap = await admin.firestore().collection('users').doc(decodedToken.uid).get();
-      isAdmin = userSnap.data()?.role === 'admin';
-    } catch (e) {
-      console.error("Auth verification failed in send-proposal:", e.message);
+      const decodedToken = await admin.auth().verifyIdToken(authHeader.slice(7));
+      const userSnap = await admin.firestore().collection("users").doc(decodedToken.uid).get();
+      isAdmin = userSnap.data()?.role === "admin";
+    } catch {
+      // Do not log token-verifier diagnostics or project details.
+      console.warn("SEND_PROPOSAL_AUTH_FAILED");
     }
   }
 
@@ -29,10 +31,15 @@ export default async function handler(req, res) {
     return error(res, "Forbidden: Admin access required", 403);
   }
 
-  const { email, name, price, features } = req.body;
+  if (!isPlainObject(req.body)) {
+    return error(res, "Invalid proposal payload.", 400);
+  }
 
-  if (!email || !name || !price || !Array.isArray(features)) {
-      return error(res, "Incomplete Proposal Payload: Email, name, price, and features array required.", 400);
+  let proposal;
+  try {
+    proposal = buildProposalEmail(req.body);
+  } catch {
+    return error(res, "Invalid proposal payload. Provide a valid recipient, name, price, and up to 20 text features.", 400);
   }
 
   try {
@@ -44,46 +51,17 @@ export default async function handler(req, res) {
       }
     });
 
-    const html = `
-      <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
-          <h2 style="color: #2563eb;">Your Custom AI System Blueprint</h2>
-      
-          <p>Hi ${name},</p>
-      
-          <p>Our architectural team has reviewed your requirements. We’ve designed a custom AI engineering system specifically for your business:</p>
-      
-          <ul style="background: #f8fafc; padding: 20px 40px; border-radius: 8px; border: 1px solid #e2e8f0;">
-            ${(Array.isArray(features) ? features : []).map(f => `<li style="margin-bottom: 8px;"><strong>${f}</strong></li>`).join("")}
-          </ul>
-      
-          <div style="margin-top: 30px; padding: 20px; background: #eff6ff; border-left: 4px solid #2563eb;">
-              <h3 style="margin: 0 0 10px 0;">Estimated Fixed Build Cost: $${price}</h3>
-              <p style="margin: 0; font-size: 14px; color: #475569;"><em>This pricing is customized exactly based on your scoped requirements to ensure maximum ROI.</em></p>
-          </div>
-
-          <p style="margin-top: 30px;">To begin development and secure your VPS node, please complete the initial $299 engineering advance.</p>
-      
-          <a href="https://quickkitai.com/dashboard" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background: #2563eb; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold;">Initialize Build Process</a>
-      
-          <p style="margin-top: 40px; font-size: 12px; color: #64748b;">
-              Best regards,<br/>
-              QuickKit AI Architect Team<br/>
-              support@quickkitai.com
-          </p>
-      </div>
-    `;
-
     await transporter.sendMail({
-      from: `"QuickKit AI" <${process.env.EMAIL_USER || "support@quickkitai.com"}>`,
-      to: email,
+      from: `"QuickKit AI" <${process.env.EMAIL_USER || "support@quickkitai.com"}>` ,
+      to: proposal.to,
       subject: "Your Custom AI Blueprint – QuickKit AI",
-      html
+      html: proposal.html
     });
 
-    return success(res, { status: "PROPOSAL_DISPATCHED", target: email });
-
-  } catch (err) {
-    console.error("PROPOSAL_DISPATCH_FAILURE:", err);
-    return error(res, "Failed to transmit proposal to neural link.", 500);
+    return success(res, { status: "PROPOSAL_DISPATCHED", target: proposal.to });
+  } catch {
+    // Never serialize SMTP exceptions; they may contain transport or credential details.
+    console.error("PROPOSAL_DISPATCH_FAILURE");
+    return error(res, "Failed to transmit proposal.", 500);
   }
 }

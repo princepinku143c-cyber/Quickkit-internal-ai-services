@@ -50,6 +50,8 @@ jobs:
         run: npm run test:outreach-auth
       - name: Webhook error logging security tests
         run: npm run test:webhook-security
+      - name: Send proposal HTML and error-handling security tests
+        run: npm run test:send-proposal
       - name: Rank tracker authorization and provider tests
         run: npm run test:rank-tracker
       - name: AEO OpenCode agent unit tests
