@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import handler from "../api/aeo-generate.js";
+import admin from "../api/_lib/firebaseAdmin.js";
 function mockResponse() {
   return {
     statusCode: 200, headers: {}, body: null, ended: false,
@@ -25,4 +26,40 @@ assert.equal(unauthenticatedResponse.body.success, false);
 const invalidPayloadResponse = mockResponse();
 await handler({ method: "POST", headers: {}, body: [] }, invalidPayloadResponse);
 assert.equal(invalidPayloadResponse.statusCode, 400);
-console.log("AEO endpoint tests passed: method guard, preflight, unauthenticated access denial and payload validation.");
+
+const originalAuth = admin.auth;
+const originalFirestore = admin.firestore;
+try {
+  admin.auth = () => ({
+    verifyIdToken: async (token) => {
+      assert.equal(token, "valid-client-token");
+      return { uid: "ordinary-client", admin: false };
+    },
+  });
+  admin.firestore = () => ({
+    collection(name) {
+      assert.equal(name, "users");
+      return {
+        doc(uid) {
+          assert.equal(uid, "ordinary-client");
+          return {
+            get: async () => ({ data: () => ({ role: "client" }) }),
+          };
+        },
+      };
+    },
+  });
+  const forbiddenResponse = mockResponse();
+  await handler({
+    method: "POST",
+    headers: { authorization: "Bearer valid-client-token" },
+    body: { keyword: "test", count: 1 },
+  }, forbiddenResponse);
+  assert.equal(forbiddenResponse.statusCode, 403);
+  assert.equal(forbiddenResponse.body.success, false);
+} finally {
+  admin.auth = originalAuth;
+  admin.firestore = originalFirestore;
+}
+
+console.log("AEO endpoint tests passed: method guard, preflight, unauthenticated and non-admin denial, and payload validation.");
