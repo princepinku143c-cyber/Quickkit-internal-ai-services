@@ -29,14 +29,13 @@ service cloud.firestore {
 
     // Public lead intake is handled by the server API (Admin SDK).
     match /leads/{leadId} {
+      // Client workspaces currently have read-only lead views. Public intake and
+      // lead lifecycle mutations are performed by trusted server code or the
+      // admin dashboard, so client-side writes are not permitted.
       allow create: if isAdmin();
-      allow read, delete: if isAuthenticated()
+      allow read: if isAuthenticated()
         && (resource.data.userId == request.auth.uid || isAdmin());
-      allow update: if isAuthenticated()
-        && (isAdmin() || (
-          resource.data.userId == request.auth.uid
-          && request.resource.data.userId == resource.data.userId
-        ));
+      allow update, delete: if isAdmin();
     }
 
     match /projects/{projectId} {
