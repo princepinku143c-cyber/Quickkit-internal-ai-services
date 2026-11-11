@@ -16,6 +16,7 @@
     "test:aeo-agent": "python3 -m unittest tests/test_aeo_agent.py -v",
     "test:aeo-api": "node tests/opencode-service-test.js && node tests/aeo-endpoint-test.js",
     "test:user-provision": "node tests/user-provision-test.js",
+    "test:projects-security": "node tests/projects-security-test.js",
     "test:system-authz": "node tests/system-authz-test.js",
     "test:outreach-auth": "node tests/outreach-auth-test.js",
     "test:webhook-security": "node tests/webhook-security-test.js",
