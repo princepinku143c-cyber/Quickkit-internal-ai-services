@@ -27,14 +27,14 @@ Traffic / enquiry → 12-second WhatsApp response → qualification → appointm
 
 ## Advertising message
 The supplied 60-second campaign blueprint is:
-pain/hook → late-night lead problem → five-agent live proof → 10-visit performance SLA → Dussehra price anchor → direct WhatsApp CTA.
+pain/hook → late-night lead problem → clearly labelled illustrative five-agent workflow demo → written performance SLA conditions → current written pilot offer → direct WhatsApp CTA.
 
 Primary ad destination: direct WhatsApp click-to-chat.
 
 ## Guardrails
-Public website copy must distinguish marketing positioning from account-level proof. A feature is not represented as live merely because it is technically possible.
+Public website copy must distinguish marketing positioning from account-level proof. A feature is not represented as live merely because it is technically possible. Dashboard mockups, counts, timelines and agent events must be clearly labelled illustrative unless sourced from a connected customer account and verified logs.
 
-Do not publish fabricated testimonials, fabricated integrations, guaranteed search rankings or guaranteed ROI.
+Do not publish fabricated testimonials, fabricated integrations, fabricated live activity, simulated performance counts presented as real, guaranteed search rankings or guaranteed ROI. Response-time and SLA figures are targets or contractual conditions, not historical results, unless supported by dated operational evidence.
 
 The site should state when an external provider, client account, credentials, traffic volume, message templates or other dependency is required.
 
