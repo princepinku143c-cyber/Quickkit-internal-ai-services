@@ -20,6 +20,8 @@ const originalSetTimeout = globalThis.setTimeout;
 const originalKey = process.env.TAVILY_API_KEY;
 const originalAuth = admin.auth;
 const originalFirestore = admin.firestore;
+const originalConsoleError = console.error;
+const capturedErrors = [];
 
 try {
   let response = mockResponse();
@@ -70,6 +72,55 @@ try {
     headers: { authorization: "Bearer stale-admin-claim-token" },
   }, response);
   assert.equal(response.statusCode, 403);
+
+  // Firebase verifier diagnostics must not be copied into server logs.
+  console.error = (...args) => { capturedErrors.push(args); };
+  const authDiagnostic = "sensitive-firebase-auth-diagnostic";
+  admin.auth = () => ({
+    verifyIdToken: async () => { throw new Error(authDiagnostic); },
+  });
+  response = mockResponse();
+  await handler({
+    method: "GET",
+    headers: { authorization: "Bearer invalid-token" },
+  }, response);
+  assert.equal(response.statusCode, 503);
+  assert.equal(response.body.error, "Rank tracking authorization is temporarily unavailable.");
+  assert.equal(capturedErrors.flat().join(" ").includes(authDiagnostic), false);
+  assert.equal(capturedErrors.some(args => args[0] === "RANK_TRACKER_AUTH_FAILED"), true);
+
+  // Firestore rate-limit backend diagnostics must also remain out of logs.
+  capturedErrors.length = 0;
+  const limiterDiagnostic = "sensitive-firestore-limiter-diagnostic";
+  const failingRateLimitDb = {
+    collection(name) {
+      if (name === "users") {
+        return {
+          doc: () => ({ get: async () => ({ data: () => ({ role: "admin" }) }) }),
+        };
+      }
+      assert.equal(name, "rate_limits");
+      return { doc: () => ({}) };
+    },
+    async runTransaction() {
+      throw new Error(limiterDiagnostic);
+    },
+  };
+  admin.auth = () => ({
+    verifyIdToken: async () => ({ uid: "admin-user", admin: false }),
+  });
+  admin.firestore = () => failingRateLimitDb;
+  response = mockResponse();
+  await handler({
+    method: "GET",
+    headers: { authorization: "Bearer valid-admin-token" },
+  }, response);
+  assert.equal(response.statusCode, 503);
+  assert.equal(response.body.error, "Rank tracking authorization is temporarily unavailable.");
+  assert.equal(capturedErrors.flat().join(" ").includes(limiterDiagnostic), false);
+  assert.equal(capturedErrors.some(args => args[0] === "RATE_LIMIT_UNAVAILABLE"), true);
+  assert.equal(capturedErrors.some(args => args[0] === "RANK_TRACKER_AUTH_FAILED"), true);
+  console.error = originalConsoleError;
 
   let rateLimitCount = 0;
   const fakeDb = {
@@ -153,6 +204,7 @@ try {
   globalThis.setTimeout = originalSetTimeout;
   admin.auth = originalAuth;
   admin.firestore = originalFirestore;
+  console.error = originalConsoleError;
   if (originalKey === undefined) delete process.env.TAVILY_API_KEY;
   else process.env.TAVILY_API_KEY = originalKey;
 }
