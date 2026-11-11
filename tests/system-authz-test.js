@@ -391,7 +391,7 @@ try {
       body: { message: "Test rate limit" },
     }, rateLimited);
     assert.equal(rateLimited.statusCode, 429);
-    assert.match(rateLimited.headers["Retry-After"], /^\\d+$/);
+    assert.match(rateLimited.headers["Retry-After"], /^\d+$/);
     assert.deepEqual(rateLimited.body, {
       success: false,
       message: "Rate limit exceeded. Please try again shortly.",
