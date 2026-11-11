@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     const decoded = await admin.auth().verifyIdToken(authorization.slice(7));
     const userSnapshot = await admin.firestore().collection("users").doc(decoded.uid).get();
     const userData = userSnapshot.data() || {};
-    if (userData.role !== "admin" && decoded.admin !== true) {
+    if (userData.role !== "admin") {
       return sendError(res, 403, "Administrator access is required.");
     }
     await checkRateLimit(admin, decoded.uid, "aeo-generate", 3);
