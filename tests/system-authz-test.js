@@ -28,6 +28,46 @@ function setIdentity(uid) {
 }
 
 try {
+  // Enforce the documented HTTP method for each system action before auth or side effects.
+  admin.auth = () => { throw new Error("Method guard must run before authentication."); };
+  admin.firestore = () => { throw new Error("Method guard must run before database access."); };
+
+  const redeemGet = mockResponse();
+  await handler({
+    method: "GET",
+    query: { action: "redeem-code" },
+    headers: {},
+  }, redeemGet);
+  assert.equal(redeemGet.statusCode, 405);
+  assert.equal(redeemGet.headers.Allow, "POST, OPTIONS");
+
+  const statsPost = mockResponse();
+  await handler({
+    method: "POST",
+    query: { action: "stats" },
+    headers: {},
+  }, statsPost);
+  assert.equal(statsPost.statusCode, 405);
+  assert.equal(statsPost.headers.Allow, "GET, OPTIONS");
+
+  const statusPatch = mockResponse();
+  await handler({
+    method: "PATCH",
+    query: { action: "project-status" },
+    headers: {},
+  }, statusPatch);
+  assert.equal(statusPatch.statusCode, 405);
+  assert.equal(statusPatch.headers.Allow, "POST, OPTIONS");
+
+  const options = mockResponse();
+  await handler({ method: "OPTIONS", query: {}, headers: {} }, options);
+  assert.equal(options.statusCode, 200);
+  assert.equal(options.headers["Access-Control-Allow-Methods"], "GET,POST,OPTIONS");
+
+  // Restore the mocked methods before exercising authentication and authorization.
+  admin.auth = originalAuth;
+  admin.firestore = originalFirestore;
+
   // Aggregate lead/project counts must never be available to ordinary clients.
   setIdentity("client-1");
   let aggregateReads = 0;
