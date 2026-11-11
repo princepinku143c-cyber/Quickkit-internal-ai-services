@@ -117,7 +117,7 @@ try {
     body: { email: "client@example.com", name: "Client", price: "100", features: [] },
   }, smtpFailure);
   assert.equal(smtpFailure.statusCode, 500);
-  assert.deepEqual(smtpLogs, ["PROPOSAL_DISPATCH_FAILURE"]);
+  assert.deepEqual(smtpLogs, ["PROPOSAL_DISPATCH_FAILURE", "[API_ERROR] 500: Failed to transmit proposal."]);
   assert.doesNotMatch(JSON.stringify(smtpFailure.body) + smtpLogs.join(" "), /sensitive SMTP credential diagnostic/);
 
   console.log("Send-proposal security tests passed: HTML escaping, recipient validation, feature bounds, and diagnostic redaction.");
