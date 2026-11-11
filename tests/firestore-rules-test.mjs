@@ -6,11 +6,15 @@ import {
   assertSucceeds,
 } from "@firebase/rules-unit-testing";
 import {
+  collection,
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
+  query,
   setDoc,
   updateDoc,
+  where,
 } from "firebase/firestore";
 
 const projectId = "demo-quickkit-firestore-rules";
@@ -99,6 +103,46 @@ try {
   await assertFails(updateDoc(doc(clientOneDb, "users/client-1"), { tenantId: "tenant-victim" }));
   await assertFails(updateDoc(doc(clientOneDb, "users/client-1"), { workspaceId: "workspace-victim" }));
   await assertSucceeds(updateDoc(doc(clientOneDb, "users/client-1"), { operatorName: "Updated Name" }));
+
+  // Collection queries must prove ownership for every possible result.
+  // Unfiltered and cross-user queries are denied because Firestore rules are
+  // authorization checks, not post-query filters.
+  await assertFails(getDocs(collection(clientOneDb, "users")));
+  await assertFails(getDocs(collection(clientOneDb, "leads")));
+  await assertFails(getDocs(query(collection(clientOneDb, "leads"), where("userId", "==", "client-2"))));
+  const ownLeadQuery = await assertSucceeds(
+    getDocs(query(collection(clientOneDb, "leads"), where("userId", "==", "client-1")))
+  );
+  assert.deepEqual(ownLeadQuery.docs.map((snapshot) => snapshot.id), ["lead-client-1"]);
+
+  await assertFails(getDocs(collection(clientOneDb, "projects")));
+  await assertFails(getDocs(query(collection(clientOneDb, "projects"), where("userId", "==", "client-2"))));
+  const ownProjectQuery = await assertSucceeds(
+    getDocs(query(collection(clientOneDb, "projects"), where("userId", "==", "client-1")))
+  );
+  assert.deepEqual(ownProjectQuery.docs.map((snapshot) => snapshot.id), ["project-client-1"]);
+
+  await assertFails(getDocs(collection(clientOneDb, "payments")));
+  const ownPaymentQuery = await assertSucceeds(
+    getDocs(query(collection(clientOneDb, "payments"), where("userId", "==", "client-1")))
+  );
+  assert.deepEqual(ownPaymentQuery.docs.map((snapshot) => snapshot.id), ["payment-client-1"]);
+
+  await assertFails(getDocs(collection(clientOneDb, "logs")));
+  const ownLogQuery = await assertSucceeds(
+    getDocs(query(collection(clientOneDb, "logs"), where("userId", "==", "client-1")))
+  );
+  assert.deepEqual(ownLogQuery.docs.map((snapshot) => snapshot.id), ["log-client-1"]);
+
+  await assertFails(getDocs(collection(clientOneDb, "agents")));
+  const ownAgentQuery = await assertSucceeds(
+    getDocs(query(collection(clientOneDb, "agents"), where("userId", "==", "client-1")))
+  );
+  assert.deepEqual(ownAgentQuery.docs.map((snapshot) => snapshot.id), ["agent-client-1"]);
+
+  await assertFails(getDocs(collection(clientOneDb, "leads_outreach")));
+  const adminOutreachQuery = await assertSucceeds(getDocs(collection(adminDb, "leads_outreach")));
+  assert.deepEqual(adminOutreachQuery.docs.map((snapshot) => snapshot.id), ["outreach-1"]);
 
   // Leads are owner-readable but all client-side mutations are denied.
   await assertSucceeds(getDoc(doc(clientOneDb, "leads/lead-client-1")));
