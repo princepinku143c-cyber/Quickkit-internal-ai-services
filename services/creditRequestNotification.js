@@ -1,9 +1,9 @@
 import { escapeHtml, safeText } from "../api/_lib/input.js";
 
-function normalizeIdentity(value, fallback) {
-  const normalized = safeText(value, 254)
-    .replace(/[\\u0000-\\u001f\\u007f]/g, " ")
-    .replace(/\\s+/g, " ")
+function normalizeIdentity(value, fallback, maxLength = 254) {
+  const normalized = safeText(value, maxLength)
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
     .trim();
   return normalized || fallback;
 }
@@ -37,8 +37,8 @@ export function buildCreditRequestNotification({ amount, email, displayName } = 
     throw new TypeError("Credit request amount is outside the supported range.");
   }
 
-  const safeEmail = normalizeIdentity(email, "Not provided");
-  const safeDisplayName = normalizeIdentity(displayName, "QuickKit client");
+  const safeEmail = normalizeIdentity(email, "Not provided", 254);
+  const safeDisplayName = normalizeIdentity(displayName, "QuickKit client", 120);
   const amountLabel = numericAmount.toFixed(2);
   const creditsLabel = credits.toLocaleString("en-US", { maximumFractionDigits: 2 });
 
@@ -47,14 +47,14 @@ export function buildCreditRequestNotification({ amount, email, displayName } = 
     credits,
     email: safeEmail,
     displayName: safeDisplayName,
-    subject: `New Credit Purchase Request ($${amountLabel})`,
-    html: `
+    subject: \`New Credit Purchase Request ($\${amountLabel})\`,
+    html: \`
       <h3>New Credit Purchase Request</h3>
-      <p><strong>Client:</strong> ${escapeHtml(safeDisplayName)} (${escapeHtml(safeEmail)})</p>
-      <p><strong>Amount:</strong> $${amountLabel}</p>
-      <p><strong>Credits to Inject:</strong> ${creditsLabel}</p>
+      <p><strong>Client:</strong> \${escapeHtml(safeDisplayName)} (\${escapeHtml(safeEmail)})</p>
+      <p><strong>Amount:</strong> $\${amountLabel}</p>
+      <p><strong>Credits to Inject:</strong> \${creditsLabel}</p>
       <hr/>
       <p>Please log in to the Admin Portal to approve this request and send a payment link.</p>
-    `,
+    \`,
   };
 }
