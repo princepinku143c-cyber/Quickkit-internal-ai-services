@@ -41,7 +41,7 @@ export default async function handler(req, res) {
       if (error.retryAfter) res.setHeader("Retry-After", String(error.retryAfter));
       return sendError(res, 429, "Rank tracking rate limit reached. Please retry later.");
     }
-    console.error("RANK_TRACKER_AUTH_FAILED", error && error.message || "unknown");
+    console.error("RANK_TRACKER_AUTH_FAILED");
     return sendError(res, 503, "Rank tracking authorization is temporarily unavailable.");
   }
 
