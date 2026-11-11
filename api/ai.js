@@ -46,7 +46,8 @@ export default async function handler(req, res) {
 
     return error(res, "Action Not Allowed", 400);
   } catch (err) {
-    console.error("AI_CLUSTER_CRASH:", err);
+    // Never log Firebase verifier diagnostics or other internal exception details.
+    console.error("AI_CLUSTER_CRASH", { status: 403 });
     return error(res, "Identity Verification Failure", 403);
   }
 }
@@ -101,8 +102,18 @@ async function handleKelly(req, res, userId) {
     const reply = await askAI(messages);
     return success(res, { reply });
   } catch (e) {
-    console.error("KELLY_ERROR:", e);
-    return error(res, e.message, e.status || 500);
+    const status = e?.status === 429 ? 429 : e?.status === 503 ? 503 : 500;
+    if (status === 429 && Number.isFinite(e?.retryAfter)) {
+      res.setHeader("Retry-After", String(e.retryAfter));
+    }
+    const message = status === 429
+      ? "Rate limit exceeded. Please try again shortly."
+      : status === 503
+        ? "AI service is temporarily unavailable."
+        : "Unable to process your request right now.";
+    // Keep diagnostics out of API responses and logs; retain only the safe status.
+    console.error("KELLY_ERROR", { status });
+    return error(res, message, status);
   }
 }
 
