@@ -158,6 +158,7 @@ export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) =>
                 </div>
               ))}
             </div>
+            <p className="mt-3 max-w-2xl text-[10px] leading-5 text-slate-500">* Response targets, service windows and availability depend on configuration, provider access and the signed scope. These are not historical performance results.</p>
           </div>
 
           <div className="relative">
