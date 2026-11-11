@@ -32,7 +32,7 @@ export default async function handler(req, res) {
     uid = decoded.uid;
     const userSnapshot = await admin.firestore().collection("users").doc(uid).get();
     const userData = userSnapshot.data() || {};
-    if (userData.role !== "admin" && decoded.admin !== true) {
+    if (userData.role !== "admin") {
       return sendError(res, 403, "Administrator access is required.");
     }
     await checkRateLimit(admin, uid, "rank-tracker", 1);
