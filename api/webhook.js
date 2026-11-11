@@ -91,7 +91,7 @@ export default async function handler(req, res) {
         });
         console.log(`🤖 AI Draft successfully generated for webhook lead ${leadId}`);
       } catch (err) {
-        console.error(`❌ Failed to generate AI draft for webhook lead ${leadId}:`, err);
+        console.error("WEBHOOK_AI_DRAFT_FAILED");
       }
     })();
 
@@ -179,11 +179,11 @@ export default async function handler(req, res) {
           });
           console.log("✅ Lead successfully synced to Odoo CRM via webhook.");
         } else {
-          console.error("❌ Odoo Webhook Authentication failed.");
+          console.error("WEBHOOK_ODOO_AUTH_FAILED");
         }
       }
     } catch (odooErr) {
-      console.error("❌ Webhook Odoo Sync failure:", odooErr);
+      console.error("WEBHOOK_ODOO_SYNC_FAILED");
     }
 
     return success(res, { status: "LEAD_INGESTED", leadId: leadRef.id, projectId: projectRef.id });
@@ -193,7 +193,7 @@ export default async function handler(req, res) {
       return error(res, 'Too many webhook requests. Please retry shortly.', 429);
     }
     if (e?.status === 503) return error(res, 'Webhook service is temporarily unavailable.', 503);
-    console.error('WEBHOOK_ERROR:', e);
+    console.error("WEBHOOK_PROCESSING_FAILED");
     return error(res, 'Webhook processing failed. Please retry later.', 500);
   }
 }

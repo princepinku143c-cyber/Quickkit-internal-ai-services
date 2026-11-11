@@ -48,6 +48,8 @@ jobs:
         run: npm run test:system-authz
       - name: Outreach queue authorization regression tests
         run: npm run test:outreach-auth
+      - name: Webhook error logging security tests
+        run: npm run test:webhook-security
       - name: Rank tracker authorization and provider tests
         run: npm run test:rank-tracker
       - name: AEO OpenCode agent unit tests
