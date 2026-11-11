@@ -12,14 +12,27 @@ const error = (res, msg, code = 400) => res.status(code).json({ error: msg });
 export default async (req, res) => {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     const { action } = req.query;
-    if (action === 'lead' && req.method !== 'POST') {
-        res.setHeader('Allow', 'POST, OPTIONS');
+    const actionMethods = {
+        'stats': 'GET',
+        'add-credits': 'POST',
+        'redeem-code': 'POST',
+        'credit-request': 'POST',
+        'generate-payment-token': 'POST',
+        'verify-payment-token': 'POST',
+        'project-quote': 'POST',
+        'project-update': 'POST',
+        'project-status': 'POST',
+        'lead': 'POST'
+    };
+    const expectedMethod = actionMethods[action];
+    if (expectedMethod && req.method !== expectedMethod) {
+        res.setHeader('Allow', `${expectedMethod}, OPTIONS`);
         return error(res, 'Method Not Allowed', 405);
     }
     const authHeader = req.headers.authorization;
