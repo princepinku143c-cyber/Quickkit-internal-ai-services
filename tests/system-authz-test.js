@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import admin from "../api/_lib/firebaseAdmin.js";
 import handler from "../api/system.js";
 
@@ -189,6 +190,22 @@ try {
   assert.equal(ownerVerify.body.status, "VERIFIED");
   assert.equal(ownerUpdates, 1);
 
+  // Static Firestore rules contract: direct project creation is admin-only.
+  // Runtime authorization is enforced by Firestore; this assertion prevents the
+  // permissive owner-create rule from silently returning in future changes.
+  const firestoreRules = readFileSync(new URL("../firestore.rules", import.meta.url), "utf8");
+  const projectsRuleMatch = firestoreRules.match(/match \/projects\/\\{projectId\\}\\s*\\{([\\s\\S]*?)^\\s*\\}/m);
+  assert.ok(projectsRuleMatch, "Projects Firestore rule block must exist.");
+  const projectsRules = projectsRuleMatch[1];
+  assert.match(projectsRules, /allow create:\\s*if isAdmin\\(\\);/);
+  assert.doesNotMatch(
+    projectsRules,
+    /allow create:[\\s\\S]*?request\\.resource\\.data\\.userId\\s*==\\s*request\\.auth\\.uid/,
+    "A client must not be able to create a project directly by setting its own userId."
+  );
+  assert.match(projectsRules, /allow update, delete:\\s*if isAdmin\\(\\);/);
+
+  console.log("Firestore rules contract passed: project creation is admin-only; owner reads and admin-only mutations remain explicit.");
   console.log("System API authorization tests passed: admin-only aggregate stats, project-owner payment verification, and cross-user denial.");
 } finally {
   admin.auth = originalAuth;
