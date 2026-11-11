@@ -79,8 +79,9 @@ export default async function handler(req, res) {
         const decodedToken = await admin.auth().verifyIdToken(token);
         const userSnap = await admin.firestore().collection("users").doc(decodedToken.uid).get();
         userData = userSnap.data();
-      } catch (e) {
-        console.error("Auth verification failed in outreach:", e.message);
+      } catch {
+        // Token verifier diagnostics can contain sensitive project/auth details.
+        console.error("OUTREACH_AUTH_FAILED");
       }
     }
 

@@ -65,6 +65,25 @@ try {
   assert.equal(shortSecretResponse.statusCode, 403);
   assert.equal(firestoreCalls, 0);
 
+  // Firebase token verifier diagnostics must never be copied into server logs.
+  const capturedAuthErrors = [];
+  console.error = (...args) => capturedAuthErrors.push(args);
+  const authDiagnostic = "sensitive-firebase-verifier-diagnostic";
+  admin.auth = () => ({
+    verifyIdToken: async () => { throw new Error(authDiagnostic); },
+  });
+  const invalidTokenResponse = mockResponse();
+  await handler({
+    method: "POST",
+    query: { action: "process-queue" },
+    headers: { authorization: "Bearer invalid-token" },
+  }, invalidTokenResponse);
+  assert.equal(invalidTokenResponse.statusCode, 403);
+  assert.equal(firestoreCalls, 0);
+  assert.deepEqual(capturedAuthErrors, [["OUTREACH_AUTH_FAILED"]]);
+  assert.doesNotMatch(JSON.stringify(capturedAuthErrors), /sensitive-firebase-verifier-diagnostic/);
+  console.error = originalConsoleError;
+
   process.env.CRON_SECRET = "test-cron-secret-with-at-least-thirty-two-characters";
   admin.auth = () => {
     throw new Error("A valid cron secret must not be treated as a Firebase ID token.");
