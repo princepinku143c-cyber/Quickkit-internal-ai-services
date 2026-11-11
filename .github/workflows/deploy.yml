@@ -44,6 +44,8 @@ jobs:
         run: npm run test:security
       - name: User provisioning security tests
         run: npm run test:user-provision
+      - name: Project API authentication log-redaction tests
+        run: npm run test:projects-security
       - name: System API authorization regression tests
         run: npm run test:system-authz
       - name: Outreach queue authorization regression tests
