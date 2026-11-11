@@ -50,8 +50,9 @@ export default async function handler(req, res) {
       success: true,
       data: { profileReady: true, created: result.created },
     });
-  } catch (error) {
-    console.error("USER_PROVISION_FAILED", error && error.message || "unknown");
+  } catch {
+    // Firebase verifier and transaction diagnostics stay out of application logs.
+    console.error("USER_PROVISION_FAILED");
     return sendError(res, 503, "Unable to initialize the user profile.");
   }
 }
