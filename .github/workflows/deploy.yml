@@ -22,8 +22,16 @@ jobs:
       - uses: actions/setup-python@v7.1.0
         with:
           python-version: "3.12"
+      - uses: actions/setup-java@v6.2.0
+        with:
+          distribution: temurin
+          java-version: "21"
       - name: Install locked dependencies
         run: npm ci
+      - name: Install Firestore rules test helper
+        run: npm install --no-save --package-lock=false @firebase/rules-unit-testing@5.0.0
+      - name: Firestore Emulator security rules tests
+        run: npx --yes firebase-tools@15.35.0 emulators:exec --only firestore --project demo-quickkit-firestore-rules --non-interactive "node tests/firestore-rules-test.mjs"
       - name: Production build and route prerender
         run: npm run build
       - name: SEO and prerender validation
