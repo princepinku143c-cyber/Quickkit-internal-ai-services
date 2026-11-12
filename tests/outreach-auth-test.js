@@ -142,6 +142,30 @@ try {
   assert.equal(shortSecretResponse.statusCode, 403);
   assert.equal(firestoreCalls, 0);
 
+  // Cron bearer secrets are compared through the same fixed-length digest path
+  // as Telegram webhook secrets. Same-length mismatches and oversized values
+  // must never authorize queue processing.
+  const cronSecretForComparison = "test-cron-secret-with-at-least-thirty-two-characters";
+  process.env.CRON_SECRET = cronSecretForComparison;
+  const sameLengthWrongCronResponse = mockResponse();
+  await handler({
+    method: "POST",
+    query: { action: "process-queue" },
+    headers: { authorization: `Bearer ${"x".repeat(cronSecretForComparison.length)}` },
+  }, sameLengthWrongCronResponse);
+  assert.equal(sameLengthWrongCronResponse.statusCode, 403);
+  assert.equal(firestoreCalls, 0);
+
+  process.env.CRON_SECRET = "x".repeat(257);
+  const oversizedCronResponse = mockResponse();
+  await handler({
+    method: "POST",
+    query: { action: "process-queue" },
+    headers: { authorization: `Bearer ${"x".repeat(257)}` },
+  }, oversizedCronResponse);
+  assert.equal(oversizedCronResponse.statusCode, 403);
+  assert.equal(firestoreCalls, 0);
+
   // Firebase token verifier diagnostics must never be copied into server logs.
   const capturedAuthErrors = [];
   console.error = (...args) => capturedAuthErrors.push(args);
