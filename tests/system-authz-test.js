@@ -687,8 +687,8 @@ try {
     };
     admin.firestore = () => makeLeadFirestore();
     const unsafeLead = leadRequest();
-    unsafeLead.body.name = "Lead Name\\r\\nCc: attacker@example.test";
-    unsafeLead.body.projectName = "Property Project\\r\\nBcc: attacker@example.test";
+    unsafeLead.body.name = "Lead Name\r\nCc: attacker@example.test";
+    unsafeLead.body.projectName = "Property Project\r\nBcc: attacker@example.test";
     const normalizedLeadResponse = mockResponse();
     await handler(unsafeLead, normalizedLeadResponse);
     await new Promise((resolve) => setImmediate(resolve));
@@ -698,14 +698,14 @@ try {
       capturedLeadEmails[0].subject,
       "🚀 New Lead/Project: Property Project Bcc: attacker@example.test"
     );
-    assert.doesNotMatch(capturedLeadEmails[0].subject, /[\\r\\n]/);
+    assert.doesNotMatch(capturedLeadEmails[0].subject, /[\r\n]/);
     const crmLead = capturedOdooRequests[1].params.args[5][0];
     assert.equal(
       crmLead.name,
       "Lead Name Cc: attacker@example.test - Property Project Bcc: attacker@example.test"
     );
     assert.equal(crmLead.contact_name, "Lead Name Cc: attacker@example.test");
-    assert.doesNotMatch(crmLead.name, /[\\r\\n]/);
+    assert.doesNotMatch(crmLead.name, /[\r\n]/);
   } finally {
     console.error = leadOriginalConsoleError;
     globalThis.fetch = leadOriginalFetch;
