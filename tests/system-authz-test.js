@@ -210,7 +210,7 @@ try {
     body: { projectId: "project-1", token: "ABC123" },
   }, blockedVerify);
   assert.equal(blockedVerify.statusCode, 429);
-  assert.match(blockedVerify.headers["Retry-After"], /^\\d+$/);
+  assert.match(blockedVerify.headers["Retry-After"], /^\d+$/);
   assert.equal(readsAfterLimit, 0);
 
   // Token shape validation bounds the comparison input before hashing or I/O.
