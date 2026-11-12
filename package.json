@@ -9,6 +9,7 @@
     "preview": "vite preview",
     "test:api": "node tests/api-test.js",
     "validate:api-routes": "node scripts/validate-api-route-count.mjs",
+    "test:api-route-count": "node tests/api-route-count-test.mjs",
     "validate:seo": "node scripts/validate-seo-assets.mjs",
     "validate:prerender": "node scripts/validate-prerendered-pages.mjs",
     "test:seo": "npm run validate:seo && npm run validate:prerender",
