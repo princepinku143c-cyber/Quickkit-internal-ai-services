@@ -9,6 +9,8 @@ assert.doesNotMatch(outreachSource, /console\.(?:error|warn)\([^;\n]*\.message/)
 assert.doesNotMatch(outreachSource, /\$\{(?:err|error|e|apiErr)\.message\}/);
 assert.doesNotMatch(outreachSource, /error:\s*(?:err|e)\.message/);
 assert.doesNotMatch(outreachSource, /Bypassing checks/);
+assert.match(outreachSource, /timingSafeEqual/);
+assert.match(outreachSource, /createHash\("sha256"\)/);
 
 function mockResponse() {
   return {
@@ -64,6 +66,24 @@ try {
     body: {},
   }, telegramWrongHeaderResponse);
   assert.equal(telegramWrongHeaderResponse.statusCode, 403);
+
+  const telegramSameLengthWrongHeaderResponse = mockResponse();
+  await handler({
+    method: "POST",
+    query: { action: "telegram-webhook" },
+    headers: { "x-telegram-bot-api-secret-token": "x".repeat(testTelegramSecret.length) },
+    body: {},
+  }, telegramSameLengthWrongHeaderResponse);
+  assert.equal(telegramSameLengthWrongHeaderResponse.statusCode, 403);
+
+  const telegramOversizedHeaderResponse = mockResponse();
+  await handler({
+    method: "POST",
+    query: { action: "telegram-webhook" },
+    headers: { "x-telegram-bot-api-secret-token": "x".repeat(257) },
+    body: {},
+  }, telegramOversizedHeaderResponse);
+  assert.equal(telegramOversizedHeaderResponse.statusCode, 403);
 
   // Keep the old bot-token query route working until a dedicated webhook secret
   // is configured in the deployment and Telegram webhook settings are migrated.
