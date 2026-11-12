@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import admin from "../api/_lib/firebaseAdmin.js";
-import handler from "../api/outreach.js";
+import handler, { checkMxRecords } from "../api/outreach.js";
 
 const outreachSource = readFileSync(new URL("../api/outreach.js", import.meta.url), "utf8");
 assert.doesNotMatch(outreachSource, /console\.(?:error|warn)\([^;\n]*,\s*(?:err|error|e|apiErr)\s*\);/);
 assert.doesNotMatch(outreachSource, /console\.(?:error|warn)\([^;\n]*\.message/);
 assert.doesNotMatch(outreachSource, /\$\{(?:err|error|e|apiErr)\.message\}/);
 assert.doesNotMatch(outreachSource, /error:\s*(?:err|e)\.message/);
+assert.doesNotMatch(outreachSource, /Bypassing checks/);
 
 function mockResponse() {
   return {
@@ -177,7 +178,65 @@ try {
   assert.doesNotMatch(JSON.stringify(capturedErrors), /sensitive database connection detail/);
   console.error = originalConsoleError;
 
-  console.log("Outreach authorization tests passed: POST-only routing, spoofed cron-header denial, strong CRON_SECRET requirement, and admin access.");
+  // DNS validation accepts an MX record.
+  const mxResolver = {
+    resolveMx(_domain, callback) { callback(null, [{ exchange: "mx.example.test", priority: 10 }]); },
+    resolve4() { assert.fail("A lookup is unnecessary when MX exists."); },
+  };
+  assert.equal(await checkMxRecords("owner@example.test", mxResolver, 20), true);
+
+  // A fallback is accepted only when the domain has an A record.
+  const aFallbackResolver = {
+    resolveMx(_domain, callback) { const err = new Error("no MX"); err.code = "ENODATA"; callback(err); },
+    resolve4(_domain, callback) { callback(null, ["8.8.8.8"]); },
+  };
+  assert.equal(await checkMxRecords("owner@example.test", aFallbackResolver, 20), true);
+
+  // Missing MX and A records are a definitive invalid-domain result.
+  const noRecordsResolver = {
+    resolveMx(_domain, callback) { const err = new Error("no MX"); err.code = "ENODATA"; callback(err); },
+    resolve4(_domain, callback) { const err = new Error("no A"); err.code = "ENOTFOUND"; callback(err); },
+  };
+  assert.equal(await checkMxRecords("owner@example.test", noRecordsResolver, 20), false);
+
+  // Resolver/server errors must reject so the queue item stays queued for retry.
+  const transientMxResolver = {
+    resolveMx(_domain, callback) { const err = new Error("sensitive resolver detail"); err.code = "ESERVFAIL"; callback(err); },
+    resolve4() { assert.fail("A fallback must not hide a transient MX resolver failure."); },
+  };
+  await assert.rejects(
+    checkMxRecords("owner@example.test", transientMxResolver, 20),
+    (err) => err.code === "ESERVFAIL"
+  );
+
+  const transientAResolver = {
+    resolveMx(_domain, callback) { const err = new Error("no MX"); err.code = "ENODATA"; callback(err); },
+    resolve4(_domain, callback) { const err = new Error("sensitive resolver detail"); err.code = "ETIMEOUT"; callback(err); },
+  };
+  await assert.rejects(
+    checkMxRecords("owner@example.test", transientAResolver, 20),
+    (err) => err.code === "ETIMEOUT"
+  );
+
+  // A stalled resolver is bounded and surfaces a retryable timeout, not a valid result.
+  const stalledResolver = {
+    resolveMx() {},
+    resolve4() { assert.fail("A lookup must not follow an unresolved MX timeout."); },
+  };
+  await assert.rejects(
+    checkMxRecords("owner@example.test", stalledResolver, 5),
+    (err) => err.code === "DNS_TIMEOUT"
+  );
+
+  let invalidDomainLookups = 0;
+  const unusedResolver = {
+    resolveMx() { invalidDomainLookups += 1; },
+    resolve4() { invalidDomainLookups += 1; },
+  };
+  assert.equal(await checkMxRecords("not-an-email", unusedResolver, 20), false);
+  assert.equal(invalidDomainLookups, 0);
+
+  console.log("Outreach authorization tests passed: POST-only routing, spoofed cron-header denial, strong CRON_SECRET, admin access, and fail-closed DNS retry behavior.");
 } finally {
   admin.auth = originalAuth;
   admin.firestore = originalFirestore;
