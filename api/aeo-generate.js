@@ -6,6 +6,17 @@ import { generateAeoQaPairs } from "../services/opencodeService.js";
 const sendError = (res, status, message, code) =>
   res.status(status).json({ success: false, error: message, ...(code ? { code } : {}) });
 
+const INVALID_ID_TOKEN_CODES = new Set([
+  "auth/argument-error",
+  "auth/invalid-id-token",
+  "auth/id-token-expired",
+  "auth/id-token-revoked",
+  "auth/invalid-user-token",
+  "auth/user-disabled",
+  "auth/user-not-found",
+  "auth/tenant-id-mismatch",
+]);
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("Vary", "Authorization");
@@ -26,8 +37,19 @@ export default async function handler(req, res) {
   if (!authorization.startsWith("Bearer ")) {
     return sendError(res, 401, "Sign-in is required.");
   }
+  let decoded;
   try {
-    const decoded = await admin.auth().verifyIdToken(authorization.slice(7));
+    decoded = await admin.auth().verifyIdToken(authorization.slice(7));
+  } catch (authError) {
+    if (INVALID_ID_TOKEN_CODES.has(authError?.code)) {
+      console.warn("AEO_AUTH_FAILED");
+      return sendError(res, 401, "Authentication failed.");
+    }
+    console.error("AEO_AUTH_UNAVAILABLE");
+    return sendError(res, 503, "Authentication service is temporarily unavailable.");
+  }
+
+  try {
     const userSnapshot = await admin.firestore().collection("users").doc(decoded.uid).get();
     const userData = userSnapshot.data() || {};
     if (userData.role !== "admin") {
