@@ -1,6 +1,7 @@
 import admin from "./_lib/firebaseAdmin.js";
 import nodemailer from "nodemailer";
 import dns from "dns";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { fetchSafeWebsiteHtml } from "../services/safeWebsiteFetch.js";
 
 // CORS Headers Configuration
@@ -36,6 +37,16 @@ function internalError(res, label, err) {
   return error(res, "Internal server error.", 500);
 }
 
+function matchesSecret(expected, provided) {
+  if (typeof expected !== "string" || typeof provided !== "string" ||
+      !expected || !provided || expected.length > 256 || provided.length > 256) {
+    return false;
+  }
+  const expectedDigest = createHash("sha256").update(expected, "utf8").digest();
+  const providedDigest = createHash("sha256").update(provided, "utf8").digest();
+  return timingSafeEqual(expectedDigest, providedDigest);
+}
+
 export default async function handler(req, res) {
   setCorsHeaders(res);
   if (req.method === "OPTIONS") {
@@ -61,8 +72,8 @@ export default async function handler(req, res) {
         ? req.headers["x-telegram-bot-api-secret-token"]
         : "";
       const querySecret = typeof req.query?.secret === "string" ? req.query.secret : "";
-      const headerAuthorized = Boolean(webhookSecret) && headerSecret === webhookSecret;
-      const legacyQueryAuthorized = !webhookSecret && Boolean(botToken) && querySecret === botToken;
+      const headerAuthorized = Boolean(webhookSecret) && matchesSecret(webhookSecret, headerSecret);
+      const legacyQueryAuthorized = !webhookSecret && Boolean(botToken) && matchesSecret(botToken, querySecret);
 
       if (!headerAuthorized && !legacyQueryAuthorized) {
         console.warn("Unauthorized Telegram webhook call attempted.");
