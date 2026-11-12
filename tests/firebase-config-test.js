@@ -25,20 +25,32 @@ assert.equal(hasRequiredFirebaseClientConfig(undefined), false);
 
 // Firebase Admin initialization diagnostics must never print certificate/parser details.
 const firebaseAdminSource = readFileSync(new URL("../api/_lib/firebaseAdmin.js", import.meta.url), "utf8");
-assert.match(firebaseAdminSource, /console\.error\("Firebase Admin initialization failed\."\)/);
-assert.doesNotMatch(firebaseAdminSource, /error\.message/);
-assert.doesNotMatch(firebaseAdminSource, /console\.error\([^;]*,\s*error\s*\)/);
+assert.match(firebaseAdminSource, /console\\.error\\("Firebase Admin initialization failed\\."\\)/);
+assert.doesNotMatch(firebaseAdminSource, /error\\.message/);
+assert.doesNotMatch(firebaseAdminSource, /console\\.error\\([^;]*,\\s*error\\s*\\)/);
 
 const coreSource = readFileSync(new URL("../lib/firebaseCore.ts", import.meta.url), "utf8");
-assert.match(coreSource, /isFirebaseConfigured = hasRequiredFirebaseClientConfig\(firebaseConfig\)/);
+assert.match(coreSource, /isFirebaseConfigured = hasRequiredFirebaseClientConfig\\(firebaseConfig\\)/);
 
 const productionExample = readFileSync(new URL("../.env.production.example", import.meta.url), "utf8");
 for (const variable of [
+  "FIREBASE_PROJECT_ID",
+  "FIREBASE_CLIENT_EMAIL",
+  "FIREBASE_PRIVATE_KEY",
   "VITE_FIREBASE_API_KEY",
   "VITE_FIREBASE_AUTH_DOMAIN",
   "VITE_FIREBASE_PROJECT_ID",
   "VITE_FIREBASE_APP_ID",
+  "CRON_SECRET",
 ]) {
-  assert.match(productionExample, new RegExp("^" + variable + "=", "m"));
+  assert.match(
+    productionExample,
+    new RegExp("^" + variable + "=", "m"),
+    `Production environment template must document ${variable}`
+  );
 }
-console.log("Firebase client config guard tests passed: required fields are enforced and documented in the production environment template.");
+
+const developmentExample = readFileSync(new URL("../.env.example", import.meta.url), "utf8");
+assert.match(developmentExample, /^CRON_SECRET=/m);
+
+console.log("Firebase config guard tests passed: required client fields, server Admin credentials, and cron secret are documented; Admin diagnostics remain redacted.");
