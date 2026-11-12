@@ -7,6 +7,7 @@ import {
 } from "@firebase/rules-unit-testing";
 import {
   collection,
+  collectionGroup,
   deleteDoc,
   doc,
   getDoc,
@@ -51,6 +52,10 @@ try {
       setDoc(doc(db, "aeo_generations/server-seed"), { userId: "admin-1", status: "draft" }),
       setDoc(doc(db, "settings/server-seed"), { serverOnly: true }),
       setDoc(doc(db, "chat_history/server-seed"), { userId: "client-1", messages: [] }),
+      // Nested collection paths must not inherit top-level client access rules.
+      setDoc(doc(db, "users/client-1/aeo_generations/nested-server-seed"), { status: "draft" }),
+      setDoc(doc(db, "users/client-1/settings/nested-server-seed"), { serverOnly: true }),
+      setDoc(doc(db, "users/client-1/chat_history/nested-server-seed"), { messages: [] }),
     ]);
   });
 
@@ -75,7 +80,12 @@ try {
       assertFails(getDoc(doc(anonymousDb, seedPath))),
       assertFails(getDoc(doc(clientOneDb, seedPath))),
       assertFails(getDoc(doc(adminDb, seedPath))),
+      assertFails(getDocs(collection(anonymousDb, collectionName))),
       assertFails(getDocs(collection(clientOneDb, collectionName))),
+      assertFails(getDocs(collection(adminDb, collectionName))),
+      assertFails(getDocs(collectionGroup(anonymousDb, collectionName))),
+      assertFails(getDocs(collectionGroup(clientOneDb, collectionName))),
+      assertFails(getDocs(collectionGroup(adminDb, collectionName))),
       assertFails(setDoc(doc(clientOneDb, `${collectionName}/client-create`), { attempted: true })),
       assertFails(setDoc(doc(adminDb, `${collectionName}/admin-client-create`), { attempted: true })),
       assertFails(updateDoc(doc(clientOneDb, seedPath), { attempted: true })),
