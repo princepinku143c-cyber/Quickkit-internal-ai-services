@@ -39,17 +39,10 @@ for (const variable of [
   "FIREBASE_PROJECT_ID",
   "FIREBASE_CLIENT_EMAIL",
   "FIREBASE_PRIVATE_KEY",
-  "VITE_FIREBASE_API_KEY",
-  "VITE_FIREBASE_AUTH_DOMAIN",
-  "VITE_FIREBASE_PROJECT_ID",
-  "VITE_FIREBASE_APP_ID",
-  "CRON_SECRET",
 ]) {
-  assert.match(
-    productionExample,
-    new RegExp("^" + variable + "=", "m"),
-    `Production environment template must document ${variable}`
-  );
+  const pattern = new RegExp("^" + variable + "=", "m");
+  assert.match(productionExample, pattern, `Production template must document ${variable}`);
+  assert.match(developmentExample, pattern, `Development template must document ${variable}`);
 }
 
 const firebaseClientVariables = [
@@ -68,7 +61,8 @@ for (const variable of firebaseClientVariables) {
   assert.ok(coreSource.includes(`import.meta.env.${variable}`), `Firebase client bootstrap must map ${variable}`);
 }
 
-assert.match(developmentExample, /^CRON_SECRET=/m);
+assert.match(productionExample, /^CRON_SECRET=/m, "Production template must document CRON_SECRET");
+assert.match(developmentExample, /^CRON_SECRET=/m, "Development template must document CRON_SECRET");
 
 const firebaseConfig = JSON.parse(readFileSync(new URL("../firebase.json", import.meta.url), "utf8"));
 assert.equal(firebaseConfig.firestore?.rules, "firestore.rules", "Firebase CLI must deploy the audited Firestore rules file.");
