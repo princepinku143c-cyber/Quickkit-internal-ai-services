@@ -669,6 +669,43 @@ try {
     assert.equal(odooFailure.statusCode, 200);
     assert.ok(capturedLeadErrors.some(([label]) => label === "SYSTEM_LEAD_ODOO_SYNC_FAILED"));
     assert.doesNotMatch(JSON.stringify(capturedLeadErrors), /private Odoo authentication diagnostic/);
+    // Public lead text must be normalized before entering email headers or Odoo fields.
+    capturedLeadErrors.length = 0;
+    const capturedLeadEmails = [];
+    const capturedOdooRequests = [];
+    nodemailer.createTransport = () => ({
+      sendMail: async (message) => {
+        capturedLeadEmails.push(message);
+        return { messageId: "lead-header-security-test" };
+      },
+    });
+    globalThis.fetch = async (_url, options) => {
+      capturedOdooRequests.push(JSON.parse(options.body));
+      return capturedOdooRequests.length === 1
+        ? { ok: true, json: async () => ({ result: 7 }) }
+        : { ok: true, json: async () => ({ result: true }) };
+    };
+    admin.firestore = () => makeLeadFirestore();
+    const unsafeLead = leadRequest();
+    unsafeLead.body.name = "Lead Name\\r\\nCc: attacker@example.test";
+    unsafeLead.body.projectName = "Property Project\\r\\nBcc: attacker@example.test";
+    const normalizedLeadResponse = mockResponse();
+    await handler(unsafeLead, normalizedLeadResponse);
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(normalizedLeadResponse.statusCode, 200);
+    assert.equal(capturedLeadEmails.length, 1);
+    assert.equal(
+      capturedLeadEmails[0].subject,
+      "🚀 New Lead/Project: Property Project Bcc: attacker@example.test"
+    );
+    assert.doesNotMatch(capturedLeadEmails[0].subject, /[\\r\\n]/);
+    const crmLead = capturedOdooRequests[1].params.args[5][0];
+    assert.equal(
+      crmLead.name,
+      "Lead Name Cc: attacker@example.test - Property Project Bcc: attacker@example.test"
+    );
+    assert.equal(crmLead.contact_name, "Lead Name Cc: attacker@example.test");
+    assert.doesNotMatch(crmLead.name, /[\\r\\n]/);
   } finally {
     console.error = leadOriginalConsoleError;
     globalThis.fetch = leadOriginalFetch;
