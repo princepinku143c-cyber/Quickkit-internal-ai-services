@@ -1419,40 +1419,60 @@ function getNextLocalTargetTime(timezone, targetHour, targetMinute) {
   return candidate;
 }
 
-// DNS MX Record resolver checking
-function checkMxRecords(email) {
-  return new Promise((resolve) => {
-    if (!email || !email.includes("@")) {
-      return resolve(false);
-    }
-    const domain = email.split("@")[1].trim();
-    
-    dns.resolveMx(domain, (err, addresses) => {
-      if (!err && addresses && addresses.length > 0) {
-        return resolve(true);
-      }
-      
-      // If we got a network/server error (not a "domain/records do not exist" error), bypass and assume valid
-      if (err && err.code !== 'ENOTFOUND' && err.code !== 'ENODATA') {
-        console.warn(`MX DNS query returned server/network error (${err.code}). Bypassing checks.`);
-        return resolve(true);
-      }
-      
-      dns.resolve4(domain, (errA, addressesA) => {
-        if (!errA && addressesA && addressesA.length > 0) {
-          return resolve(true);
-        }
-        
-        // If A lookup also fails with a network/server error, bypass and assume valid
-        if (errA && errA.code !== 'ENOTFOUND' && errA.code !== 'ENODATA') {
-          console.warn(`A DNS query returned server/network error (${errA.code}). Bypassing checks.`);
-          return resolve(true);
-        }
-        
-        resolve(false);
+// DNS MX/A precheck. Temporary resolver failures are retryable, never treated as valid.
+const DNS_LOOKUP_TIMEOUT_MS = 1500;
+const DNS_MISSING_RECORD_CODES = new Set(["ENOTFOUND", "ENODATA", "ENONAME"]);
+
+function resolveDnsRecords(resolveRecords, domain, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      settled = true;
+      const timeoutError = new Error("DNS lookup timed out.");
+      timeoutError.code = "DNS_TIMEOUT";
+      reject(timeoutError);
+    }, timeoutMs);
+
+    try {
+      resolveRecords(domain, (err, records) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (err) return reject(err);
+        resolve(Array.isArray(records) ? records : []);
       });
-    });
+    } catch (err) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      reject(err);
+    }
   });
+}
+
+export async function checkMxRecords(email, resolver = dns, timeoutMs = DNS_LOOKUP_TIMEOUT_MS) {
+  if (typeof email !== "string" || !email.trim()) return false;
+  const parts = email.trim().split("@");
+  if (parts.length !== 2) return false;
+
+  const domain = parts[1].trim().replace(/\\.$/, "").toLowerCase();
+  if (!domain || domain.length > 253 || /[\\s/@?#]/.test(domain)) return false;
+
+  let mxRecords = [];
+  try {
+    mxRecords = await resolveDnsRecords(resolver.resolveMx.bind(resolver), domain, timeoutMs);
+  } catch (err) {
+    if (!DNS_MISSING_RECORD_CODES.has(err?.code)) throw err;
+  }
+  if (mxRecords.length > 0) return true;
+
+  try {
+    const aRecords = await resolveDnsRecords(resolver.resolve4.bind(resolver), domain, timeoutMs);
+    return aRecords.length > 0;
+  } catch (err) {
+    if (DNS_MISSING_RECORD_CODES.has(err?.code)) return false;
+    throw err;
+  }
 }
 
 // Query APPROVED leads and dispatch those that have passed scheduled time
