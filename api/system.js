@@ -474,15 +474,17 @@ async function handleProjectQuote(req, res, adminId) {
             auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
         });
 
+        const safeProjectName = safeText(projectName, 180).replace(/[\\r\\n]+/g, " ");
+        const safeSubjectProjectName = safeProjectName;
         await transporter.sendMail({
             from: `"QuickKit Engineering" <${process.env.EMAIL_USER}>`,
             to: clientEmail,
-            subject: `Project Proposal: ${projectName}`,
+            subject: `Project Proposal: ${safeSubjectProjectName}`,
             html: `
-                <h2>Architectural Proposal for ${projectName}</h2>
-                <p><strong>Investment:</strong> $${quote.price}</p>
-                <p><strong>Estimated Timeline:</strong> ${quote.timeline}</p>
-                <p><strong>Notes:</strong> ${quote.notes}</p>
+                <h2>Architectural Proposal for ${escapeHtml(safeProjectName)}</h2>
+                <p><strong>Investment:</strong> ${escapeHtml(quote?.price)}</p>
+                <p><strong>Estimated Timeline:</strong> ${escapeHtml(quote?.timeline)}</p>
+                <p><strong>Notes:</strong> ${escapeHtml(quote?.notes)}</p>
                 <p>Please log in to your dashboard to accept this proposal and begin the build.</p>
             `
         });
@@ -515,11 +517,13 @@ async function handleProjectUpdate(req, res, adminId) {
                 service: 'gmail',
                 auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
             });
+            const safeProjectName = safeText(projectName, 180).replace(/[\\r\\n]+/g, " ");
+            const safeSubjectProgress = safeText(progress, 16).replace(/[\\r\\n]+/g, " ");
             await transporter.sendMail({
                 from: `"QuickKit Engineering" <${process.env.EMAIL_USER}>`,
                 to: clientEmail,
-                subject: `Progress Update: ${projectName} (${progress}%)`,
-                html: `<p>Your project <strong>${projectName}</strong> is now <strong>${progress}%</strong> complete.</p><p>Latest update: <em>${message}</em></p>`
+                subject: `Progress Update: ${safeProjectName} (${safeSubjectProgress}%)`,
+                html: `<p>Your project <strong>${escapeHtml(safeProjectName)}</strong> is now <strong>${escapeHtml(progress)}%</strong> complete.</p><p>Latest update: <em>${escapeHtml(message)}</em></p>`
             });
         }
 
