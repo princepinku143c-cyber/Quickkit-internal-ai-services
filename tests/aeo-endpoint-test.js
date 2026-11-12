@@ -9,8 +9,8 @@ const aeoErrorLogLines = aeoSource
   .filter((line) => line.includes("console.error("));
 assert.deepEqual(
   aeoErrorLogLines,
-  ['console.error("AEO_GENERATION_FAILED");'],
-  "AEO generation must not log raw provider or database exception details."
+  ['console.error("AEO_AUTH_UNAVAILABLE");', 'console.error("AEO_GENERATION_FAILED");'],
+  "AEO authentication, provider, and database failures must use fixed redacted log labels."
 );
 
 function mockResponse() {
@@ -38,6 +38,67 @@ assert.equal(unauthenticatedResponse.body.success, false);
 const invalidPayloadResponse = mockResponse();
 await handler({ method: "POST", headers: {}, body: [] }, invalidPayloadResponse);
 assert.equal(invalidPayloadResponse.statusCode, 400);
+
+const originalAuthForClassification = admin.auth;
+const originalFirestoreForClassification = admin.firestore;
+const originalConsoleErrorForClassification = console.error;
+const originalConsoleWarnForClassification = console.warn;
+try {
+  const capturedAuthErrors = [];
+  const capturedAuthWarnings = [];
+  console.error = (...args) => capturedAuthErrors.push(args);
+  console.warn = (...args) => capturedAuthWarnings.push(args);
+  admin.firestore = () => {
+    throw new Error("Firestore must not be accessed before token verification.");
+  };
+
+  const invalidTokenDiagnostic = "private Firebase expired-token diagnostic";
+  const invalidTokenError = new Error(invalidTokenDiagnostic);
+  invalidTokenError.code = "auth/id-token-expired";
+  admin.auth = () => ({
+    verifyIdToken: async () => { throw invalidTokenError; },
+  });
+  const invalidTokenResponse = mockResponse();
+  await handler({
+    method: "POST",
+    headers: { authorization: "Bearer expired-test-token" },
+    body: { keyword: "test", count: 1 },
+  }, invalidTokenResponse);
+  assert.equal(invalidTokenResponse.statusCode, 401);
+  assert.deepEqual(invalidTokenResponse.body, {
+    success: false,
+    error: "Authentication failed.",
+  });
+  assert.deepEqual(capturedAuthWarnings, [["AEO_AUTH_FAILED"]]);
+  assert.deepEqual(capturedAuthErrors, []);
+  assert.equal(JSON.stringify(capturedAuthWarnings).includes(invalidTokenDiagnostic), false);
+  assert.equal(JSON.stringify(invalidTokenResponse.body).includes(invalidTokenDiagnostic), false);
+
+  capturedAuthWarnings.length = 0;
+  const verifierDiagnostic = "private Firebase verifier outage diagnostic";
+  admin.auth = () => ({
+    verifyIdToken: async () => { throw new Error(verifierDiagnostic); },
+  });
+  const verifierFailureResponse = mockResponse();
+  await handler({
+    method: "POST",
+    headers: { authorization: "Bearer token-during-outage" },
+    body: { keyword: "test", count: 1 },
+  }, verifierFailureResponse);
+  assert.equal(verifierFailureResponse.statusCode, 503);
+  assert.deepEqual(verifierFailureResponse.body, {
+    success: false,
+    error: "Authentication service is temporarily unavailable.",
+  });
+  assert.deepEqual(capturedAuthErrors, [["AEO_AUTH_UNAVAILABLE"]]);
+  assert.equal(JSON.stringify(capturedAuthErrors).includes(verifierDiagnostic), false);
+  assert.equal(JSON.stringify(verifierFailureResponse.body).includes(verifierDiagnostic), false);
+} finally {
+  admin.auth = originalAuthForClassification;
+  admin.firestore = originalFirestoreForClassification;
+  console.error = originalConsoleErrorForClassification;
+  console.warn = originalConsoleWarnForClassification;
+}
 
 const originalAuth = admin.auth;
 const originalFirestore = admin.firestore;
