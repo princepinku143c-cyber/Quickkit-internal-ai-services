@@ -21,7 +21,9 @@ const originalKey = process.env.TAVILY_API_KEY;
 const originalAuth = admin.auth;
 const originalFirestore = admin.firestore;
 const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
 const capturedErrors = [];
+const capturedWarnings = [];
 
 try {
   let response = mockResponse();
@@ -73,7 +75,28 @@ try {
   }, response);
   assert.equal(response.statusCode, 403);
 
-  // Firebase verifier diagnostics must not be copied into server logs.
+  // Known invalid/expired ID tokens are client authentication failures (401).
+  console.warn = (...args) => { capturedWarnings.push(args); };
+  const invalidTokenDiagnostic = "sensitive-expired-token-diagnostic";
+  const invalidTokenError = new Error(invalidTokenDiagnostic);
+  invalidTokenError.code = "auth/id-token-expired";
+  admin.auth = () => ({
+    verifyIdToken: async () => { throw invalidTokenError; },
+  });
+  response = mockResponse();
+  await handler({
+    method: "GET",
+    headers: { authorization: "Bearer expired-test-token" },
+  }, response);
+  assert.equal(response.statusCode, 401);
+  assert.equal(response.body.error, "Authentication failed.");
+  assert.deepEqual(capturedWarnings, [["RANK_TRACKER_AUTH_INVALID"]]);
+  assert.equal(capturedErrors.length, 0);
+  assert.equal(capturedWarnings.flat().join(" ").includes(invalidTokenDiagnostic), false);
+  assert.equal(JSON.stringify(response.body).includes(invalidTokenDiagnostic), false);
+  capturedWarnings.length = 0;
+
+  // Firebase verifier outages remain generic 503 responses; diagnostics are redacted.
   console.error = (...args) => { capturedErrors.push(args); };
   const authDiagnostic = "sensitive-firebase-auth-diagnostic";
   admin.auth = () => ({
@@ -205,6 +228,7 @@ try {
   admin.auth = originalAuth;
   admin.firestore = originalFirestore;
   console.error = originalConsoleError;
+  console.warn = originalConsoleWarn;
   if (originalKey === undefined) delete process.env.TAVILY_API_KEY;
   else process.env.TAVILY_API_KEY = originalKey;
 }
