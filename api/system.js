@@ -10,6 +10,7 @@ import { escapeHtml, getClientIp, isPlainObject, payloadTooLarge, safeMetadata, 
 
 const success = (res, data) => res.status(200).json(data);
 const error = (res, msg, code = 400) => res.status(code).json({ error: msg });
+const singleLineText = (value, maxLength) => safeText(value, maxLength).replace(/[\r\n]+/g, " ");
 
 function paymentTokenMatches(expected, supplied) {
     if (typeof expected !== 'string' || typeof supplied !== 'string') return false;
@@ -107,15 +108,15 @@ async function handleLead(req, res, userId) {
         const leadRef = admin.firestore().collection('leads').doc();
         const projectRef = admin.firestore().collection('projects').doc();
         const leadData = {
-            name: safeText(data.name, 120) || 'Guest',
-            email: safeText(data.email, 254),
-            phone: safeText(data.phone, 48),
-            businessName: safeText(data.businessName, 160) || 'Unknown Company',
-            projectName: safeText(data.projectName, 180) || 'Custom Build',
+            name: singleLineText(data.name, 120) || 'Guest',
+            email: singleLineText(data.email, 254),
+            phone: singleLineText(data.phone, 48),
+            businessName: singleLineText(data.businessName, 160) || 'Unknown Company',
+            projectName: singleLineText(data.projectName, 180) || 'Custom Build',
             price: safeNumber(data.price ?? data.budget),
             budget: safeNumber(data.budget ?? data.price),
             requirement: safeText(data.requirement || data.notes, 3000),
-            niche_type: safeText(data.niche_type, 80),
+            niche_type: singleLineText(data.niche_type, 80),
             notes: safeText(data.notes, 4000),
             custom_metadata: safeMetadata(data.custom_metadata),
             userId: userId || null,
@@ -163,7 +164,7 @@ async function handleLead(req, res, userId) {
         await transporter.sendMail({
             from: `"QuickKit System" <${process.env.EMAIL_USER}>`,
             to: process.env.EMAIL_USER,
-            subject: `🚀 New Lead/Project: ${data.projectName || 'Custom Build'}`,
+            subject: `🚀 New Lead/Project: ${leadData.projectName}`,
             html: `
                 <h3>New Lead Submission</h3>
                 <p><strong>Name:</strong> ${escapeHtml(leadData.name)}</p>
@@ -217,7 +218,7 @@ async function handleLead(req, res, userId) {
                         }
                     }
 
-                    const leadDescription = `Project: ${data.projectName || 'Custom Build'}\nRequirements: ${data.requirement || data.notes || 'N/A'}\n\n--- CRM Mappings ---\nClient_ID: ${targetUid || 'Guest'}\nNiche: ${clientNiche}`;
+                    const leadDescription = `Project: ${leadData.projectName}\nRequirements: ${leadData.requirement || leadData.notes || 'N/A'}\n\n--- CRM Mappings ---\nClient_ID: ${targetUid || 'Guest'}\nNiche: ${clientNiche}`;
                     
                     await fetch(`${odooUrl}/jsonrpc`, {
                         method: 'POST',
@@ -235,10 +236,10 @@ async function handleLead(req, res, userId) {
                                     "crm.lead",
                                     "create",
                                     [{
-                                        name: `${data.name || 'New Lead'} - ${data.projectName || 'Custom Build'}`,
-                                        contact_name: data.name,
-                                        email_from: data.email,
-                                        phone: data.phone,
+                                        name: `${leadData.name} - ${leadData.projectName}`,
+                                        contact_name: leadData.name,
+                                        email_from: leadData.email,
+                                        phone: leadData.phone,
                                         description: leadDescription
                                     }]
                                 ]
