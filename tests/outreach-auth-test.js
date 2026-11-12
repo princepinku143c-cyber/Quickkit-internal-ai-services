@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import admin from "../api/_lib/firebaseAdmin.js";
 import handler from "../api/outreach.js";
+
+const outreachSource = readFileSync(new URL("../api/outreach.js", import.meta.url), "utf8");
+assert.doesNotMatch(outreachSource, /console\.(?:error|warn)\([^;\n]*,\s*(?:err|error|e|apiErr)\s*\);/);
+assert.doesNotMatch(outreachSource, /console\.(?:error|warn)\([^;\n]*\.message/);
+assert.doesNotMatch(outreachSource, /\$\{(?:err|error|e|apiErr)\.message\}/);
+assert.doesNotMatch(outreachSource, /error:\s*(?:err|e)\.message/);
 
 function mockResponse() {
   return {
