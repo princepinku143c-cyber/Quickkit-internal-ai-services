@@ -63,10 +63,8 @@ export default async function handler(req, res) {
     if (error && error.status === 503 && error.code === "OPENCODE_API_KEY_MISSING") {
       return sendError(res, 503, error.message, error.code);
     }
-    if (error && error.status && error.status >= 400 && error.status < 500) {
-      return sendError(res, error.status, error.message);
-    }
-    console.error("AEO_GENERATION_FAILED", error && error.message || "unknown");
-    return sendError(res, error && error.status || 502, "AEO generation failed. No draft was published.");
+    // Unknown provider/database exceptions can contain private diagnostics; expose only a generic failure.
+    console.error("AEO_GENERATION_FAILED");
+    return sendError(res, 502, "AEO generation failed. No draft was published.");
   }
 }
