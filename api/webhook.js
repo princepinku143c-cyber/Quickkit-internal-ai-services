@@ -1,9 +1,22 @@
 import admin, { db } from "./_lib/firebaseAdmin.js";
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { checkRateLimit } from "./_lib/security.js";
 import { getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from "./_lib/input.js";
 import { success, error } from "./_lib/response.js";
 import { askAI } from "../services/aiService.js";
+
+
+export function matchesWebhookSecret(expectedSecret, suppliedSecret) {
+  if (typeof expectedSecret !== "string" || typeof suppliedSecret !== "string" ||
+      !expectedSecret || !suppliedSecret || expectedSecret.length > 256 || suppliedSecret.length > 256) {
+    return false;
+  }
+  // Compare fixed-length digests so the timingSafeEqual call does not branch on
+  // the stored secret's length or the supplied secret's length.
+  const expectedDigest = createHash("sha256").update(expectedSecret, "utf8").digest();
+  const suppliedDigest = createHash("sha256").update(suppliedSecret, "utf8").digest();
+  return timingSafeEqual(expectedDigest, suppliedDigest);
+}
 
 export default async function handler(req, res) {
   // CORS configuration
@@ -39,9 +52,7 @@ export default async function handler(req, res) {
     if (typeof expectedSecret !== "string" || !expectedSecret || typeof suppliedSecret !== "string" || !suppliedSecret) {
       return error(res, "Unauthorized: a valid X-Webhook-Secret is required.", 401);
     }
-    const expectedBytes = Buffer.from(expectedSecret, "utf8");
-    const suppliedBytes = Buffer.from(suppliedSecret, "utf8");
-    if (expectedBytes.length !== suppliedBytes.length || !timingSafeEqual(expectedBytes, suppliedBytes)) {
+    if (!matchesWebhookSecret(expectedSecret, suppliedSecret)) {
       return error(res, "Unauthorized: a valid X-Webhook-Secret is required.", 401);
     }
     await checkRateLimit(admin, String(targetUid) + ":" + getClientIp(req), "webhook", 10);
