@@ -178,13 +178,22 @@ try {
   await assertFails(updateDoc(doc(adminDb, "logs/log-client-1"), { message: "tampered" }));
   await assertFails(deleteDoc(doc(adminDb, "logs/log-client-1")));
 
-  // Agent documents are user-owned; ownership cannot be transferred by update.
+  // Agent documents are user-owned; ownership and future tenant identifiers
+  // remain server-managed so clients cannot self-assign another workspace.
   await assertSucceeds(getDoc(doc(clientOneDb, "agents/agent-client-1")));
   await assertFails(getDoc(doc(clientOneDb, "agents/agent-client-2")));
   await assertSucceeds(setDoc(doc(clientOneDb, "agents/client-created"), { userId: "client-1", name: "My Agent" }));
   await assertFails(setDoc(doc(clientOneDb, "agents/forged-owner"), { userId: "client-2", name: "Forged" }));
+  await assertFails(setDoc(doc(clientOneDb, "agents/tenant-spoof"), {
+    userId: "client-1", name: "Tenant Spoof", tenantId: "tenant-victim"
+  }));
+  await assertFails(setDoc(doc(clientOneDb, "agents/workspace-spoof"), {
+    userId: "client-1", name: "Workspace Spoof", workspaceId: "workspace-victim"
+  }));
   await assertSucceeds(updateDoc(doc(clientOneDb, "agents/agent-client-1"), { name: "Updated Agent" }));
   await assertFails(updateDoc(doc(clientOneDb, "agents/agent-client-1"), { userId: "client-2" }));
+  await assertFails(updateDoc(doc(clientOneDb, "agents/agent-client-1"), { tenantId: "tenant-victim" }));
+  await assertFails(updateDoc(doc(clientOneDb, "agents/agent-client-1"), { workspaceId: "workspace-victim" }));
   await assertSucceeds(deleteDoc(doc(clientOneDb, "agents/client-created")));
   await assertFails(deleteDoc(doc(clientOneDb, "agents/agent-client-2")));
 
