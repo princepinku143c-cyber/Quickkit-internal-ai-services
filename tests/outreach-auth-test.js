@@ -26,9 +26,58 @@ function mockResponse() {
 const originalAuth = admin.auth;
 const originalFirestore = admin.firestore;
 const originalCronSecret = process.env.CRON_SECRET;
+const originalTelegramWebhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+const originalTelegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
 const originalConsoleError = console.error;
 
 try {
+  // Telegram's native secret-token header is preferred. Once a dedicated secret
+  // exists, query-string credentials (including the bot token) must be rejected.
+  const testTelegramSecret = "test-webhook-secret-with-at-least-thirty-two-characters";
+  process.env.TELEGRAM_WEBHOOK_SECRET = testTelegramSecret;
+  process.env.TELEGRAM_BOT_TOKEN = "test-telegram-bot-token";
+
+  const telegramHeaderResponse = mockResponse();
+  await handler({
+    method: "POST",
+    query: { action: "telegram-webhook" },
+    headers: { "x-telegram-bot-api-secret-token": testTelegramSecret },
+    body: {},
+  }, telegramHeaderResponse);
+  assert.equal(telegramHeaderResponse.statusCode, 200);
+  assert.deepEqual(telegramHeaderResponse.body, { ok: true });
+
+  const telegramQueryResponse = mockResponse();
+  await handler({
+    method: "POST",
+    query: { action: "telegram-webhook", secret: process.env.TELEGRAM_BOT_TOKEN },
+    headers: {},
+    body: {},
+  }, telegramQueryResponse);
+  assert.equal(telegramQueryResponse.statusCode, 403);
+
+  const telegramWrongHeaderResponse = mockResponse();
+  await handler({
+    method: "POST",
+    query: { action: "telegram-webhook" },
+    headers: { "x-telegram-bot-api-secret-token": "wrong-secret" },
+    body: {},
+  }, telegramWrongHeaderResponse);
+  assert.equal(telegramWrongHeaderResponse.statusCode, 403);
+
+  // Keep the old bot-token query route working until a dedicated webhook secret
+  // is configured in the deployment and Telegram webhook settings are migrated.
+  delete process.env.TELEGRAM_WEBHOOK_SECRET;
+  const telegramLegacyResponse = mockResponse();
+  await handler({
+    method: "POST",
+    query: { action: "telegram-webhook", secret: process.env.TELEGRAM_BOT_TOKEN },
+    headers: {},
+    body: {},
+  }, telegramLegacyResponse);
+  assert.equal(telegramLegacyResponse.statusCode, 200);
+  assert.deepEqual(telegramLegacyResponse.body, { ok: true });
+
   delete process.env.CRON_SECRET;
   let authCalls = 0;
   let firestoreCalls = 0;
@@ -245,4 +294,8 @@ try {
   console.error = originalConsoleError;
   if (originalCronSecret === undefined) delete process.env.CRON_SECRET;
   else process.env.CRON_SECRET = originalCronSecret;
+  if (originalTelegramWebhookSecret === undefined) delete process.env.TELEGRAM_WEBHOOK_SECRET;
+  else process.env.TELEGRAM_WEBHOOK_SECRET = originalTelegramWebhookSecret;
+  if (originalTelegramBotToken === undefined) delete process.env.TELEGRAM_BOT_TOKEN;
+  else process.env.TELEGRAM_BOT_TOKEN = originalTelegramBotToken;
 }
