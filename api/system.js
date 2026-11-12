@@ -1,5 +1,6 @@
 
 import admin from './_lib/firebaseAdmin.js';
+import { createHash, randomInt, timingSafeEqual } from 'node:crypto';
 import nodemailer from 'nodemailer';
 import { askAI } from '../services/aiService.js';
 import { buildCreditRequestNotification } from '../services/creditRequestNotification.js';
@@ -9,6 +10,13 @@ import { escapeHtml, getClientIp, isPlainObject, payloadTooLarge, safeMetadata, 
 
 const success = (res, data) => res.status(200).json(data);
 const error = (res, msg, code = 400) => res.status(code).json({ error: msg });
+
+function paymentTokenMatches(expected, supplied) {
+    if (typeof expected !== 'string' || typeof supplied !== 'string') return false;
+    const expectedDigest = createHash('sha256').update(expected, 'utf8').digest();
+    const suppliedDigest = createHash('sha256').update(supplied, 'utf8').digest();
+    return timingSafeEqual(expectedDigest, suppliedDigest);
+}
 
 export default async (req, res) => {
     // Enable CORS
@@ -379,8 +387,13 @@ async function handleCreditRequest(req, res, userId, authIdentity = {}) {
 }
 
 async function handleGenerateToken(req, res, adminId) {
-    const { projectId } = req.body;
-    const token = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const { projectId } = req.body || {};
+    if (typeof projectId !== 'string' || !projectId.trim()) {
+        return error(res, "Project ID is required", 400);
+    }
+
+    // Preserve the existing six-character base-36 format while using a CSPRNG.
+    const token = randomInt(0, 36 ** 6).toString(36).toUpperCase().padStart(6, '0');
     try {
         await admin.firestore().collection('projects').doc(projectId).update({
             paymentToken: token,
@@ -401,6 +414,9 @@ async function handleVerifyToken(req, res, userId) {
     }
 
     try {
+        // Limit guesses per authenticated user before reading project/payment state.
+        await checkRateLimit(admin, userId, 'verify-payment-token', 5);
+
         const db = admin.firestore();
         const projectRef = db.collection('projects').doc(projectId);
         const [userSnap, projectSnap] = await Promise.all([
@@ -418,7 +434,7 @@ async function handleVerifyToken(req, res, userId) {
             return error(res, "Unauthorized project access", 403);
         }
 
-        if (typeof projectData.paymentToken !== 'string' || projectData.paymentToken !== token) {
+        if (typeof projectData.paymentToken !== 'string' || !paymentTokenMatches(projectData.paymentToken, token)) {
             return error(res, "Invalid Token", 400);
         }
 
@@ -428,7 +444,16 @@ async function handleVerifyToken(req, res, userId) {
             paymentToken: null
         });
         return success(res, { status: "VERIFIED" });
-    } catch {
+    } catch (verificationError) {
+        if (verificationError?.status === 429) {
+            if (Number.isFinite(verificationError.retryAfter)) {
+                res.setHeader('Retry-After', String(verificationError.retryAfter));
+            }
+            return error(res, "Too many payment verification attempts. Please retry later.", 429);
+        }
+        if (verificationError?.status === 503) {
+            return error(res, "Payment verification is temporarily unavailable.", 503);
+        }
         console.error("SYSTEM_VERIFY_PAYMENT_TOKEN_FAILED");
         return error(res, "Unable to verify payment token right now.", 500);
     }
