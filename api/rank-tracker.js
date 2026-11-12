@@ -3,6 +3,17 @@ import { checkRateLimit } from "./_lib/security.js";
 
 const TAVILY_API_URL = "https://api.tavily.com/search";
 
+const INVALID_ID_TOKEN_CODES = new Set([
+  "auth/argument-error",
+  "auth/invalid-id-token",
+  "auth/id-token-expired",
+  "auth/id-token-revoked",
+  "auth/invalid-user-token",
+  "auth/user-disabled",
+  "auth/user-not-found",
+  "auth/tenant-id-mismatch",
+]);
+
 const sendError = (res, status, error, code) =>
   res.status(status).json({ error, ...(code ? { code } : {}) });
 
@@ -40,6 +51,10 @@ export default async function handler(req, res) {
     if (error && error.status === 429) {
       if (error.retryAfter) res.setHeader("Retry-After", String(error.retryAfter));
       return sendError(res, 429, "Rank tracking rate limit reached. Please retry later.");
+    }
+    if (INVALID_ID_TOKEN_CODES.has(error?.code)) {
+      console.warn("RANK_TRACKER_AUTH_INVALID");
+      return sendError(res, 401, "Authentication failed.");
     }
     console.error("RANK_TRACKER_AUTH_FAILED");
     return sendError(res, 503, "Rank tracking authorization is temporarily unavailable.");
