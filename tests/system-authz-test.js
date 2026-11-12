@@ -444,6 +444,106 @@ try {
   );
   assert.match(leadsRules, /allow read:\s*if isAuthenticated\(\)/);
 
+
+  // Public lead submission must keep Firestore, AI-provider, and Odoo diagnostics private.
+  const leadOriginalConsoleError = console.error;
+  const leadOriginalFetch = globalThis.fetch;
+  const leadOriginalCreateTransport = nodemailer.createTransport;
+  const leadEnvKeys = [
+    "NEURAL_NODE_KEY", "NEURAL_NODE_ENDPOINT", "NEURAL_NODE_ENGINE",
+    "ODOO_URL", "ODOO_DB", "ODOO_USERNAME", "ODOO_API_KEY",
+  ];
+  const leadOriginalEnv = Object.fromEntries(
+    leadEnvKeys.map((key) => [key, process.env[key]])
+  );
+  const capturedLeadErrors = [];
+  const makeLeadFirestore = ({ failLeadWrite = false } = {}) => ({
+    collection(name) {
+      if (name === "rate_limits") return { doc: () => ({}) };
+      if (name === "leads") return {
+        doc: () => ({
+          id: "lead-security-test",
+          set: async () => {
+            if (failLeadWrite) throw new Error("private Firestore lead write diagnostic");
+          },
+          update: async () => {},
+        }),
+      };
+      if (name === "projects") return {
+        doc: () => ({ id: "project-security-test", set: async () => {} }),
+      };
+      throw new Error("Unexpected collection: " + name);
+    },
+    runTransaction: async (callback) => callback({
+      get: async () => ({ data: () => ({ count: 0, firstCall: Date.now() }) }),
+      set: () => {},
+    }),
+  });
+  const leadRequest = () => ({
+    method: "POST",
+    query: { action: "lead" },
+    headers: {},
+    body: {
+      name: "Security Test Lead",
+      email: "lead@example.test",
+      projectName: "Security Regression",
+      requirement: "Test safe error handling",
+    },
+  });
+
+  try {
+    console.error = (...args) => capturedLeadErrors.push(args);
+    admin.auth = originalAuth;
+    for (const key of leadEnvKeys) delete process.env[key];
+
+    // A failed Firestore lead write must not expose its exception in the public response.
+    admin.firestore = () => makeLeadFirestore({ failLeadWrite: true });
+    const leadWriteFailure = mockResponse();
+    await handler(leadRequest(), leadWriteFailure);
+    assert.equal(leadWriteFailure.statusCode, 500);
+    assert.deepEqual(leadWriteFailure.body, { error: "Unable to submit lead right now." });
+    assert.ok(capturedLeadErrors.some(([label]) => label === "SYSTEM_LEAD_SUBMIT_FAILED"));
+    assert.doesNotMatch(JSON.stringify(capturedLeadErrors), /private Firestore lead write diagnostic/);
+
+    // Missing AI configuration must not cause the asynchronous draft error to be logged verbatim.
+    capturedLeadErrors.length = 0;
+    admin.firestore = () => makeLeadFirestore();
+    nodemailer.createTransport = () => ({ sendMail: async () => ({ messageId: "test-message" }) });
+    const aiDraftFailure = mockResponse();
+    await handler(leadRequest(), aiDraftFailure);
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(aiDraftFailure.statusCode, 200);
+    assert.ok(capturedLeadErrors.some(([label]) => label === "SYSTEM_LEAD_AI_DRAFT_FAILED"));
+    assert.doesNotMatch(JSON.stringify(capturedLeadErrors), /AI Infrastructure Offline|Missing Neural Node Configuration/);
+
+    // An Odoo connection failure is fault-tolerant but must not write its raw exception to logs.
+    capturedLeadErrors.length = 0;
+    process.env.ODOO_URL = "https://odoo.example.invalid";
+    process.env.ODOO_DB = "test-db";
+    process.env.ODOO_USERNAME = "test-user";
+    process.env.ODOO_API_KEY = "test-only-placeholder";
+    globalThis.fetch = async () => {
+      throw new Error("private Odoo authentication diagnostic");
+    };
+    admin.firestore = () => makeLeadFirestore();
+    const odooFailure = mockResponse();
+    await handler(leadRequest(), odooFailure);
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(odooFailure.statusCode, 200);
+    assert.ok(capturedLeadErrors.some(([label]) => label === "SYSTEM_LEAD_ODOO_SYNC_FAILED"));
+    assert.doesNotMatch(JSON.stringify(capturedLeadErrors), /private Odoo authentication diagnostic/);
+  } finally {
+    console.error = leadOriginalConsoleError;
+    globalThis.fetch = leadOriginalFetch;
+    nodemailer.createTransport = leadOriginalCreateTransport;
+    admin.auth = originalAuth;
+    admin.firestore = originalFirestore;
+    for (const key of leadEnvKeys) {
+      if (leadOriginalEnv[key] === undefined) delete process.env[key];
+      else process.env[key] = leadOriginalEnv[key];
+    }
+  }
+
   console.log("Firestore rules contract passed: project creation and lead mutations are admin-only; client lead access is read-only.");
   console.log("System API authorization tests passed: admin-only aggregate stats, project-owner payment verification, and cross-user denial.");
 } finally {
