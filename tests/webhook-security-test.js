@@ -2,8 +2,13 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import admin from "../api/_lib/firebaseAdmin.js";
 import leadSubmitHandler from "../api/lead-submit.js";
+import { matchesWebhookSecret } from "../api/webhook.js";
 
 const webhookSource = readFileSync(new URL("../api/webhook.js", import.meta.url), "utf8");
+assert.match(webhookSource, /createHash\("sha256"\)/);
+assert.match(webhookSource, /timingSafeEqual/);
+assert.doesNotMatch(webhookSource, /expectedBytes\.length\s*!==\s*suppliedBytes\.length/);
+
 const webhookErrorLogLines = webhookSource
   .split("\n")
   .map((line) => line.trim())
@@ -42,6 +47,18 @@ function mockResponse() {
     json(value) { this.body = value; return this; },
   };
 }
+
+// Webhook credentials are compared through fixed-length SHA-256 digests.
+// This keeps the comparison independent of the supplied/stored secret lengths.
+const validWebhookSecret = "webhook-test-secret-with-at-least-thirty-two-characters";
+assert.equal(matchesWebhookSecret(validWebhookSecret, validWebhookSecret), true);
+assert.equal(matchesWebhookSecret(validWebhookSecret, "x".repeat(validWebhookSecret.length)), false);
+assert.equal(matchesWebhookSecret(validWebhookSecret, "different-length-secret"), false);
+assert.equal(matchesWebhookSecret(validWebhookSecret, "x".repeat(257)), false);
+assert.equal(matchesWebhookSecret("x".repeat(257), "x".repeat(257)), false);
+assert.equal(matchesWebhookSecret("", validWebhookSecret), false);
+assert.equal(matchesWebhookSecret(validWebhookSecret, ""), false);
+assert.equal(matchesWebhookSecret(null, validWebhookSecret), false);
 
 const originalFirestore = admin.firestore;
 const originalConsoleError = console.error;
