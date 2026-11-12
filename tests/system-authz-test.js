@@ -31,6 +31,19 @@ function setIdentity(uid, claims = {}) {
   });
 }
 
+function makeRateLimitStub({ count = 0, firstCall = Date.now() } = {}) {
+  return {
+    collection(name) {
+      assert.equal(name, "rate_limits");
+      return { doc: () => ({}) };
+    },
+    runTransaction: async (callback) => callback({
+      get: async () => ({ data: () => ({ count, firstCall }) }),
+      set: () => {},
+    }),
+  };
+}
+
 try {
   // Enforce the documented HTTP method for each system action before auth or side effects.
   admin.auth = () => { throw new Error("Method guard must run before authentication."); };
@@ -141,8 +154,10 @@ try {
   // A signed-in user cannot confirm another user's payment token.
   setIdentity("attacker-1");
   let unauthorizedUpdates = 0;
+  const attackerLimiter = makeRateLimitStub();
   admin.firestore = () => ({
     collection(name) {
+      if (name === "rate_limits") return attackerLimiter.collection(name);
       if (name === "users") {
         return { doc: () => ({ get: async () => ({ data: () => ({ role: "client" }) }) }) };
       }
@@ -162,6 +177,7 @@ try {
       }
       throw new Error("Unexpected collection: " + name);
     },
+    runTransaction: attackerLimiter.runTransaction,
   });
   const attackerVerify = mockResponse();
   await handler({
@@ -173,11 +189,48 @@ try {
   assert.equal(attackerVerify.statusCode, 403);
   assert.equal(unauthorizedUpdates, 0);
 
+  // A validly shaped token is rejected before any project read when the
+  // per-user guess limit has been reached.
+  setIdentity("owner-1");
+  const blockedLimiter = makeRateLimitStub({ count: 5, firstCall: Date.now() });
+  let readsAfterLimit = 0;
+  admin.firestore = () => ({
+    collection(name) {
+      if (name === "rate_limits") return blockedLimiter.collection(name);
+      readsAfterLimit += 1;
+      throw new Error("Project/user reads must not occur after rate limiting.");
+    },
+    runTransaction: blockedLimiter.runTransaction,
+  });
+  const blockedVerify = mockResponse();
+  await handler({
+    method: "POST",
+    query: { action: "verify-payment-token" },
+    headers: { authorization: "Bearer test-id-token" },
+    body: { projectId: "project-1", token: "ABC123" },
+  }, blockedVerify);
+  assert.equal(blockedVerify.statusCode, 429);
+  assert.match(blockedVerify.headers["Retry-After"], /^\\d+$/);
+  assert.equal(readsAfterLimit, 0);
+
+  // Token shape validation bounds the comparison input before hashing or I/O.
+  const invalidLength = mockResponse();
+  admin.firestore = () => { throw new Error("Database must not be accessed for malformed token input."); };
+  await handler({
+    method: "POST",
+    query: { action: "verify-payment-token" },
+    headers: { authorization: "Bearer test-id-token" },
+    body: { projectId: "project-1", token: "TOOLONG" },
+  }, invalidLength);
+  assert.equal(invalidLength.statusCode, 400);
+
   // The project owner can still confirm their own valid token.
   setIdentity("owner-1");
   let ownerUpdates = 0;
+  const ownerLimiter = makeRateLimitStub();
   admin.firestore = () => ({
     collection(name) {
+      if (name === "rate_limits") return ownerLimiter.collection(name);
       if (name === "users") {
         return { doc: () => ({ get: async () => ({ data: () => ({ role: "client" }) }) }) };
       }
@@ -199,6 +252,7 @@ try {
       }
       throw new Error("Unexpected collection: " + name);
     },
+    runTransaction: ownerLimiter.runTransaction,
   });
   const ownerVerify = mockResponse();
   await handler({
@@ -210,6 +264,41 @@ try {
   assert.equal(ownerVerify.statusCode, 200);
   assert.equal(ownerVerify.body.status, "VERIFIED");
   assert.equal(ownerUpdates, 1);
+
+  // Payment tokens are generated without Math.random while preserving the
+  // existing six-character uppercase base-36 format.
+  setIdentity("admin-1");
+  let savedGeneratedToken = null;
+  admin.firestore = () => ({
+    collection(name) {
+      if (name === "users") {
+        return { doc: () => ({ get: async () => ({ data: () => ({ role: "admin" }) }) }) };
+      }
+      if (name === "projects") {
+        return { doc: (id) => ({ update: async (patch) => {
+          assert.equal(id, "project-1");
+          savedGeneratedToken = patch.paymentToken;
+        } }) };
+      }
+      throw new Error("Unexpected collection: " + name);
+    },
+  });
+  const originalMathRandom = Math.random;
+  const generatedTokenResponse = mockResponse();
+  try {
+    Math.random = () => { throw new Error("Math.random must not generate payment tokens."); };
+    await handler({
+      method: "POST",
+      query: { action: "generate-payment-token" },
+      headers: { authorization: "Bearer test-id-token" },
+      body: { projectId: "project-1" },
+    }, generatedTokenResponse);
+  } finally {
+    Math.random = originalMathRandom;
+  }
+  assert.equal(generatedTokenResponse.statusCode, 200);
+  assert.match(generatedTokenResponse.body.token, /^[0-9A-Z]{6}$/);
+  assert.equal(savedGeneratedToken, generatedTokenResponse.body.token);
 
   // Credit requests use the verified Firebase identity, not client-supplied
   // email/name fields, and escape identity data before embedding it in HTML.
