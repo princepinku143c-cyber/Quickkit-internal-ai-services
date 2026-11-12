@@ -47,6 +47,10 @@ try {
       setDoc(doc(db, "agents/agent-client-1"), { userId: "client-1", name: "Own Agent" }),
       setDoc(doc(db, "agents/agent-client-2"), { userId: "client-2", name: "Other Agent" }),
       setDoc(doc(db, "leads_outreach/outreach-1"), { userId: "client-1", status: "queued" }),
+      // These collections are intentionally server-only; client SDK access must stay denied.
+      setDoc(doc(db, "aeo_generations/server-seed"), { userId: "admin-1", status: "draft" }),
+      setDoc(doc(db, "settings/server-seed"), { serverOnly: true }),
+      setDoc(doc(db, "chat_history/server-seed"), { userId: "client-1", messages: [] }),
     ]);
   });
 
@@ -61,6 +65,25 @@ try {
     assertFails(getDoc(doc(anonymousDb, "agents/agent-client-1"))),
     assertFails(getDoc(doc(anonymousDb, "leads_outreach/outreach-1"))),
   ]);
+
+  // AEO drafts, operational settings, and chat history are server-only collections.
+  // Even authenticated admin users must use trusted API/Admin SDK paths rather than
+  // gaining direct client-SDK access to these records.
+  for (const collectionName of ["aeo_generations", "settings", "chat_history"]) {
+    const seedPath = `${collectionName}/server-seed`;
+    await Promise.all([
+      assertFails(getDoc(doc(anonymousDb, seedPath))),
+      assertFails(getDoc(doc(clientOneDb, seedPath))),
+      assertFails(getDoc(doc(adminDb, seedPath))),
+      assertFails(getDocs(collection(clientOneDb, collectionName))),
+      assertFails(setDoc(doc(clientOneDb, `${collectionName}/client-create`), { attempted: true })),
+      assertFails(setDoc(doc(adminDb, `${collectionName}/admin-client-create`), { attempted: true })),
+      assertFails(updateDoc(doc(clientOneDb, seedPath), { attempted: true })),
+      assertFails(updateDoc(doc(adminDb, seedPath), { attempted: true })),
+      assertFails(deleteDoc(doc(clientOneDb, seedPath))),
+      assertFails(deleteDoc(doc(adminDb, seedPath))),
+    ]);
+  }
 
   // Anonymous callers cannot create, update, or delete protected records.
   await Promise.all([
@@ -203,7 +226,7 @@ try {
   await assertSucceeds(getDoc(doc(adminDb, "leads_outreach/outreach-1")));
   await assertSucceeds(setDoc(doc(adminDb, "leads_outreach/admin-write"), { userId: "client-1" }));
 
-  console.log("Firestore Emulator rules tests passed: users, leads, projects, payments, logs, agents, and leads_outreach, including anonymous denial and role/tenant spoofing checks.");
+  console.log("Firestore Emulator rules tests passed: user-owned collections, server-only AEO/settings/chat collections, anonymous denial, and role/tenant spoofing checks.");
 } finally {
   await testEnv.cleanup();
 }
