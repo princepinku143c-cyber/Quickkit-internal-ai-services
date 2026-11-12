@@ -771,6 +771,92 @@ try {
     admin.firestore = originalFirestore;
   }
 
+  // Project quote/progress email templates must escape user-controlled HTML and strip header newlines.
+  const projectEmailOriginalCreateTransport = nodemailer.createTransport;
+  const capturedProjectEmails = [];
+  const capturedProjectHistory = [];
+  const capturedProjectUpdates = [];
+  try {
+    setIdentity("admin-1");
+    admin.firestore = () => ({
+      collection(name) {
+        if (name === "users") {
+          return { doc: () => ({ get: async () => ({ data: () => ({ role: "admin" }) }) }) };
+        }
+        if (name === "projects") {
+          return {
+            doc: (id) => ({
+              update: async (patch) => capturedProjectUpdates.push({ id, patch }),
+              collection: (subcollection) => ({
+                add: async (entry) => capturedProjectHistory.push({ subcollection, entry }),
+              }),
+            }),
+          };
+        }
+        throw new Error("Unexpected collection in project email escaping test.");
+      },
+    });
+    nodemailer.createTransport = () => ({
+      sendMail: async (message) => {
+        capturedProjectEmails.push(message);
+        return { messageId: "project-email-security-test" };
+      },
+    });
+
+    const quoteResponse = mockResponse();
+    await handler({
+      method: "POST",
+      query: { action: "project-quote" },
+      headers: { authorization: "Bearer test-id-token" },
+      body: {
+        projectId: "project-1",
+        quote: {
+          price: '<img src=x onerror=alert("price")>',
+          timeline: "<svg onload=alert(1)>",
+          notes: "<script>alert(1)</script>",
+        },
+        clientEmail: "client@example.test",
+        projectName: "</h2><img src=x onerror=alert(1)>\\r\\nBcc: attacker@example.test",
+      },
+    }, quoteResponse);
+    assert.equal(quoteResponse.statusCode, 200);
+    const quoteEmail = capturedProjectEmails[0];
+    assert.ok(quoteEmail);
+    assert.doesNotMatch(quoteEmail.html, /<(?:script|img|svg|iframe)\\b/i);
+    assert.match(quoteEmail.html, /&lt;img/);
+    assert.match(quoteEmail.html, /&lt;svg/);
+    assert.match(quoteEmail.html, /&lt;script/);
+    assert.doesNotMatch(quoteEmail.subject, /[\\r\\n]/);
+
+    const updateResponse = mockResponse();
+    await handler({
+      method: "POST",
+      query: { action: "project-update" },
+      headers: { authorization: "Bearer test-id-token" },
+      body: {
+        projectId: "project-1",
+        progress: 25,
+        message: "<img src=x onerror=alert(2)>",
+        clientEmail: "client@example.test",
+        projectName: "<iframe src=javascript:alert(2)>",
+      },
+    }, updateResponse);
+    assert.equal(updateResponse.statusCode, 200);
+    const updateEmail = capturedProjectEmails[1];
+    assert.ok(updateEmail);
+    assert.doesNotMatch(updateEmail.html, /<(?:script|img|svg|iframe)\\b/i);
+    assert.match(updateEmail.html, /&lt;img/);
+    assert.match(updateEmail.html, /&lt;iframe/);
+    assert.equal(capturedProjectHistory.length, 1);
+    assert.equal(capturedProjectUpdates.length, 2);
+  } finally {
+    nodemailer.createTransport = projectEmailOriginalCreateTransport;
+    admin.auth = originalAuth;
+    admin.firestore = originalFirestore;
+  }
+
+  console.log("Project email escaping tests passed: quote/progress HTML is escaped and subject newlines are removed.");
+
   console.log("System API backend-error redaction tests passed: all protected actions return generic failures and promo validation messages remain safe.");
 
   console.log("Firestore rules contract passed: project creation and lead mutations are admin-only; client lead access is read-only.");
