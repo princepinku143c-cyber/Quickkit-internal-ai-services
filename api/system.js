@@ -129,8 +129,8 @@ async function handleLead(req, res, userId) {
                     aiDraftReply: draft
                 });
                 console.log(`🤖 AI Draft successfully generated for lead ${leadId}`);
-            } catch (err) {
-                console.error(`❌ Failed to generate AI draft for lead ${leadId}:`, err);
+            } catch {
+                console.error("SYSTEM_LEAD_AI_DRAFT_FAILED");
             }
         })();
 
@@ -204,8 +204,8 @@ async function handleLead(req, res, userId) {
                             if (userSnap.exists) {
                                 clientNiche = userSnap.data().industryType || "Unknown";
                             }
-                        } catch (userErr) {
-                            console.error("Failed to fetch user niche for tagging:", userErr);
+                        } catch {
+                            console.error("SYSTEM_LEAD_USER_LOOKUP_FAILED");
                         }
                     }
 
@@ -245,13 +245,21 @@ async function handleLead(req, res, userId) {
             } else {
                 console.warn("⚠️ Odoo environment variables are incomplete.");
             }
-        } catch (odooError) {
-            console.error("❌ Failed to sync lead to Odoo CRM:", odooError);
+        } catch {
+            console.error("SYSTEM_LEAD_ODOO_SYNC_FAILED");
         }
 
         return success(res, { status: "LEAD_CREATED", projectId: projectRef.id });
     } catch (e) {
-        return error(res, e.message, e.status || 500);
+        const status = Number.isInteger(e?.status) ? e.status : 500;
+        const retryAfter = Number.isFinite(e?.retryAfter) ? Math.max(1, Math.ceil(e.retryAfter)) : null;
+        const message = status === 429 && retryAfter
+            ? `Rate limit exceeded. Retry after ${retryAfter}s.`
+            : status === 503
+                ? "Lead submission is temporarily unavailable."
+                : "Unable to submit lead right now.";
+        console.error("SYSTEM_LEAD_SUBMIT_FAILED");
+        return error(res, message, status);
     }
 }
 
