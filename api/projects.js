@@ -1,6 +1,17 @@
 import admin from "./_lib/firebaseAdmin.js";
 import { success, error } from "./_lib/response.js";
 
+const INVALID_ID_TOKEN_CODES = new Set([
+  "auth/argument-error",
+  "auth/invalid-id-token",
+  "auth/id-token-expired",
+  "auth/id-token-revoked",
+  "auth/invalid-user-token",
+  "auth/user-disabled",
+  "auth/user-not-found",
+  "auth/tenant-id-mismatch",
+]);
+
 /**
  * Hardened Project Lifecycle Engine.
  * Enforces strict input schemas and deterministic default states.
@@ -15,10 +26,15 @@ export default async function handler(req, res) {
   try {
     const idToken = authHeader.slice(7);
     decodedToken = await admin.auth().verifyIdToken(idToken);
-  } catch {
-    // Firebase verifier diagnostics can contain project/auth details; never log the exception.
-    console.error("PROJECT_AUTH_FAILED");
-    return error(res, "Build Logic Verification Failure", 403);
+  } catch (authError) {
+    // Invalid credentials are a client authentication failure; verifier outages
+    // are service failures. Never expose Firebase diagnostics in either response.
+    if (INVALID_ID_TOKEN_CODES.has(authError?.code)) {
+      console.warn("PROJECT_AUTH_FAILED");
+      return error(res, "Authentication failed.", 401);
+    }
+    console.error("PROJECT_AUTH_UNAVAILABLE");
+    return error(res, "Authentication service is temporarily unavailable.", 503);
   }
 
   const userId = decodedToken.uid;
