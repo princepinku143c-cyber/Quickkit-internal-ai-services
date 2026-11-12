@@ -197,8 +197,14 @@ try {
   admin.firestore = () => ({
     collection(name) {
       if (name === "rate_limits") return blockedLimiter.collection(name);
-      readsAfterLimit += 1;
-      throw new Error("Project/user reads must not occur after rate limiting.");
+      if (name === "users") {
+        return { doc: () => ({ get: async () => ({ data: () => ({ role: "client" }) }) }) };
+      }
+      if (name === "projects") {
+        readsAfterLimit += 1;
+        throw new Error("Project reads must not occur after rate limiting.");
+      }
+      throw new Error("Unexpected collection: " + name);
     },
     runTransaction: blockedLimiter.runTransaction,
   });
@@ -215,7 +221,14 @@ try {
 
   // Token shape validation bounds the comparison input before hashing or I/O.
   const invalidLength = mockResponse();
-  admin.firestore = () => { throw new Error("Database must not be accessed for malformed token input."); };
+  admin.firestore = () => ({
+    collection(name) {
+      if (name === "users") {
+        return { doc: () => ({ get: async () => ({ data: () => ({ role: "client" }) }) }) };
+      }
+      throw new Error("Database must not be accessed for malformed token input.");
+    },
+  });
   await handler({
     method: "POST",
     query: { action: "verify-payment-token" },
