@@ -4,6 +4,17 @@ import { checkRateLimit } from "./_lib/security.js";
 import { getClientIp, isPlainObject, safeText } from "./_lib/input.js";
 import { askAI } from "../services/aiService.js";
 
+const INVALID_ID_TOKEN_CODES = new Set([
+  "auth/argument-error",
+  "auth/invalid-id-token",
+  "auth/id-token-expired",
+  "auth/id-token-revoked",
+  "auth/invalid-user-token",
+  "auth/user-disabled",
+  "auth/user-not-found",
+  "auth/tenant-id-mismatch",
+]);
+
 /**
  * Unified AI Intelligence & Execution Cluster.
  * Handles: Kelly Architect, Agent Deployment, and VPS Execution.
@@ -29,9 +40,20 @@ export default async function handler(req, res) {
     let decodedToken = null;
 
     if (authHeader && authHeader.startsWith("Bearer ")) {
-      const idToken = authHeader.split('Bearer ')[1];
-      decodedToken = await admin.auth().verifyIdToken(idToken);
-      userId = decodedToken.uid;
+      const idToken = authHeader.slice("Bearer ".length);
+      try {
+        decodedToken = await admin.auth().verifyIdToken(idToken);
+        userId = decodedToken.uid;
+      } catch (authError) {
+        if (INVALID_ID_TOKEN_CODES.has(authError?.code)) {
+          console.warn("AI_CLUSTER_AUTH_FAILED");
+          return error(res, "Authentication failed.", 401);
+        }
+        // Missing or unavailable Firebase Admin configuration is a service failure,
+        // not proof that the caller supplied an invalid token.
+        console.error("AI_CLUSTER_AUTH_UNAVAILABLE");
+        return error(res, "Authentication service is temporarily unavailable.", 503);
+      }
     }
 
     if (action === 'kelly') return handleKelly(req, res, userId);
@@ -45,10 +67,10 @@ export default async function handler(req, res) {
     if (action === 'vps-test') return handleVPSTest(req, res, userId);
 
     return error(res, "Action Not Allowed", 400);
-  } catch (err) {
-    // Never log Firebase verifier diagnostics or other internal exception details.
-    console.error("AI_CLUSTER_CRASH", { status: 403 });
-    return error(res, "Identity Verification Failure", 403);
+  } catch {
+    // Unexpected routing failures are service errors; never expose internal diagnostics.
+    console.error("AI_CLUSTER_UNAVAILABLE");
+    return error(res, "AI service is temporarily unavailable.", 503);
   }
 }
 
