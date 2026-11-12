@@ -33,6 +33,8 @@ const coreSource = readFileSync(new URL("../lib/firebaseCore.ts", import.meta.ur
 assert.ok(coreSource.includes("isFirebaseConfigured = hasRequiredFirebaseClientConfig(firebaseConfig)"));
 
 const productionExample = readFileSync(new URL("../.env.production.example", import.meta.url), "utf8");
+const developmentExample = readFileSync(new URL("../.env.example", import.meta.url), "utf8");
+
 for (const variable of [
   "FIREBASE_PROJECT_ID",
   "FIREBASE_CLIENT_EMAIL",
@@ -50,7 +52,25 @@ for (const variable of [
   );
 }
 
-const developmentExample = readFileSync(new URL("../.env.example", import.meta.url), "utf8");
+const firebaseClientVariables = [
+  "VITE_FIREBASE_API_KEY",
+  "VITE_FIREBASE_AUTH_DOMAIN",
+  "VITE_FIREBASE_PROJECT_ID",
+  "VITE_FIREBASE_APP_ID",
+  "VITE_FIREBASE_STORAGE_BUCKET",
+  "VITE_FIREBASE_MESSAGING_SENDER_ID",
+  "VITE_FIREBASE_MEASUREMENT_ID",
+];
+for (const variable of firebaseClientVariables) {
+  const pattern = new RegExp("^" + variable + "=", "m");
+  assert.match(productionExample, pattern, `Production template must document Firebase client setting ${variable}`);
+  assert.match(developmentExample, pattern, `Development template must document Firebase client setting ${variable}`);
+  assert.ok(coreSource.includes(`import.meta.env.${variable}`), `Firebase client bootstrap must map ${variable}`);
+}
+
 assert.match(developmentExample, /^CRON_SECRET=/m);
 
-console.log("Firebase config guard tests passed: required client fields, server Admin credentials, and cron secret are documented; Admin diagnostics remain redacted.");
+const firebaseConfig = JSON.parse(readFileSync(new URL("../firebase.json", import.meta.url), "utf8"));
+assert.equal(firebaseConfig.firestore?.rules, "firestore.rules", "Firebase CLI must deploy the audited Firestore rules file.");
+
+console.log("Firebase config guard tests passed: all seven client settings are documented and mapped, Admin credentials and cron secret are documented, Firestore rules path is pinned, and Admin diagnostics remain redacted.");
