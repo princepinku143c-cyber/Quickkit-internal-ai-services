@@ -180,10 +180,11 @@ try {
 
   // DNS validation accepts an MX record.
   const mxResolver = {
-    resolveMx(_domain, callback) { callback(null, [{ exchange: "mx.example.test", priority: 10 }]); },
+    resolveMx(_domain, callback) { assert.equal(_domain, "example.test"); callback(null, [{ exchange: "mx.example.test", priority: 10 }]); },
     resolve4() { assert.fail("A lookup is unnecessary when MX exists."); },
   };
   assert.equal(await checkMxRecords("owner@example.test", mxResolver, 20), true);
+  assert.equal(await checkMxRecords("owner@example.test.", mxResolver, 20), true);
 
   // A fallback is accepted only when the domain has an A record.
   const aFallbackResolver = {
@@ -234,6 +235,7 @@ try {
     resolve4() { invalidDomainLookups += 1; },
   };
   assert.equal(await checkMxRecords("not-an-email", unusedResolver, 20), false);
+  assert.equal(await checkMxRecords("owner@bad domain.test", unusedResolver, 20), false);
   assert.equal(invalidDomainLookups, 0);
 
   console.log("Outreach authorization tests passed: POST-only routing, spoofed cron-header denial, strong CRON_SECRET, admin access, and fail-closed DNS retry behavior.");
