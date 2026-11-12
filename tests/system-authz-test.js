@@ -573,7 +573,7 @@ try {
   try {
     console.error = (...args) => capturedSystemFailures.push(args);
     for (const testCase of systemFailureCases) {
-      setIdentity("system-test-user");
+      setIdentity("system-test-user", { email: "system-test@example.test", name: "System Test User" });
       admin.firestore = () => ({
         collection(name) {
           if (name === "users") {
