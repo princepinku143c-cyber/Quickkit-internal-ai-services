@@ -1,6 +1,7 @@
 import admin from "./_lib/firebaseAdmin.js";
 import nodemailer from "nodemailer";
 import dns from "dns";
+import { fetchSafeWebsiteHtml } from "../services/safeWebsiteFetch.js";
 
 // CORS Headers Configuration
 const setCorsHeaders = (res) => {
@@ -195,30 +196,19 @@ async function handleAnalyze(req, res) {
   }
 }
 
-// Lightweight HTML scraper helper with a strict timeout and tech signature detection
+// Website scraping is restricted to public HTTP(S) destinations and bounded responses.
 async function scrapeWebsite(url) {
   if (!url) return { title: "", description: "", techTags: [] };
-  let targetUrl = url.trim();
-  if (!/^https?:\/\//i.test(targetUrl)) {
-    targetUrl = "https://" + targetUrl;
-  }
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    const response = await fetch(targetUrl, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36",
-        "Accept": "text/html"
-      }
-    });
-    clearTimeout(timeoutId);
-    if (!response.ok) return { title: "", description: "", techTags: [], error: `HTTP ${response.status}` };
-    const html = await response.text();
+    const response = await fetchSafeWebsiteHtml(url, { timeoutMs: 3000, maxBytes: 1_000_000 });
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      return { title: "", description: "", techTags: [], error: `HTTP ${response.statusCode}` };
+    }
+    const html = response.body;
     const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
     const title = titleMatch ? titleMatch[1].trim() : "";
-    const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) ||
-                      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
+    const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["'][^>]*>/i) ||
+                      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["'][^>]*>/i);
     const description = descMatch ? descMatch[1].trim() : "";
     const techTags = [];
     const lowerHtml = html.toLowerCase();

@@ -18,7 +18,7 @@
     "test:user-provision": "node tests/user-provision-test.js",
     "test:projects-security": "node tests/projects-security-test.js",
     "test:system-authz": "node tests/system-authz-test.js",
-    "test:outreach-auth": "node tests/outreach-auth-test.js",
+    "test:outreach-auth": "node tests/outreach-auth-test.js && node tests/safe-website-fetch-test.js",
     "test:webhook-security": "node tests/webhook-security-test.js",
     "test:send-proposal": "node tests/send-proposal-security-test.js"
   },
