@@ -268,8 +268,9 @@ async function getStats(req, res, userId) {
         const leads = await admin.firestore().collection('leads').count().get();
         const projects = await admin.firestore().collection('projects').count().get();
         return success(res, { leads: leads.data().count, projects: projects.data().count });
-    } catch (e) {
-        return error(res, e.message, 500);
+    } catch {
+        console.error("SYSTEM_STATS_FAILED");
+        return error(res, "Unable to retrieve system statistics right now.", 500);
     }
 }
 
@@ -285,8 +286,9 @@ async function handleAddCredits(req, res, adminId) {
             t.update(userRef, { credits: current + Number(amount) });
         });
         return success(res, { status: "CREDITS_ADDED" });
-    } catch (e) {
-        return error(res, e.message, 500);
+    } catch {
+        console.error("SYSTEM_ADD_CREDITS_FAILED");
+        return error(res, "Unable to add credits right now.", 500);
     }
 }
 
@@ -319,7 +321,15 @@ async function handleRedeemCode(req, res, userId) {
 
         return success(res, { amount: result.amount, status: "CODE_REDEEMED" });
     } catch (e) {
-        return error(res, e.message, 400);
+        const safePromoMessages = new Map([
+            ["Invalid promo code.", "Invalid promo code."],
+            ["Promo code has reached maximum usage.", "Promo code has reached maximum usage."],
+            ["You have already redeemed this code.", "You have already redeemed this code."]
+        ]);
+        const safeMessage = safePromoMessages.get(typeof e?.message === "string" ? e.message : "");
+        if (safeMessage) return error(res, safeMessage, 400);
+        console.error("SYSTEM_REDEEM_CODE_FAILED");
+        return error(res, "Unable to redeem code right now.", 500);
     }
 }
 
@@ -362,8 +372,9 @@ async function handleCreditRequest(req, res, userId, authIdentity = {}) {
         });
 
         return success(res, { status: "REQUEST_SENT" });
-    } catch (e) {
-        return error(res, e.message, 500);
+    } catch {
+        console.error("SYSTEM_CREDIT_REQUEST_FAILED");
+        return error(res, "Unable to send credit request right now.", 500);
     }
 }
 
@@ -376,8 +387,9 @@ async function handleGenerateToken(req, res, adminId) {
             paymentTokenGeneratedAt: new Date().toISOString()
         });
         return success(res, { token });
-    } catch (e) {
-        return error(res, e.message, 500);
+    } catch {
+        console.error("SYSTEM_GENERATE_PAYMENT_TOKEN_FAILED");
+        return error(res, "Unable to generate payment token right now.", 500);
     }
 }
 
@@ -416,8 +428,9 @@ async function handleVerifyToken(req, res, userId) {
             paymentToken: null
         });
         return success(res, { status: "VERIFIED" });
-    } catch (e) {
-        return error(res, e.message, 500);
+    } catch {
+        console.error("SYSTEM_VERIFY_PAYMENT_TOKEN_FAILED");
+        return error(res, "Unable to verify payment token right now.", 500);
     }
 }
 
@@ -450,8 +463,9 @@ async function handleProjectQuote(req, res, adminId) {
         });
 
         return success(res, { status: "QUOTE_SENT" });
-    } catch (e) {
-        return error(res, e.message, 500);
+    } catch {
+        console.error("SYSTEM_PROJECT_QUOTE_FAILED");
+        return error(res, "Unable to send the project quote right now.", 500);
     }
 }
 
@@ -485,8 +499,9 @@ async function handleProjectUpdate(req, res, adminId) {
         }
 
         return success(res, { status: "UPDATED" });
-    } catch (e) {
-        return error(res, e.message, 500);
+    } catch {
+        console.error("SYSTEM_PROJECT_UPDATE_FAILED");
+        return error(res, "Unable to update the project right now.", 500);
     }
 }
 
@@ -524,7 +539,8 @@ async function handleProjectStatus(req, res, userId) {
             });
         }
         return success(res, { status: "STATE_TRANSITIONED" });
-    } catch (e) {
-        return error(res, e.message, 500);
+    } catch {
+        console.error("SYSTEM_PROJECT_STATUS_FAILED");
+        return error(res, "Unable to update the project status right now.", 500);
     }
 }
