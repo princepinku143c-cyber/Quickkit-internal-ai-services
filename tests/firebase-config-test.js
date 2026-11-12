@@ -45,6 +45,19 @@ for (const variable of [
   assert.match(developmentExample, pattern, `Development template must document ${variable}`);
 }
 
+for (const [label, example] of [
+  ["Production", productionExample],
+  ["Development", developmentExample],
+]) {
+  const privateKeyLine = example.match(/^FIREBASE_PRIVATE_KEY=.*$/m)?.[0] || "";
+  assert.ok(privateKeyLine.includes("\\n"), `${label} template must show a literal \\n newline marker`);
+  assert.equal(
+    (privateKeyLine.match(/\\/g) || []).length,
+    1,
+    `${label} template must not double-escape Firebase private-key newlines`
+  );
+}
+
 const firebaseClientVariables = [
   "VITE_FIREBASE_API_KEY",
   "VITE_FIREBASE_AUTH_DOMAIN",
