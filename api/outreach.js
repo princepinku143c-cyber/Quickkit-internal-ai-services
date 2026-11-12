@@ -50,12 +50,21 @@ export default async function handler(req, res) {
   const { action } = req.query;
 
   try {
-    // 1. Telegram webhook check
+    // 1. Telegram webhook check. Prefer Telegram's dedicated secret-token header.
+    // Once TELEGRAM_WEBHOOK_SECRET is configured, query-string secrets are rejected
+    // because URLs can be copied into request logs and monitoring systems. The
+    // bot-token query fallback remains only for deployments not yet migrated.
     if (action === "telegram-webhook") {
-      const botToken = process.env.TELEGRAM_BOT_TOKEN;
-      const secretParam = req.query.secret;
-      const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET || botToken;
-      if (!secretParam || secretParam !== expectedSecret) {
+      const botToken = process.env.TELEGRAM_BOT_TOKEN || "";
+      const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET || "";
+      const headerSecret = typeof req.headers?.["x-telegram-bot-api-secret-token"] === "string"
+        ? req.headers["x-telegram-bot-api-secret-token"]
+        : "";
+      const querySecret = typeof req.query?.secret === "string" ? req.query.secret : "";
+      const headerAuthorized = Boolean(webhookSecret) && headerSecret === webhookSecret;
+      const legacyQueryAuthorized = !webhookSecret && Boolean(botToken) && querySecret === botToken;
+
+      if (!headerAuthorized && !legacyQueryAuthorized) {
         console.warn("Unauthorized Telegram webhook call attempted.");
         return res.status(403).json({ error: "Unauthorized: Invalid Webhook Secret Signature" });
       }
