@@ -816,17 +816,17 @@ try {
           notes: "<script>alert(1)</script>",
         },
         clientEmail: "client@example.test",
-        projectName: "</h2><img src=x onerror=alert(1)>\\r\\nBcc: attacker@example.test",
+        projectName: "</h2><img src=x onerror=alert(1)>\r\nBcc: attacker@example.test",
       },
     }, quoteResponse);
     assert.equal(quoteResponse.statusCode, 200);
     const quoteEmail = capturedProjectEmails[0];
     assert.ok(quoteEmail);
-    assert.doesNotMatch(quoteEmail.html, /<(?:script|img|svg|iframe)\\b/i);
+    assert.doesNotMatch(quoteEmail.html, /<(?:script|img|svg|iframe)\b/i);
     assert.match(quoteEmail.html, /&lt;img/);
     assert.match(quoteEmail.html, /&lt;svg/);
     assert.match(quoteEmail.html, /&lt;script/);
-    assert.doesNotMatch(quoteEmail.subject, /[\\r\\n]/);
+    assert.doesNotMatch(quoteEmail.subject, /[\r\n]/);
 
     const updateResponse = mockResponse();
     await handler({
@@ -844,7 +844,7 @@ try {
     assert.equal(updateResponse.statusCode, 200);
     const updateEmail = capturedProjectEmails[1];
     assert.ok(updateEmail);
-    assert.doesNotMatch(updateEmail.html, /<(?:script|img|svg|iframe)\\b/i);
+    assert.doesNotMatch(updateEmail.html, /<(?:script|img|svg|iframe)\b/i);
     assert.match(updateEmail.html, /&lt;img/);
     assert.match(updateEmail.html, /&lt;iframe/);
     assert.equal(capturedProjectHistory.length, 1);
