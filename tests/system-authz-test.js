@@ -289,12 +289,14 @@ try {
   const aiOriginalFirestore = admin.firestore;
   const aiOriginalFetch = globalThis.fetch;
   const aiOriginalConsoleError = console.error;
+  const aiOriginalConsoleWarn = console.warn;
   const aiOriginalEnv = {
     key: process.env.NEURAL_NODE_KEY,
     endpoint: process.env.NEURAL_NODE_ENDPOINT,
     engine: process.env.NEURAL_NODE_ENGINE,
   };
   const capturedAiErrors = [];
+  const capturedAiWarnings = [];
   const makeRateLimitFirestore = (count = 0) => () => ({
     collection(name) {
       assert.equal(name, "rate_limits");
@@ -311,6 +313,7 @@ try {
     process.env.NEURAL_NODE_ENDPOINT = "https://provider.example.invalid/v1/chat/completions";
     process.env.NEURAL_NODE_ENGINE = "test-model";
     console.error = (...args) => capturedAiErrors.push(args);
+    console.warn = (...args) => capturedAiWarnings.push(args);
     admin.auth = aiOriginalAuth;
     admin.firestore = makeRateLimitFirestore(0);
 
@@ -379,8 +382,12 @@ try {
       success: false,
       message: "Authentication failed.",
     });
-    assert.deepEqual(capturedAiErrors, [["AI_CLUSTER_AUTH_FAILED"]]);
-    assert.doesNotMatch(JSON.stringify(capturedAiErrors), /sensitive Firebase verifier diagnostic/);
+    assert.deepEqual(capturedAiErrors, []);
+    assert.deepEqual(capturedAiWarnings, [["AI_CLUSTER_AUTH_FAILED"]]);
+    assert.doesNotMatch(JSON.stringify(capturedAiWarnings), /sensitive Firebase verifier diagnostic/);
+
+    capturedAiErrors.length = 0;
+    capturedAiWarnings.length = 0;
 
     // Firebase Admin initialization/configuration failures are not caller auth failures.
     capturedAiErrors.length = 0;
@@ -400,6 +407,7 @@ try {
       message: "Authentication service is temporarily unavailable.",
     });
     assert.deepEqual(capturedAiErrors, [["AI_CLUSTER_AUTH_UNAVAILABLE"]]);
+    assert.deepEqual(capturedAiWarnings, []);
     assert.doesNotMatch(JSON.stringify(capturedAiErrors) + JSON.stringify(adminUnavailable.body), /private Firebase Admin initialization diagnostic/);
 
     // Preserve safe 429 rate-limit semantics and the Retry-After header.
@@ -425,6 +433,7 @@ try {
     admin.firestore = aiOriginalFirestore;
     globalThis.fetch = aiOriginalFetch;
     console.error = aiOriginalConsoleError;
+    console.warn = aiOriginalConsoleWarn;
     if (aiOriginalEnv.key === undefined) delete process.env.NEURAL_NODE_KEY;
     else process.env.NEURAL_NODE_KEY = aiOriginalEnv.key;
     if (aiOriginalEnv.endpoint === undefined) delete process.env.NEURAL_NODE_ENDPOINT;
