@@ -544,6 +544,98 @@ try {
     }
   }
 
+
+  // Remaining System API backend failures must never expose raw Firebase/Firestore diagnostics.
+  const systemFailureOriginalConsoleError = console.error;
+  const capturedSystemFailures = [];
+  const privateSystemDiagnostic = "private Firestore system diagnostic";
+  const systemFailureCases = [
+    { action: "stats", role: "admin", collection: "leads", operation: "count", message: "Unable to retrieve system statistics right now.", event: "SYSTEM_STATS_FAILED", method: "GET" },
+    { action: "add-credits", role: "admin", transaction: true, message: "Unable to add credits right now.", event: "SYSTEM_ADD_CREDITS_FAILED" },
+    { action: "redeem-code", role: "client", transaction: true, message: "Unable to redeem code right now.", event: "SYSTEM_REDEEM_CODE_FAILED" },
+    { action: "credit-request", role: "client", collection: "payment_requests", operation: "set", message: "Unable to send credit request right now.", event: "SYSTEM_CREDIT_REQUEST_FAILED" },
+    { action: "generate-payment-token", role: "admin", collection: "projects", operation: "update", message: "Unable to generate payment token right now.", event: "SYSTEM_GENERATE_PAYMENT_TOKEN_FAILED" },
+    { action: "verify-payment-token", role: "client", collection: "projects", operation: "get", message: "Unable to verify payment token right now.", event: "SYSTEM_VERIFY_PAYMENT_TOKEN_FAILED" },
+    { action: "project-quote", role: "admin", collection: "projects", operation: "update", message: "Unable to send the project quote right now.", event: "SYSTEM_PROJECT_QUOTE_FAILED" },
+    { action: "project-update", role: "admin", collection: "projects", operation: "update", message: "Unable to update the project right now.", event: "SYSTEM_PROJECT_UPDATE_FAILED" },
+    { action: "project-status", role: "client", collection: "projects", operation: "get", message: "Unable to update the project status right now.", event: "SYSTEM_PROJECT_STATUS_FAILED" },
+  ];
+  const systemBodies = {
+    "add-credits": { targetUserId: "target-user", amount: 10 },
+    "redeem-code": { code: "TEST-CODE" },
+    "credit-request": { amount: 10 },
+    "generate-payment-token": { projectId: "project-1" },
+    "verify-payment-token": { projectId: "project-1", token: "ABC123" },
+    "project-quote": { projectId: "project-1", quote: { price: 10, timeline: "1 week", notes: "test" }, clientEmail: "client@example.test", projectName: "Test Project" },
+    "project-update": { projectId: "project-1", progress: 10, message: "Test update", clientEmail: "client@example.test", projectName: "Test Project" },
+    "project-status": { projectId: "project-1", status: "accepted" },
+  };
+  try {
+    console.error = (...args) => capturedSystemFailures.push(args);
+    for (const testCase of systemFailureCases) {
+      setIdentity("system-test-user");
+      admin.firestore = () => ({
+        collection(name) {
+          if (name === "users") {
+            return { doc: () => ({ get: async () => ({ data: () => ({ role: testCase.role }) }) }) };
+          }
+          if (name === testCase.collection || (testCase.transaction && name === "promo_codes")) {
+            return {
+              count: () => ({ get: async () => { throw new Error(privateSystemDiagnostic); } }),
+              doc: () => ({
+                get: async () => { throw new Error(privateSystemDiagnostic); },
+                set: async () => { throw new Error(privateSystemDiagnostic); },
+                update: async () => { throw new Error(privateSystemDiagnostic); },
+              }),
+            };
+          }
+          throw new Error("Unexpected collection in system security test.");
+        },
+        runTransaction: async () => { throw new Error(privateSystemDiagnostic); },
+      });
+      const response = mockResponse();
+      await handler({
+        method: testCase.method || "POST",
+        query: { action: testCase.action },
+        headers: { authorization: "Bearer test-id-token" },
+        body: systemBodies[testCase.action] || {},
+      }, response);
+      assert.equal(response.statusCode, 500, `${testCase.action} should return a generic server error.`);
+      assert.deepEqual(response.body, { error: testCase.message });
+      assert.ok(capturedSystemFailures.some(([label]) => label === testCase.event), `${testCase.action} should emit its fixed event label.`);
+      assert.doesNotMatch(JSON.stringify(capturedSystemFailures), /private Firestore system diagnostic/);
+      capturedSystemFailures.length = 0;
+    }
+
+    // Preserve only the explicitly allow-listed business errors from promo redemption.
+    setIdentity("system-test-user");
+    admin.firestore = () => ({
+      collection(name) {
+        if (name === "users") return { doc: () => ({ get: async () => ({ data: () => ({ role: "client" }) }) }) };
+        if (name === "promo_codes") return { doc: () => ({}) };
+        throw new Error("Unexpected collection in promo validation test.");
+      },
+      runTransaction: async (callback) => callback({
+        get: async () => ({ exists: false }),
+      }),
+    });
+    const invalidPromo = mockResponse();
+    await handler({
+      method: "POST",
+      query: { action: "redeem-code" },
+      headers: { authorization: "Bearer test-id-token" },
+      body: { code: "INVALID" },
+    }, invalidPromo);
+    assert.equal(invalidPromo.statusCode, 400);
+    assert.deepEqual(invalidPromo.body, { error: "Invalid promo code." });
+  } finally {
+    console.error = systemFailureOriginalConsoleError;
+    admin.auth = originalAuth;
+    admin.firestore = originalFirestore;
+  }
+
+  console.log("System API backend-error redaction tests passed: all protected actions return generic failures and promo validation messages remain safe.");
+
   console.log("Firestore rules contract passed: project creation and lead mutations are admin-only; client lead access is read-only.");
   console.log("System API authorization tests passed: admin-only aggregate stats, project-owner payment verification, and cross-user denial.");
 } finally {
