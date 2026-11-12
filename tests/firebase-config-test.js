@@ -25,12 +25,12 @@ assert.equal(hasRequiredFirebaseClientConfig(undefined), false);
 
 // Firebase Admin initialization diagnostics must never print certificate/parser details.
 const firebaseAdminSource = readFileSync(new URL("../api/_lib/firebaseAdmin.js", import.meta.url), "utf8");
-assert.match(firebaseAdminSource, /console\\.error\\("Firebase Admin initialization failed\\."\\)/);
-assert.doesNotMatch(firebaseAdminSource, /error\\.message/);
-assert.doesNotMatch(firebaseAdminSource, /console\\.error\\([^;]*,\\s*error\\s*\\)/);
+assert.ok(firebaseAdminSource.includes('console.error("Firebase Admin initialization failed.")'));
+assert.equal(firebaseAdminSource.includes("error.message"), false);
+assert.equal(firebaseAdminSource.includes("console.error(\"Firebase Admin initialization failed.\", error)"), false);
 
 const coreSource = readFileSync(new URL("../lib/firebaseCore.ts", import.meta.url), "utf8");
-assert.match(coreSource, /isFirebaseConfigured = hasRequiredFirebaseClientConfig\\(firebaseConfig\\)/);
+assert.ok(coreSource.includes("isFirebaseConfigured = hasRequiredFirebaseClientConfig(firebaseConfig)"));
 
 const productionExample = readFileSync(new URL("../.env.production.example", import.meta.url), "utf8");
 for (const variable of [
