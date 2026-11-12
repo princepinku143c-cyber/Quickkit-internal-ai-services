@@ -58,7 +58,7 @@ export default async function handler(req, res) {
         console.warn("Unauthorized Telegram webhook call attempted.");
         return res.status(403).json({ error: "Unauthorized: Invalid Webhook Secret Signature" });
       }
-      return handleTelegramWebhook(req, res);
+      return await handleTelegramWebhook(req, res);
     }
 
     // 2. Resolve user authentication. Vercel's x-vercel-cron header is
@@ -567,7 +567,7 @@ async function processQueuedLeads(chatId, botToken, customConfig) {
         // MX record DNS precheck
         const mxValid = await checkMxRecords(leadData.email);
         if (!mxValid) {
-          console.warn(`DNS check failed for queued lead ${leadId} (${leadData.email}). Setting status to FAILED_MX.`);
+          console.warn("OUTREACH_DNS_CHECK_FAILED");
           await admin.firestore().collection("leads_outreach").doc(leadId).update({
             status: "FAILED_MX",
             dnsFailedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -583,7 +583,7 @@ async function processQueuedLeads(chatId, botToken, customConfig) {
         await analyzeAndDraftLead(leadId, leadData, botToken, chatId, customConfig);
         processed++;
       } catch (err) {
-        console.error(`Error processing/analyzing queued lead ${leadId}:`, err);
+        logSafeError("OUTREACH_QUEUE_ITEM_FAILED", err);
         errors++;
       }
     });
@@ -591,8 +591,8 @@ async function processQueuedLeads(chatId, botToken, customConfig) {
     await Promise.all(promises);
     return { processed, dnsFailed, errors };
   } catch (e) {
-    console.error("processQueuedLeads failure:", e);
-    return { processed, dnsFailed, errors, error: e.message };
+    logSafeError("OUTREACH_QUEUE_FAILED", e);
+    return { processed, dnsFailed, errors, error: "Queue processing failed." };
   }
 }
 
@@ -689,7 +689,8 @@ async function handleTelegramWebhook(req, res) {
           const customConfig = await loadOutreachConfig();
           await analyzeAndDraftLead(docRef.id, dbEntry, botToken, chatId, customConfig);
         } catch (e) {
-          await sendTelegramMessage(botToken, chatId, `❌ *Analysis Failed:* ${e.message}`);
+          logSafeError("OUTREACH_TELEGRAM_ADD_FAILED", e);
+          await sendTelegramMessage(botToken, chatId, "❌ *Analysis Failed:* Please try again later.");
         }
       }
       return success(res, { ok: true });
@@ -926,8 +927,8 @@ You MUST return a JSON object (and nothing else) with these keys:
       });
 
     } catch (e) {
-      console.error("AI_TELEGRAM_CONTROLLER_ERROR:", e);
-      await sendTelegramMessage(botToken, chatId, `⚠️ *Sorry Operator, I encountered a neural malfunction:* ${e.message}`);
+      logSafeError("AI_TELEGRAM_CONTROLLER_ERROR", e);
+      await sendTelegramMessage(botToken, chatId, "⚠️ *Sorry Operator, I couldn't complete that request. Please try again.*");
     }
 
     return success(res, { ok: true });
@@ -986,8 +987,8 @@ You MUST return a JSON object (and nothing else) with these keys:
         await editTelegramMessage(botToken, chatId, messageId, `❌ *DRAFT REJECTED & SKIPPED*:\n*Company:* ${leadData.businessName}\n*Niche:* ${leadData.niche}`);
       }
     } catch (e) {
-      console.error("TELEGRAM_WEBHOOK_ACTION_FAILURE:", e);
-      await answerCallbackQuery(botToken, queryId, `Error: ${e.message}`);
+      logSafeError("TELEGRAM_WEBHOOK_ACTION_FAILURE", e);
+      await answerCallbackQuery(botToken, queryId, "Action failed. Please try again.");
     }
   }
 
@@ -1281,10 +1282,9 @@ async function sendOutreachEmail(leadData, emailHtml) {
         return { success: true, sentVia: "Brevo Web API" };
       }
       
-      const errText = await apiRes.text();
-      console.warn(`Brevo API returned error status ${apiRes.status}: ${errText}. Trying next fallback...`);
+      console.warn("BREVO_SEND_FAILED", { status: apiRes.status });
     } catch (apiErr) {
-      console.warn("Brevo API call failed with exception:", apiErr.message, ". Trying next fallback...");
+      logSafeError("BREVO_REQUEST_FAILED", apiErr);
     }
   }
 
@@ -1311,10 +1311,9 @@ async function sendOutreachEmail(leadData, emailHtml) {
         return { success: true, sentVia: "Resend Web API" };
       }
 
-      const errText = await apiRes.text();
-      console.warn(`Resend API returned error status ${apiRes.status}: ${errText}. Trying next fallback...`);
+      console.warn("RESEND_SEND_FAILED", { status: apiRes.status });
     } catch (apiErr) {
-      console.warn("Resend API call failed with exception:", apiErr.message, ". Trying next fallback...");
+      logSafeError("RESEND_REQUEST_FAILED", apiErr);
     }
   }
 
@@ -1507,14 +1506,14 @@ async function dispatchApprovedOutreaches() {
         dispatched++;
         sentDetails.push({ company: lead.businessName, email: lead.email, sentVia: result.sentVia });
       } catch (err) {
-        console.error(`Failed to dispatch approved lead ${lead.id}:`, err);
+        logSafeError("OUTREACH_DISPATCH_ITEM_FAILED", err);
         errors++;
       }
     }
 
     return { dispatched, errors, sentDetails };
   } catch (e) {
-    console.error("dispatchApprovedOutreaches failure:", e);
-    return { dispatched, errors, sentDetails, error: e.message };
+    logSafeError("OUTREACH_DISPATCH_FAILED", e);
+    return { dispatched, errors, sentDetails, error: "Dispatch failed." };
   }
 }
