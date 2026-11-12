@@ -4,7 +4,7 @@ import handler from "../api/aeo-generate.js";
 import admin from "../api/_lib/firebaseAdmin.js";
 const aeoSource = readFileSync(new URL("../api/aeo-generate.js", import.meta.url), "utf8");
 const aeoErrorLogLines = aeoSource
-  .split("\\n")
+  .split("\n")
   .map((line) => line.trim())
   .filter((line) => line.includes("console.error("));
 assert.deepEqual(
