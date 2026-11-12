@@ -359,7 +359,9 @@ try {
     capturedAiErrors.length = 0;
     admin.auth = () => ({
       verifyIdToken: async () => {
-        throw new Error("sensitive Firebase verifier diagnostic");
+        const invalidTokenError = new Error("sensitive Firebase verifier diagnostic");
+        invalidTokenError.code = "auth/invalid-id-token";
+        throw invalidTokenError;
       },
     });
     admin.firestore = () => {
@@ -372,12 +374,33 @@ try {
       headers: { authorization: "Bearer invalid-test-token" },
       body: { message: "Test verifier failure" },
     }, verifierFailure);
-    assert.equal(verifierFailure.statusCode, 403);
+    assert.equal(verifierFailure.statusCode, 401);
     assert.deepEqual(verifierFailure.body, {
       success: false,
-      message: "Identity Verification Failure",
+      message: "Authentication failed.",
     });
+    assert.deepEqual(capturedAiErrors, [["AI_CLUSTER_AUTH_FAILED"]]);
     assert.doesNotMatch(JSON.stringify(capturedAiErrors), /sensitive Firebase verifier diagnostic/);
+
+    // Firebase Admin initialization/configuration failures are not caller auth failures.
+    capturedAiErrors.length = 0;
+    admin.auth = () => {
+      throw new Error("private Firebase Admin initialization diagnostic");
+    };
+    const adminUnavailable = mockResponse();
+    await aiHandler({
+      method: "POST",
+      query: { action: "kelly" },
+      headers: { authorization: "Bearer test-token" },
+      body: { message: "Test Firebase availability failure" },
+    }, adminUnavailable);
+    assert.equal(adminUnavailable.statusCode, 503);
+    assert.deepEqual(adminUnavailable.body, {
+      success: false,
+      message: "Authentication service is temporarily unavailable.",
+    });
+    assert.deepEqual(capturedAiErrors, [["AI_CLUSTER_AUTH_UNAVAILABLE"]]);
+    assert.doesNotMatch(JSON.stringify(capturedAiErrors) + JSON.stringify(adminUnavailable.body), /private Firebase Admin initialization diagnostic/);
 
     // Preserve safe 429 rate-limit semantics and the Retry-After header.
     capturedAiErrors.length = 0;
