@@ -382,7 +382,7 @@ try {
       success: false,
       message: "Authentication failed.",
     });
-    assert.deepEqual(capturedAiErrors, []);
+    assert.deepEqual(capturedAiErrors, [["[API_ERROR] 401: Authentication failed."]]);
     assert.deepEqual(capturedAiWarnings, [["AI_CLUSTER_AUTH_FAILED"]]);
     assert.doesNotMatch(JSON.stringify(capturedAiWarnings), /sensitive Firebase verifier diagnostic/);
 
@@ -406,7 +406,10 @@ try {
       success: false,
       message: "Authentication service is temporarily unavailable.",
     });
-    assert.deepEqual(capturedAiErrors, [["AI_CLUSTER_AUTH_UNAVAILABLE"]]);
+    assert.deepEqual(capturedAiErrors, [
+      ["AI_CLUSTER_AUTH_UNAVAILABLE"],
+      ["[API_ERROR] 503: Authentication service is temporarily unavailable."],
+    ]);
     assert.deepEqual(capturedAiWarnings, []);
     assert.doesNotMatch(JSON.stringify(capturedAiErrors) + JSON.stringify(adminUnavailable.body), /private Firebase Admin initialization diagnostic/);
 
