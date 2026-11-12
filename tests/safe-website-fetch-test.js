@@ -134,4 +134,18 @@ await assert.rejects(
 );
 assert.equal(redirectLoopCalls, 2);
 
+let timedOutRequestCount = 0;
+await assert.rejects(
+  fetchSafeWebsiteHtml("https://example.com", {
+    timeoutMs: 10,
+    resolveHost: async () => new Promise(() => {}),
+    requestOnce: async () => {
+      timedOutRequestCount += 1;
+      return { statusCode: 200, body: "unexpected" };
+    },
+  }),
+  /DNS lookup timed out/
+);
+assert.equal(timedOutRequestCount, 0, "a stalled DNS lookup must time out before connecting");
+
 console.log("Safe website fetch tests passed: private/IP-literal targets, mixed DNS answers, IPv6 ranges, redirects, redirect loops, and public pinned destinations.");

@@ -169,6 +169,22 @@ function requestPinned(url, resolved, { timeoutMs, maxBytes }) {
   });
 }
 
+async function resolveWithTimeout(resolveHost, hostname, timeoutMs) {
+  let timer;
+  try {
+    return await Promise.race([
+      resolveHost(hostname),
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          reject(Object.assign(new Error("Website DNS lookup timed out."), { code: "ETIMEDOUT" }));
+        }, timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 export async function fetchSafeWebsiteHtml(input, options = {}) {
   const resolveHost = options.resolveHost || ((hostname) =>
     dns.lookup(hostname, { all: true, verbatim: true }));
@@ -183,7 +199,7 @@ export async function fetchSafeWebsiteHtml(input, options = {}) {
     const remainingMs = deadline - Date.now();
     if (remainingMs <= 0) throw new Error("Website request timed out.");
 
-    const addresses = await resolveHost(currentUrl.hostname);
+    const addresses = await resolveWithTimeout(resolveHost, currentUrl.hostname, remainingMs);
     if (!Array.isArray(addresses) || addresses.length === 0 ||
         addresses.some((entry) => !entry || !isPublicAddress(entry.address))) {
       throw new Error("Website hostname resolved to a non-public address.");
