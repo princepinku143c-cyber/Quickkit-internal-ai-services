@@ -409,8 +409,8 @@ async function handleGenerateToken(req, res, adminId) {
 async function handleVerifyToken(req, res, userId) {
     const { projectId, token } = req.body || {};
     if (typeof projectId !== 'string' || !projectId.trim() ||
-        typeof token !== 'string' || !token.trim()) {
-        return error(res, "Project ID and payment token are required", 400);
+        typeof token !== 'string' || token.length !== 6) {
+        return error(res, "Project ID and six-character payment token are required", 400);
     }
 
     try {
