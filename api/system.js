@@ -474,7 +474,7 @@ async function handleProjectQuote(req, res, adminId) {
             auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
         });
 
-        const safeProjectName = safeText(projectName, 180).replace(/[\\r\\n]+/g, " ");
+        const safeProjectName = safeText(projectName, 180).replace(/[\r\n]+/g, " ");
         const safeSubjectProjectName = safeProjectName;
         await transporter.sendMail({
             from: `"QuickKit Engineering" <${process.env.EMAIL_USER}>`,
@@ -517,8 +517,8 @@ async function handleProjectUpdate(req, res, adminId) {
                 service: 'gmail',
                 auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
             });
-            const safeProjectName = safeText(projectName, 180).replace(/[\\r\\n]+/g, " ");
-            const safeSubjectProgress = safeText(progress, 16).replace(/[\\r\\n]+/g, " ");
+            const safeProjectName = safeText(projectName, 180).replace(/[\r\n]+/g, " ");
+            const safeSubjectProgress = safeText(progress, 16).replace(/[\r\n]+/g, " ");
             await transporter.sendMail({
                 from: `"QuickKit Engineering" <${process.env.EMAIL_USER}>`,
                 to: clientEmail,
