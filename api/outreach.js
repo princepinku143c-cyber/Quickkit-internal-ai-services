@@ -91,8 +91,9 @@ export default async function handler(req, res) {
       ? req.headers.authorization
       : "";
     const configuredCronSecret = process.env.CRON_SECRET || "";
+    const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
     const isCron = configuredCronSecret.length >= 32
-      && authHeader === `Bearer ${configuredCronSecret}`;
+      && matchesSecret(configuredCronSecret, bearerToken);
 
     if (authHeader.startsWith("Bearer ") && !isCron) {
       try {
