@@ -1455,8 +1455,8 @@ export async function checkMxRecords(email, resolver = dns, timeoutMs = DNS_LOOK
   const parts = email.trim().split("@");
   if (parts.length !== 2) return false;
 
-  const domain = parts[1].trim().replace(/\\.$/, "").toLowerCase();
-  if (!domain || domain.length > 253 || /[\\s/@?#]/.test(domain)) return false;
+  const domain = parts[1].trim().replace(/\.$/, "").toLowerCase();
+  if (!domain || domain.length > 253 || /[\s/@?#]/.test(domain)) return false;
 
   let mxRecords = [];
   try {
