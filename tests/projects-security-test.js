@@ -115,6 +115,62 @@ try {
   assert.equal(JSON.stringify(capturedErrors).includes(databaseDiagnostic), false);
   assert.equal(JSON.stringify(databaseResponse.body).includes(databaseDiagnostic), false);
 
+  // Project creation rejects malformed/non-finite quote values before any Firestore write.
+  const projectWrites = [];
+  admin.auth = () => ({
+    verifyIdToken: async () => ({ uid: "client-1" }),
+  });
+  const mockFirestore = () => ({
+    collection: (name) => {
+      assert.equal(name, "projects");
+      return {
+        add: async (document) => {
+          projectWrites.push(document);
+          return { id: "project-123" };
+        },
+      };
+    },
+  });
+  mockFirestore.FieldValue = {
+    serverTimestamp: () => "mock-server-timestamp",
+  };
+  admin.firestore = mockFirestore;
+
+  const createProject = async (price) => {
+    const response = mockResponse();
+    await handler({
+      method: "POST",
+      headers: { authorization: "Bearer valid-test-token" },
+      query: { action: "create" },
+      body: {
+        projectName: "  Example project  ",
+        packageId: "  starter  ",
+        price,
+      },
+    }, response);
+    return response;
+  };
+
+  for (const invalidPrice of [Infinity, -Infinity, "1e309", "Infinity", "NaN", "", true, false, null, {}, [], 0, -1]) {
+    const response = await createProject(invalidPrice);
+    assert.equal(response.statusCode, 400, `Expected invalid price ${String(invalidPrice)} to be rejected`);
+    assert.equal(response.body.message, "Invalid Value Scoping");
+  }
+  assert.equal(projectWrites.length, 0, "Invalid quote values must not create project records");
+
+  // Existing numeric-string clients remain compatible; strings are normalized before persistence.
+  const validQuoteResponse = await createProject("1250.50");
+  assert.equal(validQuoteResponse.statusCode, 200);
+  assert.deepEqual(validQuoteResponse.body, {
+    success: true,
+    data: { projectId: "project-123" },
+  });
+  assert.equal(projectWrites.length, 1);
+  assert.equal(projectWrites[0].projectName, "Example project");
+  assert.equal(projectWrites[0].packageId, "starter");
+  assert.equal(projectWrites[0].price, 1250.5);
+
+  console.log("Project API security tests passed: authentication diagnostics are redacted and malformed/non-finite project quote values are rejected before persistence.");
   console.log("Project API security tests passed: invalid tokens return 401, Firebase verifier outages return 503, and auth/Firestore diagnostics stay redacted.");
 } finally {
   admin.auth = originalAuth;
