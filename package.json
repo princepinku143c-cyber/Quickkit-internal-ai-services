@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && node scripts/prerender-public-routes.mjs",
+    "build": "node scripts/validate-production-firebase-env.mjs && vite build && node scripts/prerender-public-routes.mjs",
     "preview": "vite preview",
     "test:api": "node tests/api-test.js",
     "validate:api-routes": "node scripts/validate-api-route-count.mjs",
@@ -17,6 +17,7 @@
     "test:rank-tracker": "node tests/rank-tracker-test.js",
     "test:aeo-agent": "python3 -m unittest tests/test_aeo_agent.py -v",
     "test:aeo-api": "node tests/opencode-service-test.js && node tests/aeo-endpoint-test.js",
+    "test:production-firebase-env": "node tests/production-firebase-env-test.mjs",
     "test:user-provision": "node tests/user-provision-test.js",
     "test:projects-security": "node tests/projects-security-test.js",
     "test:system-authz": "node tests/system-authz-test.js",
