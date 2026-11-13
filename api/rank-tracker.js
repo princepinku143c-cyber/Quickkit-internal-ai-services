@@ -17,6 +17,26 @@ const INVALID_ID_TOKEN_CODES = new Set([
 const sendError = (res, status, error, code) =>
   res.status(status).json({ error, ...(code ? { code } : {}) });
 
+/**
+ * Match QuickKit's exact registrable host or one of its subdomains.
+ * Substring matching is unsafe because lookalike hosts and URL paths can
+ * contain "quickkitai.com" without belonging to QuickKit.
+ */
+export function isQuickKitDomainUrl(value) {
+  if (typeof value !== "string") return false;
+
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+    if (url.username || url.password) return false;
+
+    const hostname = url.hostname.toLowerCase().replace(/\.$/, "");
+    return hostname === "quickkitai.com" || hostname.endsWith(".quickkitai.com");
+  } catch {
+    return false;
+  }
+}
+
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   res.setHeader("Vary", "Authorization");
@@ -97,9 +117,7 @@ export default async function handler(req, res) {
         results.push({ keyword, error: "Search provider request failed." });
       } else {
         const data = await response.json();
-        const found = data.results?.find(result =>
-          typeof result.url === "string" && result.url.includes("quickkitai.com")
-        );
+        const found = data.results?.find(result => isQuickKitDomainUrl(result?.url));
         results.push({
           keyword,
           rank: found ? data.results.indexOf(found) + 1 : null,
