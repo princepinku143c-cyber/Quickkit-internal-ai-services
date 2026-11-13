@@ -199,14 +199,14 @@ try {
       let ownerFilterApplied = false;
       let orderingApplied = false;
       return {
-        where: (field, operator, value) => {
+        where(field, operator, value) {
           assert.equal(field, "userId");
           assert.equal(operator, "==");
           assert.equal(value, "client-1", "Read scope must come from the verified token, not query parameters");
           ownerFilterApplied = true;
           return this;
         },
-        orderBy: (field, direction) => {
+        orderBy(field, direction) {
           assert.equal(field, "createdAt");
           assert.equal(direction, "desc");
           orderingApplied = true;
