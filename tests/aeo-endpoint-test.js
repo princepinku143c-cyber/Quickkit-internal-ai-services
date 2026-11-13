@@ -9,7 +9,13 @@ const aeoErrorLogLines = aeoSource
   .filter((line) => line.includes("console.error("));
 assert.deepEqual(
   aeoErrorLogLines,
-  ['console.error("AEO_AUTH_UNAVAILABLE");', 'console.error("AEO_GENERATION_FAILED");'],
+  [
+    'console.error("AEO_AUTH_UNAVAILABLE");',
+    'console.error("AEO_PROFILE_LOOKUP_FAILED");',
+    'console.error("AEO_RATE_LIMIT_UNAVAILABLE");',
+    'console.error("AEO_PROVIDER_FAILED");',
+    'console.error("AEO_DRAFT_SAVE_FAILED");',
+  ],
   "AEO authentication, provider, and database failures must use fixed redacted log labels."
 );
 
@@ -152,6 +158,139 @@ try {
 }
 
 
+const originalAuthForBackendFailures = admin.auth;
+const originalFirestoreForBackendFailures = admin.firestore;
+const originalConsoleErrorForBackendFailures = console.error;
+try {
+  const capturedBackendErrors = [];
+  console.error = (...args) => capturedBackendErrors.push(args);
+  admin.auth = () => ({
+    verifyIdToken: async () => ({ uid: "admin-1" }),
+  });
+
+  const profileDiagnostic = "private Firestore profile lookup diagnostic";
+  admin.firestore = () => ({
+    collection(name) {
+      assert.equal(name, "users");
+      return {
+        doc: () => ({
+          get: async () => { throw new Error(profileDiagnostic); },
+        }),
+      };
+    },
+  });
+  const profileFailureResponse = mockResponse();
+  await handler({
+    method: "POST",
+    headers: { authorization: "Bearer admin-token" },
+    body: { keyword: "Real estate CRM", count: 1 },
+  }, profileFailureResponse);
+  assert.equal(profileFailureResponse.statusCode, 503);
+  assert.deepEqual(profileFailureResponse.body, {
+    success: false,
+    error: "Authorization service is temporarily unavailable.",
+  });
+  assert.deepEqual(capturedBackendErrors, [["AEO_PROFILE_LOOKUP_FAILED"]]);
+  assert.equal(JSON.stringify(capturedBackendErrors).includes(profileDiagnostic), false);
+  assert.equal(JSON.stringify(profileFailureResponse.body).includes(profileDiagnostic), false);
+
+  capturedBackendErrors.length = 0;
+  const rateLimitDiagnostic = "private Firestore rate-limit transaction diagnostic";
+  admin.firestore = () => ({
+    collection(name) {
+      if (name === "users") {
+        return { doc: () => ({ get: async () => ({ data: () => ({ role: "admin" }) }) }) };
+      }
+      if (name === "rate_limits") {
+        return { doc: () => ({ id: "rate-limit-test" }) };
+      }
+      throw new Error("Unexpected test collection.");
+    },
+    runTransaction: async () => { throw new Error(rateLimitDiagnostic); },
+  });
+  const rateLimitFailureResponse = mockResponse();
+  await handler({
+    method: "POST",
+    headers: { authorization: "Bearer admin-token" },
+    body: { keyword: "Real estate CRM", count: 1 },
+  }, rateLimitFailureResponse);
+  assert.equal(rateLimitFailureResponse.statusCode, 503);
+  assert.deepEqual(rateLimitFailureResponse.body, {
+    success: false,
+    error: "AEO generation is temporarily unavailable.",
+  });
+  assert.deepEqual(capturedBackendErrors, [
+    ["RATE_LIMIT_UNAVAILABLE"],
+    ["AEO_RATE_LIMIT_UNAVAILABLE"],
+  ]);
+  assert.equal(JSON.stringify(capturedBackendErrors).includes(rateLimitDiagnostic), false);
+  assert.equal(JSON.stringify(rateLimitFailureResponse.body).includes(rateLimitDiagnostic), false);
+} finally {
+  admin.auth = originalAuthForBackendFailures;
+  admin.firestore = originalFirestoreForBackendFailures;
+  console.error = originalConsoleErrorForBackendFailures;
+}
+
+const originalAuthForProviderFailure = admin.auth;
+const originalFirestoreForProviderFailure = admin.firestore;
+const originalFetchForProviderFailure = globalThis.fetch;
+const originalApiKeyForProviderFailure = process.env.OPENCODE_API_KEY;
+const originalApiUrlForProviderFailure = process.env.OPENCODE_API_URL;
+const originalConsoleErrorForProviderFailure = console.error;
+try {
+  const capturedProviderErrors = [];
+  process.env.OPENCODE_API_KEY = "test-only-key";
+  process.env.OPENCODE_API_URL = "https://provider.example.test/v1/chat/completions";
+  globalThis.fetch = async () => {
+    throw new Error("private provider transport diagnostic");
+  };
+  admin.auth = () => ({
+    verifyIdToken: async () => ({ uid: "admin-1" }),
+  });
+  admin.firestore = () => ({
+    collection(name) {
+      if (name === "users") {
+        return { doc: () => ({ get: async () => ({ data: () => ({ role: "admin" }) }) }) };
+      }
+      if (name === "rate_limits") {
+        return { doc: () => ({ id: "rate-limit-test" }) };
+      }
+      throw new Error("Unexpected test collection.");
+    },
+    async runTransaction(callback) {
+      return callback({
+        get: async () => ({ data: () => ({ count: 0, firstCall: Date.now() }) }),
+        set: () => {},
+      });
+    },
+  });
+  console.error = (...args) => capturedProviderErrors.push(args);
+
+  const draftSaveFailureResponse = mockResponse();
+  await handler({
+    method: "POST",
+    headers: { authorization: "Bearer admin-token" },
+    body: { keyword: "Real estate CRM", count: 1 },
+  }, providerFailureResponse);
+  assert.equal(providerFailureResponse.statusCode, 502);
+  assert.deepEqual(providerFailureResponse.body, {
+    success: false,
+    error: "AEO generation failed. No draft was published.",
+  });
+  assert.deepEqual(capturedProviderErrors, [["AEO_PROVIDER_FAILED"]]);
+  assert.equal(JSON.stringify(capturedProviderErrors).includes("private provider transport diagnostic"), false);
+  assert.equal(JSON.stringify(providerFailureResponse.body).includes("private provider transport diagnostic"), false);
+} finally {
+  admin.auth = originalAuthForProviderFailure;
+  admin.firestore = originalFirestoreForProviderFailure;
+  globalThis.fetch = originalFetchForProviderFailure;
+  if (originalApiKeyForProviderFailure === undefined) delete process.env.OPENCODE_API_KEY;
+  else process.env.OPENCODE_API_KEY = originalApiKeyForProviderFailure;
+  if (originalApiUrlForProviderFailure === undefined) delete process.env.OPENCODE_API_URL;
+  else process.env.OPENCODE_API_URL = originalApiUrlForProviderFailure;
+  console.error = originalConsoleErrorForProviderFailure;
+}
+
 const originalAuthForFailure = admin.auth;
 const originalFirestoreForFailure = admin.firestore;
 const originalFetch = globalThis.fetch;
@@ -215,16 +354,16 @@ try {
     method: "POST",
     headers: { authorization: "Bearer admin-token" },
     body: { keyword: "Real estate CRM", count: 1 }
-  }, providerFailureResponse);
+  }, draftSaveFailureResponse);
 
-  assert.equal(providerFailureResponse.statusCode, 502);
-  assert.deepEqual(providerFailureResponse.body, {
+  assert.equal(draftSaveFailureResponse.statusCode, 503);
+  assert.deepEqual(draftSaveFailureResponse.body, {
     success: false,
-    error: "AEO generation failed. No draft was published."
+    error: "AEO draft could not be saved. Please retry."
   });
-  assert.deepEqual(capturedErrors, [["AEO_GENERATION_FAILED"]]);
+  assert.deepEqual(capturedErrors, [["AEO_DRAFT_SAVE_FAILED"]]);
   assert.equal(JSON.stringify(capturedErrors).includes("private Firestore permission diagnostic"), false);
-  assert.equal(JSON.stringify(providerFailureResponse.body).includes("private Firestore permission diagnostic"), false);
+  assert.equal(JSON.stringify(draftSaveFailureResponse.body).includes("private Firestore permission diagnostic"), false);
 } finally {
   admin.auth = originalAuthForFailure;
   admin.firestore = originalFirestoreForFailure;
@@ -236,4 +375,4 @@ try {
   console.error = originalConsoleError;
 }
 
-console.log("AEO endpoint tests passed: method/auth guards, payload validation, and generic handling of sensitive backend failures.");
+console.log("AEO endpoint tests passed: method/auth guards, admin role checks, Firebase profile/rate-limit outage classification, provider failures, draft persistence failures, and redacted diagnostics.");
