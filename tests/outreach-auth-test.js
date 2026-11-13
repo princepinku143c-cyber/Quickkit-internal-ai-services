@@ -31,6 +31,7 @@ const originalCronSecret = process.env.CRON_SECRET;
 const originalTelegramWebhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
 const originalTelegramBotToken = process.env.TELEGRAM_BOT_TOKEN;
 const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
 
 try {
   // Telegram's native secret-token header is preferred. Once a dedicated secret
@@ -166,12 +167,17 @@ try {
   assert.equal(oversizedCronResponse.statusCode, 403);
   assert.equal(firestoreCalls, 0);
 
-  // Firebase token verifier diagnostics must never be copied into server logs.
+  // Known invalid tokens are authentication failures; verifier outages are service failures.
   const capturedAuthErrors = [];
+  const capturedAuthWarnings = [];
   console.error = (...args) => capturedAuthErrors.push(args);
+  console.warn = (...args) => capturedAuthWarnings.push(args);
+
   const authDiagnostic = "sensitive-firebase-verifier-diagnostic";
+  const invalidTokenError = new Error(authDiagnostic);
+  invalidTokenError.code = "auth/invalid-id-token";
   admin.auth = () => ({
-    verifyIdToken: async () => { throw new Error(authDiagnostic); },
+    verifyIdToken: async () => { throw invalidTokenError; },
   });
   const invalidTokenResponse = mockResponse();
   await handler({
@@ -179,11 +185,56 @@ try {
     query: { action: "process-queue" },
     headers: { authorization: "Bearer invalid-token" },
   }, invalidTokenResponse);
-  assert.equal(invalidTokenResponse.statusCode, 403);
+  assert.equal(invalidTokenResponse.statusCode, 401);
+  assert.deepEqual(invalidTokenResponse.body, { error: "Authentication failed." });
   assert.equal(firestoreCalls, 0);
-  assert.deepEqual(capturedAuthErrors, [["OUTREACH_AUTH_FAILED"]]);
-  assert.doesNotMatch(JSON.stringify(capturedAuthErrors), /sensitive-firebase-verifier-diagnostic/);
+  assert.deepEqual(capturedAuthWarnings, [["OUTREACH_AUTH_INVALID"]]);
+  assert.deepEqual(capturedAuthErrors, []);
+  assert.doesNotMatch(JSON.stringify(capturedAuthWarnings), /sensitive-firebase-verifier-diagnostic/);
+
+  const verifierDiagnostic = "sensitive-firebase-outage-diagnostic";
+  admin.auth = () => ({
+    verifyIdToken: async () => { throw new Error(verifierDiagnostic); },
+  });
+  const verifierUnavailableResponse = mockResponse();
+  await handler({
+    method: "POST",
+    query: { action: "process-queue" },
+    headers: { authorization: "Bearer token-during-outage" },
+  }, verifierUnavailableResponse);
+  assert.equal(verifierUnavailableResponse.statusCode, 503);
+  assert.deepEqual(verifierUnavailableResponse.body, {
+    error: "Authentication service is temporarily unavailable.",
+  });
+  assert.equal(firestoreCalls, 0);
+  assert.deepEqual(capturedAuthErrors, [["OUTREACH_AUTH_UNAVAILABLE"]]);
+  assert.doesNotMatch(JSON.stringify(capturedAuthErrors), /sensitive-firebase-outage-diagnostic/);
+
+  capturedAuthErrors.length = 0;
+  const profileDiagnostic = "sensitive-firestore-profile-diagnostic";
+  admin.auth = () => ({
+    verifyIdToken: async () => ({ uid: "admin-1" }),
+  });
+  admin.firestore = () => {
+    firestoreCalls += 1;
+    throw new Error(profileDiagnostic);
+  };
+  const profileUnavailableResponse = mockResponse();
+  await handler({
+    method: "POST",
+    query: { action: "process-queue" },
+    headers: { authorization: "Bearer valid-token-during-database-outage" },
+  }, profileUnavailableResponse);
+  assert.equal(profileUnavailableResponse.statusCode, 503);
+  assert.deepEqual(profileUnavailableResponse.body, {
+    error: "Authorization service is temporarily unavailable.",
+  });
+  assert.equal(firestoreCalls, 1);
+  assert.deepEqual(capturedAuthErrors, [["OUTREACH_PROFILE_LOOKUP_FAILED"]]);
+  assert.doesNotMatch(JSON.stringify(capturedAuthErrors), /sensitive-firestore-profile-diagnostic/);
+
   console.error = originalConsoleError;
+  console.warn = originalConsoleWarn;
 
   process.env.CRON_SECRET = "test-cron-secret-with-at-least-thirty-two-characters";
   admin.auth = () => {
