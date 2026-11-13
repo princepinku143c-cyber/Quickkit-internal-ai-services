@@ -49,34 +49,39 @@ export default async function handler(req, res) {
     return sendError(res, 503, "Authentication service is temporarily unavailable.");
   }
 
+  let userData;
   try {
     const userSnapshot = await admin.firestore().collection("users").doc(decoded.uid).get();
-    const userData = userSnapshot.data() || {};
-    if (userData.role !== "admin") {
-      return sendError(res, 403, "Administrator access is required.");
-    }
+    userData = userSnapshot.data() || {};
+  } catch {
+    console.error("AEO_PROFILE_LOOKUP_FAILED");
+    return sendError(res, 503, "Authorization service is temporarily unavailable.");
+  }
+  if (userData.role !== "admin") {
+    return sendError(res, 403, "Administrator access is required.");
+  }
+
+  try {
     await checkRateLimit(admin, decoded.uid, "aeo-generate", 3);
-    const keyword = safeText(req.body.keyword, 180);
-    const context = safeText(req.body.context, 1200);
-    const count = Number(req.body.count === undefined ? 5 : req.body.count);
-    if (!keyword || !Number.isInteger(count) || count < 1 || count > 10) {
-      return sendError(res, 400, "Provide a keyword and a count from 1 to 10.");
+  } catch (error) {
+    if (error && error.status === 429) {
+      if (error.retryAfter) res.setHeader("Retry-After", String(error.retryAfter));
+      return sendError(res, 429, "AEO generation rate limit reached. Please retry later.");
     }
-    const generated = await generateAeoQaPairs({ keyword, count, context });
-    const record = {
-      userId: decoded.uid,
-      keyword,
-      context,
-      model: generated.model,
-      provider: "OpenCode Zen",
-      items: generated.items,
-      itemCount: generated.items.length,
-      status: "draft",
-      reviewRequired: true,
-      createdAt: new Date().toISOString()
-    };
-    const saved = await admin.firestore().collection("aeo_generations").add(record);
-    return res.status(200).json({ success: true, data: { id: saved.id, ...record } });
+    console.error("AEO_RATE_LIMIT_UNAVAILABLE");
+    return sendError(res, 503, "AEO generation is temporarily unavailable.");
+  }
+
+  const keyword = safeText(req.body.keyword, 180);
+  const context = safeText(req.body.context, 1200);
+  const count = Number(req.body.count === undefined ? 5 : req.body.count);
+  if (!keyword || !Number.isInteger(count) || count < 1 || count > 10) {
+    return sendError(res, 400, "Provide a keyword and a count from 1 to 10.");
+  }
+
+  let generated;
+  try {
+    generated = await generateAeoQaPairs({ keyword, count, context });
   } catch (error) {
     if (error && error.status === 429) {
       if (error.retryAfter) res.setHeader("Retry-After", String(error.retryAfter));
@@ -85,8 +90,27 @@ export default async function handler(req, res) {
     if (error && error.status === 503 && error.code === "OPENCODE_API_KEY_MISSING") {
       return sendError(res, 503, error.message, error.code);
     }
-    // Unknown provider/database exceptions can contain private diagnostics; expose only a generic failure.
-    console.error("AEO_GENERATION_FAILED");
+    console.error("AEO_PROVIDER_FAILED");
     return sendError(res, 502, "AEO generation failed. No draft was published.");
+  }
+
+  const record = {
+    userId: decoded.uid,
+    keyword,
+    context,
+    model: generated.model,
+    provider: "OpenCode Zen",
+    items: generated.items,
+    itemCount: generated.items.length,
+    status: "draft",
+    reviewRequired: true,
+    createdAt: new Date().toISOString()
+  };
+  try {
+    const saved = await admin.firestore().collection("aeo_generations").add(record);
+    return res.status(200).json({ success: true, data: { id: saved.id, ...record } });
+  } catch {
+    console.error("AEO_DRAFT_SAVE_FAILED");
+    return sendError(res, 503, "AEO draft could not be saved. Please retry.");
   }
 }
