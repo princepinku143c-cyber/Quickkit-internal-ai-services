@@ -4,6 +4,17 @@ import dns from "dns";
 import { createHash, timingSafeEqual } from "node:crypto";
 import { fetchSafeWebsiteHtml } from "../services/safeWebsiteFetch.js";
 
+const INVALID_ID_TOKEN_CODES = new Set([
+  "auth/argument-error",
+  "auth/invalid-id-token",
+  "auth/id-token-expired",
+  "auth/id-token-revoked",
+  "auth/invalid-user-token",
+  "auth/user-disabled",
+  "auth/user-not-found",
+  "auth/tenant-id-mismatch",
+]);
+
 // CORS Headers Configuration
 const setCorsHeaders = (res) => {
   // This endpoint uses explicit bearer/webhook secrets, not cookie credentials.
@@ -96,14 +107,24 @@ export default async function handler(req, res) {
       && matchesSecret(configuredCronSecret, bearerToken);
 
     if (authHeader.startsWith("Bearer ") && !isCron) {
+      let decodedToken;
       try {
-        const token = authHeader.slice(7);
-        const decodedToken = await admin.auth().verifyIdToken(token);
+        decodedToken = await admin.auth().verifyIdToken(bearerToken);
+      } catch (authError) {
+        if (INVALID_ID_TOKEN_CODES.has(authError?.code)) {
+          console.warn("OUTREACH_AUTH_INVALID");
+          return error(res, "Authentication failed.", 401);
+        }
+        console.error("OUTREACH_AUTH_UNAVAILABLE");
+        return error(res, "Authentication service is temporarily unavailable.", 503);
+      }
+
+      try {
         const userSnap = await admin.firestore().collection("users").doc(decodedToken.uid).get();
-        userData = userSnap.data();
+        userData = userSnap.data() || null;
       } catch {
-        // Token verifier diagnostics can contain sensitive project/auth details.
-        console.error("OUTREACH_AUTH_FAILED");
+        console.error("OUTREACH_PROFILE_LOOKUP_FAILED");
+        return error(res, "Authorization service is temporarily unavailable.", 503);
       }
     }
 
