@@ -31,6 +31,10 @@ assert.equal(firebaseAdminSource.includes("console.error(\"Firebase Admin initia
 
 const coreSource = readFileSync(new URL("../lib/firebaseCore.ts", import.meta.url), "utf8");
 assert.ok(coreSource.includes("isFirebaseConfigured = hasRequiredFirebaseClientConfig(firebaseConfig)"));
+assert.doesNotMatch(coreSource, /console\.error\([^;\n]*e\.message/);
+assert.doesNotMatch(coreSource, /console\.(?:log|info|warn|error)\([^;\n]*\bpayload\b/);
+assert.ok(coreSource.includes('console.error("Firebase client initialization failed.")'));
+assert.ok(coreSource.includes('console.info("[FIREBASE BRIDGE] Mock trigger invoked; payload omitted.")'));
 
 const productionExample = readFileSync(new URL("../.env.production.example", import.meta.url), "utf8");
 const developmentExample = readFileSync(new URL("../.env.example", import.meta.url), "utf8");
