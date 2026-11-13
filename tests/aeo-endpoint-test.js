@@ -266,7 +266,7 @@ try {
   });
   console.error = (...args) => capturedProviderErrors.push(args);
 
-  const draftSaveFailureResponse = mockResponse();
+  const providerFailureResponse = mockResponse();
   await handler({
     method: "POST",
     headers: { authorization: "Bearer admin-token" },
@@ -349,7 +349,7 @@ try {
   });
   console.error = (...args) => capturedErrors.push(args);
 
-  const providerFailureResponse = mockResponse();
+  const draftSaveFailureResponse = mockResponse();
   await handler({
     method: "POST",
     headers: { authorization: "Bearer admin-token" },
