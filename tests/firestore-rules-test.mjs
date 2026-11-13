@@ -129,14 +129,39 @@ try {
   await assertFails(getDoc(doc(spoofedAdminDb, "leads_outreach/outreach-1")));
 
 
-  // Users can read only their own profile and cannot self-create or self-promote.
+  // Users can read only their own profile and cannot self-create, self-promote,
+  // alter server-managed account fields, or delete their own identity record.
   await assertSucceeds(getDoc(doc(clientOneDb, "users/client-1")));
   await assertFails(getDoc(doc(clientOneDb, "users/client-2")));
   await assertFails(setDoc(doc(clientOneDb, "users/client-new"), { role: "client" }));
-  await assertFails(updateDoc(doc(clientOneDb, "users/client-1"), { role: "admin" }));
-  await assertFails(updateDoc(doc(clientOneDb, "users/client-1"), { credits: 999 }));
-  await assertFails(updateDoc(doc(clientOneDb, "users/client-1"), { tenantId: "tenant-victim" }));
-  await assertFails(updateDoc(doc(clientOneDb, "users/client-1"), { workspaceId: "workspace-victim" }));
+
+  const protectedProfileUpdates = [
+    ["uid", "attacker-uid"],
+    ["role", "admin"],
+    ["credits", 999],
+    ["plan", "enterprise"],
+    ["tier", "enterprise"],
+    ["status", "active"],
+    ["provider", "google"],
+    ["monthlyLimit", 999999],
+    ["admin", true],
+    ["isAdmin", true],
+    ["permissions", ["admin"]],
+    ["billingStatus", "paid"],
+    ["subscriptionId", "attacker-subscription"],
+    ["createdAt", "attacker-created-at"],
+    ["tenantId", "tenant-victim"],
+    ["workspaceId", "workspace-victim"],
+  ];
+
+  for (const [field, value] of protectedProfileUpdates) {
+    await assertFails(
+      updateDoc(doc(clientOneDb, "users/client-1"), { [field]: value })
+    );
+  }
+
+  await assertFails(deleteDoc(doc(clientOneDb, "users/client-1")));
+  await assertFails(deleteDoc(doc(adminDb, "users/admin-1")));
   await assertSucceeds(updateDoc(doc(clientOneDb, "users/client-1"), { operatorName: "Updated Name" }));
 
   // Collection queries must prove ownership for every possible result.
