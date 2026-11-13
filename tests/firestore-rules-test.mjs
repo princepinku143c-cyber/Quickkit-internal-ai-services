@@ -28,6 +28,7 @@ const testEnv = await initializeTestEnvironment({
 const anonymousDb = testEnv.unauthenticatedContext().firestore();
 const clientOneDb = testEnv.authenticatedContext("client-1").firestore();
 const spoofedAdminDb = testEnv.authenticatedContext("client-1", { role: "admin", admin: true }).firestore();
+const unprovisionedAdminClaimsDb = testEnv.authenticatedContext("unprovisioned-user", { role: "admin", admin: true }).firestore();
 const adminDb = testEnv.authenticatedContext("admin-1").firestore();
 
 try {
@@ -134,6 +135,12 @@ try {
   await assertSucceeds(getDoc(doc(clientOneDb, "users/client-1")));
   await assertFails(getDoc(doc(clientOneDb, "users/client-2")));
   await assertFails(setDoc(doc(clientOneDb, "users/client-new"), { role: "client" }));
+
+  // A new identity cannot bootstrap its own profile, even with forged admin custom claims.
+  // New profiles must be provisioned through the trusted Admin SDK endpoint.
+  await assertFails(setDoc(doc(unprovisionedAdminClaimsDb, "users/unprovisioned-user"), {
+    uid: "unprovisioned-user", role: "admin", admin: true, credits: 999, plan: "enterprise"
+  }));
 
   const protectedProfileUpdates = [
     ["uid", "attacker-uid"],
