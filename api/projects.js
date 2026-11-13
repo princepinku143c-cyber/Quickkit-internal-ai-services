@@ -84,17 +84,25 @@ async function handleCreateProject(req, res, userId) {
   const { projectName, packageId, price } = req.body || {};
 
   // 1. Strict Schema Validation
-  if (!projectName || projectName.length < 3) return error(res, "Invalid Project Name", 400);
-  if (!packageId) return error(res, "Engineering Package Missing", 400);
+  const normalizedProjectName = typeof projectName === "string" ? projectName.trim() : "";
+  const normalizedPackageId = typeof packageId === "string" ? packageId.trim() : "";
+  if (normalizedProjectName.length < 3) return error(res, "Invalid Project Name", 400);
+  if (!normalizedPackageId) return error(res, "Engineering Package Missing", 400);
 
-  const validPrice = Number(price);
-  if (isNaN(validPrice) || validPrice <= 0) return error(res, "Invalid Value Scoping", 400);
+  // Accept numeric values and non-empty numeric strings, but reject booleans,
+  // objects, NaN, and infinities before they reach Firestore.
+  const hasNumericPriceType = typeof price === "number"
+    || (typeof price === "string" && price.trim().length > 0);
+  const validPrice = hasNumericPriceType ? Number(price) : NaN;
+  if (!Number.isFinite(validPrice) || validPrice <= 0) {
+    return error(res, "Invalid Value Scoping", 400);
+  }
 
   // 2. Deterministic State Initialization
   const docRef = await admin.firestore().collection("projects").add({
     userId,
-    projectName,
-    packageId,
+    projectName: normalizedProjectName,
+    packageId: normalizedPackageId,
     price: validPrice,
     status: "PENDING_PAYMENT", // Default SaaS Starting State
     progress: 5,
