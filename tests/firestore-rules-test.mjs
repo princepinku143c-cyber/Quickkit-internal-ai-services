@@ -56,6 +56,8 @@ try {
       setDoc(doc(db, "users/client-1/aeo_generations/nested-server-seed"), { status: "draft" }),
       setDoc(doc(db, "users/client-1/settings/nested-server-seed"), { serverOnly: true }),
       setDoc(doc(db, "users/client-1/chat_history/nested-server-seed"), { messages: [] }),
+      setDoc(doc(db, "users/client-1/private/secret"), { ownerId: "client-1" }),
+      setDoc(doc(db, "users/client-2/private/secret"), { ownerId: "client-2" }),
     ]);
   });
 
@@ -235,6 +237,13 @@ try {
   await assertFails(setDoc(doc(clientOneDb, "leads_outreach/client-write"), { userId: "client-1" }));
   await assertSucceeds(getDoc(doc(adminDb, "leads_outreach/outreach-1")));
   await assertSucceeds(setDoc(doc(adminDb, "leads_outreach/admin-write"), { userId: "client-1" }));
+
+  // Collection-group queries must not bypass the default-deny policy for nested paths.
+  for (const db of [anonymousDb, clientOneDb, adminDb]) {
+    await assertFails(
+      getDocs(query(collectionGroup(db, "private"), where("ownerId", "==", "client-1")))
+    );
+  }
 
   // Unmatched collections and nested subcollections must remain default-deny,
   // including for authenticated users and admins. New collections require an
