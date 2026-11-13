@@ -29,7 +29,7 @@ try {
     console.warn("⚠️ Firebase client configuration is incomplete. Required fields: VITE_FIREBASE_API_KEY, VITE_FIREBASE_AUTH_DOMAIN, VITE_FIREBASE_PROJECT_ID, and VITE_FIREBASE_APP_ID. Running in limited mode.");
   }
 } catch (e: any) {
-  console.error("❌ Firebase Init Error:", e.message);
+  console.error("Firebase client initialization failed.");
 }
 
 export const auth = app ? getAuth(app) : ({ currentUser: null, onAuthStateChanged: () => {} } as any);
@@ -40,6 +40,6 @@ export const googleProvider = new GoogleAuthProvider();
  * In a real app, this would be: addDoc(collection(db, 'trigger_queue'), payload)
  */
 export const mockTriggerWorkflow = async (payload: any) => {
-  console.log("🔥 [FIREBASE BRIDGE] Written to 'trigger_queue':", payload);
+  console.info("[FIREBASE BRIDGE] Mock trigger invoked; payload omitted.");
   return new Promise((resolve) => setTimeout(resolve, 1000));
 };
