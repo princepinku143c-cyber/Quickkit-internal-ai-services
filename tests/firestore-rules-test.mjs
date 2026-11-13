@@ -236,6 +236,16 @@ try {
   await assertSucceeds(getDoc(doc(adminDb, "leads_outreach/outreach-1")));
   await assertSucceeds(setDoc(doc(adminDb, "leads_outreach/admin-write"), { userId: "client-1" }));
 
+  // Unmatched collections and nested subcollections must remain default-deny,
+  // including for authenticated users and admins. New collections require an
+  // explicit reviewed rule instead of inheriting accidental access.
+  for (const db of [anonymousDb, clientOneDb, adminDb]) {
+    await assertFails(getDoc(doc(db, "unregistered_collection/secret")));
+    await assertFails(getDocs(collection(db, "unregistered_collection")));
+    await assertFails(setDoc(doc(db, "unregistered_collection/client-write"), { userId: "client-1" }));
+    await assertFails(getDoc(doc(db, "users/client-1/private/secret")));
+  }
+
   console.log("Firestore Emulator rules tests passed: user-owned collections, server-only AEO/settings/chat collections, anonymous denial, and role/tenant spoofing checks.");
 } finally {
   await testEnv.cleanup();
