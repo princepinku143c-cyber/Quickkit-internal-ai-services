@@ -136,7 +136,7 @@ try {
   };
   admin.firestore = mockFirestore;
 
-  const createProject = async (price) => {
+  const createProject = async (price, extraBody = {}) => {
     const response = mockResponse();
     await handler({
       method: "POST",
@@ -146,6 +146,7 @@ try {
         projectName: "  Example project  ",
         packageId: "  starter  ",
         price,
+        ...extraBody,
       },
     }, response);
     return response;
@@ -169,7 +170,21 @@ try {
   assert.equal(projectWrites[0].projectName, "Example project");
   assert.equal(projectWrites[0].packageId, "starter");
   assert.equal(projectWrites[0].price, 1250.5);
+  assert.equal(projectWrites[0].userId, "client-1");
 
+  // Ownership must come from the verified Firebase token, never request-body fields.
+  const spoofedOwnerResponse = await createProject(250, {
+    userId: "client-2",
+    tenantId: "tenant-victim",
+    workspaceId: "workspace-victim",
+  });
+  assert.equal(spoofedOwnerResponse.statusCode, 200);
+  assert.equal(projectWrites.length, 2);
+  assert.equal(projectWrites[1].userId, "client-1");
+  assert.equal(Object.hasOwn(projectWrites[1], "tenantId"), false);
+  assert.equal(Object.hasOwn(projectWrites[1], "workspaceId"), false);
+
+  console.log("Project API security tests passed: verified-token ownership overrides body-supplied user, tenant, and workspace identifiers.");
   console.log("Project API security tests passed: authentication diagnostics are redacted and malformed/non-finite project quote values are rejected before persistence.");
   console.log("Project API security tests passed: invalid tokens return 401, Firebase verifier outages return 503, and auth/Firestore diagnostics stay redacted.");
 } finally {
