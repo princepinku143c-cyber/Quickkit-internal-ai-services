@@ -387,6 +387,7 @@ try {
   admin.auth = originalAuth;
   admin.firestore = originalFirestore;
   console.error = originalConsoleError;
+  console.warn = originalConsoleWarn;
   if (originalCronSecret === undefined) delete process.env.CRON_SECRET;
   else process.env.CRON_SECRET = originalCronSecret;
   if (originalTelegramWebhookSecret === undefined) delete process.env.TELEGRAM_WEBHOOK_SECRET;
