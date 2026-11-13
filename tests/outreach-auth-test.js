@@ -105,7 +105,9 @@ try {
   admin.auth = () => ({
     verifyIdToken: async () => {
       authCalls += 1;
-      throw new Error("No Firebase token should be accepted in this test.");
+      const invalidTokenError = new Error("No Firebase token should be accepted in this test.");
+      invalidTokenError.code = "auth/invalid-id-token";
+      throw invalidTokenError;
     },
   });
   admin.firestore = () => {
@@ -140,7 +142,7 @@ try {
     query: { action: "process-queue" },
     headers: { authorization: "Bearer short-secret", "x-vercel-cron": "1" },
   }, shortSecretResponse);
-  assert.equal(shortSecretResponse.statusCode, 403);
+  assert.equal(shortSecretResponse.statusCode, 401);
   assert.equal(firestoreCalls, 0);
 
   // Cron bearer secrets are compared through the same fixed-length digest path
@@ -154,7 +156,7 @@ try {
     query: { action: "process-queue" },
     headers: { authorization: `Bearer ${"x".repeat(cronSecretForComparison.length)}` },
   }, sameLengthWrongCronResponse);
-  assert.equal(sameLengthWrongCronResponse.statusCode, 403);
+  assert.equal(sameLengthWrongCronResponse.statusCode, 401);
   assert.equal(firestoreCalls, 0);
 
   process.env.CRON_SECRET = "x".repeat(257);
@@ -164,7 +166,7 @@ try {
     query: { action: "process-queue" },
     headers: { authorization: `Bearer ${"x".repeat(257)}` },
   }, oversizedCronResponse);
-  assert.equal(oversizedCronResponse.statusCode, 403);
+  assert.equal(oversizedCronResponse.statusCode, 401);
   assert.equal(firestoreCalls, 0);
 
   // Known invalid tokens are authentication failures; verifier outages are service failures.
