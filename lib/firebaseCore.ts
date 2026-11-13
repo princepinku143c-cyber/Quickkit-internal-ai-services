@@ -40,6 +40,6 @@ export const googleProvider = new GoogleAuthProvider();
  * In a real app, this would be: addDoc(collection(db, 'trigger_queue'), payload)
  */
 export const mockTriggerWorkflow = async (payload: any) => {
-  console.info("[FIREBASE BRIDGE] Mock trigger invoked; payload omitted.");
+  console.info("[FIREBASE BRIDGE] Mock trigger invoked.");
   return new Promise((resolve) => setTimeout(resolve, 1000));
 };
