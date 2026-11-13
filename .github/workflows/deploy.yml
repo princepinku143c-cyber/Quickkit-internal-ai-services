@@ -34,6 +34,8 @@ jobs:
         run: npx --yes firebase-tools@15.35.0 emulators:exec --only firestore --project demo-quickkit-firestore-rules --non-interactive "node tests/firestore-rules-test.mjs"
       - name: Firebase client configuration guard tests
         run: node tests/firebase-config-test.js
+      - name: Production Firebase build guard tests
+        run: npm run test:production-firebase-env
       - name: API route inventory regression tests
         run: npm run test:api-route-count
       - name: Vercel Hobby API entrypoint count guard
