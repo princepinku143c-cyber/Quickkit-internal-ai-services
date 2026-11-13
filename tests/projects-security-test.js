@@ -184,6 +184,76 @@ try {
   assert.equal(Object.hasOwn(projectWrites[1], "tenantId"), false);
   assert.equal(Object.hasOwn(projectWrites[1], "workspaceId"), false);
 
+  // Project and billing reads must be scoped to the verified Firebase UID,
+  // even when a caller supplies a different userId or tenantId query parameter.
+  const readCollections = [];
+  admin.auth = () => ({
+    verifyIdToken: async (token) => {
+      assert.equal(token, "valid-test-token");
+      return { uid: "client-1" };
+    },
+  });
+  admin.firestore = () => ({
+    collection: (name) => {
+      assert.ok(["projects", "payments"].includes(name));
+      let ownerFilterApplied = false;
+      let orderingApplied = false;
+      return {
+        where: (field, operator, value) => {
+          assert.equal(field, "userId");
+          assert.equal(operator, "==");
+          assert.equal(value, "client-1", "Read scope must come from the verified token, not query parameters");
+          ownerFilterApplied = true;
+          return this;
+        },
+        orderBy: (field, direction) => {
+          assert.equal(field, "createdAt");
+          assert.equal(direction, "desc");
+          orderingApplied = true;
+          return this;
+        },
+        get: async () => {
+          assert.equal(ownerFilterApplied, true, "A user ownership filter is required before reading");
+          assert.equal(orderingApplied, true, "Existing createdAt ordering must remain intact");
+          readCollections.push(name);
+          return {
+            docs: [{
+              id: `${name}-owned-by-client-1`,
+              data: () => ({ userId: "client-1", label: "owned" }),
+            }],
+          };
+        },
+      };
+    },
+  });
+
+  const listProjectsResponse = mockResponse();
+  await handler({
+    method: "GET",
+    headers: { authorization: "Bearer valid-test-token" },
+    query: { userId: "client-2", tenantId: "tenant-victim" },
+  }, listProjectsResponse);
+  assert.equal(listProjectsResponse.statusCode, 200);
+  assert.deepEqual(listProjectsResponse.body.data, [{
+    id: "projects-owned-by-client-1",
+    userId: "client-1",
+    label: "owned",
+  }]);
+
+  const listBillingResponse = mockResponse();
+  await handler({
+    method: "GET",
+    headers: { authorization: "Bearer valid-test-token" },
+    query: { action: "billing", userId: "client-2", tenantId: "tenant-victim" },
+  }, listBillingResponse);
+  assert.equal(listBillingResponse.statusCode, 200);
+  assert.deepEqual(listBillingResponse.body.data, [{
+    id: "payments-owned-by-client-1",
+    userId: "client-1",
+    label: "owned",
+  }]);
+  assert.deepEqual(readCollections, ["projects", "payments"]);
+
   console.log("Project API security tests passed: verified-token ownership overrides body-supplied user, tenant, and workspace identifiers.");
   console.log("Project API security tests passed: authentication diagnostics are redacted and malformed/non-finite project quote values are rejected before persistence.");
   console.log("Project API security tests passed: invalid tokens return 401, Firebase verifier outages return 503, and auth/Firestore diagnostics stay redacted.");
