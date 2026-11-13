@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
 import admin from "../api/_lib/firebaseAdmin.js";
-import handler from "../api/rank-tracker.js";
+import handler, { isQuickKitDomainUrl } from "../api/rank-tracker.js";
+
+assert.equal(isQuickKitDomainUrl("https://quickkitai.com/"), true);
+assert.equal(isQuickKitDomainUrl("https://www.quickkitai.com/ai-visibility"), true);
+assert.equal(isQuickKitDomainUrl("https://quickkitai.com.attacker.example/"), false);
+assert.equal(isQuickKitDomainUrl("https://attacker.example/quickkitai.com"), false);
+assert.equal(isQuickKitDomainUrl("https://quickkitai.com.evil/"), false);
+assert.equal(isQuickKitDomainUrl("ftp://quickkitai.com/file"), false);
+assert.equal(isQuickKitDomainUrl("https://user:pass@quickkitai.com/"), false);
+assert.equal(isQuickKitDomainUrl("not-a-url"), false);
 
 function mockResponse() {
   return {
@@ -193,8 +202,10 @@ try {
       ok: true,
       json: async () => ({
         results: [
-          { url: "https://example.com/other" },
-          { url: "https://quickkitai.com/ai-visibility" }
+          { url: "https://quickkitai.com.attacker.example/spoof" },
+          { url: "https://attacker.example/path/quickkitai.com" },
+          { url: "https://www.quickkitai.com/ai-visibility" },
+          { url: "https://quickkitai.com/" }
         ]
       })
     };
@@ -210,7 +221,7 @@ try {
   assert.equal(response.body.summary.total, 10);
   assert.equal(response.body.summary.found, 10);
   assert.equal(response.body.summary.errors, 0);
-  assert.equal(response.body.results[0].rank, 2);
+  assert.equal(response.body.results[0].rank, 3);
   assert.equal(response.headers["Cache-Control"], "no-store");
 
   response = mockResponse();
@@ -221,7 +232,7 @@ try {
   assert.equal(response.statusCode, 429);
   assert.equal(response.headers["Retry-After"] !== undefined, true);
 
-  console.log("Rank tracker tests passed: method/auth guards, admin-only access, missing-key fail-closed, rate limit, and result summary.");
+  console.log("Rank tracker tests passed: auth, rate limits, provider handling, exact host matching, and result summary.");
 } finally {
   globalThis.fetch = originalFetch;
   globalThis.setTimeout = originalSetTimeout;
