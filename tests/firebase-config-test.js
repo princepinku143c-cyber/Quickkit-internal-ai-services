@@ -34,7 +34,7 @@ assert.ok(coreSource.includes("isFirebaseConfigured = hasRequiredFirebaseClientC
 assert.doesNotMatch(coreSource, /console\.error\([^;\n]*e\.message/);
 assert.doesNotMatch(coreSource, /console\.(?:log|info|warn|error)\([^;\n]*\bpayload\b/);
 assert.ok(coreSource.includes('console.error("Firebase client initialization failed.")'));
-assert.ok(coreSource.includes('console.info("[FIREBASE BRIDGE] Mock trigger invoked; payload omitted.")'));
+assert.ok(coreSource.includes('console.info("[FIREBASE BRIDGE] Mock trigger invoked.")'));
 
 const productionExample = readFileSync(new URL("../.env.production.example", import.meta.url), "utf8");
 const developmentExample = readFileSync(new URL("../.env.example", import.meta.url), "utf8");
