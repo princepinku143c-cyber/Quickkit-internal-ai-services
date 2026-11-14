@@ -20,6 +20,11 @@ const INVALID_ID_TOKEN_CODES = new Set([
  * Handles: Kelly Architect, Agent Deployment, and VPS Execution.
  */
 export default async function handler(req, res) {
+  // Kelly may return user-specific AI output and credit-related outcomes.
+  // Prevent shared/intermediary caches from reusing responses across identities.
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("Vary", "Authorization");
+
   if (req.method === "OPTIONS") {
     res.setHeader("Allow", "POST, OPTIONS");
     return res.status(204).end();
