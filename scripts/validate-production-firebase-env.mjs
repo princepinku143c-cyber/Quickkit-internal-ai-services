@@ -24,6 +24,35 @@ if (process.env.VERCEL_ENV === "production") {
     process.exitCode = 1;
   }
 
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
+  if (
+    clientEmail
+    && !/^[^@\\s]+@[^@\\s]+\\.iam\\.gserviceaccount\\.com$/.test(clientEmail)
+  ) {
+    console.error(
+      "Production Firebase service account email format is invalid. "
+      + "FIREBASE_CLIENT_EMAIL must be a Google service-account address."
+    );
+    process.exitCode = 1;
+  }
+
+  // Firebase Admin accepts PKCS#8 PEM keys. Normalize Vercel's escaped newlines
+  // for validation, but never print or otherwise expose the key material.
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY
+    ?.replace(/\\\\n/g, "\\n")
+    .replace(/\\r\\n/g, "\\n")
+    .trim();
+  if (
+    privateKey
+    && !/^-----BEGIN PRIVATE KEY-----\\n[\\s\\S]+\\n-----END PRIVATE KEY-----$/.test(privateKey)
+  ) {
+    console.error(
+      "Production Firebase private key format is invalid. "
+      + "FIREBASE_PRIVATE_KEY must be a PKCS#8 PEM private key."
+    );
+    process.exitCode = 1;
+  }
+
   // The browser Firebase client and trusted Admin SDK must address the same
   // Firebase project. Report variable names only; never print configured IDs.
   const clientProjectId = process.env.VITE_FIREBASE_PROJECT_ID?.trim();
