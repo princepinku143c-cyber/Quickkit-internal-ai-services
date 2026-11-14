@@ -6,9 +6,16 @@ function mockResponse() {
   return {
     statusCode: 200,
     body: null,
+    headers: {},
+    setHeader(name, value) { this.headers[name] = value; return this; },
     status(code) { this.statusCode = code; return this; },
     json(value) { this.body = value; return this; },
   };
+}
+
+function assertPrivateNoStore(response) {
+  assert.equal(response.headers["Cache-Control"], "private, no-store");
+  assert.equal(response.headers.Vary, "Authorization");
 }
 
 const originalAuth = admin.auth;
@@ -40,6 +47,7 @@ try {
     query: {},
   }, authResponse);
 
+  assertPrivateNoStore(authResponse);
   assert.equal(authResponse.statusCode, 401);
   assert.deepEqual(authResponse.body, {
     success: false,
@@ -69,6 +77,7 @@ try {
     query: {},
   }, unavailableResponse);
 
+  assertPrivateNoStore(unavailableResponse);
   assert.equal(unavailableResponse.statusCode, 503);
   assert.deepEqual(unavailableResponse.body, {
     success: false,
@@ -103,6 +112,7 @@ try {
     query: {},
   }, databaseResponse);
 
+  assertPrivateNoStore(databaseResponse);
   assert.equal(databaseResponse.statusCode, 500);
   assert.deepEqual(databaseResponse.body, {
     success: false,
@@ -144,6 +154,7 @@ try {
       query: { action: "create" },
       body,
     }, response);
+    assertPrivateNoStore(response);
     return response;
   };
   const createProject = async (price, extraBody = {}) => submitProjectBody({
@@ -259,6 +270,7 @@ try {
     headers: { authorization: "Bearer valid-test-token" },
     query: { userId: "client-2", tenantId: "tenant-victim" },
   }, listProjectsResponse);
+  assertPrivateNoStore(listProjectsResponse);
   assert.equal(listProjectsResponse.statusCode, 200);
   assert.deepEqual(listProjectsResponse.body.data, [{
     id: "projects-owned-by-client-1",
@@ -272,6 +284,7 @@ try {
     headers: { authorization: "Bearer valid-test-token" },
     query: { action: "billing", userId: "client-2", tenantId: "tenant-victim" },
   }, listBillingResponse);
+  assertPrivateNoStore(listBillingResponse);
   assert.equal(listBillingResponse.statusCode, 200);
   assert.deepEqual(listBillingResponse.body.data, [{
     id: "payments-owned-by-client-1",
