@@ -375,4 +375,69 @@ try {
   console.error = originalConsoleError;
 }
 
+
+const originalAuthForMissingProvider = admin.auth;
+const originalFirestoreForMissingProvider = admin.firestore;
+const originalApiKeyForMissingProvider = process.env.OPENCODE_API_KEY;
+const originalConsoleErrorForMissingProvider = console.error;
+try {
+  delete process.env.OPENCODE_API_KEY;
+  let draftWriteAttempted = false;
+  const capturedMissingProviderErrors = [];
+  admin.auth = () => ({
+    verifyIdToken: async (token) => {
+      assert.equal(token, "admin-token");
+      return { uid: "admin-1" };
+    },
+  });
+  admin.firestore = () => ({
+    collection(name) {
+      if (name === "users") {
+        return { doc: () => ({ get: async () => ({ data: () => ({ role: "admin" }) }) }) };
+      }
+      if (name === "rate_limits") {
+        return { doc: () => ({ id: "rate-limit-missing-provider" }) };
+      }
+      if (name === "aeo_generations") {
+        return {
+          add: async () => {
+            draftWriteAttempted = true;
+            throw new Error("AEO draft write must not run without a provider key.");
+          },
+        };
+      }
+      throw new Error("Unexpected test collection.");
+    },
+    async runTransaction(callback) {
+      return callback({
+        get: async () => ({ data: () => ({ count: 0, firstCall: Date.now() }) }),
+        set: () => {},
+      });
+    },
+  });
+  console.error = (...args) => capturedMissingProviderErrors.push(args);
+
+  const missingProviderResponse = mockResponse();
+  await handler({
+    method: "POST",
+    headers: { authorization: "Bearer admin-token" },
+    body: { keyword: "Real estate CRM", count: 1 },
+  }, missingProviderResponse);
+
+  assert.equal(missingProviderResponse.statusCode, 503);
+  assert.deepEqual(missingProviderResponse.body, {
+    success: false,
+    error: "AEO generation is not configured.",
+    code: "OPENCODE_API_KEY_MISSING",
+  });
+  assert.equal(draftWriteAttempted, false, "AEO must not persist a draft when its provider credential is absent.");
+  assert.deepEqual(capturedMissingProviderErrors, [], "Expected configuration absence must not be logged as an unexpected provider failure.");
+} finally {
+  admin.auth = originalAuthForMissingProvider;
+  admin.firestore = originalFirestoreForMissingProvider;
+  if (originalApiKeyForMissingProvider === undefined) delete process.env.OPENCODE_API_KEY;
+  else process.env.OPENCODE_API_KEY = originalApiKeyForMissingProvider;
+  console.error = originalConsoleErrorForMissingProvider;
+}
+
 console.log("AEO endpoint tests passed: method/auth guards, admin role checks, Firebase profile/rate-limit outage classification, provider failures, draft persistence failures, and redacted diagnostics.");
