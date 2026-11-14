@@ -256,7 +256,7 @@ try {
           return {
             docs: [{
               id: `${name}-owned-by-client-1`,
-              data: () => ({ userId: "client-1", label: "owned" }),
+              data: () => ({ id: "forged-document-id", userId: "client-1", label: "owned" }),
             }],
           };
         },
@@ -292,6 +292,7 @@ try {
     label: "owned",
   }]);
   assert.deepEqual(readCollections, ["projects", "payments"]);
+  console.log("Project API integrity tests passed: canonical Firestore document IDs override stored id fields for project and payment responses.");
 
   console.log("Project API security tests passed: verified-token ownership overrides body-supplied user, tenant, and workspace identifiers.");
   console.log("Project API security tests passed: authentication diagnostics are redacted and malformed/non-finite project quote values are rejected before persistence.");
