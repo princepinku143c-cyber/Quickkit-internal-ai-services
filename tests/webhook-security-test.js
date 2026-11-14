@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import admin from "../api/_lib/firebaseAdmin.js";
 import leadSubmitHandler from "../api/lead-submit.js";
-import { matchesWebhookSecret } from "../api/webhook.js";
+import webhookHandler, { matchesWebhookSecret } from "../api/webhook.js";
 
 const webhookSource = readFileSync(new URL("../api/webhook.js", import.meta.url), "utf8");
 assert.match(webhookSource, /createHash\("sha256"\)/);
@@ -45,8 +45,25 @@ function mockResponse() {
     setHeader(name, value) { this.headers[name] = value; },
     status(code) { this.statusCode = code; return this; },
     json(value) { this.body = value; return this; },
+    end() { return this; },
   };
 }
+
+function assertPrivateNoStore(response) {
+  assert.equal(response.headers["Cache-Control"], "private, no-store");
+  assert.equal(response.headers.Vary, "X-Webhook-Secret");
+}
+
+// OPTIONS and rejected methods must also carry credential-scoped cache protections.
+const webhookPreflight = mockResponse();
+await webhookHandler({ method: "OPTIONS", headers: {} }, webhookPreflight);
+assert.equal(webhookPreflight.statusCode, 200);
+assertPrivateNoStore(webhookPreflight);
+
+const webhookMethodFailure = mockResponse();
+await webhookHandler({ method: "GET", headers: {} }, webhookMethodFailure);
+assert.equal(webhookMethodFailure.statusCode, 405);
+assertPrivateNoStore(webhookMethodFailure);
 
 // Webhook credentials are compared through fixed-length SHA-256 digests.
 // This keeps the comparison independent of the supplied/stored secret lengths.
