@@ -27,7 +27,7 @@ if (process.env.VERCEL_ENV === "production") {
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL?.trim();
   if (
     clientEmail
-    && !/^[^@\\s]+@[^@\\s]+\\.iam\\.gserviceaccount\\.com$/.test(clientEmail)
+    && !/^[^@\s]+@[^@\s]+\.iam\.gserviceaccount\.com$/.test(clientEmail)
   ) {
     console.error(
       "Production Firebase service account email format is invalid. "
@@ -39,12 +39,12 @@ if (process.env.VERCEL_ENV === "production") {
   // Firebase Admin accepts PKCS#8 PEM keys. Normalize Vercel's escaped newlines
   // for validation, but never print or otherwise expose the key material.
   const privateKey = process.env.FIREBASE_PRIVATE_KEY
-    ?.replace(/\\\\n/g, "\\n")
-    .replace(/\\r\\n/g, "\\n")
+    ?.replace(/\\n/g, "\n")
+    .replace(/\r\n/g, "\n")
     .trim();
   if (
     privateKey
-    && !/^-----BEGIN PRIVATE KEY-----\\n[\\s\\S]+\\n-----END PRIVATE KEY-----$/.test(privateKey)
+    && !/^-----BEGIN PRIVATE KEY-----\n[\s\S]+\n-----END PRIVATE KEY-----$/.test(privateKey)
   ) {
     console.error(
       "Production Firebase private key format is invalid. "
