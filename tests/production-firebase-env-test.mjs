@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { generateKeyPairSync } from "node:crypto";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
@@ -14,11 +15,23 @@ const required = [
   "FIREBASE_CLIENT_EMAIL",
   "FIREBASE_PRIVATE_KEY",
 ];
+const { privateKey: generatedPrivateKey } = generateKeyPairSync("rsa", {
+  modulusLength: 2048,
+  privateKeyEncoding: { type: "pkcs8", format: "pem" },
+  publicKeyEncoding: { type: "spki", format: "pem" },
+});
+const { privateKey: nonRsaPrivateKey } = generateKeyPairSync("ec", {
+  namedCurve: "prime256v1",
+  privateKeyEncoding: { type: "pkcs8", format: "pem" },
+  publicKeyEncoding: { type: "spki", format: "pem" },
+});
+
 const placeholders = {
   ...Object.fromEntries(required.map((name) => [name, "test-only-" + name])),
   FIREBASE_CLIENT_EMAIL: "firebase-adminsdk-test@test-firebase-project.iam.gserviceaccount.com",
   // Deliberately use escaped newlines to exercise Vercel environment normalization.
-  FIREBASE_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\\nTEST-ONLY-PRIVATE-KEY-MATERIAL\\n-----END PRIVATE KEY-----",
+  // Generate a disposable RSA PKCS#8 key for the test; never log or persist its material.
+  FIREBASE_PRIVATE_KEY: generatedPrivateKey.replace(/\n/g, "\\n"),
 };
 
 const matchingProjectConfig = {
@@ -75,6 +88,24 @@ const malformedPrivateKeyResult = runGuard({
 assert.equal(malformedPrivateKeyResult.status, 1);
 assert.match(malformedPrivateKeyResult.stderr, /FIREBASE_PRIVATE_KEY/);
 assert.doesNotMatch(malformedPrivateKeyResult.stderr, /not-a-pem-private-key/);
+
+const unparseablePemResult = runGuard({
+  ...matchingProjectConfig,
+  VERCEL_ENV: "production",
+  FIREBASE_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\nnot-base64!\n-----END PRIVATE KEY-----",
+});
+assert.equal(unparseablePemResult.status, 1);
+assert.match(unparseablePemResult.stderr, /FIREBASE_PRIVATE_KEY/);
+assert.doesNotMatch(unparseablePemResult.stderr, /not-base64/);
+
+const nonRsaPrivateKeyResult = runGuard({
+  ...matchingProjectConfig,
+  VERCEL_ENV: "production",
+  FIREBASE_PRIVATE_KEY: nonRsaPrivateKey,
+});
+assert.equal(nonRsaPrivateKeyResult.status, 1);
+assert.match(nonRsaPrivateKeyResult.stderr, /FIREBASE_PRIVATE_KEY/);
+assert.doesNotMatch(nonRsaPrivateKeyResult.stderr, /BEGIN PRIVATE KEY|END PRIVATE KEY/);
 
 const mismatchedProjectResult = runGuard({
   ...matchingProjectConfig,

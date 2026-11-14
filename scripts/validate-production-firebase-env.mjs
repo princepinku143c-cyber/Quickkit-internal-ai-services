@@ -1,3 +1,5 @@
+import { createPrivateKey } from "node:crypto";
+
 const requiredProductionFirebaseVariables = [
   "VITE_FIREBASE_API_KEY",
   "VITE_FIREBASE_AUTH_DOMAIN",
@@ -42,15 +44,31 @@ if (process.env.VERCEL_ENV === "production") {
     ?.replace(/\\n/g, "\n")
     .replace(/\r\n/g, "\n")
     .trim();
-  if (
-    privateKey
-    && !/^-----BEGIN PRIVATE KEY-----\n[\s\S]+\n-----END PRIVATE KEY-----$/.test(privateKey)
-  ) {
-    console.error(
-      "Production Firebase private key format is invalid. "
-      + "FIREBASE_PRIVATE_KEY must be a PKCS#8 PEM private key."
-    );
-    process.exitCode = 1;
+  if (privateKey) {
+    const hasPkcs8Envelope = /^-----BEGIN PRIVATE KEY-----\n[\s\S]+\n-----END PRIVATE KEY-----$/.test(privateKey);
+    if (!hasPkcs8Envelope) {
+      console.error(
+        "Production Firebase private key format is invalid. "
+        + "FIREBASE_PRIVATE_KEY must use a PKCS#8 PEM envelope."
+      );
+      process.exitCode = 1;
+    } else {
+      try {
+        // Parse locally to reject placeholder text, invalid base64, and unsupported
+        // key types. Never include parser diagnostics or key material in build logs.
+        const parsedKey = createPrivateKey(privateKey);
+        const modulusLength = parsedKey.asymmetricKeyDetails?.modulusLength;
+        if (parsedKey.asymmetricKeyType !== "rsa" || !Number.isInteger(modulusLength) || modulusLength < 2048) {
+          throw new Error("Unsupported service-account key type");
+        }
+      } catch {
+        console.error(
+          "Production Firebase private key is not a valid RSA PKCS#8 key of at least 2048 bits. "
+          + "FIREBASE_PRIVATE_KEY must contain a parseable service-account private key."
+        );
+        process.exitCode = 1;
+      }
+    }
   }
 
   // The browser Firebase client and trusted Admin SDK must address the same
