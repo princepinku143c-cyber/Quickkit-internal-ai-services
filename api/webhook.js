@@ -19,6 +19,10 @@ export function matchesWebhookSecret(expectedSecret, suppliedSecret) {
 }
 
 export default async function handler(req, res) {
+  // Webhook responses are credential-scoped and may contain lead/project identifiers.
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("Vary", "X-Webhook-Secret");
+
   // CORS configuration
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
