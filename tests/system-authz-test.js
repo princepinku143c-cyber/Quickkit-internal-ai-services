@@ -87,23 +87,83 @@ try {
   admin.auth = originalAuth;
   admin.firestore = originalFirestore;
 
-  // Firebase verifier diagnostics must never be returned to an API caller.
-  admin.auth = () => ({
-    verifyIdToken: async () => { throw new Error("sensitive verifier diagnostic"); },
-  });
-  admin.firestore = () => { throw new Error("Database must not be accessed after token rejection."); };
-  const invalidToken = mockResponse();
-  await handler({
-    method: "GET",
-    query: { action: "stats" },
-    headers: { authorization: "Bearer invalid-token" },
-  }, invalidToken);
-  assert.equal(invalidToken.statusCode, 401);
-  assert.deepEqual(invalidToken.body, { error: "Authentication failed." });
-  assert.doesNotMatch(JSON.stringify(invalidToken.body), /sensitive verifier diagnostic/);
+  // Invalid Firebase ID tokens return 401, while verifier/profile-store outages
+  // return 503. Diagnostics must stay out of both responses and application logs.
+  const originalAuthConsoleError = console.error;
+  const originalAuthConsoleWarn = console.warn;
+  const authErrors = [];
+  const authWarnings = [];
+  try {
+    console.error = (...args) => authErrors.push(args);
+    console.warn = (...args) => authWarnings.push(args);
 
-  admin.auth = originalAuth;
-  admin.firestore = originalFirestore;
+    admin.auth = () => ({
+      verifyIdToken: async () => {
+        const invalid = new Error("sensitive verifier diagnostic");
+        invalid.code = "auth/invalid-id-token";
+        throw invalid;
+      },
+    });
+    admin.firestore = () => { throw new Error("Database must not be accessed after token rejection."); };
+    const invalidToken = mockResponse();
+    await handler({
+      method: "GET",
+      query: { action: "stats" },
+      headers: { authorization: "Bearer invalid-token" },
+    }, invalidToken);
+    assert.equal(invalidToken.statusCode, 401);
+    assert.deepEqual(invalidToken.body, { error: "Authentication failed." });
+    assert.deepEqual(authWarnings, [["SYSTEM_API_AUTH_FAILED"]]);
+    assert.deepEqual(authErrors, []);
+    assert.doesNotMatch(JSON.stringify(invalidToken.body) + JSON.stringify(authWarnings), /sensitive verifier diagnostic/);
+
+    authWarnings.length = 0;
+    admin.auth = () => ({
+      verifyIdToken: async () => { throw new Error("sensitive Firebase verifier outage"); },
+    });
+    const verifierUnavailable = mockResponse();
+    await handler({
+      method: "GET",
+      query: { action: "stats" },
+      headers: { authorization: "Bearer test-id-token" },
+    }, verifierUnavailable);
+    assert.equal(verifierUnavailable.statusCode, 503);
+    assert.deepEqual(verifierUnavailable.body, { error: "Authentication service is temporarily unavailable." });
+    assert.deepEqual(authErrors, [["SYSTEM_API_AUTH_UNAVAILABLE"]]);
+    assert.deepEqual(authWarnings, []);
+    assert.doesNotMatch(JSON.stringify(verifierUnavailable.body) + JSON.stringify(authErrors), /sensitive Firebase verifier outage/);
+
+    authErrors.length = 0;
+    admin.auth = () => ({
+      verifyIdToken: async () => ({ uid: "profile-failure-user" }),
+    });
+    admin.firestore = () => ({
+      collection: (name) => {
+        assert.equal(name, "users");
+        return {
+          doc: (uid) => {
+            assert.equal(uid, "profile-failure-user");
+            return { get: async () => { throw new Error("private Firestore profile diagnostic"); } };
+          },
+        };
+      },
+    });
+    const profileUnavailable = mockResponse();
+    await handler({
+      method: "GET",
+      query: { action: "stats" },
+      headers: { authorization: "Bearer test-id-token" },
+    }, profileUnavailable);
+    assert.equal(profileUnavailable.statusCode, 503);
+    assert.deepEqual(profileUnavailable.body, { error: "Authorization service is temporarily unavailable." });
+    assert.deepEqual(authErrors, [["SYSTEM_API_PROFILE_LOOKUP_FAILED"]]);
+    assert.doesNotMatch(JSON.stringify(profileUnavailable.body) + JSON.stringify(authErrors), /private Firestore profile diagnostic/);
+  } finally {
+    console.error = originalAuthConsoleError;
+    console.warn = originalAuthConsoleWarn;
+    admin.auth = originalAuth;
+    admin.firestore = originalFirestore;
+  }
 
   // Aggregate lead/project counts must never be available to ordinary clients.
   setIdentity("client-1");
