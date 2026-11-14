@@ -25,6 +25,11 @@ function mockResponse() {
   };
 }
 
+function assertPrivateNoStore(response) {
+  assert.equal(response.headers["Cache-Control"], "private, no-store");
+  assert.equal(response.headers.Vary, "Authorization, X-Telegram-Bot-Api-Secret-Token");
+}
+
 const originalAuth = admin.auth;
 const originalFirestore = admin.firestore;
 const originalCronSecret = process.env.CRON_SECRET;
@@ -48,6 +53,7 @@ try {
     body: {},
   }, telegramHeaderResponse);
   assert.equal(telegramHeaderResponse.statusCode, 200);
+  assertPrivateNoStore(telegramHeaderResponse);
   assert.deepEqual(telegramHeaderResponse.body, { ok: true });
 
   const telegramQueryResponse = mockResponse();
@@ -58,6 +64,7 @@ try {
     body: {},
   }, telegramQueryResponse);
   assert.equal(telegramQueryResponse.statusCode, 403);
+  assertPrivateNoStore(telegramQueryResponse);
 
   const telegramWrongHeaderResponse = mockResponse();
   await handler({
@@ -122,6 +129,7 @@ try {
     headers: { "x-vercel-cron": "1" },
   }, getResponse);
   assert.equal(getResponse.statusCode, 405);
+  assertPrivateNoStore(getResponse);
   assert.equal(getResponse.headers.Allow, "POST, OPTIONS");
   assert.equal(getResponse.headers["Access-Control-Allow-Methods"], "POST, OPTIONS");
 
@@ -132,6 +140,7 @@ try {
     headers: { "x-vercel-cron": "1" },
   }, spoofedCronResponse);
   assert.equal(spoofedCronResponse.statusCode, 403);
+  assertPrivateNoStore(spoofedCronResponse);
   assert.equal(authCalls, 0);
   assert.equal(firestoreCalls, 0);
 
@@ -143,6 +152,7 @@ try {
     headers: { authorization: "Bearer short-secret", "x-vercel-cron": "1" },
   }, shortSecretResponse);
   assert.equal(shortSecretResponse.statusCode, 401);
+  assertPrivateNoStore(shortSecretResponse);
   assert.equal(firestoreCalls, 0);
 
   // Cron bearer secrets are compared through the same fixed-length digest path
@@ -157,6 +167,7 @@ try {
     headers: { authorization: `Bearer ${"x".repeat(cronSecretForComparison.length)}` },
   }, sameLengthWrongCronResponse);
   assert.equal(sameLengthWrongCronResponse.statusCode, 401);
+  assertPrivateNoStore(sameLengthWrongCronResponse);
   assert.equal(firestoreCalls, 0);
 
   process.env.CRON_SECRET = "x".repeat(257);
@@ -167,6 +178,7 @@ try {
     headers: { authorization: `Bearer ${"x".repeat(257)}` },
   }, oversizedCronResponse);
   assert.equal(oversizedCronResponse.statusCode, 401);
+  assertPrivateNoStore(oversizedCronResponse);
   assert.equal(firestoreCalls, 0);
 
   // Known invalid tokens are authentication failures; verifier outages are service failures.
@@ -188,6 +200,7 @@ try {
     headers: { authorization: "Bearer invalid-token" },
   }, invalidTokenResponse);
   assert.equal(invalidTokenResponse.statusCode, 401);
+  assertPrivateNoStore(invalidTokenResponse);
   assert.deepEqual(invalidTokenResponse.body, { error: "Authentication failed." });
   assert.equal(firestoreCalls, 0);
   assert.deepEqual(capturedAuthWarnings, [["OUTREACH_AUTH_INVALID"]]);
@@ -205,6 +218,7 @@ try {
     headers: { authorization: "Bearer token-during-outage" },
   }, verifierUnavailableResponse);
   assert.equal(verifierUnavailableResponse.statusCode, 503);
+  assertPrivateNoStore(verifierUnavailableResponse);
   assert.deepEqual(verifierUnavailableResponse.body, {
     error: "Authentication service is temporarily unavailable.",
   });
@@ -228,6 +242,7 @@ try {
     headers: { authorization: "Bearer valid-token-during-database-outage" },
   }, profileUnavailableResponse);
   assert.equal(profileUnavailableResponse.statusCode, 503);
+  assertPrivateNoStore(profileUnavailableResponse);
   assert.deepEqual(profileUnavailableResponse.body, {
     error: "Authorization service is temporarily unavailable.",
   });
