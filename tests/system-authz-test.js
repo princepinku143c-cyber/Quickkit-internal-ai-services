@@ -18,6 +18,14 @@ function mockResponse() {
   };
 }
 
+// AI responses can be personalized and may depend on the bearer identity.
+// Assert cache protections are present before any method/auth handling.
+const aiOptionsCacheResponse = mockResponse();
+await aiHandler({ method: "OPTIONS", query: {}, headers: {} }, aiOptionsCacheResponse);
+assert.equal(aiOptionsCacheResponse.statusCode, 204);
+assert.equal(aiOptionsCacheResponse.headers["Cache-Control"], "private, no-store");
+assert.equal(aiOptionsCacheResponse.headers.Vary, "Authorization");
+
 const originalAuth = admin.auth;
 const originalFirestore = admin.firestore;
 const originalCreateTransport = nodemailer.createTransport;
