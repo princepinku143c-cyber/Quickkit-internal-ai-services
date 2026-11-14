@@ -144,6 +144,18 @@ try {
     uid: "unprovisioned-user", role: "admin", admin: true, credits: 999, plan: "enterprise"
   }));
 
+  // Forged admin claims without a server-provisioned profile must not authorize
+  // privileged collection access or writes.
+  await Promise.all([
+    assertFails(setDoc(doc(unprovisionedAdminClaimsDb, "leads/unprovisioned-admin-lead"), {
+      userId: "client-1", name: "Must remain denied"
+    })),
+    assertFails(setDoc(doc(unprovisionedAdminClaimsDb, "projects/unprovisioned-admin-project"), {
+      userId: "client-1", name: "Must remain denied"
+    })),
+    assertFails(getDoc(doc(unprovisionedAdminClaimsDb, "leads_outreach/outreach-1"))),
+  ]);
+
   const protectedProfileUpdates = [
     ["uid", "attacker-uid"],
     ["role", "admin"],
