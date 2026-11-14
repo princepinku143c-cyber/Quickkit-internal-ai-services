@@ -14,9 +14,13 @@ const required = [
   "FIREBASE_CLIENT_EMAIL",
   "FIREBASE_PRIVATE_KEY",
 ];
-const placeholders = Object.fromEntries(
-  required.map((name) => [name, `test-only-${name}`])
-);
+const placeholders = {
+  ...Object.fromEntries(required.map((name) => [name, \`test-only-\${name}\`])),
+  FIREBASE_CLIENT_EMAIL: "firebase-adminsdk-test@test-firebase-project.iam.gserviceaccount.com",
+  // Deliberately use escaped newlines to exercise Vercel environment normalization.
+  FIREBASE_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\\nTEST-ONLY-PRIVATE-KEY-MATERIAL\\n-----END PRIVATE KEY-----",
+};
+
 const matchingProjectConfig = {
   ...placeholders,
   VITE_FIREBASE_PROJECT_ID: "test-firebase-project",
@@ -45,7 +49,7 @@ const missingResult = runGuard({
 assert.equal(missingResult.status, 1);
 assert.match(missingResult.stderr, /VITE_FIREBASE_AUTH_DOMAIN/);
 assert.match(missingResult.stderr, /FIREBASE_PRIVATE_KEY/);
-assert.doesNotMatch(missingResult.stderr, /test-only-/);
+assert.doesNotMatch(missingResult.stderr, /test-only-|PRIVATE-KEY-MATERIAL/);
 
 const completeResult = runGuard({
   ...matchingProjectConfig,
@@ -53,6 +57,24 @@ const completeResult = runGuard({
 });
 assert.equal(completeResult.status, 0, completeResult.stderr);
 assert.equal(completeResult.stderr, "");
+
+const malformedEmailResult = runGuard({
+  ...matchingProjectConfig,
+  VERCEL_ENV: "production",
+  FIREBASE_CLIENT_EMAIL: "not-a-service-account",
+});
+assert.equal(malformedEmailResult.status, 1);
+assert.match(malformedEmailResult.stderr, /FIREBASE_CLIENT_EMAIL/);
+assert.doesNotMatch(malformedEmailResult.stderr, /not-a-service-account/);
+
+const malformedPrivateKeyResult = runGuard({
+  ...matchingProjectConfig,
+  VERCEL_ENV: "production",
+  FIREBASE_PRIVATE_KEY: "not-a-pem-private-key",
+});
+assert.equal(malformedPrivateKeyResult.status, 1);
+assert.match(malformedPrivateKeyResult.stderr, /FIREBASE_PRIVATE_KEY/);
+assert.doesNotMatch(malformedPrivateKeyResult.stderr, /not-a-pem-private-key/);
 
 const mismatchedProjectResult = runGuard({
   ...matchingProjectConfig,
@@ -65,7 +87,7 @@ assert.match(mismatchedProjectResult.stderr, /VITE_FIREBASE_PROJECT_ID/);
 assert.match(mismatchedProjectResult.stderr, /FIREBASE_PROJECT_ID/);
 assert.doesNotMatch(
   mismatchedProjectResult.stderr,
-  /test-firebase-project|different-test-firebase-project/
+  /test-firebase-project|different-test-firebase-project|PRIVATE-KEY-MATERIAL/
 );
 
-console.log("Production Firebase build guard tests passed: preview builds remain unaffected, incomplete or cross-project production configuration fails closed, and diagnostics contain variable names only.");
+console.log("Production Firebase build guard tests passed: preview builds remain unaffected; missing, malformed, or cross-project production configuration fails closed; escaped PEM newlines are normalized; diagnostics contain variable names only.");
