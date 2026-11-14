@@ -136,21 +136,47 @@ try {
   };
   admin.firestore = mockFirestore;
 
-  const createProject = async (price, extraBody = {}) => {
+  const submitProjectBody = async (body) => {
     const response = mockResponse();
     await handler({
       method: "POST",
       headers: { authorization: "Bearer valid-test-token" },
       query: { action: "create" },
-      body: {
-        projectName: "  Example project  ",
-        packageId: "  starter  ",
-        price,
-        ...extraBody,
-      },
+      body,
     }, response);
     return response;
   };
+  const createProject = async (price, extraBody = {}) => submitProjectBody({
+    projectName: "  Example project  ",
+    packageId: "  starter  ",
+    price,
+    ...extraBody,
+  });
+
+  // Malformed and oversized payloads are rejected before any Firestore write.
+  for (const body of [null, [], "not-an-object"]) {
+    const response = await submitProjectBody(body);
+    assert.equal(response.statusCode, 400);
+    assert.equal(response.body.message, "Invalid or oversized request payload");
+  }
+  const oversizedPayloadResponse = await submitProjectBody({
+    projectName: "Example project",
+    packageId: "starter",
+    price: 1250,
+    notes: "x".repeat(16 * 1024),
+  });
+  assert.equal(oversizedPayloadResponse.statusCode, 400);
+  assert.equal(oversizedPayloadResponse.body.message, "Invalid or oversized request payload");
+  assert.equal(projectWrites.length, 0);
+
+  // Project and package identifiers have explicit storage bounds.
+  const longProjectNameResponse = await createProject(1250, { projectName: "x".repeat(121) });
+  assert.equal(longProjectNameResponse.statusCode, 400);
+  assert.equal(longProjectNameResponse.body.message, "Invalid Project Name");
+  const longPackageIdResponse = await createProject(1250, { packageId: "x".repeat(129) });
+  assert.equal(longPackageIdResponse.statusCode, 400);
+  assert.equal(longPackageIdResponse.body.message, "Engineering Package Missing");
+  assert.equal(projectWrites.length, 0);
 
   for (const invalidPrice of [Infinity, -Infinity, "1e309", "Infinity", "NaN", "", true, false, null, {}, [], 0, -1]) {
     const response = await createProject(invalidPrice);
