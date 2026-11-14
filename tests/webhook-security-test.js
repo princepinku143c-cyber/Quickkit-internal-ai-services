@@ -54,6 +54,10 @@ function assertPrivateNoStore(response) {
   assert.equal(response.headers.Vary, "X-Webhook-Secret");
 }
 
+function assertNoStore(response) {
+  assert.equal(response.headers["Cache-Control"], "private, no-store");
+}
+
 // OPTIONS and rejected methods must also carry credential-scoped cache protections.
 const webhookPreflight = mockResponse();
 await webhookHandler({ method: "OPTIONS", headers: {} }, webhookPreflight);
@@ -64,6 +68,17 @@ const webhookMethodFailure = mockResponse();
 await webhookHandler({ method: "GET", headers: {} }, webhookMethodFailure);
 assert.equal(webhookMethodFailure.statusCode, 405);
 assertPrivateNoStore(webhookMethodFailure);
+
+// Public lead intake contains contact details; OPTIONS, rejected methods, and failures must not be cached.
+const leadSubmitPreflight = mockResponse();
+await leadSubmitHandler({ method: "OPTIONS", headers: {} }, leadSubmitPreflight);
+assert.equal(leadSubmitPreflight.statusCode, 204);
+assertNoStore(leadSubmitPreflight);
+
+const leadSubmitMethodFailure = mockResponse();
+await leadSubmitHandler({ method: "GET", headers: {} }, leadSubmitMethodFailure);
+assert.equal(leadSubmitMethodFailure.statusCode, 405);
+assertNoStore(leadSubmitMethodFailure);
 
 // Webhook credentials are compared through fixed-length SHA-256 digests.
 // This keeps the comparison independent of the supplied/stored secret lengths.
@@ -126,6 +141,7 @@ try {
   }, response);
 
   assert.equal(response.statusCode, 500);
+  assertNoStore(response);
   assert.deepEqual(response.body, {
     error: "Unable to submit the request right now. Please try again or contact admin@quickkitai.com.",
   });
