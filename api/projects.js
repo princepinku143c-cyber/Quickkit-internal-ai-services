@@ -18,6 +18,10 @@ const INVALID_ID_TOKEN_CODES = new Set([
  * Enforces strict input schemas and deterministic default states.
  */
 export default async function handler(req, res) {
+  // Project and billing responses contain user-scoped records; never cache them.
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("Vary", "Authorization");
+
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
     return error(res, "UNAUTHORIZED: Operator Token Required", 401);
