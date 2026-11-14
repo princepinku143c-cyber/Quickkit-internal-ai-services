@@ -9,6 +9,11 @@ import { buildProposalEmail } from "../services/proposalEmail.js";
  * Only a verified administrator may send a proposal to a validated recipient.
  */
 export default async function handler(req, res) {
+  // Proposal delivery is administrator-only and contains recipient/quote data.
+  // Prevent shared caches from replaying a response across authenticated users.
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("Vary", "Authorization");
+
   if (req.method !== "POST") return error(res, "Method Not Allowed", 405);
 
   const authHeader = typeof req.headers?.authorization === "string"
