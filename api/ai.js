@@ -2,13 +2,29 @@ import admin from "./_lib/firebaseAdmin.js";
 import { success, error } from "./_lib/response.js";
 import { checkRateLimit } from "./_lib/security.js";
 import { getClientIp, isPlainObject, safeText } from "./_lib/input.js";
-import { askAI } from "./services/aiService.js";
+import { askAI } from "../services/aiService.js";
+
+const INVALID_ID_TOKEN_CODES = new Set([
+  "auth/argument-error",
+  "auth/invalid-id-token",
+  "auth/id-token-expired",
+  "auth/id-token-revoked",
+  "auth/invalid-user-token",
+  "auth/user-disabled",
+  "auth/user-not-found",
+  "auth/tenant-id-mismatch",
+]);
 
 /**
  * Unified AI Intelligence & Execution Cluster.
  * Handles: Kelly Architect, Agent Deployment, and VPS Execution.
  */
 export default async function handler(req, res) {
+  // Kelly may return user-specific AI output and credit-related outcomes.
+  // Prevent shared/intermediary caches from reusing responses across identities.
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("Vary", "Authorization");
+
   if (req.method === "OPTIONS") {
     res.setHeader("Allow", "POST, OPTIONS");
     return res.status(204).end();
@@ -29,9 +45,20 @@ export default async function handler(req, res) {
     let decodedToken = null;
 
     if (authHeader && authHeader.startsWith("Bearer ")) {
-      const idToken = authHeader.split('Bearer ')[1];
-      decodedToken = await admin.auth().verifyIdToken(idToken);
-      userId = decodedToken.uid;
+      const idToken = authHeader.slice("Bearer ".length);
+      try {
+        decodedToken = await admin.auth().verifyIdToken(idToken);
+        userId = decodedToken.uid;
+      } catch (authError) {
+        if (INVALID_ID_TOKEN_CODES.has(authError?.code)) {
+          console.warn("AI_CLUSTER_AUTH_FAILED");
+          return error(res, "Authentication failed.", 401);
+        }
+        // Missing or unavailable Firebase Admin configuration is a service failure,
+        // not proof that the caller supplied an invalid token.
+        console.error("AI_CLUSTER_AUTH_UNAVAILABLE");
+        return error(res, "Authentication service is temporarily unavailable.", 503);
+      }
     }
 
     if (action === 'kelly') return handleKelly(req, res, userId);
@@ -45,9 +72,10 @@ export default async function handler(req, res) {
     if (action === 'vps-test') return handleVPSTest(req, res, userId);
 
     return error(res, "Action Not Allowed", 400);
-  } catch (err) {
-    console.error("AI_CLUSTER_CRASH:", err);
-    return error(res, "Identity Verification Failure", 403);
+  } catch {
+    // Unexpected routing failures are service errors; never expose internal diagnostics.
+    console.error("AI_CLUSTER_UNAVAILABLE");
+    return error(res, "AI service is temporarily unavailable.", 503);
   }
 }
 
@@ -101,8 +129,18 @@ async function handleKelly(req, res, userId) {
     const reply = await askAI(messages);
     return success(res, { reply });
   } catch (e) {
-    console.error("KELLY_ERROR:", e);
-    return error(res, e.message, e.status || 500);
+    const status = e?.status === 429 ? 429 : e?.status === 503 ? 503 : 500;
+    if (status === 429 && Number.isFinite(e?.retryAfter)) {
+      res.setHeader("Retry-After", String(e.retryAfter));
+    }
+    const message = status === 429
+      ? "Rate limit exceeded. Please try again shortly."
+      : status === 503
+        ? "AI service is temporarily unavailable."
+        : "Unable to process your request right now.";
+    // Keep diagnostics out of API responses and logs; retain only the safe status.
+    console.error("KELLY_ERROR", { status });
+    return error(res, message, status);
   }
 }
 

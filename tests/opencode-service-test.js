@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { generateAeoQaPairs, parseAeoQaPairs } from "../api/services/opencodeService.js";
+import { generateAeoQaPairs, parseAeoQaPairs } from "../services/opencodeService.js";
 
 const originalFetch = globalThis.fetch;
 const originalKey = process.env.OPENCODE_API_KEY;

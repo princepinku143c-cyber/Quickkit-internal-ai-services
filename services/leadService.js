@@ -1,4 +1,4 @@
-import admin from '../_lib/firebaseAdmin.js';
+import admin from '../api/_lib/firebaseAdmin.js';
 
 /**
  * Hardened Lead Transmission Service.

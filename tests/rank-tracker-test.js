@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
 import admin from "../api/_lib/firebaseAdmin.js";
-import handler from "../api/rank-tracker.js";
+import handler, { isQuickKitDomainUrl } from "../api/rank-tracker.js";
+
+assert.equal(isQuickKitDomainUrl("https://quickkitai.com/"), true);
+assert.equal(isQuickKitDomainUrl("https://www.quickkitai.com/ai-visibility"), true);
+assert.equal(isQuickKitDomainUrl("https://quickkitai.com.attacker.example/"), false);
+assert.equal(isQuickKitDomainUrl("https://attacker.example/quickkitai.com"), false);
+assert.equal(isQuickKitDomainUrl("https://quickkitai.com.evil/"), false);
+assert.equal(isQuickKitDomainUrl("ftp://quickkitai.com/file"), false);
+assert.equal(isQuickKitDomainUrl("https://user:pass@quickkitai.com/"), false);
+assert.equal(isQuickKitDomainUrl("not-a-url"), false);
 
 function mockResponse() {
   return {
@@ -20,6 +29,10 @@ const originalSetTimeout = globalThis.setTimeout;
 const originalKey = process.env.TAVILY_API_KEY;
 const originalAuth = admin.auth;
 const originalFirestore = admin.firestore;
+const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
+const capturedErrors = [];
+const capturedWarnings = [];
 
 try {
   let response = mockResponse();
@@ -56,6 +69,90 @@ try {
     headers: { authorization: "Bearer valid-client-token" },
   }, response);
   assert.equal(response.statusCode, 403);
+
+  // A stale server-signed admin claim must not override a demoted Firestore role.
+  admin.auth = () => ({
+    verifyIdToken: async (token) => {
+      assert.equal(token, "stale-admin-claim-token");
+      return { uid: "ordinary-client", admin: true };
+    },
+  });
+  response = mockResponse();
+  await handler({
+    method: "GET",
+    headers: { authorization: "Bearer stale-admin-claim-token" },
+  }, response);
+  assert.equal(response.statusCode, 403);
+
+  // Known invalid/expired ID tokens are client authentication failures (401).
+  console.warn = (...args) => { capturedWarnings.push(args); };
+  const invalidTokenDiagnostic = "sensitive-expired-token-diagnostic";
+  const invalidTokenError = new Error(invalidTokenDiagnostic);
+  invalidTokenError.code = "auth/id-token-expired";
+  admin.auth = () => ({
+    verifyIdToken: async () => { throw invalidTokenError; },
+  });
+  response = mockResponse();
+  await handler({
+    method: "GET",
+    headers: { authorization: "Bearer expired-test-token" },
+  }, response);
+  assert.equal(response.statusCode, 401);
+  assert.equal(response.body.error, "Authentication failed.");
+  assert.deepEqual(capturedWarnings, [["RANK_TRACKER_AUTH_INVALID"]]);
+  assert.equal(capturedErrors.length, 0);
+  assert.equal(capturedWarnings.flat().join(" ").includes(invalidTokenDiagnostic), false);
+  assert.equal(JSON.stringify(response.body).includes(invalidTokenDiagnostic), false);
+  capturedWarnings.length = 0;
+
+  // Firebase verifier outages remain generic 503 responses; diagnostics are redacted.
+  console.error = (...args) => { capturedErrors.push(args); };
+  const authDiagnostic = "sensitive-firebase-auth-diagnostic";
+  admin.auth = () => ({
+    verifyIdToken: async () => { throw new Error(authDiagnostic); },
+  });
+  response = mockResponse();
+  await handler({
+    method: "GET",
+    headers: { authorization: "Bearer invalid-token" },
+  }, response);
+  assert.equal(response.statusCode, 503);
+  assert.equal(response.body.error, "Rank tracking authorization is temporarily unavailable.");
+  assert.equal(capturedErrors.flat().join(" ").includes(authDiagnostic), false);
+  assert.equal(capturedErrors.some(args => args[0] === "RANK_TRACKER_AUTH_FAILED"), true);
+
+  // Firestore rate-limit backend diagnostics must also remain out of logs.
+  capturedErrors.length = 0;
+  const limiterDiagnostic = "sensitive-firestore-limiter-diagnostic";
+  const failingRateLimitDb = {
+    collection(name) {
+      if (name === "users") {
+        return {
+          doc: () => ({ get: async () => ({ data: () => ({ role: "admin" }) }) }),
+        };
+      }
+      assert.equal(name, "rate_limits");
+      return { doc: () => ({}) };
+    },
+    async runTransaction() {
+      throw new Error(limiterDiagnostic);
+    },
+  };
+  admin.auth = () => ({
+    verifyIdToken: async () => ({ uid: "admin-user", admin: false }),
+  });
+  admin.firestore = () => failingRateLimitDb;
+  response = mockResponse();
+  await handler({
+    method: "GET",
+    headers: { authorization: "Bearer valid-admin-token" },
+  }, response);
+  assert.equal(response.statusCode, 503);
+  assert.equal(response.body.error, "Rank tracking authorization is temporarily unavailable.");
+  assert.equal(capturedErrors.flat().join(" ").includes(limiterDiagnostic), false);
+  assert.equal(capturedErrors.some(args => args[0] === "RATE_LIMIT_UNAVAILABLE"), true);
+  assert.equal(capturedErrors.some(args => args[0] === "RANK_TRACKER_AUTH_FAILED"), true);
+  console.error = originalConsoleError;
 
   let rateLimitCount = 0;
   const fakeDb = {
@@ -105,8 +202,10 @@ try {
       ok: true,
       json: async () => ({
         results: [
-          { url: "https://example.com/other" },
-          { url: "https://quickkitai.com/ai-visibility" }
+          { url: "https://quickkitai.com.attacker.example/spoof" },
+          { url: "https://attacker.example/path/quickkitai.com" },
+          { url: "https://www.quickkitai.com/ai-visibility" },
+          { url: "https://quickkitai.com/" }
         ]
       })
     };
@@ -122,7 +221,7 @@ try {
   assert.equal(response.body.summary.total, 10);
   assert.equal(response.body.summary.found, 10);
   assert.equal(response.body.summary.errors, 0);
-  assert.equal(response.body.results[0].rank, 2);
+  assert.equal(response.body.results[0].rank, 3);
   assert.equal(response.headers["Cache-Control"], "no-store");
 
   response = mockResponse();
@@ -133,12 +232,14 @@ try {
   assert.equal(response.statusCode, 429);
   assert.equal(response.headers["Retry-After"] !== undefined, true);
 
-  console.log("Rank tracker tests passed: method/auth guards, admin-only access, missing-key fail-closed, rate limit, and result summary.");
+  console.log("Rank tracker tests passed: auth, rate limits, provider handling, exact host matching, and result summary.");
 } finally {
   globalThis.fetch = originalFetch;
   globalThis.setTimeout = originalSetTimeout;
   admin.auth = originalAuth;
   admin.firestore = originalFirestore;
+  console.error = originalConsoleError;
+  console.warn = originalConsoleWarn;
   if (originalKey === undefined) delete process.env.TAVILY_API_KEY;
   else process.env.TAVILY_API_KEY = originalKey;
 }

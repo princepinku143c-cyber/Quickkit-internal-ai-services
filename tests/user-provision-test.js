@@ -17,6 +17,8 @@ function mockResponse() {
 
 const originalAuth = admin.auth;
 const originalFirestore = admin.firestore;
+const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
 
 try {
   const getResponse = mockResponse();
@@ -34,6 +36,83 @@ try {
   await handler({ method: "POST", headers: {}, body: {} }, unauthenticatedResponse);
   assert.equal(unauthenticatedResponse.statusCode, 401);
   assert.equal(unauthenticatedResponse.body.success, false);
+
+  const capturedErrors = [];
+  const capturedWarnings = [];
+  console.error = (...args) => capturedErrors.push(args);
+  console.warn = (...args) => capturedWarnings.push(args);
+
+  // Known invalid/expired ID tokens are client authentication failures (401).
+  const invalidTokenDiagnostic = "private Firebase invalid-token diagnostic";
+  const invalidTokenError = new Error(invalidTokenDiagnostic);
+  invalidTokenError.code = "auth/id-token-expired";
+  admin.auth = () => ({
+    verifyIdToken: async (token) => {
+      assert.equal(token, "expired-test-token");
+      throw invalidTokenError;
+    },
+  });
+
+  const invalidTokenResponse = mockResponse();
+  await handler({
+    method: "POST",
+    headers: { authorization: "Bearer expired-test-token" },
+    body: {},
+  }, invalidTokenResponse);
+  assert.equal(invalidTokenResponse.statusCode, 401);
+  assert.deepEqual(invalidTokenResponse.body, {
+    success: false,
+    error: "Authentication failed.",
+  });
+  assert.deepEqual(capturedWarnings, [["USER_PROVISION_AUTH_FAILED"]]);
+  assert.deepEqual(capturedErrors, []);
+  assert.equal(JSON.stringify(capturedWarnings).includes(invalidTokenDiagnostic), false);
+  assert.equal(JSON.stringify(invalidTokenResponse.body).includes(invalidTokenDiagnostic), false);
+
+  // Unknown verifier errors remain 503 and never expose Firebase diagnostics.
+  capturedWarnings.length = 0;
+  const verifierDiagnostic = "private Firebase verifier availability diagnostic";
+  admin.auth = () => ({
+    verifyIdToken: async () => {
+      throw new Error(verifierDiagnostic);
+    },
+  });
+  const verifierFailureResponse = mockResponse();
+  await handler({
+    method: "POST",
+    headers: { authorization: "Bearer token-during-outage" },
+    body: {},
+  }, verifierFailureResponse);
+  assert.equal(verifierFailureResponse.statusCode, 503);
+  assert.deepEqual(verifierFailureResponse.body, {
+    success: false,
+    error: "Authentication service is temporarily unavailable.",
+  });
+  assert.deepEqual(capturedErrors, [["USER_PROVISION_AUTH_UNAVAILABLE"]]);
+  assert.equal(JSON.stringify(capturedErrors).includes(verifierDiagnostic), false);
+  assert.equal(JSON.stringify(verifierFailureResponse.body).includes(verifierDiagnostic), false);
+
+  // Database/transaction failures also remain generic 503 responses.
+  capturedErrors.length = 0;
+  admin.auth = () => ({
+    verifyIdToken: async () => ({ uid: "new-user" }),
+  });
+  admin.firestore = () => ({
+    collection: () => ({ doc: () => ({ id: "new-user" }) }),
+    runTransaction: async () => {
+      throw new Error("private Firestore transaction diagnostic");
+    },
+  });
+  const databaseFailureResponse = mockResponse();
+  await handler({
+    method: "POST",
+    headers: { authorization: "Bearer valid-test-token" },
+    body: {},
+  }, databaseFailureResponse);
+  assert.equal(databaseFailureResponse.statusCode, 503);
+  assert.deepEqual(capturedErrors, [["USER_PROVISION_FAILED"]]);
+  assert.equal(JSON.stringify(capturedErrors).includes("private Firestore transaction diagnostic"), false);
+  assert.equal(JSON.stringify(databaseFailureResponse.body).includes("private Firestore transaction diagnostic"), false);
 
   admin.auth = () => ({
     verifyIdToken: async (token) => {
@@ -102,8 +181,10 @@ try {
   assert.equal(existingResponse.statusCode, 200);
   assert.equal(existingResponse.body.data.created, false);
 
-  console.log("User provisioning tests passed: method/auth guards, client-only role, fixed starter credits, and idempotency.");
+  console.log("User provisioning tests passed: method/auth guards, invalid-token 401, verifier/database 503, safe logging, client-only role, fixed starter credits, and idempotency.");
 } finally {
   admin.auth = originalAuth;
   admin.firestore = originalFirestore;
+  console.error = originalConsoleError;
+  console.warn = originalConsoleWarn;
 }

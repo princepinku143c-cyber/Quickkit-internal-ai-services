@@ -3,8 +3,39 @@ import { checkRateLimit } from "./_lib/security.js";
 
 const TAVILY_API_URL = "https://api.tavily.com/search";
 
+const INVALID_ID_TOKEN_CODES = new Set([
+  "auth/argument-error",
+  "auth/invalid-id-token",
+  "auth/id-token-expired",
+  "auth/id-token-revoked",
+  "auth/invalid-user-token",
+  "auth/user-disabled",
+  "auth/user-not-found",
+  "auth/tenant-id-mismatch",
+]);
+
 const sendError = (res, status, error, code) =>
   res.status(status).json({ error, ...(code ? { code } : {}) });
+
+/**
+ * Match QuickKit's exact registrable host or one of its subdomains.
+ * Substring matching is unsafe because lookalike hosts and URL paths can
+ * contain "quickkitai.com" without belonging to QuickKit.
+ */
+export function isQuickKitDomainUrl(value) {
+  if (typeof value !== "string") return false;
+
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+    if (url.username || url.password) return false;
+
+    const hostname = url.hostname.toLowerCase().replace(/\.$/, "");
+    return hostname === "quickkitai.com" || hostname.endsWith(".quickkitai.com");
+  } catch {
+    return false;
+  }
+}
 
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
@@ -32,7 +63,7 @@ export default async function handler(req, res) {
     uid = decoded.uid;
     const userSnapshot = await admin.firestore().collection("users").doc(uid).get();
     const userData = userSnapshot.data() || {};
-    if (userData.role !== "admin" && decoded.admin !== true) {
+    if (userData.role !== "admin") {
       return sendError(res, 403, "Administrator access is required.");
     }
     await checkRateLimit(admin, uid, "rank-tracker", 1);
@@ -41,7 +72,11 @@ export default async function handler(req, res) {
       if (error.retryAfter) res.setHeader("Retry-After", String(error.retryAfter));
       return sendError(res, 429, "Rank tracking rate limit reached. Please retry later.");
     }
-    console.error("RANK_TRACKER_AUTH_FAILED", error && error.message || "unknown");
+    if (INVALID_ID_TOKEN_CODES.has(error?.code)) {
+      console.warn("RANK_TRACKER_AUTH_INVALID");
+      return sendError(res, 401, "Authentication failed.");
+    }
+    console.error("RANK_TRACKER_AUTH_FAILED");
     return sendError(res, 503, "Rank tracking authorization is temporarily unavailable.");
   }
 
@@ -82,9 +117,7 @@ export default async function handler(req, res) {
         results.push({ keyword, error: "Search provider request failed." });
       } else {
         const data = await response.json();
-        const found = data.results?.find(result =>
-          typeof result.url === "string" && result.url.includes("quickkitai.com")
-        );
+        const found = data.results?.find(result => isQuickKitDomainUrl(result?.url));
         results.push({
           keyword,
           rank: found ? data.results.indexOf(found) + 1 : null,

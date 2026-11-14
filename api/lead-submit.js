@@ -7,6 +7,8 @@ const json = (res, status, body) => res.status(status).json(body);
 const esc = (value = '') => String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
 
 export default async function handler(req, res) {
+  // Lead requests contain personal and business contact details; never allow shared caching.
+  res.setHeader('Cache-Control', 'private, no-store');
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
@@ -74,7 +76,7 @@ export default async function handler(req, res) {
       to: adminEmail,
       replyTo: lead.email,
       subject: `🚀 New ${lead.plan} Lead — ${lead.businessName}`,
-      html: `<h2>New QuickKit AI Plan Request</h2><p><b>Name:</b> ${esc(lead.name)}</p><p><b>Phone / WhatsApp:</b> ${esc(lead.phone)}</p><p><b>Email:</b> ${esc(lead.email)}</p><p><b>Business:</b> ${esc(lead.businessName)}</p><p><b>Industry:</b> ${esc(lead.businessType)}</p><p><b>Selected Plan:</b> ${esc(lead.plan)}</p><p><b>Setup:</b> ${setup}</p><p><b>Maintenance:</b> ${maintenance}</p><p><b>Requirements:</b><br/>${esc(lead.requirement || 'Not provided')}</p><p><b>Lead ID:</b> ${esc(lead.id)}</p>`
+      html: `<h2>New QuickKit AI Plan Request</h2><p><b>Name:</b> ${esc(lead.name)}</p><p><b>Phone / WhatsApp:</b> ${esc(lead.phone)}</p><p><b>Email:</b> ${esc(lead.email)}</p><p><b>Business:</b> ${esc(lead.businessName)}</p><p><b>Industry:</b> ${esc(lead.businessType)}</p><p><b>Selected Plan:</b> ${esc(lead.plan)}</p><p><b>Setup:</b> ${setup}</p><p><b>Maintenance:</b> ${maintenance}</p><p><b>Requirements:</b><br/> ${esc(lead.requirement || 'Not provided')}</p><p><b>Lead ID:</b> ${esc(lead.id)}</p>`
     });
 
     await transporter.sendMail({
@@ -87,7 +89,8 @@ export default async function handler(req, res) {
 
     return json(res, 200, { status: 'LEAD_CREATED', leadId: lead.id, adminNotified: true, clientConfirmationSent: true });
   } catch (error) {
-    console.error('LEAD_SUBMIT_ERROR:', error);
+    // Firebase, Firestore, and SMTP diagnostics may contain internal details; log only a fixed event.
+    console.error('LEAD_SUBMIT_FAILED');
     if (error?.status === 429) return json(res, 429, { error: 'Too many requests. Please wait a minute and try again.' });
     if (error?.status === 503) return json(res, 503, { error: 'Lead intake is temporarily unavailable. Please try again shortly.' });
     return json(res, 500, { error: 'Unable to submit the request right now. Please try again or contact admin@quickkitai.com.' });
