@@ -12,6 +12,17 @@ const success = (res, data) => res.status(200).json(data);
 const error = (res, msg, code = 400) => res.status(code).json({ error: msg });
 const singleLineText = (value, maxLength) => safeText(value, maxLength).replace(/[\r\n]+/g, " ");
 
+const INVALID_ID_TOKEN_CODES = new Set([
+    "auth/argument-error",
+    "auth/invalid-id-token",
+    "auth/id-token-expired",
+    "auth/id-token-revoked",
+    "auth/invalid-user-token",
+    "auth/user-disabled",
+    "auth/user-not-found",
+    "auth/tenant-id-mismatch",
+]);
+
 function paymentTokenMatches(expected, supplied) {
     if (typeof expected !== 'string' || typeof supplied !== 'string') return false;
     const expectedDigest = createHash('sha256').update(expected, 'utf8').digest();
@@ -57,20 +68,33 @@ export default async (req, res) => {
     let authIdentity = { email: '', displayName: '' };
 
     if (authHeader && authHeader.startsWith('Bearer ')) {
+        let decodedToken;
         try {
-            const token = authHeader.split(' ')[1];
-            const decodedToken = await admin.auth().verifyIdToken(token);
-            userId = decodedToken.uid;
-            authIdentity = {
-                email: typeof decodedToken.email === 'string' ? decodedToken.email : '',
-                displayName: typeof decodedToken.name === 'string' ? decodedToken.name : ''
-            };
+            const token = authHeader.slice('Bearer '.length);
+            decodedToken = await admin.auth().verifyIdToken(token);
+        } catch (authError) {
+            if (INVALID_ID_TOKEN_CODES.has(authError?.code)) {
+                console.warn("SYSTEM_API_AUTH_FAILED");
+                return error(res, "Authentication failed.", 401);
+            }
+            // Firebase Admin outages are service failures, not invalid caller credentials.
+            console.error("SYSTEM_API_AUTH_UNAVAILABLE");
+            return error(res, "Authentication service is temporarily unavailable.", 503);
+        }
+
+        userId = decodedToken.uid;
+        authIdentity = {
+            email: typeof decodedToken.email === 'string' ? decodedToken.email : '',
+            displayName: typeof decodedToken.name === 'string' ? decodedToken.name : ''
+        };
+
+        try {
             const userSnap = await admin.firestore().collection('users').doc(userId).get();
             userData = userSnap.data();
         } catch {
-            // Do not disclose Firebase token-verification diagnostics to API callers.
-            console.warn("SYSTEM_API_AUTH_FAILED");
-            return error(res, "Authentication failed.", 401);
+            // A profile-store outage must not be misreported as an invalid token.
+            console.error("SYSTEM_API_PROFILE_LOOKUP_FAILED");
+            return error(res, "Authorization service is temporarily unavailable.", 503);
         }
     }
 
