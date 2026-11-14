@@ -74,7 +74,7 @@ async function handleListProjects(res, userId) {
     .get();
 
   // Always return Array for zero-crash frontend (.map)
-  const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
   return success(res, Array.isArray(data) ? data : []);
 }
 
@@ -84,7 +84,7 @@ async function handleGetBilling(res, userId) {
     .orderBy("createdAt", "desc")
     .get();
 
-  const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+  const data = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
   return success(res, Array.isArray(data) ? data : []);
 }
 
