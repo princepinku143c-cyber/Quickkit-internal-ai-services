@@ -17,6 +17,11 @@ const required = [
 const placeholders = Object.fromEntries(
   required.map((name) => [name, `test-only-${name}`])
 );
+const matchingProjectConfig = {
+  ...placeholders,
+  VITE_FIREBASE_PROJECT_ID: "test-firebase-project",
+  FIREBASE_PROJECT_ID: "test-firebase-project",
+};
 
 function runGuard(overrides) {
   return spawnSync(process.execPath, [scriptPath], {
@@ -43,10 +48,24 @@ assert.match(missingResult.stderr, /FIREBASE_PRIVATE_KEY/);
 assert.doesNotMatch(missingResult.stderr, /test-only-/);
 
 const completeResult = runGuard({
-  ...placeholders,
+  ...matchingProjectConfig,
   VERCEL_ENV: "production",
 });
 assert.equal(completeResult.status, 0, completeResult.stderr);
 assert.equal(completeResult.stderr, "");
 
-console.log("Production Firebase build guard tests passed: preview builds remain unaffected, incomplete production config fails closed, and diagnostics contain names only.");
+const mismatchedProjectResult = runGuard({
+  ...matchingProjectConfig,
+  VERCEL_ENV: "production",
+  FIREBASE_PROJECT_ID: "different-test-firebase-project",
+});
+assert.equal(mismatchedProjectResult.status, 1);
+assert.match(mismatchedProjectResult.stderr, /Production Firebase project configuration mismatch/);
+assert.match(mismatchedProjectResult.stderr, /VITE_FIREBASE_PROJECT_ID/);
+assert.match(mismatchedProjectResult.stderr, /FIREBASE_PROJECT_ID/);
+assert.doesNotMatch(
+  mismatchedProjectResult.stderr,
+  /test-firebase-project|different-test-firebase-project/
+);
+
+console.log("Production Firebase build guard tests passed: preview builds remain unaffected, incomplete or cross-project production configuration fails closed, and diagnostics contain variable names only.");
