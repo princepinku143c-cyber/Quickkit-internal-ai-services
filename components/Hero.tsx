@@ -20,7 +20,7 @@ export const Hero: React.FC<HeroProps> = ({ lang, onLaunchArchitect }) => {
       <div className="container mx-auto px-6 text-center z-10">
         {/* Status chip */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-[10px] font-mono text-emerald-400 mb-8 animate-fade-in tracking-[0.2em] uppercase font-black">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> See Live AI Systems In Action
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" /> ⚡ 72-Hour Custom Deployment • Zero Risk
         </div>
 
         <p className="text-xl md:text-2xl font-black mb-4 tracking-widest text-slate-500 uppercase">
@@ -29,19 +29,19 @@ export const Hero: React.FC<HeroProps> = ({ lang, onLaunchArchitect }) => {
 
         <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight tracking-tighter text-white animate-slide-up">
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-400 to-emerald-400">
-            Custom AI Agents &amp;
+            Custom AI Agents That Run
           </span>
           <br />
-          AI Employees
+          Your CRM, Leads &amp; Support 24/7.
           <br className="hidden md:block" />
-          <span className="text-slate-400 text-4xl md:text-5xl">Built for Global Scale — Free</span>
+          <span className="text-slate-400 text-3xl md:text-5xl">See Your Working System Live Before You Pay $1</span>
         </h1>
 
         {/* Hidden H2 for Google heading structure — screen-reader accessible */}
-        <h2 className="sr-only">Bespoke AI Agents and Virtual AI Employees Built for Global Scale — Free to Start 2026</h2>
+        <h2 className="sr-only">Autonomous AI Agents and Virtual AI Employees Built for Global Scale — Free Live Demo Before Payment</h2>
 
         <p className="text-lg md:text-xl text-slate-400 max-w-3xl mx-auto mb-10 font-sans leading-relaxed animate-slide-up [animation-delay:200ms]">
-          The future of business is no longer manual. <span className="text-white font-bold">Modern companies are switching to AI-powered automation systems</span> to scale faster, handle customers smarter, and operate 24/7.
+          Stop losing qualified leads to slow replies and manual data entry. We design, build, and deploy <span className="text-white font-bold">autonomous AI agents connected directly to your WhatsApp, email, and CRM in 3 days.</span>
         </p>
 
         {/* Primary CTA */}
@@ -52,10 +52,10 @@ export const Hero: React.FC<HeroProps> = ({ lang, onLaunchArchitect }) => {
             }}
             className="w-full sm:w-auto px-14 py-5 bg-white text-nexus-dark rounded-xl font-black text-sm hover:bg-slate-100 transition-all flex items-center justify-center gap-2 shadow-[0_0_40px_rgba(255,255,255,0.2)] active:scale-95 uppercase tracking-widest hover:-translate-y-0.5 mx-auto cyber-glow"
           >
-            Book a Free Demo <ArrowRight className="w-4 h-4 ml-1" />
+            Book a 15-Min Live Demo <ArrowRight className="w-4 h-4 ml-1" />
           </button>
           <p className="text-center text-[11px] text-slate-400 font-bold uppercase tracking-widest mt-4">
-            Zero Risk • Live Demo Available • Built For Modern Businesses
+            100% Free Demo • No Credit Card Required • Custom Built For Your Business
           </p>
 
           {/* Secondary ghost link */}

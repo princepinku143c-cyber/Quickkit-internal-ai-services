@@ -1,10 +1,70 @@
 
 import React, { useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import { Shield, Scale, CreditCard, ArrowLeft } from 'lucide-react';
 
 export const LegalPages = () => {
     const location = useLocation();
+    const currentPath = location.pathname.replace(/\/+$/, '') || '/about';
+
+    const pageMeta = {
+        '/about': {
+            title: "About Us | QuickKit AI — Autonomous Workforce Platform",
+            description: "Learn about QuickKit AI's mission to empower global businesses with autonomous AI agents, intelligent CRM, and rapid 3-day automation deployments.",
+            canonical: "https://quickkitai.com/about",
+            schema: {
+                "@context": "https://schema.org",
+                "@type": "AboutPage",
+                "name": "About QuickKit AI",
+                "url": "https://quickkitai.com/about",
+                "description": "QuickKit AI is a leading AI automation agency delivering custom autonomous agents and enterprise CRM infrastructure.",
+                "mainEntity": {
+                    "@type": "Organization",
+                    "name": "QuickKit AI",
+                    "url": "https://quickkitai.com"
+                }
+            }
+        },
+        '/contact': {
+            title: "Contact Us & Architecture Support | QuickKit AI",
+            description: "Get in touch with QuickKit AI. Contact our sales and engineering team at sales@quickkitai.com or support@quickkitai.com.",
+            canonical: "https://quickkitai.com/contact",
+            schema: {
+                "@context": "https://schema.org",
+                "@type": "ContactPage",
+                "name": "Contact QuickKit AI",
+                "url": "https://quickkitai.com/contact",
+                "mainEntity": {
+                    "@type": "Organization",
+                    "name": "QuickKit AI",
+                    "contactPoint": {
+                        "@type": "ContactPoint",
+                        "telephone": "+91-8260485230",
+                        "email": "support@quickkitai.com",
+                        "contactType": "customer support"
+                    }
+                }
+            }
+        },
+        '/privacy': {
+            title: "Privacy Policy | QuickKit AI Data Protection",
+            description: "Read the official QuickKit AI privacy policy, data security practices, and compliance standards for autonomous systems.",
+            canonical: "https://quickkitai.com/privacy",
+            schema: null
+        },
+        '/terms': {
+            title: "Terms of Service | QuickKit AI Client Agreements",
+            description: "Terms and conditions governing the use of QuickKit AI services, deployment roadmaps, and automation infrastructure.",
+            canonical: "https://quickkitai.com/terms",
+            schema: null
+        }
+    }[currentPath] || {
+        title: "Company Info | QuickKit AI",
+        description: "Official legal and company documentation for QuickKit AI.",
+        canonical: `https://quickkitai.com${currentPath}`,
+        schema: null
+    };
     
     useEffect(() => {
         // Handle scrolling to sections if hash is present
@@ -19,6 +79,16 @@ export const LegalPages = () => {
 
     return (
         <div className="min-h-screen bg-[#030712] text-slate-300 font-sans">
+            <Helmet>
+                <title>{pageMeta.title}</title>
+                <meta name="description" content={pageMeta.description} />
+                <link rel="canonical" href={pageMeta.canonical} />
+                {pageMeta.schema && (
+                    <script type="application/ld+json">
+                        {JSON.stringify(pageMeta.schema)}
+                    </script>
+                )}
+            </Helmet>
             {/* Minimal Header */}
             <nav className="fixed top-0 left-0 right-0 z-50 bg-[#030712]/80 backdrop-blur-md border-b border-slate-800">
                 <div className="container mx-auto px-6 py-4 flex items-center justify-between">

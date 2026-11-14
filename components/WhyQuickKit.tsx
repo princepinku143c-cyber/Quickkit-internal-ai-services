@@ -30,14 +30,14 @@ export const WhyQuickKit: React.FC = () => {
     {
       icon: ShieldCheck,
       color: 'cyan',
-      title: 'Error-Free. Reliable. Tested.',
-      desc: 'Every system is rigorously tested before handover. No bugs, no data leaks, no mistakes. Just smooth, flawless execution.',
+      title: 'Human-in-the-Loop & Enterprise Safeguards',
+      desc: 'Built-in validation checks and automated escalation ensure sensitive customer requests and edge cases route safely to your human team.',
     },
     {
       icon: Zap,
       color: 'pink',
-      title: 'Delivered in Days, Not Months',
-      desc: 'Other agencies take months. We deliver your first working AI system in 5–7 days. Your competitors won\'t see it coming.',
+      title: 'Live in 72 Hours — Not 3 Months',
+      desc: 'Traditional dev agencies take months of billable hours. We scope on Day 1, build the sandbox on Day 2, and deploy your working AI system on Day 3.',
     },
   ];
 

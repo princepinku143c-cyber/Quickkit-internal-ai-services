@@ -35,129 +35,120 @@
     <meta name="twitter:image:alt" content="QuickKit AI Dashboard" />
 
     <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
-    <link rel="canonical" href="https://quickkitai.com/" />
     <link rel="manifest" href="/manifest.json" />
 
-    <!-- JSON-LD: Organization -->
+    <!-- JSON-LD: Unified Entity Knowledge Graph (Schema.org @graph) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "Organization",
-      "name": "QuickKit AI",
-      "url": "https://quickkitai.com",
-      "logo": "https://quickkitai.com/QuickKit_Logo.svg",
-      "sameAs": [],
-      "contactPoint": {
-        "@type": "ContactPoint",
-        "email": "support@quickkitai.com",
-        "contactType": "customer support"
-      }
-    }
-    </script>
-
-    <!-- JSON-LD: SoftwareApplication with Rating -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
-      "name": "QuickKit AI",
-      "applicationCategory": "BusinessApplication",
-      "operatingSystem": "Web",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD",
-        "description": "Free to start — no credit card required"
-      },
-      "description": "Deploy custom AI agents & virtual employees built for global scale. Automate your CRM, client outreach, and operations 24/7.",
-      "url": "https://quickkitai.com",
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": "4.8",
-        "reviewCount": "47"
-      }
-    }
-    </script>
-
-    <!-- JSON-LD: FAQPage — Gives FAQ rich results in Google SERP -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "FAQPage",
-      "mainEntity": [
+      "@graph": [
         {
-          "@type": "Question",
-          "name": "What is QuickKit AI?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "QuickKit AI is a platform that designs and deploys custom AI agents and virtual employees to automate sales, marketing, support, and business workflows globally."
+          "@type": "Organization",
+          "@id": "https://quickkitai.com/#organization",
+          "name": "QuickKit AI",
+          "url": "https://quickkitai.com",
+          "logo": {
+            "@type": "ImageObject",
+            "@id": "https://quickkitai.com/#logo",
+            "url": "https://quickkitai.com/apple-touch-icon.png",
+            "caption": "QuickKit AI Logo"
+          },
+          "image": {
+            "@id": "https://quickkitai.com/#logo"
+          },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "telephone": "+91-8260485230",
+            "email": "support@quickkitai.com",
+            "contactType": "customer support",
+            "availableLanguage": ["English", "Hindi"]
           }
         },
         {
-          "@type": "Question",
-          "name": "Is QuickKit AI free to start?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Yes. QuickKit AI is free to start with no credit card required. You can see your AI automation system live before paying anything."
+          "@type": "WebSite",
+          "@id": "https://quickkitai.com/#website",
+          "url": "https://quickkitai.com",
+          "name": "QuickKit AI",
+          "description": "Custom AI Agents and AI Employees for business automation 24/7.",
+          "publisher": {
+            "@id": "https://quickkitai.com/#organization"
+          },
+          "inLanguage": "en-US"
+        },
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://quickkitai.com/#application",
+          "name": "QuickKit AI",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "Web",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD",
+            "description": "Free to start — no credit card required"
+          },
+          "description": "Deploy custom AI agents & virtual employees built for global scale. Automate your CRM, client outreach, and operations 24/7.",
+          "url": "https://quickkitai.com",
+          "provider": {
+            "@id": "https://quickkitai.com/#organization"
+          },
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.8",
+            "bestRating": "5",
+            "worstRating": "1",
+            "reviewCount": "47"
           }
         },
         {
-          "@type": "Question",
-          "name": "How do QuickKit AI agents work?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Our AI agents run on autonomous virtual servers, executing complex workflows like lead generation, customer outreach, and database integrations hands-free."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "How do AI agents automate workflows?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "Unlike simple trigger-action rules, our AI agents use advanced decision-making intelligence to understand context, route information, and update systems automatically."
-          }
-        },
-        {
-          "@type": "Question",
-          "name": "What automation does QuickKit AI support?",
-          "acceptedAnswer": {
-            "@type": "Answer",
-            "text": "QuickKit AI supports CRM automation, lead generation, bulk email campaigns, social media AI, voice agents, customer support bots, and multi-agent orchestration workflows."
-          }
+          "@type": "FAQPage",
+          "@id": "https://quickkitai.com/#faq",
+          "isPartOf": {
+            "@id": "https://quickkitai.com/#website"
+          },
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "What is QuickKit AI?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "QuickKit AI is a platform that designs and deploys custom AI agents and virtual employees to automate sales, marketing, support, and business workflows globally."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Is QuickKit AI free to start?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Yes. QuickKit AI is free to start with no credit card required. You can see your AI automation system live before paying anything."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How do QuickKit AI agents work?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Our AI agents run on autonomous virtual servers, executing complex workflows like lead generation, customer outreach, and database integrations hands-free."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "How do AI agents automate workflows?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Unlike simple trigger-action rules, our AI agents use advanced decision-making intelligence to understand context, route information, and update systems automatically."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What automation does QuickKit AI support?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "QuickKit AI supports CRM automation, lead generation, bulk email campaigns, social media AI, voice agents, customer support bots, and multi-agent orchestration workflows."
+              }
+            }
+          ]
         }
-      ]
-    }
-    </script>
-
-        <!-- JSON-LD: WebSite Schema -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebSite",
-      "name": "QuickKit AI",
-      "url": "https://quickkitai.com",
-      "description": "Custom AI Agents and AI Employees for business automation 24/7.",
-      "potentialAction": {
-        "@type": "SearchAction",
-        "target": {
-          "@type": "EntryPoint",
-          "urlTemplate": "https://quickkitai.com/?q={search_term_string}"
-        },
-        "query-input": "required name=search_term_string"
-      }
-    }
-    </script>
-
-<!-- JSON-LD: BreadcrumbList -->
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "BreadcrumbList",
-      "itemListElement": [
-        { "@type": "ListItem", "position": 1, "name": "Home", "item": "https://quickkitai.com/" },
-        { "@type": "ListItem", "position": 2, "name": "AI Agents", "item": "https://quickkitai.com/ai-agents" },
-        { "@type": "ListItem", "position": 3, "name": "Pricing", "item": "https://quickkitai.com/pricing" },
-        { "@type": "ListItem", "position": 4, "name": "Blog", "item": "https://quickkitai.com/blog" }
       ]
     }
     </script>

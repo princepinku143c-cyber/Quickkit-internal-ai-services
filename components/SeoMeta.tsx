@@ -20,7 +20,7 @@ export const SeoMeta: React.FC<SeoMetaProps> = ({
 }) => {
   const siteName = 'QuickKit AI';
   const defaultOgImage = ogImage || 'https://quickkitai.com/og-image.png';
-  const canonicalUrl = canonical || (typeof window !== 'undefined' ? window.location.href : 'https://quickkitai.com');
+  const canonicalUrl = canonical || (typeof window !== 'undefined' ? `${window.location.origin}${window.location.pathname.replace(/\/+$/, '') || '/'}` : 'https://quickkitai.com');
 
   const fullTitle = title.includes('QuickKit') ? title : `${title} | QuickKit AI`;
 

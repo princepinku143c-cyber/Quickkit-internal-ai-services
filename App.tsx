@@ -35,11 +35,14 @@ const ClientPortal = lazy(() => import('./components/ClientPortal').then(m => ({
 const AdminPortal = lazy(() => import('./components/AdminPortal').then(m => ({ default: m.AdminPortal })));
 const LegalPages = lazy(() => import('./components/legal/LegalPages').then(m => ({ default: m.LegalPages })));
 const PainSection = lazy(() => import('./components/PainSection').then(m => ({ default: m.PainSection })));
+const ComparisonTable = lazy(() => import('./components/ComparisonTable').then(m => ({ default: m.ComparisonTable })));
 const SocialProofBar = lazy(() => import('./components/SocialProofBar').then(m => ({ default: m.SocialProofBar })));
 const SmartBot = lazy(() => import('./components/SmartBot').then(m => ({ default: m.SmartBot })));
 const FloatingActions = lazy(() => import('./components/FloatingActions').then(m => ({ default: m.FloatingActions })));
 const LegalModal = lazy(() => import('./components/LegalModal').then(m => ({ default: m.LegalModal })));
 const Blog = lazy(() => import('./components/seo/Blog').then(m => ({ default: m.Blog })));
+const BlogPost = lazy(() => import('./components/seo/BlogPost').then(m => ({ default: m.BlogPost })));
+const FAQSection = lazy(() => import('./components/FAQSection').then(m => ({ default: m.FAQSection })));
 const ServicePage = lazy(() => import('./components/seo/ServicePage').then(m => ({ default: m.ServicePage })));
 const SEOAudit = lazy(() => import('./components/seo/SEOAudit').then(m => ({ default: m.SEOAudit })));
 
@@ -253,38 +256,109 @@ const App: React.FC = () => {
 
 
 
-  const renderLandingView = () => (
-    <div className="bg-[#030712] min-h-screen font-sans text-slate-100 selection:bg-blue-500/30">
-      <Helmet>
-        <title>QuickKit AI | Automate Your Sales, Leads & Support with AI</title>
-        <meta name="description" content="QuickKit AI builds custom AI automation systems for businesses — chatbots, lead generation, sales automation, and 24/7 operations. See your system live before you pay." />
-        <meta name="keywords" content="AI automation, lead generation AI, sales automation, chatbot, business AI, AI agent, QuickKit AI" />
-        <link rel="canonical" href="https://quickkitai.com" />
-      </Helmet>
-      <Navbar onContact={() => setShowLeadForm(true)} isAuthenticated={isAuthenticated} />
-      
-      <Hero lang={lang} onLaunchArchitect={handleLaunchArchitect} />
-      
-      <Suspense fallback={<div className="h-40 flex items-center justify-center"><GlobalLoader message="Loading System..." /></div>}>
-        <PainSection />
-        <SocialProofBar />
-        <Pricing
-          lang={lang}
-          onSelectPlan={(plan) => {
-            setLeadFormNotes(`I am interested in the ${plan} plan.`);
-            setShowLeadForm(true);
-          }}
-        />
-        <WhyQuickKit />
-        <WhoIsItFor onBookDemo={() => setShowLeadForm(true)} />
-        <AIAgents onSelectAgent={handleCatalogSelect} />
-        <Testimonials />
-        <DemoBooking onBookDemo={() => setShowLeadForm(true)} />
-        <BusinessImpact />
-        <ROICalculator lang={lang} />
-        <FloatingActions />
-        <SmartBot onOpenArchitect={() => handleLaunchArchitect('Hi Kelly! I want to explore automation.', true)} />
-      </Suspense>
+  const renderLandingView = (pageType: 'home' | 'pricing' | 'ai-agents' = 'home') => {
+    const metaConfig = {
+      home: {
+        title: "QuickKit AI | Custom AI Agents & AI Employees | Free to Start 2026",
+        description: "Deploy custom AI agents & virtual employees built for global scale. Automate your CRM, sales pipelines, outreach, and operations 24/7. Start FREE.",
+        canonical: "https://quickkitai.com",
+        schema: null
+      },
+      pricing: {
+        title: "Pricing Plans & ROI Guarantee | QuickKit AI",
+        description: "Transparent, predictable pricing for custom AI agents and virtual employees. Start free or scale with Starter, Pro, and Enterprise automation tiers.",
+        canonical: "https://quickkitai.com/pricing",
+        schema: {
+          "@context": "https://schema.org",
+          "@type": "Product",
+          "name": "QuickKit AI Automation Platform",
+          "description": "Custom AI agents and autonomous virtual employees for businesses.",
+          "brand": { "@type": "Brand", "name": "QuickKit AI" },
+          "offers": {
+            "@type": "AggregateOffer",
+            "priceCurrency": "USD",
+            "lowPrice": "100.00",
+            "highPrice": "299.00",
+            "offerCount": "3",
+            "offers": [
+              {
+                "@type": "Offer",
+                "name": "Starter Bridge",
+                "price": "100.00",
+                "priceCurrency": "USD",
+                "priceValidUntil": "2027-12-31",
+                "availability": "https://schema.org/InStock",
+                "url": "https://quickkitai.com/pricing"
+              },
+              {
+                "@type": "Offer",
+                "name": "Pro Automation Suite",
+                "price": "199.00",
+                "priceCurrency": "USD",
+                "priceValidUntil": "2027-12-31",
+                "availability": "https://schema.org/InStock",
+                "url": "https://quickkitai.com/pricing"
+              },
+              {
+                "@type": "Offer",
+                "name": "Nexus Enterprise OS",
+                "price": "299.00",
+                "priceCurrency": "USD",
+                "priceValidUntil": "2027-12-31",
+                "availability": "https://schema.org/InStock",
+                "url": "https://quickkitai.com/pricing"
+              }
+            ]
+          }
+        }
+      },
+      'ai-agents': {
+        title: "Custom AI Agents & Autonomous Digital Workers | QuickKit AI",
+        description: "Deploy bespoke AI agents for CRM, lead qualification, customer outreach, and 24/7 operations. Multi-agent architecture built for global scale.",
+        canonical: "https://quickkitai.com/ai-agents",
+        schema: null
+      }
+    }[pageType];
+
+    return (
+      <div className="bg-[#030712] min-h-screen font-sans text-slate-100 selection:bg-blue-500/30">
+        <Helmet>
+          <title>{metaConfig.title}</title>
+          <meta name="description" content={metaConfig.description} />
+          <meta name="keywords" content="AI automation, lead generation AI, sales automation, chatbot, business AI, AI agent, QuickKit AI" />
+          <link rel="canonical" href={metaConfig.canonical} />
+          {metaConfig.schema && (
+            <script type="application/ld+json">
+              {JSON.stringify(metaConfig.schema)}
+            </script>
+          )}
+        </Helmet>
+        <Navbar onContact={() => setShowLeadForm(true)} isAuthenticated={isAuthenticated} />
+        
+        <Hero lang={lang} onLaunchArchitect={handleLaunchArchitect} />
+        
+        <Suspense fallback={<div className="h-40 flex items-center justify-center"><GlobalLoader message="Loading System..." /></div>}>
+          <PainSection />
+          <SocialProofBar />
+          <Pricing
+            lang={lang}
+            onSelectPlan={(plan) => {
+              setLeadFormNotes(`I am interested in the ${plan} plan.`);
+              setShowLeadForm(true);
+            }}
+          />
+          <WhyQuickKit />
+          <ComparisonTable />
+          <WhoIsItFor onBookDemo={() => setShowLeadForm(true)} />
+          <AIAgents onSelectAgent={handleCatalogSelect} />
+          <Testimonials />
+          <FAQSection />
+          <DemoBooking onBookDemo={() => setShowLeadForm(true)} />
+          <BusinessImpact />
+          <ROICalculator lang={lang} />
+          <FloatingActions />
+          <SmartBot onOpenArchitect={() => handleLaunchArchitect('Hi Kelly! I want to explore automation.', true)} />
+        </Suspense>
       
       <footer className="bg-nexus-card border-t border-nexus-border py-12">
         <div className="container mx-auto px-6 text-center text-slate-500">
@@ -300,6 +374,11 @@ const App: React.FC = () => {
           <div className="flex flex-wrap justify-center gap-6 mb-8 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">
             <a href="#ai-agents" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">AI Agents</a>
             <a href="#pricing" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Pricing</a>
+            <a href="#comparison" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Comparison</a>
+            <a href="#faq" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">FAQ</a>
+            <Link to="/blog" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Blog</Link>
+            <Link to="/solutions/real-estate" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Real Estate AI</Link>
+            <Link to="/solutions/e-commerce" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">E-Commerce AI</Link>
             <Link to="/about" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">About Us</Link>
             <Link to="/contact" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Contact</Link>
             <Link to="/privacy" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Privacy Policy</Link>
@@ -337,7 +416,8 @@ const App: React.FC = () => {
         <LegalModal type={activeLegalModal} onClose={() => setActiveLegalModal(null)} />
       </Suspense>
     </div>
-  );
+    );
+  };
 
   const ClientPortalWrapper: React.FC = () => {
     if (authLoading) return <GlobalLoader message="Waking Up Architecture..." />;
@@ -360,9 +440,9 @@ const App: React.FC = () => {
         <IndustryProvider initialIndustryType={user?.industryType || ''}>
           <Suspense fallback={<GlobalLoader message="Waking Up Architecture..." />}>
             <Routes>
-              <Route path="/" element={renderLandingView()} />
-              <Route path="/pricing" element={renderLandingView()} />
-              <Route path="/ai-agents" element={renderLandingView()} />
+              <Route path="/" element={renderLandingView('home')} />
+              <Route path="/pricing" element={renderLandingView('pricing')} />
+              <Route path="/ai-agents" element={renderLandingView('ai-agents')} />
               <Route path="/login" element={
                 authLoading ? (
                   <GlobalLoader message="Waking Up Architecture..." />
@@ -413,6 +493,7 @@ const App: React.FC = () => {
               <Route path="/terms" element={<LegalPages />} />
               {/* SEO Dedicated Pages */}
               <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:id" element={<BlogPost />} />
               <Route path="/features" element={
                 <ServicePage title="Features | QuickKit AI" description="Explore the full suite of QuickKit AI features including Nimoclaw, OpenClaw, and custom workflows." keywords="AI features, automation features, QuickKit tools">
                   <PainSection />

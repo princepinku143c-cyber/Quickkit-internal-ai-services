@@ -40,11 +40,13 @@ export const ServicePage: React.FC<ServicePageProps> = ({ title, description, ke
           <div className="flex flex-wrap justify-center gap-6 mb-8 text-[11px] font-black uppercase tracking-[0.2em] text-slate-400">
             <Link to="/ai-agents" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">AI Agents</Link>
             <Link to="/pricing" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Pricing</Link>
+            <Link to="/blog" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Blog</Link>
+            <Link to="/solutions/real-estate" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Real Estate AI</Link>
+            <Link to="/solutions/e-commerce" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">E-Commerce AI</Link>
             <Link to="/about" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">About Us</Link>
             <Link to="/contact" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Contact</Link>
             <Link to="/privacy" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Terms of Service</Link>
-            <Link to="/refund" className="hover:text-blue-400 transition-colors border-b border-transparent hover:border-blue-400/30 pb-0.5">Refund Policy</Link>
           </div>
           <p>&copy; {new Date().getFullYear()} QuickKit AI. All rights reserved.</p>
         </div>

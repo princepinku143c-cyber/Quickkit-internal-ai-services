@@ -117,7 +117,7 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
       <div className="container mx-auto px-4 md:px-6 relative z-10">
 
         {/* Header */}
-        <div className="max-w-3xl mx-auto text-center mb-20 animate-slide-up">
+        <div className="max-w-3xl mx-auto text-center mb-12 animate-slide-up">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-500/10 border border-blue-500/30 text-[10px] font-mono text-blue-400 mb-8 uppercase tracking-[0.2em] font-black">
             <Zap className="w-3 h-3" /> Transparent Pricing
           </div>
@@ -125,10 +125,35 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
             Choose Your AI Automation Plan
           </h2>
           <p className="text-slate-400 text-lg max-w-2xl mx-auto leading-relaxed">
-            Start with a simple AI assistant or scale to a <span className="text-white font-bold">fully automated business system.</span>
+            Start with a dedicated growth agent or scale to an <span className="text-white font-bold">autonomous multi-agent operations suite.</span>
             <br />
             <span className="text-emerald-400 font-bold text-sm">You only pay after you see and approve the live demo. Zero risk.</span>
           </p>
+        </div>
+
+        {/* How Our Pricing Works 3-Step Banner */}
+        <div className="max-w-5xl mx-auto mb-16 p-6 rounded-2xl bg-slate-900/80 border border-blue-500/30 grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+          <div className="flex items-start gap-3">
+            <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-black text-xs shrink-0 border border-blue-500/20">1</div>
+            <div>
+              <p className="text-white font-bold text-sm mb-1">We Build Your Demo (Free)</p>
+              <p className="text-slate-400 text-xs leading-relaxed">We analyze your workflow and build your working AI system in 72 hours.</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 border-t md:border-t-0 md:border-l border-slate-800 pt-4 md:pt-0 md:pl-6">
+            <div className="w-8 h-8 rounded-lg bg-purple-500/10 text-purple-400 flex items-center justify-center font-black text-xs shrink-0 border border-purple-500/20">2</div>
+            <div>
+              <p className="text-white font-bold text-sm mb-1">Live 15-Min Walkthrough</p>
+              <p className="text-slate-400 text-xs leading-relaxed">You test your agents in action on a live call before paying a single dollar.</p>
+            </div>
+          </div>
+          <div className="flex items-start gap-3 border-t md:border-t-0 md:border-l border-slate-800 pt-4 md:pt-0 md:pl-6">
+            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-black text-xs shrink-0 border border-emerald-500/20">3</div>
+            <div>
+              <p className="text-white font-bold text-sm mb-1">Approve or Walk Away ($0)</p>
+              <p className="text-slate-400 text-xs leading-relaxed">Love the results? Deploy with ongoing support. Don&apos;t approve? You owe us $0.</p>
+            </div>
+          </div>
         </div>
 
         {/* Pricing Grid */}

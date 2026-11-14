@@ -146,8 +146,11 @@ export const AIAgents: React.FC<AIAgentsProps> = ({ onSelectAgent }) => {
 
                 {/* Pricing & CTA */}
                 <div className="border-t border-slate-800 pt-5">
-                  <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1">Setup Investment</p>
-                  <p className={`text-xl font-black mb-4 ${v.priceBadge}`}>{cat.priceRange}</p>
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Custom Architecture Scope</p>
+                    <span className="text-[9px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">Included in Plans</span>
+                  </div>
+                  <p className={`text-xl font-black mb-4 ${v.priceBadge}`}>{cat.priceRange} <span className="text-xs text-slate-500 font-normal">market value</span></p>
                   <button
                     onClick={() => onSelectAgent({ id: cat.id, name: cat.title, outcome: cat.description })}
                     className="w-full py-3.5 rounded-2xl font-black text-sm uppercase tracking-widest border border-slate-700 text-white hover:bg-white hover:text-slate-900 transition-all flex items-center justify-center gap-2 group-hover:gap-3"

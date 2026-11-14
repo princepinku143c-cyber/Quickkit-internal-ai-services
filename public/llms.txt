@@ -1,0 +1,41 @@
+# QuickKit AI — Autonomous AI Agents & Digital Workforce OS
+> Website: https://quickkitai.com
+> Full Technical Specification: https://quickkitai.com/llms-full.txt
+> Description: QuickKit AI designs, builds, and deploys custom AI agents and virtual employees to automate sales, customer support, lead qualification, and business workflows globally. Free to start with rapid 3-day implementation.
+
+## Overview
+QuickKit AI operates as an advanced autonomous agentic platform. Rather than simple trigger-based rules (like legacy Zapier zaps), QuickKit AI deploys multi-agent systems that reason, process context, interact with databases, and execute tasks across external APIs and CRMs 24/7.
+
+## Core Capabilities
+- **Autonomous AI Agents:** Bespoke agents for inbound lead qualification, appointment booking, and multichannel outreach.
+- **AI CRM Platform:** Autonomous CRM with zero manual data entry, automated enrichment, pipeline staging, and follow-ups.
+- **3-Day Rapid Implementation:** Standardized deployment methodology taking businesses from initial scoping to live production in 72 hours.
+- **Multichannel Automation:** Integrations with WhatsApp, Email (SMTP/IMAP), SMS, Odoo CRM, and custom REST API webhooks.
+- **ROI Guaranteed:** Automated savings calculator and transparent unit economics for small businesses through enterprise organizations.
+
+## Target Verticals & Industry Solutions
+- **Real Estate (USA & India):** Auto-qualify property buyers, scope client budgets, send WhatsApp/SMS reminders, and sync to CRM pipelines. [Details: https://quickkitai.com/solutions/real-estate]
+- **E-Commerce & Retail:** Recover abandoned carts, automate order lookup, and provide 24/7 support. [Details: https://quickkitai.com/solutions/e-commerce]
+- **Healthcare & Clinics:** Streamline patient intake, appointment scheduling, and FAQ assistance. [Details: https://quickkitai.com/solutions/healthcare]
+- **Marketing & Agencies:** Automate client reporting, lead capture, and outreach campaigns. [Details: https://quickkitai.com/solutions/agency]
+- **Travel & Hospitality:** Automated booking confirmations, inquiry management, and itinerary support. [Details: https://quickkitai.com/solutions/travel]
+
+## Pricing & Plans
+- **Starter Bridge:** $100/mo ($799 setup) — Small businesses & startups. 3-day deployment, AI Architect build, official support.
+- **Pro Automation Suite:** $199/mo ($1,599 setup) — Scaling teams. Unlimited script fixes, Zapier monitoring, 24hr priority support.
+- **Nexus Enterprise OS:** $299/mo ($3,499 setup) — Full infrastructure ownership, multi-agent orchestration, dedicated account architect.
+
+## Primary Documentation & Links
+- Homepage: https://quickkitai.com/
+- Features: https://quickkitai.com/features
+- AI Agents Catalog: https://quickkitai.com/ai-agents
+- Pricing & ROI: https://quickkitai.com/pricing
+- Knowledge Base / Blog: https://quickkitai.com/blog
+- Full Architecture Docs: https://quickkitai.com/llms-full.txt
+- About Us: https://quickkitai.com/about
+- Contact & Support: https://quickkitai.com/contact
+
+## Official Contacts
+- Sales Inquiries: sales@quickkitai.com
+- Technical Support: support@quickkitai.com
+- Location: Global / USA & India Operations

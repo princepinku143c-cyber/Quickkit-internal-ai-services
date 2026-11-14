@@ -3,10 +3,10 @@ import { MessageSquare, UserCheck, RefreshCw, Clock, ArrowDown } from 'lucide-re
 
 export const PainSection: React.FC = () => {
   const pains = [
-    { icon: MessageSquare, text: 'Manually replying to every customer message', color: 'text-red-400', bg: 'bg-red-500/10' },
-    { icon: UserCheck, text: 'Chasing leads one by one via email or WhatsApp', color: 'text-orange-400', bg: 'bg-orange-500/10' },
-    { icon: RefreshCw, text: 'Doing follow-ups by hand every single day', color: 'text-amber-400', bg: 'bg-amber-500/10' },
-    { icon: Clock, text: 'Wasting hours on tasks that never grow your revenue', color: 'text-pink-400', bg: 'bg-pink-500/10' },
+    { icon: MessageSquare, text: 'Inbound leads going cold because replies take 3 hours instead of 60 seconds', color: 'text-red-400', bg: 'bg-red-500/10' },
+    { icon: UserCheck, text: 'Sales reps burning 15+ hours a week copy-pasting contacts between WhatsApp, sheets & CRM', color: 'text-orange-400', bg: 'bg-orange-500/10' },
+    { icon: RefreshCw, text: '70% of pipeline vanishing after Day 2 because nobody has time for consistent manual follow-ups', color: 'text-amber-400', bg: 'bg-amber-500/10' },
+    { icon: Clock, text: 'Paying $3,000/mo in salary overhead for repetitive admin tasks an autonomous agent finishes in seconds', color: 'text-pink-400', bg: 'bg-pink-500/10' },
   ];
 
   return (

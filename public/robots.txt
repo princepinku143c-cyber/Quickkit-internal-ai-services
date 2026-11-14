@@ -1,41 +1,50 @@
 # ── QuickKit AI — robots.txt ──────────────────────────────────────
-# Allow all crawlers full access to public pages
+# Allow all search engine crawlers full access to public pages
 
 User-agent: *
 Allow: /
 
-# Block admin and private routes from indexing
+# Block admin, api and private client routes from indexing
 Disallow: /dashboard
 Disallow: /admin
+Disallow: /admin-*
 Disallow: /client-portal
+Disallow: /portal
 Disallow: /api/
 Disallow: /scratch/
+Disallow: /onboarding
 
-# Specific bots — keep Googlebot, Bingbot, friendly
+# Specific search engines
 User-agent: Googlebot
 Allow: /
-Disallow: /dashboard
-Disallow: /admin
-Disallow: /api/
 
 User-agent: Bingbot
 Allow: /
-Disallow: /dashboard
-Disallow: /admin
-Disallow: /api/
 
-# Block AI scrapers that don't add indexing value
+# AI Search Engines & Answer Engines (Enabled for AEO/GEO citations)
 User-agent: GPTBot
-Disallow: /
+Allow: /
 
 User-agent: ChatGPT-User
-Disallow: /
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Applebot-Extended
+Allow: /
 
 User-agent: CCBot
-Disallow: /
-
-# Crawl delay (optional — protects server)
-Crawl-delay: 2
+Allow: /
 
 # Sitemap
 Sitemap: https://quickkitai.com/sitemap.xml

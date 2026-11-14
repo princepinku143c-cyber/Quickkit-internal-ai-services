@@ -56,6 +56,19 @@
       ]
     },
     {
+      "source": "/(llms\\.txt|llms-full\\.txt)",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=86400"
+        }
+      ]
+    },
+    {
       "source": "/(.*).(js|css|woff2|png|svg|webp)",
       "headers": [
         {
@@ -65,6 +78,7 @@
       ]
     }
   ],
+  "trailingSlash": false,
   "redirects": [
     {
       "source": "/:path*",
@@ -80,7 +94,7 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!assets/|sitemap\\.xml|robots\\.txt|favicon).*)",
+      "source": "/((?!api/|assets/|sitemap\\.xml|robots\\.txt|llms\\.txt|llms-full\\.txt|favicon|.*\\.(?:png|jpg|jpeg|svg|webp|ico|json|txt)$).*)",
       "destination": "/index.html"
     }
   ],
