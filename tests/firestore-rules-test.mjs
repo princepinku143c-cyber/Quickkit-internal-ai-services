@@ -53,6 +53,8 @@ try {
       setDoc(doc(db, "aeo_generations/server-seed"), { userId: "admin-1", status: "draft" }),
       setDoc(doc(db, "settings/server-seed"), { serverOnly: true }),
       setDoc(doc(db, "chat_history/server-seed"), { userId: "client-1", messages: [] }),
+      // Rate-limit counters are written only through the trusted Admin SDK.
+      setDoc(doc(db, "rate_limits/server-seed"), { count: 1, firstCall: 1 }),
       // Nested collection paths must not inherit top-level client access rules.
       setDoc(doc(db, "users/client-1/aeo_generations/nested-server-seed"), { status: "draft" }),
       setDoc(doc(db, "users/client-1/settings/nested-server-seed"), { serverOnly: true }),
@@ -77,7 +79,7 @@ try {
   // AEO drafts, operational settings, and chat history are server-only collections.
   // Even authenticated admin users must use trusted API/Admin SDK paths rather than
   // gaining direct client-SDK access to these records.
-  for (const collectionName of ["aeo_generations", "settings", "chat_history"]) {
+  for (const collectionName of ["aeo_generations", "settings", "chat_history", "rate_limits"]) {
     const seedPath = `${collectionName}/server-seed`;
     await Promise.all([
       assertFails(getDoc(doc(anonymousDb, seedPath))),
