@@ -17,6 +17,10 @@ const INVALID_ID_TOKEN_CODES = new Set([
 
 // CORS Headers Configuration
 const setCorsHeaders = (res) => {
+  // Admin queue and Telegram webhook responses can expose user-specific records.
+  // Prevent browser and intermediary caches from reusing them across identities.
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("Vary", "Authorization, X-Telegram-Bot-Api-Secret-Token");
   // This endpoint uses explicit bearer/webhook secrets, not cookie credentials.
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
