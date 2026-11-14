@@ -44,7 +44,7 @@ try {
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const apiDirectory = join(repositoryRoot, "api");
 const routeFiles = collectVercelApiEntrypoints(apiDirectory);
-const noStoreHeader = /res\.setHeader\(\s*["']Cache-Control["']\s*,\s*["'][^"']*\\bno-store\\b[^"']*["']\s*\)/;
+const noStoreHeader = /res\.setHeader\(\s*["']Cache-Control["']\s*,\s*["'][^"']*no-store[^"']*["']\s*\)/;
 
 for (const routeFile of routeFiles) {
   const source = readFileSync(join(apiDirectory, routeFile), "utf8");
