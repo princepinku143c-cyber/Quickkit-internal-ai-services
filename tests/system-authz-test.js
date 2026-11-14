@@ -80,6 +80,8 @@ try {
   await handler({ method: "OPTIONS", query: {}, headers: {} }, options);
   assert.equal(options.statusCode, 200);
   assert.equal(options.headers["Access-Control-Allow-Methods"], "GET,POST,OPTIONS");
+  assert.equal(options.headers["Cache-Control"], "private, no-store");
+  assert.equal(options.headers.Vary, "Authorization");
 
   // Restore the mocked methods before exercising authentication and authorization.
   admin.auth = originalAuth;
@@ -130,6 +132,8 @@ try {
   }, clientStats);
   assert.equal(clientStats.statusCode, 403);
   assert.equal(aggregateReads, 0);
+  assert.equal(clientStats.headers["Cache-Control"], "private, no-store");
+  assert.equal(clientStats.headers.Vary, "Authorization");
 
   // Admin dashboard aggregate counts remain available to admins.
   setIdentity("admin-1");
@@ -150,6 +154,8 @@ try {
   }, adminStats);
   assert.equal(adminStats.statusCode, 200);
   assert.deepEqual(adminStats.body, { leads: 12, projects: 7 });
+  assert.equal(adminStats.headers["Cache-Control"], "private, no-store");
+  assert.equal(adminStats.headers.Vary, "Authorization");
 
   // A signed-in user cannot confirm another user's payment token.
   setIdentity("attacker-1");
