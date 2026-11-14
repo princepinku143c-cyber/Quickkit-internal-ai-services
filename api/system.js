@@ -20,6 +20,11 @@ function paymentTokenMatches(expected, supplied) {
 }
 
 export default async (req, res) => {
+    // These responses may contain administrator and user-scoped operational data.
+    // Prevent browser and intermediary caches from reusing them across identities.
+    res.setHeader('Cache-Control', 'private, no-store');
+    res.setHeader('Vary', 'Authorization');
+
     // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
