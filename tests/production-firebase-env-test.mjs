@@ -15,7 +15,7 @@ const required = [
   "FIREBASE_PRIVATE_KEY",
 ];
 const placeholders = {
-  ...Object.fromEntries(required.map((name) => [name, \`test-only-\${name}\`])),
+  ...Object.fromEntries(required.map((name) => [name, "test-only-" + name])),
   FIREBASE_CLIENT_EMAIL: "firebase-adminsdk-test@test-firebase-project.iam.gserviceaccount.com",
   // Deliberately use escaped newlines to exercise Vercel environment normalization.
   FIREBASE_PRIVATE_KEY: "-----BEGIN PRIVATE KEY-----\\nTEST-ONLY-PRIVATE-KEY-MATERIAL\\n-----END PRIVATE KEY-----",
