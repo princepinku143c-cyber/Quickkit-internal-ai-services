@@ -1,5 +1,6 @@
 import admin from "./_lib/firebaseAdmin.js";
 import { success, error } from "./_lib/response.js";
+import { isPlainObject, payloadTooLarge } from "./_lib/input.js";
 
 const INVALID_ID_TOKEN_CODES = new Set([
   "auth/argument-error",
@@ -47,6 +48,9 @@ export default async function handler(req, res) {
     }
 
     if (req.method === "POST" && action === "create") {
+      if (!isPlainObject(req.body) || payloadTooLarge(req.body, 16 * 1024)) {
+        return error(res, "Invalid or oversized request payload", 400);
+      }
       return await handleCreateProject(req, res, userId);
     }
 
@@ -86,8 +90,12 @@ async function handleCreateProject(req, res, userId) {
   // 1. Strict Schema Validation
   const normalizedProjectName = typeof projectName === "string" ? projectName.trim() : "";
   const normalizedPackageId = typeof packageId === "string" ? packageId.trim() : "";
-  if (normalizedProjectName.length < 3) return error(res, "Invalid Project Name", 400);
-  if (!normalizedPackageId) return error(res, "Engineering Package Missing", 400);
+  if (normalizedProjectName.length < 3 || normalizedProjectName.length > 120) {
+    return error(res, "Invalid Project Name", 400);
+  }
+  if (!normalizedPackageId || normalizedPackageId.length > 128) {
+    return error(res, "Engineering Package Missing", 400);
+  }
 
   // Accept numeric values and non-empty numeric strings, but reject booleans,
   // objects, NaN, and infinities before they reach Firestore.
