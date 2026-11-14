@@ -45,14 +45,50 @@ const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const apiDirectory = join(repositoryRoot, "api");
 const routeFiles = collectVercelApiEntrypoints(apiDirectory);
 const noStoreHeader = /res\.setHeader\(\s*["']Cache-Control["']\s*,\s*["'][^"']*no-store[^"']*["']\s*\)/;
+const setCorsHeadersWithNoStore = /const\s+setCorsHeaders\s*=\s*\(res\)\s*=>\s*\{[\s\S]*?res\.setHeader\(\s*["']Cache-Control["']\s*,\s*["'][^"']*no-store[^"']*["']\s*\)[\s\S]*?\};/;
 
 for (const routeFile of routeFiles) {
   const source = readFileSync(join(apiDirectory, routeFile), "utf8");
-  assert.match(
-    source,
-    noStoreHeader,
-    `API route api/${routeFile} must set Cache-Control: no-store before returning sensitive responses.`
+  const defaultExportIndex = source.indexOf("export default");
+  assert.notEqual(
+    defaultExportIndex,
+    -1,
+    `API route api/${routeFile} must expose a default request handler.`
+  );
+
+  // All current route handlers are function or arrow-function exports. Locate
+  // the handler body so helper functions declared above it cannot satisfy the
+  // cache guard unless the handler actually invokes that helper.
+  const handlerBodyStart = source.indexOf("{", defaultExportIndex);
+  assert.notEqual(
+    handlerBodyStart,
+    -1,
+    `API route api/${routeFile} must expose a block-bodied request handler.`
+  );
+  const handlerBody = source.slice(handlerBodyStart + 1);
+  const directHeader = handlerBody.match(noStoreHeader);
+  const helperCall = handlerBody.match(/\bsetCorsHeaders\s*\(\s*res\s*\)/);
+  const helperDefinition = source.match(setCorsHeadersWithNoStore);
+  const helperDefinedBeforeHandler = helperDefinition
+    && helperDefinition.index < defaultExportIndex;
+  const cacheGuardIndex = directHeader?.index
+    ?? (helperDefinedBeforeHandler && helperCall ? helperCall.index : -1);
+
+  assert.notEqual(
+    cacheGuardIndex,
+    -1,
+    `API route api/${routeFile} must set Cache-Control: no-store in its handler or call a verified no-store CORS helper.`
+  );
+
+  // The cache policy must be installed before method handling or any response
+  // can exit early (including OPTIONS and unsupported-method responses).
+  const firstMethodOrResponse = handlerBody.search(
+    /\breq\.method\b|\bres\.(?:status|json|end|send|writeHead|redirect)\s*\(/
+  );
+  assert.ok(
+    firstMethodOrResponse === -1 || cacheGuardIndex < firstMethodOrResponse,
+    `API route api/${routeFile} must apply Cache-Control: no-store before method checks and response paths.`
   );
 }
 
-console.log(`API cache policy tests passed: all ${routeFiles.length} Vercel API entrypoints set no-store.`);
+console.log(`API cache policy tests passed: all ${routeFiles.length} Vercel API entrypoints install no-store before method handling or responses.`);
