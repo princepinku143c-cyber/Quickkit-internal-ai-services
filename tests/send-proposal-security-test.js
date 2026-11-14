@@ -16,6 +16,11 @@ function mockResponse() {
   };
 }
 
+function assertPrivateNoStore(response) {
+  assert.equal(response.headers["Cache-Control"], "private, no-store");
+  assert.equal(response.headers.Vary, "Authorization");
+}
+
 const originalAuth = admin.auth;
 const originalFirestore = admin.firestore;
 const originalCreateTransport = nodemailer.createTransport;
@@ -66,12 +71,18 @@ try {
     },
   }, successResponse);
   assert.equal(successResponse.statusCode, 200);
+  assertPrivateNoStore(successResponse);
   assert.equal(sentMessage.to, "client@example.com");
   assert.doesNotMatch(sentMessage.html, /<(?:img|script|svg)\b/i);
   assert.match(sentMessage.html, /&lt;img/);
   assert.match(sentMessage.html, /&lt;script&gt;/);
   assert.match(sentMessage.html, /&lt;svg/);
   assert.match(sentMessage.html, /Lead qualification/);
+
+  const methodFailure = mockResponse();
+  await handler({ method: "GET", headers: {} }, methodFailure);
+  assert.equal(methodFailure.statusCode, 405);
+  assertPrivateNoStore(methodFailure);
 
   // Reject header injection and malformed feature data before attempting delivery.
   const beforeInvalid = sendCount;
@@ -82,6 +93,7 @@ try {
     body: { email: "client@example.com\r\nBcc: attacker@example.com", name: "Client", price: "100", features: [] },
   }, invalidRecipient);
   assert.equal(invalidRecipient.statusCode, 400);
+  assertPrivateNoStore(invalidRecipient);
   assert.equal(sendCount, beforeInvalid);
 
   assert.throws(() => buildProposalEmail({
@@ -102,6 +114,7 @@ try {
     body: { email: "client@example.com", name: "Client", price: "100", features: [] },
   }, authFailure);
   assert.equal(authFailure.statusCode, 403);
+  assertPrivateNoStore(authFailure);
   assert.deepEqual(authLogs, ["SEND_PROPOSAL_AUTH_FAILED"]);
   assert.doesNotMatch(JSON.stringify(authFailure.body) + authLogs.join(" "), /sensitive Firebase verifier diagnostic/);
 
@@ -117,6 +130,7 @@ try {
     body: { email: "client@example.com", name: "Client", price: "100", features: [] },
   }, smtpFailure);
   assert.equal(smtpFailure.statusCode, 500);
+  assertPrivateNoStore(smtpFailure);
   assert.deepEqual(smtpLogs, ["PROPOSAL_DISPATCH_FAILURE", "[API_ERROR] 500: Failed to transmit proposal."]);
   assert.doesNotMatch(JSON.stringify(smtpFailure.body) + smtpLogs.join(" "), /sensitive SMTP credential diagnostic/);
 
