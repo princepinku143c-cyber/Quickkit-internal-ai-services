@@ -96,12 +96,12 @@ assert.doesNotMatch(
 const firebaseAdminSource = readFileSync(new URL("../api/_lib/firebaseAdmin.js", import.meta.url), "utf8");
 assert.match(
   firebaseAdminSource,
-  /Firebase Admin initialization failed\\. Check server-side Firebase Admin configuration\\./,
+  /Firebase Admin initialization failed\. Check server-side Firebase Admin configuration\./,
   "Firebase Admin initialization failures must log a generic operator-facing message",
 );
 assert.doesNotMatch(
   firebaseAdminSource,
-  /Firebase Admin initialization failed:\\s*.*(?:error\\.message|:\\s*error)/s,
+  /Firebase Admin initialization failed:\s*.*(?:error\.message|:\s*error)/s,
   "Firebase Admin initialization must not log raw exception details that may contain credential diagnostics",
 );
 
