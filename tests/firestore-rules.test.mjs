@@ -112,6 +112,12 @@ try {
       userId: 'bob',
       amount: 10,
     });
+    // Telegram settings and chat history are server-owned records.
+    await setDoc(doc(db, 'settings', 'telegram'), { chatId: 'internal-test-chat' });
+    await setDoc(doc(db, 'settings', 'telegram', 'chat_history', 'private-entry'), {
+      text: 'server-owned test fixture',
+      timestamp: stamp,
+    });
   });
 
   const alice = testEnv.authenticatedContext('alice', { email: 'alice@example.com' }).firestore();
@@ -124,6 +130,17 @@ try {
     role: 'admin',
     admin: true,
   }).firestore();
+  const anonymous = testEnv.unauthenticatedContext().firestore();
+
+  // Server-owned nested Telegram history must not be readable or writable
+  // through any client SDK, including an authenticated admin client.
+  for (const clientDb of [anonymous, alice, admin]) {
+    const telegramHistory = doc(clientDb, 'settings', 'telegram', 'chat_history', 'private-entry');
+    await assertFails(getDoc(telegramHistory));
+    await assertFails(getDocs(collection(clientDb, 'settings', 'telegram', 'chat_history')));
+    await assertFails(setDoc(telegramHistory, { text: 'client-forged' }));
+    await assertFails(deleteDoc(telegramHistory));
+  }
 
   // A new account cannot self-assign an admin role, quota, plan or tenant.
   await assertFails(setDoc(doc(freshUser, 'users', 'fresh-user'), {
