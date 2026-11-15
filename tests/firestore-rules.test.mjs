@@ -7,6 +7,7 @@ import {
 } from '@firebase/rules-unit-testing';
 import {
   collection,
+  collectionGroup,
   deleteDoc,
   doc,
   documentId,
@@ -138,6 +139,8 @@ try {
     const telegramHistory = doc(clientDb, 'settings', 'telegram', 'chat_history', 'private-entry');
     await assertFails(getDoc(telegramHistory));
     await assertFails(getDocs(collection(clientDb, 'settings', 'telegram', 'chat_history')));
+    // A collection-group query must not bypass the server-only nested-path rule.
+    await assertFails(getDocs(query(collectionGroup(clientDb, 'chat_history'))));
     await assertFails(setDoc(telegramHistory, { text: 'client-forged' }));
     await assertFails(deleteDoc(telegramHistory));
   }
