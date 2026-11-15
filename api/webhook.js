@@ -1,4 +1,5 @@
 import admin, { db } from "./_lib/firebaseAdmin.js";
+import { logSafeError } from "./_lib/safeErrorLog.js";
 import { timingSafeEqual } from "node:crypto";
 import { checkRateLimit } from "./_lib/security.js";
 import { getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from "./_lib/input.js";
@@ -91,7 +92,7 @@ export default async function handler(req, res) {
         });
         console.log(`🤖 AI Draft successfully generated for webhook lead ${leadId}`);
       } catch (err) {
-        console.error(`❌ Failed to generate AI draft for webhook lead ${leadId}:`, err);
+        logSafeError("WEBHOOK_AI_DRAFT_FAILED", err);
       }
     })();
 
@@ -183,7 +184,7 @@ export default async function handler(req, res) {
         }
       }
     } catch (odooErr) {
-      console.error("❌ Webhook Odoo Sync failure:", odooErr);
+      logSafeError("WEBHOOK_ODOO_SYNC_FAILED", odooErr);
     }
 
     return success(res, { status: "LEAD_INGESTED", leadId: leadRef.id, projectId: projectRef.id });
@@ -193,7 +194,7 @@ export default async function handler(req, res) {
       return error(res, 'Too many webhook requests. Please retry shortly.', 429);
     }
     if (e?.status === 503) return error(res, 'Webhook service is temporarily unavailable.', 503);
-    console.error('WEBHOOK_ERROR:', e);
+    logSafeError("WEBHOOK_PROCESSING_FAILED", e);
     return error(res, 'Webhook processing failed. Please retry later.', 500);
   }
 }

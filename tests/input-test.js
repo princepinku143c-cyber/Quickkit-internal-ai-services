@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import { escapeHtml, getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from "../api/_lib/input.js";
 import { getMissingFirebaseClientConfig, isFirebaseClientConfigComplete } from "../lib/firebaseConfig.js";
 import { getPublicSystemError } from "../api/_lib/systemErrors.js";
+import { logSafeError, safeErrorType } from "../api/_lib/safeErrorLog.js";
 assert.equal(isPlainObject({ a: 1 }), true);
 assert.equal(isPlainObject([]), false);
 assert.equal(isPlainObject(null), false);
@@ -175,3 +176,46 @@ assert.ok(
     && aiApiSource.includes('return error(res, "AI service temporarily unavailable. Please try again later.", 503);'),
   "AI API must preserve safe rate-limit and unavailable responses",
 );
+
+
+const safeError = new Error("private provider response and request diagnostics");
+assert.equal(safeErrorType(safeError), "Error");
+assert.equal(safeErrorType({ name: "TypeError", message: "private details" }), "TypeError");
+assert.equal(safeErrorType({ name: "token-value\\nforged" }), "Error");
+const originalConsoleError = console.error;
+const capturedSafeLogs = [];
+console.error = (...args) => capturedSafeLogs.push(args);
+try {
+  logSafeError("OUTREACH_CRASH", safeError);
+  logSafeError("untrusted context\\nvalue", { name: "private-message" });
+} finally {
+  console.error = originalConsoleError;
+}
+assert.deepEqual(
+  capturedSafeLogs,
+  [["[OUTREACH_CRASH]", "Error"], ["[API_ERROR]", "Error"]],
+  "safe error logging must emit only a bounded context and error class, never message or stack",
+);
+
+const errorLogSources = [
+  ["outreach", readFileSync(new URL("../api/outreach.js", import.meta.url), "utf8")],
+  ["webhook", readFileSync(new URL("../api/webhook.js", import.meta.url), "utf8")],
+  ["projects", readFileSync(new URL("../api/projects.js", import.meta.url), "utf8")],
+  ["proposal", readFileSync(new URL("../api/send-proposal.js", import.meta.url), "utf8")],
+  ["lead-submit", readFileSync(new URL("../api/lead-submit.js", import.meta.url), "utf8")],
+];
+for (const [label, source] of errorLogSources) {
+  assert.doesNotMatch(
+    source,
+    /console\.(?:error|warn)\s*\([^;\n]*,\s*(?:err|e|error|odooErr|apiErr)\s*\)/,
+    label + " API must not log raw exception objects",
+  );
+  assert.doesNotMatch(
+    source,
+    /console\.(?:error|warn)\s*\([^;\n]*\.message/,
+    label + " API must not log raw exception messages",
+  );
+}
+assert.ok(!errorLogSources[0][1].includes("errText"), "outreach provider error bodies must not be logged");
+assert.ok(!errorLogSources[4][1].includes("lastError: String(error?.message"),
+  "customer-readable lead metadata must not persist raw email provider diagnostics");

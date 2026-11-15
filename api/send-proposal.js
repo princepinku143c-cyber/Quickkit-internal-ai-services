@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import { success, error } from "./_lib/response.js";
 import admin from "./_lib/firebaseAdmin.js";
+import { logSafeError } from "./_lib/safeErrorLog.js";
 
 /**
  * Administrative Proposal Transmission Endpoint.
@@ -21,7 +22,7 @@ export default async function handler(req, res) {
       const userSnap = await admin.firestore().collection('users').doc(decodedToken.uid).get();
       isAdmin = userSnap.data()?.role === 'admin';
     } catch (e) {
-      console.error("Auth verification failed in send-proposal:", e.message);
+      logSafeError("PROPOSAL_AUTH_VERIFICATION_FAILED", e);
     }
   }
 
@@ -83,7 +84,7 @@ export default async function handler(req, res) {
     return success(res, { status: "PROPOSAL_DISPATCHED", target: email });
 
   } catch (err) {
-    console.error("PROPOSAL_DISPATCH_FAILURE:", err);
+    logSafeError("PROPOSAL_DISPATCH_FAILED", err);
     return error(res, "Failed to transmit proposal to neural link.", 500);
   }
 }

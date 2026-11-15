@@ -1,4 +1,5 @@
 import admin from './_lib/firebaseAdmin.js';
+import { logSafeError } from './_lib/safeErrorLog.js';
 import nodemailer from 'nodemailer';
 import { getOrCreateLead } from './_lib/leadIdempotency.js';
 import { checkRateLimit } from './_lib/security.js';
@@ -31,9 +32,9 @@ async function deliverNotification(db, leadRef, channel, transporter, message) {
       [`emailNotifications.${channel}`]: { status: 'sent', sentAt: new Date().toISOString() }
     });
   } catch (error) {
-    console.error(`LEAD_EMAIL_${channel.toUpperCase()}_ERROR:`, error?.message || error);
+    logSafeError("LEAD_EMAIL_DELIVERY_FAILED", error);
     await leadRef.update({
-      [`emailNotifications.${channel}`]: { status: 'pending', lastError: String(error?.message || 'Email delivery failed').slice(0, 240), updatedAt: new Date().toISOString() }
+      [`emailNotifications.${channel}`]: { status: 'pending', lastError: 'Email delivery failed', updatedAt: new Date().toISOString() }
     });
   }
 }
@@ -136,7 +137,7 @@ export default async function handler(req, res) {
         : 'Your request is safely recorded and confirmation emails were sent.',
     });
   } catch (error) {
-    console.error('LEAD_SUBMIT_ERROR:', error);
+    logSafeError("LEAD_SUBMIT_FAILED", error);
     if (error?.status === 429) return json(res, 429, { error: 'Too many requests. Please wait a minute and try again.' });
     if (error?.status === 503) return json(res, 503, { error: 'Lead intake is temporarily unavailable. Please try again shortly.' });
     return json(res, 500, { error: 'Unable to submit the request right now. Please try again or contact admin@quickkitai.com.' });

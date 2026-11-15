@@ -1,4 +1,5 @@
 import admin from "./_lib/firebaseAdmin.js";
+import { logSafeError } from "./_lib/safeErrorLog.js";
 import { success, error } from "./_lib/response.js";
 
 /**
@@ -28,7 +29,7 @@ export default async function handler(req, res) {
 
     return error(res, "Lifecycle Action Not Allowed", 405);
   } catch (err) {
-    console.error("PROJECT_ENGINE_CRASH:", err);
+    logSafeError("PROJECT_ENGINE_CRASH", err);
     return error(res, "Build Logic Verification Failure", 403);
   }
 }

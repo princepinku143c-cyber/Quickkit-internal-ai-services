@@ -2,6 +2,7 @@ import admin from "./_lib/firebaseAdmin.js";
 import nodemailer from "nodemailer";
 import dns from "dns";
 import { hasValidCronAuthorization } from "./_lib/cronAuth.js";
+import { logSafeError } from "./_lib/safeErrorLog.js";
 
 // CORS Headers Configuration
 const setCorsHeaders = (res) => {
@@ -46,7 +47,7 @@ export default async function handler(req, res) {
         const userSnap = await admin.firestore().collection('users').doc(decodedToken.uid).get();
         userData = userSnap.data();
       } catch (e) {
-        console.error("Auth verification failed in outreach:", e.message);
+        logSafeError("OUTREACH_AUTH_VERIFICATION_FAILED", e);
       }
     }
 
@@ -76,7 +77,7 @@ export default async function handler(req, res) {
 
     return error(res, "Invalid Action", 400);
   } catch (err) {
-    console.error("OUTREACH_CRASH:", err);
+    logSafeError("OUTREACH_CRASH", err);
     return error(res, "Request could not be completed.", 500);
   }
 }
@@ -89,7 +90,7 @@ async function loadOutreachConfig() {
       return configSnap.data();
     }
   } catch (err) {
-    console.error("Error loading outreach config:", err.message);
+    logSafeError("OUTREACH_CONFIG_LOAD_FAILED", err);
   }
   return null;
 }
@@ -159,7 +160,7 @@ async function handleAnalyze(req, res) {
 
     return success(res, { leadId, status: "PENDING_APPROVAL", analysis });
   } catch (err) {
-    console.error("ANALYZE_ERROR:", err);
+    logSafeError("OUTREACH_ANALYZE_FAILED", err);
     return error(res, "Request could not be completed.", 500);
   }
 }
@@ -200,7 +201,7 @@ async function scrapeWebsite(url) {
     if (lowerHtml.includes("wix.com") || lowerHtml.includes("wixstatic")) techTags.push("Wix");
     return { title, description, techTags };
   } catch (err) {
-    console.error("Scraper request failed:", err?.name || "Error");
+    logSafeError("OUTREACH_SCRAPER_FAILED", err);
     return { title: "", description: "", techTags: [] };
   }
 }
@@ -404,7 +405,7 @@ async function handleApprove(req, res) {
       return success(res, { status: "APPROVED", leadId: id, scheduledSendTime: scheduledTime });
     }
   } catch (err) {
-    console.error("APPROVE_ERROR:", err);
+    logSafeError("OUTREACH_APPROVE_FAILED", err);
     return error(res, "Request could not be completed.", 500);
   }
 }
@@ -421,7 +422,7 @@ async function handleReject(req, res) {
     });
     return success(res, { status: "REJECTED", leadId: id });
   } catch (err) {
-    console.error("REJECT_ERROR:", err);
+    logSafeError("OUTREACH_REJECT_FAILED", err);
     return error(res, "Request could not be completed.", 500);
   }
 }
@@ -450,7 +451,7 @@ async function handleAddLead(req, res) {
     const docRef = await admin.firestore().collection("leads_outreach").add(dbEntry);
     return success(res, { leadId: docRef.id, status: "QUEUED" });
   } catch (err) {
-    console.error("ADD_LEAD_ERROR:", err);
+    logSafeError("OUTREACH_ADD_LEAD_FAILED", err);
     return error(res, "Request could not be completed.", 500);
   }
 }
@@ -512,7 +513,7 @@ async function handleProcessQueue(req, res) {
       dispatch: dispatchResult
     });
   } catch (err) {
-    console.error("PROCESS_QUEUE_ERROR:", err);
+    logSafeError("OUTREACH_PROCESS_QUEUE_FAILED", err);
     return error(res, "Request could not be completed.", 500);
   }
 }
@@ -540,7 +541,7 @@ async function processQueuedLeads(chatId, botToken, customConfig) {
         // MX record DNS precheck
         const mxValid = await checkMxRecords(leadData.email);
         if (!mxValid) {
-          console.warn(`DNS check failed for queued lead ${leadId} (${leadData.email}). Setting status to FAILED_MX.`);
+          console.warn("OUTREACH_DNS_PREFLIGHT_FAILED");
           await admin.firestore().collection("leads_outreach").doc(leadId).update({
             status: "FAILED_MX",
             dnsFailedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -556,7 +557,7 @@ async function processQueuedLeads(chatId, botToken, customConfig) {
         await analyzeAndDraftLead(leadId, leadData, botToken, chatId, customConfig);
         processed++;
       } catch (err) {
-        console.error(`Error processing/analyzing queued lead ${leadId}:`, err);
+        logSafeError("OUTREACH_QUEUED_LEAD_FAILED", err);
         errors++;
       }
     });
@@ -564,7 +565,7 @@ async function processQueuedLeads(chatId, botToken, customConfig) {
     await Promise.all(promises);
     return { processed, dnsFailed, errors };
   } catch (e) {
-    console.error("processQueuedLeads failure:", e);
+    logSafeError("OUTREACH_QUEUE_BATCH_FAILED", e);
     return { processed, dnsFailed, errors, error: "Queue processing failed." };
   }
 }
@@ -899,7 +900,7 @@ You MUST return a JSON object (and nothing else) with these keys:
       });
 
     } catch (e) {
-      console.error("AI_TELEGRAM_CONTROLLER_ERROR:", e);
+      logSafeError("OUTREACH_TELEGRAM_CONTROLLER_FAILED", e);
       await sendTelegramMessage(botToken, chatId, "⚠️ *Sorry Operator, I could not complete that request. Check server logs for details.");
     }
 
@@ -959,7 +960,7 @@ You MUST return a JSON object (and nothing else) with these keys:
         await editTelegramMessage(botToken, chatId, messageId, `❌ *DRAFT REJECTED & SKIPPED*:\n*Company:* ${leadData.businessName}\n*Niche:* ${leadData.niche}`);
       }
     } catch (e) {
-      console.error("TELEGRAM_WEBHOOK_ACTION_FAILURE:", e);
+      logSafeError("OUTREACH_TELEGRAM_ACTION_FAILED", e);
       await answerCallbackQuery(botToken, queryId, "Action failed. Check server logs for details.");
     }
   }
@@ -1254,10 +1255,9 @@ async function sendOutreachEmail(leadData, emailHtml) {
         return { success: true, sentVia: "Brevo Web API" };
       }
       
-      const errText = await apiRes.text();
-      console.warn(`Brevo API returned error status ${apiRes.status}: ${errText}. Trying next fallback...`);
+      console.warn("BREVO_API_HTTP_ERROR", apiRes.status);
     } catch (apiErr) {
-      console.warn("Brevo API call failed with exception:", apiErr.message, ". Trying next fallback...");
+      logSafeError("BREVO_API_CALL_FAILED", apiErr);
     }
   }
 
@@ -1284,10 +1284,9 @@ async function sendOutreachEmail(leadData, emailHtml) {
         return { success: true, sentVia: "Resend Web API" };
       }
 
-      const errText = await apiRes.text();
-      console.warn(`Resend API returned error status ${apiRes.status}: ${errText}. Trying next fallback...`);
+      console.warn("RESEND_API_HTTP_ERROR", apiRes.status);
     } catch (apiErr) {
-      console.warn("Resend API call failed with exception:", apiErr.message, ". Trying next fallback...");
+      logSafeError("RESEND_API_CALL_FAILED", apiErr);
     }
   }
 
@@ -1418,7 +1417,7 @@ function checkMxRecords(email) {
       
       // If we got a network/server error (not a "domain/records do not exist" error), bypass and assume valid
       if (err && err.code !== 'ENOTFOUND' && err.code !== 'ENODATA') {
-        console.warn(`MX DNS query returned server/network error (${err.code}). Bypassing checks.`);
+        logSafeError("OUTREACH_MX_DNS_LOOKUP_FAILED", err);
         return resolve(true);
       }
       
@@ -1429,7 +1428,7 @@ function checkMxRecords(email) {
         
         // If A lookup also fails with a network/server error, bypass and assume valid
         if (errA && errA.code !== 'ENOTFOUND' && errA.code !== 'ENODATA') {
-          console.warn(`A DNS query returned server/network error (${errA.code}). Bypassing checks.`);
+          logSafeError("OUTREACH_A_DNS_LOOKUP_FAILED", errA);
           return resolve(true);
         }
         
@@ -1480,14 +1479,14 @@ async function dispatchApprovedOutreaches() {
         dispatched++;
         sentDetails.push({ company: lead.businessName, email: lead.email, sentVia: result.sentVia });
       } catch (err) {
-        console.error(`Failed to dispatch approved lead ${lead.id}:`, err);
+        logSafeError("OUTREACH_DISPATCH_LEAD_FAILED", err);
         errors++;
       }
     }
 
     return { dispatched, errors, sentDetails };
   } catch (e) {
-    console.error("dispatchApprovedOutreaches failure:", e);
+    logSafeError("OUTREACH_DISPATCH_BATCH_FAILED", e);
     return { dispatched, errors, sentDetails, error: "Outreach dispatch failed." };
   }
 }
