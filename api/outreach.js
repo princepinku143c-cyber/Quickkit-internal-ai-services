@@ -77,7 +77,7 @@ export default async function handler(req, res) {
     return error(res, "Invalid Action", 400);
   } catch (err) {
     console.error("OUTREACH_CRASH:", err);
-    return error(res, err.message, 500);
+    return error(res, "Request could not be completed.", 500);
   }
 }
 
@@ -160,7 +160,7 @@ async function handleAnalyze(req, res) {
     return success(res, { leadId, status: "PENDING_APPROVAL", analysis });
   } catch (err) {
     console.error("ANALYZE_ERROR:", err);
-    return error(res, err.message, 500);
+    return error(res, "Request could not be completed.", 500);
   }
 }
 
@@ -200,8 +200,8 @@ async function scrapeWebsite(url) {
     if (lowerHtml.includes("wix.com") || lowerHtml.includes("wixstatic")) techTags.push("Wix");
     return { title, description, techTags };
   } catch (err) {
-    console.error(`Scraper timed out or failed for ${targetUrl}:`, err.message);
-    return { title: "", description: "", techTags: [], error: err.message };
+    console.error("Scraper request failed:", err?.name || "Error");
+    return { title: "", description: "", techTags: [] };
   }
 }
 
@@ -405,7 +405,7 @@ async function handleApprove(req, res) {
     }
   } catch (err) {
     console.error("APPROVE_ERROR:", err);
-    return error(res, err.message, 500);
+    return error(res, "Request could not be completed.", 500);
   }
 }
 
@@ -422,7 +422,7 @@ async function handleReject(req, res) {
     return success(res, { status: "REJECTED", leadId: id });
   } catch (err) {
     console.error("REJECT_ERROR:", err);
-    return error(res, err.message, 500);
+    return error(res, "Request could not be completed.", 500);
   }
 }
 
@@ -451,7 +451,7 @@ async function handleAddLead(req, res) {
     return success(res, { leadId: docRef.id, status: "QUEUED" });
   } catch (err) {
     console.error("ADD_LEAD_ERROR:", err);
-    return error(res, err.message, 500);
+    return error(res, "Request could not be completed.", 500);
   }
 }
 
@@ -513,7 +513,7 @@ async function handleProcessQueue(req, res) {
     });
   } catch (err) {
     console.error("PROCESS_QUEUE_ERROR:", err);
-    return error(res, err.message, 500);
+    return error(res, "Request could not be completed.", 500);
   }
 }
 
@@ -565,7 +565,7 @@ async function processQueuedLeads(chatId, botToken, customConfig) {
     return { processed, dnsFailed, errors };
   } catch (e) {
     console.error("processQueuedLeads failure:", e);
-    return { processed, dnsFailed, errors, error: e.message };
+    return { processed, dnsFailed, errors, error: "Queue processing failed." };
   }
 }
 
@@ -662,7 +662,7 @@ async function handleTelegramWebhook(req, res) {
           const customConfig = await loadOutreachConfig();
           await analyzeAndDraftLead(docRef.id, dbEntry, botToken, chatId, customConfig);
         } catch (e) {
-          await sendTelegramMessage(botToken, chatId, `❌ *Analysis Failed:* ${e.message}`);
+          await sendTelegramMessage(botToken, chatId, "❌ *Analysis Failed:* The request could not be completed. Check server logs.");
         }
       }
       return success(res, { ok: true });
@@ -900,7 +900,7 @@ You MUST return a JSON object (and nothing else) with these keys:
 
     } catch (e) {
       console.error("AI_TELEGRAM_CONTROLLER_ERROR:", e);
-      await sendTelegramMessage(botToken, chatId, `⚠️ *Sorry Operator, I encountered a neural malfunction:* ${e.message}`);
+      await sendTelegramMessage(botToken, chatId, "⚠️ *Sorry Operator, I could not complete that request. Check server logs for details.");
     }
 
     return success(res, { ok: true });
@@ -960,7 +960,7 @@ You MUST return a JSON object (and nothing else) with these keys:
       }
     } catch (e) {
       console.error("TELEGRAM_WEBHOOK_ACTION_FAILURE:", e);
-      await answerCallbackQuery(botToken, queryId, `Error: ${e.message}`);
+      await answerCallbackQuery(botToken, queryId, "Action failed. Check server logs for details.");
     }
   }
 
@@ -1488,6 +1488,6 @@ async function dispatchApprovedOutreaches() {
     return { dispatched, errors, sentDetails };
   } catch (e) {
     console.error("dispatchApprovedOutreaches failure:", e);
-    return { dispatched, errors, sentDetails, error: e.message };
+    return { dispatched, errors, sentDetails, error: "Outreach dispatch failed." };
   }
 }
