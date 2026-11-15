@@ -60,7 +60,7 @@ export default async (req, res) => {
         }
 
         // Admin only actions
-        const adminActions = ['add-credits', 'generate-payment-token', 'project-quote', 'project-update'];
+        const adminActions = ['stats', 'add-credits', 'generate-payment-token', 'project-quote', 'project-update'];
         if (adminActions.includes(action) && userData?.role !== 'admin') {
             return error(res, "Forbidden: Admin access required", 403);
         }
