@@ -19,6 +19,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Install locked dependencies
         run: npm ci
       - name: Dependency security audit
@@ -29,6 +32,7 @@ jobs:
         run: npm run test:seo
       - name: TypeScript validation
         run: npx tsc --noEmit
-
       - name: Security input regression tests
         run: npm run test:security
+      - name: AEO provider credential regression tests
+        run: python -m unittest discover -s tests -p 'test_aeo_agent.py' -v
