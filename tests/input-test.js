@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { escapeHtml, getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from "../api/_lib/input.js";
 import { getMissingFirebaseClientConfig, isFirebaseClientConfigComplete } from "../lib/firebaseConfig.js";
+import { getPublicSystemError } from "../api/_lib/systemErrors.js";
 assert.equal(isPlainObject({ a: 1 }), true);
 assert.equal(isPlainObject([]), false);
 assert.equal(isPlainObject(null), false);
@@ -122,3 +123,37 @@ assert.equal(
 );
 
 console.log("Security input-helper, API auth-redaction, and source-credential regression tests passed.");
+
+const internalSystemError = new Error("Firestore permission denied: internal project diagnostics");
+assert.deepEqual(
+  getPublicSystemError(internalSystemError),
+  { status: 500, message: "Request could not be completed." },
+  "unexpected system API errors must not expose internal exception details",
+);
+assert.deepEqual(
+  getPublicSystemError(Object.assign(new Error("rate limit details"), { status: 429 })),
+  { status: 429, message: "Too many requests. Please try again later." },
+);
+assert.deepEqual(
+  getPublicSystemError(Object.assign(new Error("backend diagnostics"), { status: 503 })),
+  { status: 503, message: "Service temporarily unavailable. Please try again later." },
+);
+assert.deepEqual(
+  getPublicSystemError(new Error("Invalid promo code."), "Unable to redeem promo code."),
+  { status: 400, message: "Invalid promo code." },
+  "known promo validation errors must retain their safe client-facing message",
+);
+assert.deepEqual(
+  getPublicSystemError(new Error("private Firestore path"), "Unable to redeem promo code."),
+  { status: 500, message: "Unable to redeem promo code." },
+);
+assert.doesNotMatch(
+  systemApiSource,
+  /return error\\(res,\\s*e\\.message/,
+  "system API must never return raw exception messages",
+);
+assert.doesNotMatch(
+  systemApiSource,
+  /console\\.error\\([^;\\n]*,\\s*(?:err|userErr|odooError)\\s*\\)/,
+  "system API must not log raw downstream exception objects",
+);
