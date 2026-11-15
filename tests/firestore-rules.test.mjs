@@ -119,6 +119,11 @@ try {
   const admin = testEnv.authenticatedContext('admin', { email: 'admin@quickkitai.com' }).firestore();
   const newProfile = testEnv.authenticatedContext('new-profile', { email: 'new-profile@example.com' }).firestore();
   const freshUser = testEnv.authenticatedContext('fresh-user', { email: 'fresh@example.com' }).firestore();
+  const forgedAdminClaim = testEnv.authenticatedContext('forged-admin', {
+    email: 'forged-admin@example.com',
+    role: 'admin',
+    admin: true,
+  }).firestore();
 
   // A new account cannot self-assign an admin role, quota, plan or tenant.
   await assertFails(setDoc(doc(freshUser, 'users', 'fresh-user'), {
@@ -148,6 +153,21 @@ try {
     credits: 500,
     plan: 'free',
     createdAt: stamp,
+  }));
+
+  // Firebase custom claims alone must never grant Firestore admin access.
+  // The trusted server-managed profile remains the authority for isAdmin().
+  await assertSucceeds(setDoc(doc(forgedAdminClaim, 'users', 'forged-admin'), {
+    uid: 'forged-admin',
+    email: 'forged-admin@example.com',
+    role: 'client',
+    createdAt: stamp,
+  }));
+  await assertFails(getDoc(doc(forgedAdminClaim, 'promo_codes', 'LAUNCH')));
+  await assertFails(getDocs(collection(forgedAdminClaim, 'users')));
+  await assertFails(setDoc(doc(forgedAdminClaim, 'projects', 'forged-admin-project'), {
+    userId: 'forged-admin',
+    projectName: 'Claim-forged project',
   }));
 
   // Existing accounts can receive the one-time initial trial grant only.
