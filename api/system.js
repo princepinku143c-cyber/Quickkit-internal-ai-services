@@ -4,6 +4,7 @@ import nodemailer from 'nodemailer';
 import { askAI } from './_lib/services/aiService.js';
 import { checkRateLimit } from './_lib/security.js';
 import { escapeHtml, getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from './_lib/input.js';
+import { getPublicSystemError } from './_lib/systemErrors.js';
 
 
 const success = (res, data) => res.status(200).json(data);
@@ -110,7 +111,7 @@ async function handleLead(req, res, userId) {
                 });
                 console.log(`🤖 AI Draft successfully generated for lead ${leadId}`);
             } catch (err) {
-                console.error(`❌ Failed to generate AI draft for lead ${leadId}:`, err);
+                console.error(`AI draft generation failed for lead ${leadId}.`);
             }
         })();
 
@@ -185,7 +186,7 @@ async function handleLead(req, res, userId) {
                                 clientNiche = userSnap.data().industryType || "Unknown";
                             }
                         } catch (userErr) {
-                            console.error("Failed to fetch user niche for tagging:", userErr);
+                            console.error("Failed to fetch user niche for tagging.");
                         }
                     }
 
@@ -226,12 +227,13 @@ async function handleLead(req, res, userId) {
                 console.warn("⚠️ Odoo environment variables are incomplete.");
             }
         } catch (odooError) {
-            console.error("❌ Failed to sync lead to Odoo CRM:", odooError);
+            console.error("Odoo CRM sync failed.");
         }
 
         return success(res, { status: "LEAD_CREATED", projectId: projectRef.id });
     } catch (e) {
-        return error(res, e.message, e.status || 500);
+        const publicError = getPublicSystemError(e, "Unable to submit lead right now.");
+        return error(res, publicError.message, publicError.status);
     }
 }
 
@@ -241,7 +243,8 @@ async function getStats(req, res, userId) {
         const projects = await admin.firestore().collection('projects').count().get();
         return success(res, { leads: leads.data().count, projects: projects.data().count });
     } catch (e) {
-        return error(res, e.message, 500);
+        const publicError = getPublicSystemError(e);
+        return error(res, publicError.message, publicError.status);
     }
 }
 
@@ -258,7 +261,8 @@ async function handleAddCredits(req, res, adminId) {
         });
         return success(res, { status: "CREDITS_ADDED" });
     } catch (e) {
-        return error(res, e.message, 500);
+        const publicError = getPublicSystemError(e);
+        return error(res, publicError.message, publicError.status);
     }
 }
 
@@ -291,7 +295,8 @@ async function handleRedeemCode(req, res, userId) {
 
         return success(res, { amount: result.amount, status: "CODE_REDEEMED" });
     } catch (e) {
-        return error(res, e.message, 400);
+        const publicError = getPublicSystemError(e, "Unable to redeem promo code.");
+        return error(res, publicError.message, publicError.status);
     }
 }
 
@@ -333,7 +338,8 @@ async function handleCreditRequest(req, res, userId) {
 
         return success(res, { status: "REQUEST_SENT" });
     } catch (e) {
-        return error(res, e.message, 500);
+        const publicError = getPublicSystemError(e);
+        return error(res, publicError.message, publicError.status);
     }
 }
 
@@ -347,7 +353,8 @@ async function handleGenerateToken(req, res, adminId) {
         });
         return success(res, { token });
     } catch (e) {
-        return error(res, e.message, 500);
+        const publicError = getPublicSystemError(e);
+        return error(res, publicError.message, publicError.status);
     }
 }
 
@@ -366,7 +373,8 @@ async function handleVerifyToken(req, res, userId) {
         }
         return error(res, "Invalid Token", 400);
     } catch (e) {
-        return error(res, e.message, 500);
+        const publicError = getPublicSystemError(e);
+        return error(res, publicError.message, publicError.status);
     }
 }
 
@@ -400,7 +408,8 @@ async function handleProjectQuote(req, res, adminId) {
 
         return success(res, { status: "QUOTE_SENT" });
     } catch (e) {
-        return error(res, e.message, 500);
+        const publicError = getPublicSystemError(e);
+        return error(res, publicError.message, publicError.status);
     }
 }
 
@@ -435,7 +444,8 @@ async function handleProjectUpdate(req, res, adminId) {
 
         return success(res, { status: "UPDATED" });
     } catch (e) {
-        return error(res, e.message, 500);
+        const publicError = getPublicSystemError(e);
+        return error(res, publicError.message, publicError.status);
     }
 }
 
@@ -474,6 +484,7 @@ async function handleProjectStatus(req, res, userId) {
         }
         return success(res, { status: "STATE_TRANSITIONED" });
     } catch (e) {
-        return error(res, e.message, 500);
+        const publicError = getPublicSystemError(e);
+        return error(res, publicError.message, publicError.status);
     }
 }
