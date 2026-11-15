@@ -105,4 +105,20 @@ assert.doesNotMatch(
   "Firebase Admin initialization must not log raw exception details that may contain credential diagnostics",
 );
 
+assert.equal(
+  existsSync(new URL("../api/services", import.meta.url)),
+  false,
+  "helper modules must not live in api/services because Vercel treats non-underscore API files as routes",
+);
+assert.equal(
+  existsSync(new URL("../api/_lib/services/aiService.js", import.meta.url)),
+  true,
+  "AI service helper must remain available under the underscore-prefixed private library directory",
+);
+assert.equal(
+  existsSync(new URL("../api/_lib/services/leadService.js", import.meta.url)),
+  true,
+  "lead service helper must remain available under the underscore-prefixed private library directory",
+);
+
 console.log("Security input-helper, API auth-redaction, and source-credential regression tests passed.");
