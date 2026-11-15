@@ -1,36 +1,11 @@
-import { createHash } from 'node:crypto';
 import admin from './_lib/firebaseAdmin.js';
 import nodemailer from 'nodemailer';
+import { getOrCreateLead } from './_lib/leadIdempotency.js';
 import { checkRateLimit } from './_lib/security.js';
 import { getClientIp, isPlainObject, payloadTooLarge, safeNumber, safeText } from './_lib/input.js';
 
 const json = (res, status, body) => res.status(status).json(body);
 const esc = (value = '') => String(value).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
-const hashKey = (key) => createHash('sha256').update(key).digest('hex');
-
-async function getOrCreateLead(db, idempotencyKey, leadData) {
-  const keyRef = db.collection('lead_idempotency').doc(hashKey(idempotencyKey));
-  return db.runTransaction(async (tx) => {
-    const keySnap = await tx.get(keyRef);
-    if (keySnap.exists) {
-      const existingRef = db.collection('leads').doc(keySnap.data().leadId);
-      const existingSnap = await tx.get(existingRef);
-      if (existingSnap.exists) return { ref: existingRef, lead: existingSnap.data(), created: false };
-      // Repair an orphaned idempotency record rather than returning a false success.
-      const newRef = db.collection('leads').doc();
-      const lead = { ...leadData, id: newRef.id };
-      tx.set(newRef, lead);
-      tx.set(keyRef, { leadId: newRef.id, createdAt: new Date().toISOString() });
-      return { ref: newRef, lead, created: true };
-    }
-    const leadRef = db.collection('leads').doc();
-    const lead = { ...leadData, id: leadRef.id };
-    tx.create(leadRef, lead);
-    tx.create(keyRef, { leadId: leadRef.id, createdAt: new Date().toISOString() });
-    return { ref: leadRef, lead, created: true };
-  });
-}
-
 async function claimNotification(db, leadRef, channel) {
   return db.runTransaction(async (tx) => {
     const snap = await tx.get(leadRef);
@@ -94,7 +69,7 @@ export default async function handler(req, res) {
   const required = ['name', 'phone', 'email', 'businessName', 'businessType', 'plan'];
   const missing = required.filter(k => !data[k]);
   if (missing.length) return json(res, 400, { error: 'Missing required fields: ' + missing.join(', ') });
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return json(res, 400, { error: 'Please provide a valid email address' });
+  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(data.email)) return json(res, 400, { error: 'Please provide a valid email address' });
 
   const adminEmail = process.env.LEAD_NOTIFY_EMAIL || process.env.EMAIL_USER || 'admin@quickkitai.com';
   const fromEmail = process.env.EMAIL_USER || adminEmail;
@@ -121,7 +96,7 @@ export default async function handler(req, res) {
     });
     const { ref: leadRef, lead, created } = leadResult;
 
-    let emailConfigured = Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS);
+    const emailConfigured = Boolean(process.env.EMAIL_USER && process.env.EMAIL_PASS);
     if (emailConfigured) {
       const transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -135,7 +110,7 @@ export default async function handler(req, res) {
         to: adminEmail,
         replyTo: lead.email,
         subject: `🚀 New ${lead.plan} Lead — ${lead.businessName}`,
-        html: `<h2>New QuickKit AI Plan Request</h2><p><b>Name:</b> ${esc(lead.name)}</p><p><b>Phone / WhatsApp:</b> ${esc(lead.phone)}</p><p><b>Email:</b> ${esc(lead.email)}</p><p><b>Business:</b> ${esc(lead.businessName)}</p><p><b>Industry:</b> ${esc(lead.businessType)}</p><p><b>Selected Plan:</b> ${esc(lead.plan)}</p><p><b>Setup:</b> ${setup}</p><p><b>Maintenance:</b> ${maintenance}</p><p><b>Requirements:</b><br/>${esc(lead.requirement || 'Not provided')}</p><p><b>Lead ID:</b> ${esc(lead.id)}</p>`
+        html: `<h2>New QuickKit AI Plan Request</h2><p><b>Name:</b> ${esc(lead.name)}</p><p><b>Phone / WhatsApp:</b> ${esc(lead.phone)}</p><p><b>Email:</b> ${esc(lead.email)}</p><p><b>Business:</b> ${esc(lead.businessName)}</p><p><b>Industry:</b> ${esc(lead.businessType)}</p><p><b>Selected Plan:</b> ${esc(lead.plan)}</p><p><b>Setup:</b> ${setup}</p><p><b>Maintenance:</b> ${maintenance}</p><p><b>Requirements:</b><br/> ${esc(lead.requirement || 'Not provided')}</p><p><b>Lead ID:</b> ${esc(lead.id)}</p>`
       });
       await deliverNotification(db, leadRef, 'customer', transporter, {
         from: `QuickKit AI <${fromEmail}>`,
