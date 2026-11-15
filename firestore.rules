@@ -94,10 +94,18 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    // Agent ownership and tenant metadata are server/admin managed.
+    function validClientAgentCreate() {
+      return isOwner(request.resource.data.userId)
+        && !request.resource.data.keys().hasAny([
+          'tenantId', 'workspaceId', 'companyId', 'organizationId'
+        ]);
+    }
+
     // Agent ownership cannot be reassigned by the current owner.
     match /agents/{agentId} {
       allow read: if isAdmin() || isOwner(resource.data.userId);
-      allow create: if isAdmin() || isOwner(request.resource.data.userId);
+      allow create: if isAdmin() || validClientAgentCreate();
       allow update: if isAdmin()
         || (
           isOwner(resource.data.userId)
