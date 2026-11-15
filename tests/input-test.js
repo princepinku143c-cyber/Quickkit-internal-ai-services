@@ -159,3 +159,19 @@ for (const rawErrorLog of [
 }
 
 console.log("Security input-helper, API auth-redaction, and source-credential regression tests passed.");
+
+const aiApiSource = readFileSync(new URL("../api/ai.js", import.meta.url), "utf8");
+assert.ok(
+  !aiApiSource.includes("return error(res, e.message"),
+  "AI API must not return raw provider or infrastructure exceptions",
+);
+assert.ok(
+  !aiApiSource.includes('console.error("AI_CLUSTER_CRASH:", err);')
+    && !aiApiSource.includes('console.error("KELLY_ERROR:", e);'),
+  "AI API must not log raw identity or provider exception objects",
+);
+assert.ok(
+  aiApiSource.includes('return error(res, "Too many requests. Please try again later.", 429);')
+    && aiApiSource.includes('return error(res, "AI service temporarily unavailable. Please try again later.", 503);'),
+  "AI API must preserve safe rate-limit and unavailable responses",
+);
