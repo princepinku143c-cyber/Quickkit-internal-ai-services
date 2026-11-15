@@ -36,6 +36,8 @@ jobs:
         run: npm run test:security
       - name: API integration safety guard regression tests
         run: npm run test:api-guard
+      - name: Lead submission idempotency regression tests
+        run: npm run test:lead-idempotency
       - name: Rank tracker credential and provider-error regression tests
         run: npm run test:rank-tracker
       - name: AEO provider credential regression tests
