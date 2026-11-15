@@ -57,7 +57,7 @@ assert.ok(
 const vpsAutomationSource = readFileSync(new URL("../vps-automation/server.js", import.meta.url), "utf8");
 assert.match(
   vpsAutomationSource,
-  /process\\.env\\.VPS_AUTOMATION_TOKEN/,
+  vpsAutomationSource.includes("process.env.VPS_AUTOMATION_TOKEN"),
   "VPS automation must read its bearer token from the server environment",
 );
 assert.match(
