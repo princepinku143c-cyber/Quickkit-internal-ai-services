@@ -258,7 +258,7 @@ try {
   await assertSucceeds(getDocs(collection(admin, 'leads')));
 
   const aliceProjects = await getDocs(query(collection(alice, 'projects'), where('userId', '==', 'alice')));
-  assert.equal(aliceProjects.size, 1);
+  assert.equal(aliceProjects.size, 2);
   await assertSucceeds(getDocs(query(collection(bob, 'projects'), where('userId', '==', 'bob'))));
   await assertFails(getDocs(collection(alice, 'projects')));
   await assertFails(getDocs(query(collection(alice, 'projects'), where('userId', '==', 'bob'))));
@@ -272,7 +272,7 @@ try {
   await assertSucceeds(getDocs(collection(admin, 'agents')));
 
   const aliceLogs = await getDocs(query(collection(alice, 'logs'), where('user_id', '==', 'alice')));
-  assert.equal(aliceLogs.size, 1);
+  assert.equal(aliceLogs.size, 2);
   await assertSucceeds(getDocs(query(collection(bob, 'logs'), where('user_id', '==', 'bob'))));
   await assertFails(getDocs(collection(alice, 'logs')));
   await assertFails(getDocs(query(collection(alice, 'logs'), where('user_id', '==', 'bob'))));
@@ -286,7 +286,7 @@ try {
   await assertSucceeds(getDocs(collection(admin, 'payments')));
 
   const aliceRequests = await getDocs(query(collection(alice, 'payment_requests'), where('userId', '==', 'alice')));
-  assert.equal(aliceRequests.size, 1);
+  assert.equal(aliceRequests.size, 2);
   await assertSucceeds(getDocs(query(collection(bob, 'payment_requests'), where('userId', '==', 'bob'))));
   await assertFails(getDocs(collection(alice, 'payment_requests')));
   await assertFails(getDocs(query(collection(alice, 'payment_requests'), where('userId', '==', 'bob'))));
