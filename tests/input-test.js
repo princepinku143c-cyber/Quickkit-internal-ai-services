@@ -48,4 +48,9 @@ assert.doesNotMatch(
   "Firebase verification details must never be echoed to callers",
 );
 
+assert.ok(
+  systemApiSource.includes("const adminActions = ['stats',"),
+  "global lead/project aggregate counts must be admin-only",
+);
+
 console.log("Security input-helper and API auth-redaction tests passed.");
