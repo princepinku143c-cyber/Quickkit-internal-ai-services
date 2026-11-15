@@ -80,7 +80,7 @@ class AeoAgentCredentialTests(unittest.TestCase):
 
     def test_agent_source_has_no_hardcoded_bearer_api_key(self):
         source = (Path(__file__).resolve().parents[1] / "agents" / "aeo_agent.py").read_text()
-        self.assertIsNone(re.search(r"Bearer\\s+sk-[A-Za-z0-9]", source))
+        self.assertIsNone(re.search(r"Bearer\s+sk-[A-Za-z0-9]", source))
 
 
 if __name__ == "__main__":
