@@ -300,6 +300,19 @@ try {
   await assertFails(getDocs(collection(alice, 'promo_codes')));
   await assertSucceeds(getDocs(collection(admin, 'promo_codes')));
 
+  // Clients may create their own agent records, but cannot assign tenant/workspace identity.
+  await assertSucceeds(setDoc(doc(alice, 'agents', 'alice-new-agent'), {
+    userId: 'alice',
+    name: 'Alice new agent',
+  }));
+  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId']) {
+    await assertFails(setDoc(doc(alice, 'agents', 'spoofed-' + field), {
+      userId: 'alice',
+      name: 'Spoofed agent',
+      [field]: 'victim-tenant',
+    }));
+  }
+
   console.log('Firestore security rules emulator tests passed.');
 } finally {
   await testEnv.cleanup();
