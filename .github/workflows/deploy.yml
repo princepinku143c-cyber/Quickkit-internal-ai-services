@@ -34,6 +34,8 @@ jobs:
         run: npx tsc --noEmit
       - name: Security input regression tests
         run: npm run test:security
+      - name: Rank tracker credential and provider-error regression tests
+        run: npm run test:rank-tracker
       - name: AEO provider credential regression tests
         run: python -m unittest discover -s tests -p 'test_aeo_agent.py' -v
       - uses: actions/setup-java@v4
