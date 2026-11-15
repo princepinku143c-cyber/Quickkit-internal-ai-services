@@ -55,19 +55,17 @@ assert.ok(
 
 
 const vpsAutomationSource = readFileSync(new URL("../vps-automation/server.js", import.meta.url), "utf8");
-assert.match(
-  vpsAutomationSource,
+assert.ok(
   vpsAutomationSource.includes("process.env.VPS_AUTOMATION_TOKEN"),
   "VPS automation must read its bearer token from the server environment",
 );
-assert.match(
-  vpsAutomationSource,
-  /timingSafeEqual/,
+assert.ok(
+  vpsAutomationSource.includes("timingSafeEqual"),
   "VPS automation token comparisons must use a constant-time comparison",
 );
-assert.doesNotMatch(
-  vpsAutomationSource,
-  /const\\s+AUTH_TOKEN\\s*=\\s*["'`][^"'`]+["'`]/,
+assert.ok(
+  !vpsAutomationSource.includes('const AUTH_TOKEN = "')
+    && !vpsAutomationSource.includes("const AUTH_TOKEN = '"),
   "VPS automation must not contain a hardcoded bearer token",
 );
 
