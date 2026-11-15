@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { escapeHtml, getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from "../api/_lib/input.js";
 import { getMissingFirebaseClientConfig, isFirebaseClientConfigComplete } from "../lib/firebaseConfig.js";
 assert.equal(isPlainObject({ a: 1 }), true);
@@ -35,4 +36,16 @@ for (const requiredField of ["apiKey", "authDomain", "projectId", "appId"]) {
 }
 assert.equal(isFirebaseClientConfigComplete(null), false);
 
-console.log("Security input-helper tests passed.");
+const systemApiSource = readFileSync(new URL("../api/system.js", import.meta.url), "utf8");
+assert.match(
+  systemApiSource,
+  /catch\s*\{\s*\/\/ Do not expose Firebase token-verification details to API callers\.\s*return error\(res, "Authentication failed", 401\);/s,
+  "invalid Firebase bearer tokens must receive a generic authentication error",
+);
+assert.doesNotMatch(
+  systemApiSource,
+  /Authentication Failed:\s*"\s*\+\s*e\.message/,
+  "Firebase verification details must never be echoed to callers",
+);
+
+console.log("Security input-helper and API auth-redaction tests passed.");
