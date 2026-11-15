@@ -21,7 +21,7 @@ if (!app) {
       });
       console.log("Firebase Admin initialized.");
     } catch (error) {
-      console.error("Firebase Admin initialization failed:", error instanceof Error ? error.message : error);
+      console.error("Firebase Admin initialization failed. Check server-side Firebase Admin configuration.");
     }
   }
 }
