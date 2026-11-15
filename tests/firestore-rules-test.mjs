@@ -284,6 +284,40 @@ try {
   await assertSucceeds(getDoc(doc(adminDb, "leads_outreach/outreach-1")));
   await assertSucceeds(setDoc(doc(adminDb, "leads_outreach/admin-write"), { userId: "client-1" }));
 
+  // Nested AEO drafts, settings, and chat history must remain server-only even
+  // when stored below a user's document. Test direct reads, collection queries,
+  // collection-group queries, and all client-SDK mutation paths for every role.
+  const nestedServerOnlyCollections = [
+    {
+      name: "aeo_generations",
+      documentPath: "users/client-1/aeo_generations/nested-server-seed",
+      collectionPath: "users/client-1/aeo_generations",
+    },
+    {
+      name: "settings",
+      documentPath: "users/client-1/settings/nested-server-seed",
+      collectionPath: "users/client-1/settings",
+    },
+    {
+      name: "chat_history",
+      documentPath: "users/client-1/chat_history/nested-server-seed",
+      collectionPath: "users/client-1/chat_history",
+    },
+  ];
+
+  for (const db of [anonymousDb, clientOneDb, adminDb]) {
+    for (const nestedCollection of nestedServerOnlyCollections) {
+      await Promise.all([
+        assertFails(getDoc(doc(db, nestedCollection.documentPath))),
+        assertFails(getDocs(collection(db, nestedCollection.collectionPath))),
+        assertFails(getDocs(collectionGroup(db, nestedCollection.name))),
+        assertFails(setDoc(doc(db, `${nestedCollection.collectionPath}/client-write`), { attempted: true })),
+        assertFails(updateDoc(doc(db, nestedCollection.documentPath), { attempted: true })),
+        assertFails(deleteDoc(doc(db, nestedCollection.documentPath))),
+      ]);
+    }
+  }
+
   // Collection-group queries must not bypass the default-deny policy for nested paths.
   for (const db of [anonymousDb, clientOneDb, adminDb]) {
     await assertFails(
