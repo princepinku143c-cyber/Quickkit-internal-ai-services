@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { escapeHtml, getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from "../api/_lib/input.js";
 import { getMissingFirebaseClientConfig, isFirebaseClientConfigComplete } from "../lib/firebaseConfig.js";
 assert.equal(isPlainObject({ a: 1 }), true);
@@ -53,4 +53,28 @@ assert.ok(
   "global lead/project aggregate counts must be admin-only",
 );
 
-console.log("Security input-helper and API auth-redaction tests passed.");
+
+const vpsAutomationSource = readFileSync(new URL("../vps-automation/server.js", import.meta.url), "utf8");
+assert.match(
+  vpsAutomationSource,
+  /process\\.env\\.VPS_AUTOMATION_TOKEN/,
+  "VPS automation must read its bearer token from the server environment",
+);
+assert.match(
+  vpsAutomationSource,
+  /timingSafeEqual/,
+  "VPS automation token comparisons must use a constant-time comparison",
+);
+assert.doesNotMatch(
+  vpsAutomationSource,
+  /const\\s+AUTH_TOKEN\\s*=\\s*["'`][^"'`]+["'`]/,
+  "VPS automation must not contain a hardcoded bearer token",
+);
+
+assert.equal(
+  existsSync(new URL("../scratch/test-firebase.js", import.meta.url)),
+  false,
+  "the scratch Firebase test containing a service-account key must remain absent",
+);
+
+console.log("Security input-helper, API auth-redaction, and source-credential regression tests passed.");
