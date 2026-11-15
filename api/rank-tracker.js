@@ -1,3 +1,7 @@
+import admin from "./_lib/firebaseAdmin.js";
+import { checkRateLimit } from "./_lib/security.js";
+import { getClientIp } from "./_lib/input.js";
+
 const TAVILY_ENDPOINT = "https://api.tavily.com/search";
 const KEYWORDS = [
   "AI agents for business",
@@ -12,57 +16,78 @@ const KEYWORDS = [
   "best AI platform for business",
 ];
 
-export default async function handler(req, res) {
-  res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+export function createRankTrackerHandler({
+  rateLimit = checkRateLimit,
+  adminClient = admin,
+  resolveClientIp = getClientIp,
+} = {}) {
+  return async function handler(req, res) {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === "OPTIONS") return res.status(204).end();
-  if (req.method !== "GET") {
-    res.setHeader("Allow", "GET,OPTIONS");
-    return res.status(405).json({ error: "Method not allowed" });
-  }
-
-  const apiKey = process.env.TAVILY_API_KEY?.trim();
-  if (!apiKey) {
-    return res.status(503).json({ error: "Rank tracker is not configured." });
-  }
-
-  const results = [];
-  for (const keyword of KEYWORDS) {
-    try {
-      const response = await fetch(TAVILY_ENDPOINT, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          api_key: apiKey,
-          query: keyword,
-          search_depth: "basic",
-          max_results: 5,
-        }),
-      });
-
-      if (!response.ok) {
-        results.push({ keyword, rank: null, found: false, error: "Search provider request failed" });
-      } else {
-        const data = await response.json();
-        const items = Array.isArray(data?.results) ? data.results : [];
-        const index = items.findIndex((item) => (
-          typeof item?.url === "string" && item.url.includes("quickkitai.com")
-        ));
-        results.push({ keyword, rank: index >= 0 ? index + 1 : null, found: index >= 0 });
-      }
-    } catch {
-      // Never return provider response bodies, request headers, or credential details.
-      results.push({ keyword, rank: null, found: false, error: "Search request failed" });
+    if (req.method === "OPTIONS") return res.status(204).end();
+    if (req.method !== "GET") {
+      res.setHeader("Allow", "GET,OPTIONS");
+      return res.status(405).json({ error: "Method not allowed" });
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-  }
+    const apiKey = process.env.TAVILY_API_KEY?.trim();
+    if (!apiKey) {
+      return res.status(503).json({ error: "Rank tracker is not configured." });
+    }
 
-  return res.json({
-    timestamp: new Date().toISOString(),
-    results,
-    summary: { total: KEYWORDS.length, found: results.filter((item) => item.found).length },
-  });
+    // Each scan makes ten paid-provider requests. Bound public access per client IP
+    // and fail closed if the shared Firestore limiter is unavailable.
+    try {
+      await rateLimit(adminClient, resolveClientIp(req), "rank-tracker", 2);
+    } catch (error) {
+      if (error?.status === 429) {
+        const retryAfter = Math.max(1, Math.min(3600, Number(error.retryAfter) || 60));
+        res.setHeader("Retry-After", String(retryAfter));
+        return res.status(429).json({ error: "Too many rank-tracker requests. Please retry later." });
+      }
+      return res.status(503).json({ error: "Rank tracker is temporarily unavailable." });
+    }
+
+    const results = [];
+    for (const keyword of KEYWORDS) {
+      try {
+        const response = await fetch(TAVILY_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            api_key: apiKey,
+            query: keyword,
+            search_depth: "basic",
+            max_results: 5,
+          }),
+        });
+
+        if (!response.ok) {
+          results.push({ keyword, rank: null, found: false, error: "Search provider request failed" });
+        } else {
+          const data = await response.json();
+          const items = Array.isArray(data?.results) ? data.results : [];
+          const index = items.findIndex((item) => (
+            typeof item?.url === "string" && item.url.includes("quickkitai.com")
+          ));
+          results.push({ keyword, rank: index >= 0 ? index + 1 : null, found: index >= 0 });
+        }
+      } catch {
+        // Never return provider response bodies, request headers, or credential details.
+        results.push({ keyword, rank: null, found: false, error: "Search request failed" });
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+    }
+
+    return res.json({
+      timestamp: new Date().toISOString(),
+      results,
+      summary: { total: KEYWORDS.length, found: results.filter((item) => item.found).length },
+    });
+  };
 }
+
+export default createRankTrackerHandler();
