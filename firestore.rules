@@ -102,7 +102,7 @@ service cloud.firestore {
         || (
           isOwner(resource.data.userId)
           && request.resource.data.userId == resource.data.userId
-          && request.resource.data.diff(resource.data).affectedKeys().hasNone([
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
             'tenantId', 'workspaceId', 'companyId', 'organizationId'
           ])
         );
