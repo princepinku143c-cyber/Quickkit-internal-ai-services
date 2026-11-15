@@ -158,14 +158,17 @@ try {
     credits: 999999,
     plan: 'free',
   }));
-  await assertFails(setDoc(doc(freshUser, 'users', 'fresh-user'), {
-    uid: 'fresh-user',
-    email: 'fresh@example.com',
-    role: 'client',
-    credits: 500,
-    plan: 'free',
-    tenantId: 'victim-tenant',
-  }));
+  // Every reserved tenant/workspace identifier is server-managed on profile creation.
+  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId']) {
+    await assertFails(setDoc(doc(freshUser, 'users', 'fresh-user'), {
+      uid: 'fresh-user',
+      email: 'fresh@example.com',
+      role: 'client',
+      credits: 500,
+      plan: 'free',
+      [field]: 'victim-tenant',
+    }));
+  }
   await assertSucceeds(setDoc(doc(freshUser, 'users', 'fresh-user'), {
     uid: 'fresh-user',
     email: 'fresh@example.com',
@@ -201,7 +204,10 @@ try {
   await assertFails(updateDoc(doc(alice, 'users', 'alice'), { role: 'admin' }));
   await assertFails(updateDoc(doc(alice, 'users', 'alice'), { credits: 999999 }));
   await assertFails(updateDoc(doc(alice, 'users', 'alice'), { monthlyLimit: 999999 }));
-  await assertFails(updateDoc(doc(alice, 'users', 'alice'), { tenantId: 'victim-tenant' }));
+  // Existing users cannot add or change any server-owned tenant identifier.
+  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId']) {
+    await assertFails(updateDoc(doc(alice, 'users', 'alice'), { [field]: 'victim-tenant' }));
+  }
   await assertFails(updateDoc(doc(alice, 'users', 'alice'), { email: 'bob@example.com' }));
   await assertSucceeds(updateDoc(doc(alice, 'users', 'alice'), {
     displayName: 'Alice',
@@ -233,7 +239,10 @@ try {
 
   // Agent owners cannot transfer a record to another tenant or user.
   await assertFails(updateDoc(doc(alice, 'agents', 'alice-agent'), { userId: 'bob' }));
-  await assertFails(updateDoc(doc(alice, 'agents', 'alice-agent'), { tenantId: 'victim-tenant' }));
+  // An agent owner cannot attach or mutate any reserved tenant/workspace identifier.
+  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId']) {
+    await assertFails(updateDoc(doc(alice, 'agents', 'alice-agent'), { [field]: 'victim-tenant' }));
+  }
   await assertSucceeds(updateDoc(doc(alice, 'agents', 'alice-agent'), { name: 'Updated agent' }));
   await assertFails(updateDoc(doc(bob, 'agents', 'alice-agent'), { name: 'Hijacked agent' }));
 
