@@ -1,11 +1,28 @@
 import admin, { db } from "./_lib/firebaseAdmin.js";
-import { timingSafeEqual } from "node:crypto";
+import { createHash, timingSafeEqual } from "node:crypto";
 import { checkRateLimit } from "./_lib/security.js";
 import { getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from "./_lib/input.js";
 import { success, error } from "./_lib/response.js";
-import { askAI } from "./services/aiService.js";
+import { askAI } from "../services/aiService.js";
+
+
+export function matchesWebhookSecret(expectedSecret, suppliedSecret) {
+  if (typeof expectedSecret !== "string" || typeof suppliedSecret !== "string" ||
+      !expectedSecret || !suppliedSecret || expectedSecret.length > 256 || suppliedSecret.length > 256) {
+    return false;
+  }
+  // Compare fixed-length digests so the timingSafeEqual call does not branch on
+  // the stored secret's length or the supplied secret's length.
+  const expectedDigest = createHash("sha256").update(expectedSecret, "utf8").digest();
+  const suppliedDigest = createHash("sha256").update(suppliedSecret, "utf8").digest();
+  return timingSafeEqual(expectedDigest, suppliedDigest);
+}
 
 export default async function handler(req, res) {
+  // Webhook responses are credential-scoped and may contain lead/project identifiers.
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("Vary", "X-Webhook-Secret");
+
   // CORS configuration
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
@@ -39,9 +56,7 @@ export default async function handler(req, res) {
     if (typeof expectedSecret !== "string" || !expectedSecret || typeof suppliedSecret !== "string" || !suppliedSecret) {
       return error(res, "Unauthorized: a valid X-Webhook-Secret is required.", 401);
     }
-    const expectedBytes = Buffer.from(expectedSecret, "utf8");
-    const suppliedBytes = Buffer.from(suppliedSecret, "utf8");
-    if (expectedBytes.length !== suppliedBytes.length || !timingSafeEqual(expectedBytes, suppliedBytes)) {
+    if (!matchesWebhookSecret(expectedSecret, suppliedSecret)) {
       return error(res, "Unauthorized: a valid X-Webhook-Secret is required.", 401);
     }
     await checkRateLimit(admin, String(targetUid) + ":" + getClientIp(req), "webhook", 10);
@@ -91,7 +106,7 @@ export default async function handler(req, res) {
         });
         console.log(`🤖 AI Draft successfully generated for webhook lead ${leadId}`);
       } catch (err) {
-        console.error(`❌ Failed to generate AI draft for webhook lead ${leadId}:`, err);
+        console.error("WEBHOOK_AI_DRAFT_FAILED");
       }
     })();
 
@@ -179,11 +194,11 @@ export default async function handler(req, res) {
           });
           console.log("✅ Lead successfully synced to Odoo CRM via webhook.");
         } else {
-          console.error("❌ Odoo Webhook Authentication failed.");
+          console.error("WEBHOOK_ODOO_AUTH_FAILED");
         }
       }
     } catch (odooErr) {
-      console.error("❌ Webhook Odoo Sync failure:", odooErr);
+      console.error("WEBHOOK_ODOO_SYNC_FAILED");
     }
 
     return success(res, { status: "LEAD_INGESTED", leadId: leadRef.id, projectId: projectRef.id });
@@ -193,7 +208,7 @@ export default async function handler(req, res) {
       return error(res, 'Too many webhook requests. Please retry shortly.', 429);
     }
     if (e?.status === 503) return error(res, 'Webhook service is temporarily unavailable.', 503);
-    console.error('WEBHOOK_ERROR:', e);
+    console.error("WEBHOOK_PROCESSING_FAILED");
     return error(res, 'Webhook processing failed. Please retry later.', 500);
   }
 }

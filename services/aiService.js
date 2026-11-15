@@ -191,7 +191,8 @@ Always end your responses by asking if the client has more questions or if they'
 
     if (!res.ok) {
         const errData = await res.json().catch(() => ({}));
-        console.error("NEURAL_NODE_ERROR:", errData);
+        // Provider response bodies can contain private diagnostics; log status only.
+        console.error("NEURAL_NODE_ERROR", { status: res.status });
         throw new Error(`Intelligence Node Failure: ${res.status}`);
     }
 

@@ -1,12 +1,29 @@
 import admin from "./_lib/firebaseAdmin.js";
 import nodemailer from "nodemailer";
 import dns from "dns";
+import { createHash, timingSafeEqual } from "node:crypto";
+import { fetchSafeWebsiteHtml } from "../services/safeWebsiteFetch.js";
+
+const INVALID_ID_TOKEN_CODES = new Set([
+  "auth/argument-error",
+  "auth/invalid-id-token",
+  "auth/id-token-expired",
+  "auth/id-token-revoked",
+  "auth/invalid-user-token",
+  "auth/user-disabled",
+  "auth/user-not-found",
+  "auth/tenant-id-mismatch",
+]);
 
 // CORS Headers Configuration
 const setCorsHeaders = (res) => {
-  res.setHeader("Access-Control-Allow-Credentials", true);
+  // Admin queue and Telegram webhook responses can expose user-specific records.
+  // Prevent browser and intermediary caches from reusing them across identities.
+  res.setHeader("Cache-Control", "private, no-store");
+  res.setHeader("Vary", "Authorization, X-Telegram-Bot-Api-Secret-Token");
+  // This endpoint uses explicit bearer/webhook secrets, not cookie credentials.
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,PATCH,DELETE,POST,PUT");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",
     "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization"
@@ -16,46 +33,111 @@ const setCorsHeaders = (res) => {
 const success = (res, data) => res.status(200).json(data);
 const error = (res, msg, code = 400) => res.status(code).json({ error: msg });
 
+function safeErrorMetadata(err) {
+  const name = typeof err?.name === "string" && /^[A-Za-z][A-Za-z0-9]{0,63}$/.test(err.name)
+    ? err.name
+    : "Error";
+  const code = typeof err?.code === "string" && /^[A-Z0-9_-]{1,32}$/.test(err.code)
+    ? err.code
+    : undefined;
+  return code ? { name, code } : { name };
+}
+
+function logSafeError(label, err) {
+  console.error(label, safeErrorMetadata(err));
+}
+
+function internalError(res, label, err) {
+  logSafeError(label, err);
+  return error(res, "Internal server error.", 500);
+}
+
+function matchesSecret(expected, provided) {
+  if (typeof expected !== "string" || typeof provided !== "string" ||
+      !expected || !provided || expected.length > 256 || provided.length > 256) {
+    return false;
+  }
+  const expectedDigest = createHash("sha256").update(expected, "utf8").digest();
+  const providedDigest = createHash("sha256").update(provided, "utf8").digest();
+  return timingSafeEqual(expectedDigest, providedDigest);
+}
+
 export default async function handler(req, res) {
   setCorsHeaders(res);
-  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method === "OPTIONS") {
+    res.setHeader("Allow", "POST, OPTIONS");
+    return res.status(200).end();
+  }
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST, OPTIONS");
+    return error(res, "Method not allowed.", 405);
+  }
 
   const { action } = req.query;
 
   try {
-    // 1. Telegram webhook check
+    // 1. Telegram webhook check. Prefer Telegram's dedicated secret-token header.
+    // Once TELEGRAM_WEBHOOK_SECRET is configured, query-string secrets are rejected
+    // because URLs can be copied into request logs and monitoring systems. The
+    // bot-token query fallback remains only for deployments not yet migrated.
     if (action === "telegram-webhook") {
-      const botToken = process.env.TELEGRAM_BOT_TOKEN;
-      const secretParam = req.query.secret;
-      const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET || botToken;
-      if (!secretParam || secretParam !== expectedSecret) {
+      const botToken = process.env.TELEGRAM_BOT_TOKEN || "";
+      const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET || "";
+      const headerSecret = typeof req.headers?.["x-telegram-bot-api-secret-token"] === "string"
+        ? req.headers["x-telegram-bot-api-secret-token"]
+        : "";
+      const querySecret = typeof req.query?.secret === "string" ? req.query.secret : "";
+      const headerAuthorized = Boolean(webhookSecret) && matchesSecret(webhookSecret, headerSecret);
+      const legacyQueryAuthorized = !webhookSecret && Boolean(botToken) && matchesSecret(botToken, querySecret);
+
+      if (!headerAuthorized && !legacyQueryAuthorized) {
         console.warn("Unauthorized Telegram webhook call attempted.");
         return res.status(403).json({ error: "Unauthorized: Invalid Webhook Secret Signature" });
       }
-      return handleTelegramWebhook(req, res);
+      return await handleTelegramWebhook(req, res);
     }
 
-    // 2. Resolve user authentication
+    // 2. Resolve user authentication. Vercel's x-vercel-cron header is
+    // informational and can be spoofed by public callers, so it is never an
+    // authorization credential. A cron invocation must present a configured
+    // high-entropy CRON_SECRET as a bearer token.
     let userData = null;
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
+    const authHeader = typeof req.headers?.authorization === "string"
+      ? req.headers.authorization
+      : "";
+    const configuredCronSecret = process.env.CRON_SECRET || "";
+    const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
+    const isCron = configuredCronSecret.length >= 32
+      && matchesSecret(configuredCronSecret, bearerToken);
+
+    if (authHeader.startsWith("Bearer ") && !isCron) {
+      let decodedToken;
       try {
-        const token = authHeader.split(' ')[1];
-        const decodedToken = await admin.auth().verifyIdToken(token);
-        const userSnap = await admin.firestore().collection('users').doc(decodedToken.uid).get();
-        userData = userSnap.data();
-      } catch (e) {
-        console.error("Auth verification failed in outreach:", e.message);
+        decodedToken = await admin.auth().verifyIdToken(bearerToken);
+      } catch (authError) {
+        if (INVALID_ID_TOKEN_CODES.has(authError?.code)) {
+          console.warn("OUTREACH_AUTH_INVALID");
+          return error(res, "Authentication failed.", 401);
+        }
+        console.error("OUTREACH_AUTH_UNAVAILABLE");
+        return error(res, "Authentication service is temporarily unavailable.", 503);
+      }
+
+      try {
+        const userSnap = await admin.firestore().collection("users").doc(decodedToken.uid).get();
+        userData = userSnap.data() || null;
+      } catch {
+        console.error("OUTREACH_PROFILE_LOOKUP_FAILED");
+        return error(res, "Authorization service is temporarily unavailable.", 503);
       }
     }
 
-    const isAdmin = userData?.role === 'admin';
+    const isAdmin = userData?.role === "admin";
 
-    // 3. process-queue can run via Admin or Cron
+    // 3. process-queue can run via an authenticated admin or a secret-backed cron.
     if (action === "process-queue") {
-      const isCron = req.headers['x-vercel-cron'] === '1' || (process.env.CRON_SECRET && authHeader === `Bearer ${process.env.CRON_SECRET}`);
       if (!isCron && !isAdmin) {
-        return error(res, "Forbidden: Administrative access or Cron execution required.", 403);
+        return error(res, "Forbidden: Administrative access or configured cron secret required.", 403);
       }
       return handleProcessQueue(req, res);
     }
@@ -74,8 +156,7 @@ export default async function handler(req, res) {
 
     return error(res, "Invalid Action", 400);
   } catch (err) {
-    console.error("OUTREACH_CRASH:", err);
-    return error(res, err.message, 500);
+    return internalError(res, "OUTREACH_CRASH", err);
   }
 }
 
@@ -87,7 +168,7 @@ async function loadOutreachConfig() {
       return configSnap.data();
     }
   } catch (err) {
-    console.error("Error loading outreach config:", err.message);
+    logSafeError("OUTREACH_CONFIG_LOAD_FAILED", err);
   }
   return null;
 }
@@ -157,35 +238,23 @@ async function handleAnalyze(req, res) {
 
     return success(res, { leadId, status: "PENDING_APPROVAL", analysis });
   } catch (err) {
-    console.error("ANALYZE_ERROR:", err);
-    return error(res, err.message, 500);
+    return internalError(res, "ANALYZE_ERROR", err);
   }
 }
 
-// Lightweight HTML scraper helper with a strict timeout and tech signature detection
+// Website scraping is restricted to public HTTP(S) destinations and bounded responses.
 async function scrapeWebsite(url) {
   if (!url) return { title: "", description: "", techTags: [] };
-  let targetUrl = url.trim();
-  if (!/^https?:\/\//i.test(targetUrl)) {
-    targetUrl = "https://" + targetUrl;
-  }
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    const response = await fetch(targetUrl, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36",
-        "Accept": "text/html"
-      }
-    });
-    clearTimeout(timeoutId);
-    if (!response.ok) return { title: "", description: "", techTags: [], error: `HTTP ${response.status}` };
-    const html = await response.text();
+    const response = await fetchSafeWebsiteHtml(url, { timeoutMs: 3000, maxBytes: 1_000_000 });
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      return { title: "", description: "", techTags: [], error: `HTTP ${response.statusCode}` };
+    }
+    const html = response.body;
     const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
     const title = titleMatch ? titleMatch[1].trim() : "";
-    const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) ||
-                      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
+    const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["'][^>]*>/i) ||
+                      html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["'][^>]*>/i);
     const description = descMatch ? descMatch[1].trim() : "";
     const techTags = [];
     const lowerHtml = html.toLowerCase();
@@ -198,8 +267,8 @@ async function scrapeWebsite(url) {
     if (lowerHtml.includes("wix.com") || lowerHtml.includes("wixstatic")) techTags.push("Wix");
     return { title, description, techTags };
   } catch (err) {
-    console.error(`Scraper timed out or failed for ${targetUrl}:`, err.message);
-    return { title: "", description: "", techTags: [], error: err.message };
+    logSafeError("OUTREACH_SCRAPE_FAILED", err);
+    return { title: "", description: "", techTags: [], error: "Website metadata could not be fetched." };
   }
 }
 
@@ -402,8 +471,7 @@ async function handleApprove(req, res) {
       return success(res, { status: "APPROVED", leadId: id, scheduledSendTime: scheduledTime });
     }
   } catch (err) {
-    console.error("APPROVE_ERROR:", err);
-    return error(res, err.message, 500);
+    return internalError(res, "APPROVE_ERROR", err);
   }
 }
 
@@ -419,8 +487,7 @@ async function handleReject(req, res) {
     });
     return success(res, { status: "REJECTED", leadId: id });
   } catch (err) {
-    console.error("REJECT_ERROR:", err);
-    return error(res, err.message, 500);
+    return internalError(res, "REJECT_ERROR", err);
   }
 }
 
@@ -448,8 +515,7 @@ async function handleAddLead(req, res) {
     const docRef = await admin.firestore().collection("leads_outreach").add(dbEntry);
     return success(res, { leadId: docRef.id, status: "QUEUED" });
   } catch (err) {
-    console.error("ADD_LEAD_ERROR:", err);
-    return error(res, err.message, 500);
+    return internalError(res, "ADD_LEAD_ERROR", err);
   }
 }
 
@@ -510,8 +576,7 @@ async function handleProcessQueue(req, res) {
       dispatch: dispatchResult
     });
   } catch (err) {
-    console.error("PROCESS_QUEUE_ERROR:", err);
-    return error(res, err.message, 500);
+    return internalError(res, "PROCESS_QUEUE_ERROR", err);
   }
 }
 
@@ -538,7 +603,7 @@ async function processQueuedLeads(chatId, botToken, customConfig) {
         // MX record DNS precheck
         const mxValid = await checkMxRecords(leadData.email);
         if (!mxValid) {
-          console.warn(`DNS check failed for queued lead ${leadId} (${leadData.email}). Setting status to FAILED_MX.`);
+          console.warn("OUTREACH_DNS_CHECK_FAILED");
           await admin.firestore().collection("leads_outreach").doc(leadId).update({
             status: "FAILED_MX",
             dnsFailedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -554,7 +619,7 @@ async function processQueuedLeads(chatId, botToken, customConfig) {
         await analyzeAndDraftLead(leadId, leadData, botToken, chatId, customConfig);
         processed++;
       } catch (err) {
-        console.error(`Error processing/analyzing queued lead ${leadId}:`, err);
+        logSafeError("OUTREACH_QUEUE_ITEM_FAILED", err);
         errors++;
       }
     });
@@ -562,8 +627,8 @@ async function processQueuedLeads(chatId, botToken, customConfig) {
     await Promise.all(promises);
     return { processed, dnsFailed, errors };
   } catch (e) {
-    console.error("processQueuedLeads failure:", e);
-    return { processed, dnsFailed, errors, error: e.message };
+    logSafeError("OUTREACH_QUEUE_FAILED", e);
+    return { processed, dnsFailed, errors, error: "Queue processing failed." };
   }
 }
 
@@ -660,7 +725,8 @@ async function handleTelegramWebhook(req, res) {
           const customConfig = await loadOutreachConfig();
           await analyzeAndDraftLead(docRef.id, dbEntry, botToken, chatId, customConfig);
         } catch (e) {
-          await sendTelegramMessage(botToken, chatId, `❌ *Analysis Failed:* ${e.message}`);
+          logSafeError("OUTREACH_TELEGRAM_ADD_FAILED", e);
+          await sendTelegramMessage(botToken, chatId, "❌ *Analysis Failed:* Please try again later.");
         }
       }
       return success(res, { ok: true });
@@ -897,8 +963,8 @@ You MUST return a JSON object (and nothing else) with these keys:
       });
 
     } catch (e) {
-      console.error("AI_TELEGRAM_CONTROLLER_ERROR:", e);
-      await sendTelegramMessage(botToken, chatId, `⚠️ *Sorry Operator, I encountered a neural malfunction:* ${e.message}`);
+      logSafeError("AI_TELEGRAM_CONTROLLER_ERROR", e);
+      await sendTelegramMessage(botToken, chatId, "⚠️ *Sorry Operator, I couldn't complete that request. Please try again.*");
     }
 
     return success(res, { ok: true });
@@ -957,8 +1023,8 @@ You MUST return a JSON object (and nothing else) with these keys:
         await editTelegramMessage(botToken, chatId, messageId, `❌ *DRAFT REJECTED & SKIPPED*:\n*Company:* ${leadData.businessName}\n*Niche:* ${leadData.niche}`);
       }
     } catch (e) {
-      console.error("TELEGRAM_WEBHOOK_ACTION_FAILURE:", e);
-      await answerCallbackQuery(botToken, queryId, `Error: ${e.message}`);
+      logSafeError("TELEGRAM_WEBHOOK_ACTION_FAILURE", e);
+      await answerCallbackQuery(botToken, queryId, "Action failed. Please try again.");
     }
   }
 
@@ -1252,10 +1318,9 @@ async function sendOutreachEmail(leadData, emailHtml) {
         return { success: true, sentVia: "Brevo Web API" };
       }
       
-      const errText = await apiRes.text();
-      console.warn(`Brevo API returned error status ${apiRes.status}: ${errText}. Trying next fallback...`);
+      console.warn("BREVO_SEND_FAILED", { status: apiRes.status });
     } catch (apiErr) {
-      console.warn("Brevo API call failed with exception:", apiErr.message, ". Trying next fallback...");
+      logSafeError("BREVO_REQUEST_FAILED", apiErr);
     }
   }
 
@@ -1282,10 +1347,9 @@ async function sendOutreachEmail(leadData, emailHtml) {
         return { success: true, sentVia: "Resend Web API" };
       }
 
-      const errText = await apiRes.text();
-      console.warn(`Resend API returned error status ${apiRes.status}: ${errText}. Trying next fallback...`);
+      console.warn("RESEND_SEND_FAILED", { status: apiRes.status });
     } catch (apiErr) {
-      console.warn("Resend API call failed with exception:", apiErr.message, ". Trying next fallback...");
+      logSafeError("RESEND_REQUEST_FAILED", apiErr);
     }
   }
 
@@ -1401,40 +1465,60 @@ function getNextLocalTargetTime(timezone, targetHour, targetMinute) {
   return candidate;
 }
 
-// DNS MX Record resolver checking
-function checkMxRecords(email) {
-  return new Promise((resolve) => {
-    if (!email || !email.includes("@")) {
-      return resolve(false);
-    }
-    const domain = email.split("@")[1].trim();
-    
-    dns.resolveMx(domain, (err, addresses) => {
-      if (!err && addresses && addresses.length > 0) {
-        return resolve(true);
-      }
-      
-      // If we got a network/server error (not a "domain/records do not exist" error), bypass and assume valid
-      if (err && err.code !== 'ENOTFOUND' && err.code !== 'ENODATA') {
-        console.warn(`MX DNS query returned server/network error (${err.code}). Bypassing checks.`);
-        return resolve(true);
-      }
-      
-      dns.resolve4(domain, (errA, addressesA) => {
-        if (!errA && addressesA && addressesA.length > 0) {
-          return resolve(true);
-        }
-        
-        // If A lookup also fails with a network/server error, bypass and assume valid
-        if (errA && errA.code !== 'ENOTFOUND' && errA.code !== 'ENODATA') {
-          console.warn(`A DNS query returned server/network error (${errA.code}). Bypassing checks.`);
-          return resolve(true);
-        }
-        
-        resolve(false);
+// DNS MX/A precheck. Temporary resolver failures are retryable, never treated as valid.
+const DNS_LOOKUP_TIMEOUT_MS = 1500;
+const DNS_MISSING_RECORD_CODES = new Set(["ENOTFOUND", "ENODATA", "ENONAME"]);
+
+function resolveDnsRecords(resolveRecords, domain, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    const timer = setTimeout(() => {
+      settled = true;
+      const timeoutError = new Error("DNS lookup timed out.");
+      timeoutError.code = "DNS_TIMEOUT";
+      reject(timeoutError);
+    }, timeoutMs);
+
+    try {
+      resolveRecords(domain, (err, records) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        if (err) return reject(err);
+        resolve(Array.isArray(records) ? records : []);
       });
-    });
+    } catch (err) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      reject(err);
+    }
   });
+}
+
+export async function checkMxRecords(email, resolver = dns, timeoutMs = DNS_LOOKUP_TIMEOUT_MS) {
+  if (typeof email !== "string" || !email.trim()) return false;
+  const parts = email.trim().split("@");
+  if (parts.length !== 2) return false;
+
+  const domain = parts[1].trim().replace(/\.$/, "").toLowerCase();
+  if (!domain || domain.length > 253 || /[\s/@?#]/.test(domain)) return false;
+
+  let mxRecords = [];
+  try {
+    mxRecords = await resolveDnsRecords(resolver.resolveMx.bind(resolver), domain, timeoutMs);
+  } catch (err) {
+    if (!DNS_MISSING_RECORD_CODES.has(err?.code)) throw err;
+  }
+  if (mxRecords.length > 0) return true;
+
+  try {
+    const aRecords = await resolveDnsRecords(resolver.resolve4.bind(resolver), domain, timeoutMs);
+    return aRecords.length > 0;
+  } catch (err) {
+    if (DNS_MISSING_RECORD_CODES.has(err?.code)) return false;
+    throw err;
+  }
 }
 
 // Query APPROVED leads and dispatch those that have passed scheduled time
@@ -1478,14 +1562,14 @@ async function dispatchApprovedOutreaches() {
         dispatched++;
         sentDetails.push({ company: lead.businessName, email: lead.email, sentVia: result.sentVia });
       } catch (err) {
-        console.error(`Failed to dispatch approved lead ${lead.id}:`, err);
+        logSafeError("OUTREACH_DISPATCH_ITEM_FAILED", err);
         errors++;
       }
     }
 
     return { dispatched, errors, sentDetails };
   } catch (e) {
-    console.error("dispatchApprovedOutreaches failure:", e);
-    return { dispatched, errors, sentDetails, error: e.message };
+    logSafeError("OUTREACH_DISPATCH_FAILED", e);
+    return { dispatched, errors, sentDetails, error: "Dispatch failed." };
   }
 }

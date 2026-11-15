@@ -20,8 +20,9 @@ if (!app) {
         projectId: credentials.projectId,
       });
       console.log("Firebase Admin initialized.");
-    } catch (error) {
-      console.error("Firebase Admin initialization failed:", error instanceof Error ? error.message : error);
+    } catch {
+      // Keep certificate/parser diagnostics out of logs.
+      console.error("Firebase Admin initialization failed.");
     }
   }
 }

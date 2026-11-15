@@ -22,28 +22,30 @@ service cloud.firestore {
           .hasAny([
             'uid', 'role', 'credits', 'plan', 'tier', 'status', 'provider',
             'monthlyLimit', 'admin', 'isAdmin', 'permissions', 'billingStatus',
-            'subscriptionId', 'createdAt'
+            'subscriptionId', 'createdAt', 'tenantId', 'workspaceId'
           ]);
       allow delete: if false;
     }
 
     // Public lead intake is handled by the server API (Admin SDK).
     match /leads/{leadId} {
+      // Client workspaces currently have read-only lead views. Public intake and
+      // lead lifecycle mutations are performed by trusted server code or the
+      // admin dashboard, so client-side writes are not permitted.
       allow create: if isAdmin();
-      allow read, delete: if isAuthenticated()
+      allow read: if isAuthenticated()
         && (resource.data.userId == request.auth.uid || isAdmin());
-      allow update: if isAuthenticated()
-        && (isAdmin() || (
-          resource.data.userId == request.auth.uid
-          && request.resource.data.userId == resource.data.userId
-        ));
+      allow update, delete: if isAdmin();
     }
 
     match /projects/{projectId} {
       allow read: if isAuthenticated()
         && (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isAuthenticated()
-        && (request.resource.data.userId == request.auth.uid || isAdmin());
+
+      // Client project creation goes through the trusted API. Direct Firestore
+      // creation is reserved for the admin dashboard to prevent clients from
+      // self-assigning privileged billing or project lifecycle fields.
+      allow create: if isAdmin();
       allow update, delete: if isAdmin();
     }
 
@@ -64,9 +66,12 @@ service cloud.firestore {
         && resource.data.userId == request.auth.uid;
       allow update: if isAuthenticated()
         && resource.data.userId == request.auth.uid
-        && request.resource.data.userId == resource.data.userId;
+        && request.resource.data.userId == resource.data.userId
+        && !request.resource.data.diff(resource.data).affectedKeys()
+          .hasAny(['tenantId', 'workspaceId']);
       allow create: if isAuthenticated()
-        && request.resource.data.userId == request.auth.uid;
+        && request.resource.data.userId == request.auth.uid
+        && !request.resource.data.keys().hasAny(['tenantId', 'workspaceId']);
     }
 
     match /leads_outreach/{leadId} {
