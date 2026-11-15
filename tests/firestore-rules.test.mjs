@@ -8,9 +8,13 @@ import {
 import {
   deleteDoc,
   doc,
+  documentId,
   getDoc,
+  getDocs,
+  query,
   setDoc,
   updateDoc,
+  where,
 } from 'firebase/firestore';
 
 const rules = await readFile(new URL('../firestore.rules', import.meta.url), 'utf8');
@@ -77,6 +81,34 @@ try {
     });
     await setDoc(doc(db, 'payments', 'alice-payment'), {
       userId: 'alice',
+      amount: 10,
+    });
+    await setDoc(doc(db, 'projects', 'bob-project'), {
+      userId: 'bob',
+      projectName: 'Bob project',
+    });
+    await setDoc(doc(db, 'agents', 'bob-agent'), {
+      userId: 'bob',
+      name: 'Bob agent',
+    });
+    await setDoc(doc(db, 'leads', 'bob-lead'), {
+      userId: 'bob',
+      status: 'NEW',
+    });
+    await setDoc(doc(db, 'logs', 'bob-log'), {
+      user_id: 'bob',
+      action: 'test',
+    });
+    await setDoc(doc(db, 'payment_requests', 'bob-request'), {
+      userId: 'bob',
+      userEmail: 'bob@example.com',
+      credits: 100,
+      price: 10,
+      status: 'pending',
+      createdAt: stamp,
+    });
+    await setDoc(doc(db, 'payments', 'bob-payment'), {
+      userId: 'bob',
       amount: 10,
     });
   });
@@ -214,6 +246,58 @@ try {
   await assertFails(getDoc(doc(bob, 'payments', 'alice-payment')));
   await assertFails(deleteDoc(doc(admin, 'payments', 'alice-payment')));
   await assertFails(getDoc(doc(alice, 'unknown-private-collection', 'record')));
+
+  // Collection queries must prove ownership; Firestore rules are not filters.
+  // A query that could return another user's records must be denied.
+  const aliceLeads = await getDocs(query(collection(alice, 'leads'), where('userId', '==', 'alice')));
+  assert.equal(aliceLeads.size, 1);
+  await assertSucceeds(getDocs(query(collection(bob, 'leads'), where('userId', '==', 'bob'))));
+  await assertFails(getDocs(collection(alice, 'leads')));
+  await assertFails(getDocs(query(collection(alice, 'leads'), where('userId', '==', 'bob'))));
+  await assertSucceeds(getDocs(collection(admin, 'leads')));
+
+  const aliceProjects = await getDocs(query(collection(alice, 'projects'), where('userId', '==', 'alice')));
+  assert.equal(aliceProjects.size, 1);
+  await assertSucceeds(getDocs(query(collection(bob, 'projects'), where('userId', '==', 'bob'))));
+  await assertFails(getDocs(collection(alice, 'projects')));
+  await assertFails(getDocs(query(collection(alice, 'projects'), where('userId', '==', 'bob'))));
+  await assertSucceeds(getDocs(collection(admin, 'projects')));
+
+  const aliceAgents = await getDocs(query(collection(alice, 'agents'), where('userId', '==', 'alice')));
+  assert.equal(aliceAgents.size, 1);
+  await assertSucceeds(getDocs(query(collection(bob, 'agents'), where('userId', '==', 'bob'))));
+  await assertFails(getDocs(collection(alice, 'agents')));
+  await assertFails(getDocs(query(collection(alice, 'agents'), where('userId', '==', 'bob'))));
+  await assertSucceeds(getDocs(collection(admin, 'agents')));
+
+  const aliceLogs = await getDocs(query(collection(alice, 'logs'), where('user_id', '==', 'alice')));
+  assert.equal(aliceLogs.size, 1);
+  await assertSucceeds(getDocs(query(collection(bob, 'logs'), where('user_id', '==', 'bob'))));
+  await assertFails(getDocs(collection(alice, 'logs')));
+  await assertFails(getDocs(query(collection(alice, 'logs'), where('user_id', '==', 'bob'))));
+  await assertSucceeds(getDocs(collection(admin, 'logs')));
+
+  const alicePayments = await getDocs(query(collection(alice, 'payments'), where('userId', '==', 'alice')));
+  assert.equal(alicePayments.size, 1);
+  await assertSucceeds(getDocs(query(collection(bob, 'payments'), where('userId', '==', 'bob'))));
+  await assertFails(getDocs(collection(alice, 'payments')));
+  await assertFails(getDocs(query(collection(alice, 'payments'), where('userId', '==', 'bob'))));
+  await assertSucceeds(getDocs(collection(admin, 'payments')));
+
+  const aliceRequests = await getDocs(query(collection(alice, 'payment_requests'), where('userId', '==', 'alice')));
+  assert.equal(aliceRequests.size, 1);
+  await assertSucceeds(getDocs(query(collection(bob, 'payment_requests'), where('userId', '==', 'bob'))));
+  await assertFails(getDocs(collection(alice, 'payment_requests')));
+  await assertFails(getDocs(query(collection(alice, 'payment_requests'), where('userId', '==', 'bob'))));
+  await assertSucceeds(getDocs(collection(admin, 'payment_requests')));
+
+  const aliceProfileQuery = await getDocs(query(collection(alice, 'users'), where(documentId(), '==', 'alice')));
+  assert.equal(aliceProfileQuery.size, 1);
+  await assertFails(getDocs(collection(alice, 'users')));
+  await assertSucceeds(getDocs(collection(admin, 'users')));
+
+  await assertFails(getDocs(collection(alice, 'promo_codes')));
+  await assertSucceeds(getDocs(collection(admin, 'promo_codes')));
 
   console.log('Firestore security rules emulator tests passed.');
 } finally {
