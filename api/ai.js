@@ -46,7 +46,7 @@ export default async function handler(req, res) {
 
     return error(res, "Action Not Allowed", 400);
   } catch (err) {
-    console.error("AI_CLUSTER_CRASH:", err);
+    console.error("AI cluster request failed.");
     return error(res, "Identity Verification Failure", 403);
   }
 }
@@ -101,8 +101,15 @@ async function handleKelly(req, res, userId) {
     const reply = await askAI(messages);
     return success(res, { reply });
   } catch (e) {
-    console.error("KELLY_ERROR:", e);
-    return error(res, e.message, e.status || 500);
+    console.error("Kelly AI request failed.");
+    if (e?.status === 429) {
+      if (e.retryAfter) res.setHeader("Retry-After", String(e.retryAfter));
+      return error(res, "Too many requests. Please try again later.", 429);
+    }
+    if (e?.status === 503) {
+      return error(res, "AI service temporarily unavailable. Please try again later.", 503);
+    }
+    return error(res, "AI request could not be completed.", 500);
   }
 }
 
