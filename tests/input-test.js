@@ -79,17 +79,17 @@ assert.equal(
 const outreachApiSource = readFileSync(new URL("../api/outreach.js", import.meta.url), "utf8");
 assert.doesNotMatch(
   outreachApiSource,
-  /return error\\(res, err\\.message, 500\\)/,
+  /return error\(res, err\.message, 500\)/,
   "outreach API must not return internal exception messages to HTTP callers",
 );
 assert.doesNotMatch(
   outreachApiSource,
-  /error:\\s*(?:e|err)\\.message|\\$\\{e\\.message\\}/,
+  /error:\s*(?:e|err)\.message|\$\{e\.message\}/,
   "outreach queue and Telegram responses must not expose raw internal exception messages",
 );
 assert.doesNotMatch(
   outreachApiSource,
-  /\\$\\{targetUrl\\}/,
+  /\$\{targetUrl\}/,
   "scraper failure logs must not print user-supplied URLs that may contain credentials or tokens",
 );
 
