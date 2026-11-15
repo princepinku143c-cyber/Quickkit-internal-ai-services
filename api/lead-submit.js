@@ -69,7 +69,7 @@ export default async function handler(req, res) {
   const required = ['name', 'phone', 'email', 'businessName', 'businessType', 'plan'];
   const missing = required.filter(k => !data[k]);
   if (missing.length) return json(res, 400, { error: 'Missing required fields: ' + missing.join(', ') });
-  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(data.email)) return json(res, 400, { error: 'Please provide a valid email address' });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) return json(res, 400, { error: 'Please provide a valid email address' });
 
   const adminEmail = process.env.LEAD_NOTIFY_EMAIL || process.env.EMAIL_USER || 'admin@quickkitai.com';
   const fromEmail = process.env.EMAIL_USER || adminEmail;
