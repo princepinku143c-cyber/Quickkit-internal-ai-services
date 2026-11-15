@@ -1,6 +1,7 @@
 import admin from "./_lib/firebaseAdmin.js";
 import nodemailer from "nodemailer";
 import dns from "dns";
+import { hasValidCronAuthorization } from "./_lib/cronAuth.js";
 
 // CORS Headers Configuration
 const setCorsHeaders = (res) => {
@@ -53,7 +54,8 @@ export default async function handler(req, res) {
 
     // 3. process-queue can run via Admin or Cron
     if (action === "process-queue") {
-      const isCron = req.headers['x-vercel-cron'] === '1' || (process.env.CRON_SECRET && authHeader === `Bearer ${process.env.CRON_SECRET}`);
+      // Only a secret-backed Bearer token authenticates cron callers; request headers are forgeable.
+      const isCron = hasValidCronAuthorization(authHeader, process.env.CRON_SECRET);
       if (!isCron && !isAdmin) {
         return error(res, "Forbidden: Administrative access or Cron execution required.", 403);
       }
