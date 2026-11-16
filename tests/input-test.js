@@ -4,6 +4,7 @@ import { escapeHtml, getClientIp, isPlainObject, payloadTooLarge, safeMetadata, 
 import { getMissingFirebaseClientConfig, isFirebaseClientConfigComplete } from "../lib/firebaseConfig.js";
 import { getPublicSystemError } from "../api/_lib/systemErrors.js";
 import { logSafeError, safeErrorType } from "../api/_lib/safeErrorLog.js";
+import { checkRateLimit } from "../api/_lib/security.js";
 assert.equal(isPlainObject({ a: 1 }), true);
 assert.equal(isPlainObject([]), false);
 assert.equal(isPlainObject(null), false);
@@ -292,4 +293,38 @@ assertEmailTemplateEscapes(
   "project update",
   ["safeProjectName", "safeProgress", "safeMessage"],
   ["projectName", "progress", "message"],
+);
+
+
+// Rate-limit backend diagnostics must never be copied into application logs.
+const previousConsoleErrorForRateLimit = console.error;
+const rateLimitLogEntries = [];
+console.error = (...args) => rateLimitLogEntries.push(args);
+try {
+  const failingRateLimitAdmin = {
+    firestore() {
+      return {
+        collection: () => ({ doc: () => ({}) }),
+        runTransaction: async () => {
+          throw new Error("private Firestore connection and credential diagnostics");
+        },
+      };
+    },
+  };
+
+  await assert.rejects(
+    checkRateLimit(failingRateLimitAdmin, "test-user", "test-action"),
+    /Rate limiting is temporarily unavailable/,
+  );
+} finally {
+  console.error = previousConsoleErrorForRateLimit;
+}
+assert.deepEqual(
+  rateLimitLogEntries,
+  [["[RATE_LIMIT_UNAVAILABLE]", "Error"]],
+  "rate limiter logs must contain only the bounded error type, never backend exception details",
+);
+assert.ok(
+  !JSON.stringify(rateLimitLogEntries).includes("private Firestore connection and credential diagnostics"),
+  "raw Firestore diagnostics must not appear in rate limiter logs",
 );
