@@ -1,59 +1,155 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    
-    // 1. User Profile Rules
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && userId == request.auth.uid;
+    }
+
+    function isAdmin() {
+      return isSignedIn()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function validClientProfileCreate(userId) {
+      return isOwner(userId)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.role == 'client'
+        && request.resource.data.keys().hasOnly([
+          'uid', 'email', 'displayName', 'role', 'credits', 'plan',
+          'createdAt', 'updatedAt', 'updated_at'
+        ])
+        && (!('email' in request.resource.data)
+          || request.resource.data.email == request.auth.token.email)
+        && (!('credits' in request.resource.data)
+          || request.resource.data.credits == 500)
+        && (!('plan' in request.resource.data)
+          || request.resource.data.plan == 'free');
+    }
+
+    function validWebhookSecretUpdate() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['webhookSecret'])
+        || (
+          request.resource.data.webhookSecret is string
+          && request.resource.data.webhookSecret.matches('^[a-f0-9]{64}$')
+        );
+    }
+
+    function validClientProfileUpdate(userId) {
+      return isOwner(userId)
+        && validWebhookSecretUpdate()
+        && (!('email' in request.resource.data)
+          || request.resource.data.email == request.auth.token.email)
+        && (
+          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+            'displayName', 'email', 'industryType', 'workspaceName',
+            'operatorName', 'contactEmail', 'crmInitialized',
+            'customFormSchema', 'webhookSecret', 'updated_at', 'updatedAt'
+          ])
+          ||
+          (
+            !('credits' in resource.data)
+            && request.resource.data.credits == 500
+            && request.resource.data.plan == 'free'
+            && request.resource.data.role == resource.data.role
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+              'credits', 'plan', 'createdAt'
+            ])
+          )
+        );
+    }
+
+    // Profiles: clients may create only their own non-privileged profile.
+    // Admin roles, quotas, plans and tenant identifiers are server-managed.
     match /users/{userId} {
-      allow read, create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && request.auth.uid == userId &&
-        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'credits', 'plan', 'tier']));
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if validClientProfileCreate(userId);
+      allow update: if isAdmin() || validClientProfileUpdate(userId);
+      allow delete: if isAdmin();
     }
 
-    // 2. Leads Rules (Public can write, client-side access restricted to owner or admin)
+    // Leads are created by the validated server API. Clients can read only
+    // leads assigned to their own UID; all lead mutations remain admin-only.
     match /leads/{leadId} {
-      allow create: if true; 
-      allow read, update, delete: if request.auth != null && (
-        resource.data.userId == request.auth.uid || 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
-      );
+      allow create: if false;
+      allow read: if isAdmin() || isOwner(resource.data.userId);
+      allow update, delete: if isAdmin();
     }
 
-    // 3. Projects Rules (Client can read their own, Admin can do anything)
+    // Project creation is performed by the admin workflow or server API.
     match /projects/{projectId} {
-      allow read: if request.auth != null && (
-        resource.data.userId == request.auth.uid || 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
-      );
-      allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow read: if isAdmin() || isOwner(resource.data.userId);
+      allow create: if isAdmin()
+        && request.resource.data.userId is string
+        && exists(/databases/$(database)/documents/users/$(request.resource.data.userId));
+      allow update, delete: if isAdmin();
     }
 
-    // 4. Payments Rules (Secure)
     match /payments/{paymentId} {
-      allow read: if request.auth != null && (
-        resource.data.userId == request.auth.uid || 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
-      );
-      // Writes only via Backend API (Service Account bypasses these rules)
-      allow write: if false; 
+      allow read: if isAdmin() || isOwner(resource.data.userId);
+      allow write: if false;
     }
 
-    // 5. Logs & Agents
+    // Admins publish client-facing workflow logs; each client can read only
+    // log records addressed to their own UID.
     match /logs/{logId} {
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow write: if false; 
+      allow read: if isAdmin()
+        || isOwner(resource.data.user_id)
+        || isOwner(resource.data.userId);
+      allow create, update, delete: if isAdmin();
     }
 
+    // Agent ownership and tenant metadata are server/admin managed.
+    function validClientAgentCreate() {
+      return isOwner(request.resource.data.userId)
+        && !request.resource.data.keys().hasAny([
+          'tenantId', 'workspaceId', 'companyId', 'organizationId'
+        ]);
+    }
+
+    // Agent ownership cannot be reassigned by the current owner.
     match /agents/{agentId} {
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-      allow write: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow read: if isAdmin() || isOwner(resource.data.userId);
+      allow create: if isAdmin() || validClientAgentCreate();
+      allow update: if isAdmin()
+        || (
+          isOwner(resource.data.userId)
+          && request.resource.data.userId == resource.data.userId
+          && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+            'tenantId', 'workspaceId', 'companyId', 'organizationId'
+          ])
+        );
+      allow delete: if isAdmin() || isOwner(resource.data.userId);
     }
 
-    // 6. Outreach Leads Rules (Admin only)
     match /leads_outreach/{leadId} {
-      allow read, write: if request.auth != null && 
-        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      allow read, write: if isAdmin();
+    }
+
+    match /promo_codes/{promoCodeId} {
+      allow read, write: if isAdmin();
+    }
+
+    // Clients may submit their own pending credit request. Approval and all
+    // subsequent mutations are restricted to admins.
+    match /payment_requests/{requestId} {
+      allow read: if isAdmin() || isOwner(resource.data.userId);
+      allow create: if isOwner(request.resource.data.userId)
+        && request.resource.data.userEmail == request.auth.token.email
+        && request.resource.data.status == 'pending'
+        && request.resource.data.credits is number
+        && request.resource.data.credits > 0
+        && request.resource.data.price is number
+        && request.resource.data.price > 0
+        && request.resource.data.createdAt is string
+        && request.resource.data.keys().hasOnly([
+          'userId', 'userEmail', 'credits', 'price', 'status', 'createdAt'
+        ]);
+      allow update, delete: if isAdmin();
     }
   }
 }

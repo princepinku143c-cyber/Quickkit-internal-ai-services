@@ -1,6 +1,7 @@
 
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
+import { getMissingFirebaseClientConfig } from "./firebaseConfig.js";
 
 // # PROJECT: Smart AI CRM (Multi-Tenant CRM)
 // SINGLE DATABASE SOURCE: This app connects to the ai-crm-system Firebase project.
@@ -16,8 +17,10 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID || ""
 };
 
-// Initialize Firebase only if config is present (prevents crash in demo mode)
-export const isFirebaseConfigured = !!import.meta.env.VITE_FIREBASE_API_KEY;
+// Require the complete client identity before initializing Firebase. A lone API key
+// is not enough for Auth/Firestore; incomplete deployments must stay in limited mode.
+const missingFirebaseConfig = getMissingFirebaseClientConfig(firebaseConfig);
+export const isFirebaseConfigured = missingFirebaseConfig.length === 0;
 
 export let app = null;
 try {
@@ -25,7 +28,9 @@ try {
     app = initializeApp(firebaseConfig);
     console.log("✅ Firebase Client Stack Initialized.");
   } else {
-    console.warn("⚠️ Firebase Config Missing: Running in limited mode. Please check VITE_FIREBASE_API_KEY.");
+    console.warn(
+      `⚠️ Firebase client config incomplete: running in limited mode. Missing: ${missingFirebaseConfig.join(", ")}.`
+    );
   }
 } catch (e: any) {
   console.error("❌ Firebase Init Error:", e.message);

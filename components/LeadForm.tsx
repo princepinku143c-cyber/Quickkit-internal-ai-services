@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { setDoc, doc } from 'firebase/firestore';
+import React, { useState, useEffect, useRef } from 'react';
+import { getDoc, setDoc, doc } from 'firebase/firestore';
 import { signInWithPopup } from 'firebase/auth';
 import { db, auth, googleProvider } from '../lib/firebase';
 import { X, CheckCircle, Loader2, Building2, User, FileText, Mail, Lock, ArrowLeft, Globe, Briefcase, ShieldCheck } from 'lucide-react';
@@ -12,7 +12,10 @@ import 'react-phone-input-2/lib/style.css';
 
 interface Props { lang: Language; close: () => void; onBack?: () => void; onVerified?: (data:any)=>void; initialData:{bizType:string;plan:PlanTier}; prefilledNotes?:string; aiFinancials?:AIQuote; }
 
+const createSubmissionKey = () => globalThis.crypto?.randomUUID?.() || [Date.now(), Math.random().toString(36).slice(2), Math.random().toString(36).slice(2)].join('-');
+
 export const LeadForm: React.FC<Props> = ({ close, onBack, onVerified, initialData, prefilledNotes = '', aiFinancials }) => {
+  const submissionKey = useRef(createSubmissionKey());
   const [submitted,setSubmitted]=useState(false); const [isSending,setIsSending]=useState(false);
   const [formData,setFormData]=useState({name:'',phone:'',email:'',businessName:'',businessType:initialData.bizType||'',notes:'',country:'IN'});
   useEffect(()=>{ if(prefilledNotes) setFormData(prev=>({...prev,notes:prefilledNotes})); if(auth.currentUser){const u=auth.currentUser;setFormData(prev=>({...prev,name:prev.name||u.displayName||'',email:prev.email||u.email||''}));}},[prefilledNotes]);
@@ -24,10 +27,33 @@ export const LeadForm: React.FC<Props> = ({ close, onBack, onVerified, initialDa
     if(!formData.businessName.trim()) return alert('Please enter your business name.');
     if(!formData.businessType.trim()) return alert('Please enter your business type.');
     setIsSending(true);
-    const newLead={name:formData.name.trim(),phone:formData.phone,email:formData.email.trim(),businessName:formData.businessName.trim(),businessType:formData.businessType.trim(),projectName:'Raja AI Systems — 5-Agent Workforce',plan:'Managed AI Pilot — 50% Offer',requirement:formData.notes.trim(),price:RAJA_COMMERCIAL_OFFER.festiveSetupINR,maintenance:RAJA_COMMERCIAL_OFFER.festiveMonthlyINR,regularPrice:{setup:RAJA_COMMERCIAL_OFFER.regularSetupINR,monthly:RAJA_COMMERCIAL_OFFER.regularMonthlyINR},aiFinancials,userId:auth.currentUser?.uid||null,source:'raja-ai-systems-managed-pilot-offer',submittedAt:new Date().toISOString()};
-    try{await apiCall(`${window.location.origin}/api/lead-submit`,newLead,{allowGuest:true});setSubmitted(true);setIsSending(false);if(aiFinancials&&onVerified)setTimeout(()=>onVerified(newLead),900);else setTimeout(()=>close(),2200);}catch(err:any){console.error('Submission error:',err);alert(err?.message||`Unable to submit right now. Please email ${CONTACT_EMAIL}.`);setIsSending(false);}
+    const newLead={idempotencyKey:submissionKey.current,name:formData.name.trim(),phone:formData.phone,email:formData.email.trim(),businessName:formData.businessName.trim(),businessType:formData.businessType.trim(),projectName:'Raja AI Systems — 5-Agent Workforce',plan:'Managed AI Pilot — 50% Offer',requirement:formData.notes.trim(),price:RAJA_COMMERCIAL_OFFER.festiveSetupINR,maintenance:RAJA_COMMERCIAL_OFFER.festiveMonthlyINR,regularPrice:{setup:RAJA_COMMERCIAL_OFFER.regularSetupINR,monthly:RAJA_COMMERCIAL_OFFER.regularMonthlyINR},aiFinancials,userId:auth.currentUser?.uid||null,source:'raja-ai-systems-managed-pilot-offer',submittedAt:new Date().toISOString()};
+    try{const submissionResult=await apiCall(`${window.location.origin}/api/lead-submit`,newLead,{allowGuest:true});if(submissionResult?.notificationsPending) throw new Error('Your request is saved, but email delivery is still pending. Please retry this same form in about 2 minutes; the same submission key prevents duplicate leads.');setSubmitted(true);setIsSending(false);if(aiFinancials&&onVerified)setTimeout(()=>onVerified(newLead),900);else setTimeout(()=>close(),2200);}catch(err:any){console.error('Submission error:',err);alert(err?.message||`Unable to submit right now. Please email ${CONTACT_EMAIL}.`);setIsSending(false);}
   };
-  const handleGoogleAutofill=async()=>{try{const result=await signInWithPopup(auth as any,googleProvider as any);const u=result.user;setFormData(prev=>({...prev,name:u.displayName||'',email:u.email||''}));if(db)await setDoc(doc(db as any,'users',u.uid),{uid:u.uid,email:u.email,displayName:u.displayName,role:'client',updatedAt:new Date().toISOString()},{merge:true});}catch(e){console.error('Google sync failed:',e);}};
+  const handleGoogleAutofill = async () => {
+    try {
+      const result = await signInWithPopup(auth as any, googleProvider as any);
+      const user = result.user;
+      setFormData(prev => ({ ...prev, name: user.displayName || '', email: user.email || '' }));
+
+      if (db) {
+        const userRef = doc(db as any, 'users', user.uid);
+        const userSnap = await getDoc(userRef);
+        // Never merge a default client role into an existing profile; that could downgrade an admin.
+        if (!userSnap.exists()) {
+          await setDoc(userRef, {
+            uid: user.uid,
+            email: user.email,
+            displayName: user.displayName,
+            role: 'client',
+            createdAt: new Date().toISOString()
+          });
+        }
+      }
+    } catch {
+      console.error('Google sync failed.');
+    }
+  };
   const quoteSetup=aiFinancials?.setupCost||RAJA_COMMERCIAL_OFFER.festiveSetupINR;
   return <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md"><div className="bg-slate-900 border border-slate-800 w-full max-w-lg rounded-3xl relative shadow-[0_0_60px_rgba(0,0,0,.55)] animate-fade-in-up flex flex-col max-h-[90vh] overflow-y-auto custom-scrollbar">
     <div className="sticky top-0 bg-slate-900/90 backdrop-blur-md p-4 border-b border-slate-800 flex justify-between items-center z-20">{onBack?<button onClick={onBack} className="p-2 hover:bg-slate-800 rounded-full text-slate-400" aria-label="Go back"><ArrowLeft className="w-5 h-5"/></button>:<div className="w-9"/>}<h3 className="text-sm font-black text-white uppercase tracking-widest">Request Your Pilot</h3><button onClick={close} className="p-2 hover:bg-slate-800 rounded-full text-slate-500 hover:text-white" aria-label="Close"><X className="w-5 h-5"/></button></div>

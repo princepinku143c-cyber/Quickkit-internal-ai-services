@@ -19,6 +19,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
       - name: Install locked dependencies
         run: npm ci
       - name: Dependency security audit
@@ -29,6 +32,23 @@ jobs:
         run: npm run test:seo
       - name: TypeScript validation
         run: npx tsc --noEmit
-
       - name: Security input regression tests
         run: npm run test:security
+      - name: API integration safety guard regression tests
+        run: npm run test:api-guard
+      - name: Lead submission idempotency regression tests
+        run: npm run test:lead-idempotency
+      - name: Rank tracker credential and provider-error regression tests
+        run: npm run test:rank-tracker
+      - name: Cron bearer authorization regression tests
+        run: npm run test:cron-auth
+      - name: AEO provider credential regression tests
+        run: python -m unittest discover -s tests -p 'test_aeo_agent.py' -v
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install Firestore emulator test tooling
+        run: npm install --ignore-scripts --no-save --no-package-lock --legacy-peer-deps @firebase/rules-unit-testing@5.0.2 firebase-tools@15.36.0
+      - name: Firestore authorization regression tests
+        run: npm run test:firestore-rules

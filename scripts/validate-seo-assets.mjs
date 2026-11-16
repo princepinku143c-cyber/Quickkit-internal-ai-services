@@ -72,6 +72,11 @@ for (const [file, contents] of [['PremiumLanding',landing],['LeadForm',leadForm]
   assert.doesNotMatch(contents, /Dussehra|locked for life|lifetime lock/i, `${file} has stale or absolute offer wording`);
 }
 const landingAndMarketingCopy = landing + hero + nichePage + demoBooking + adCampaign + aiAgents;
+assert.doesNotMatch(landing, /AI Workforce Online|auto-verified|Live activity/i, 'landing dashboard must not present mock data as live');
+assert.match(landing, /Illustrative only/, 'landing dashboard must label the workflow as illustrative');
+assert.match(landing, /\['INBOUND', 'Sample'/, 'landing dashboard must not show fabricated inbound counts');
+assert.match(landing, /response targets, service windows and availability depend on configuration/i, 'performance targets must carry their qualification note');
+
 for (const claim of ['≤ 12 sec', '≤ 12-second response target', '12-Second WhatsApp', '8–15%', '5★']) {
   assert.ok(!landingAndMarketingCopy.toLowerCase().includes(claim.toLowerCase()), `public copy contains an unverified performance claim: ${claim}`);
 }

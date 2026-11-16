@@ -11,20 +11,26 @@
  */
 
 import express from 'express';
+import { timingSafeEqual } from 'node:crypto';
 const app = express();
 const PORT = process.env.PORT || 3000;
-const AUTH_TOKEN = "YOUR_SECURE_TOKEN_HERE"; // Must match "vpsToken" in QuickKit settings
+const AUTH_TOKEN = process.env.VPS_AUTOMATION_TOKEN || ''; // Configure only in the VPS environment.
 
 app.use(express.json());
 
 // 🛡️ Auth Middleware
 const authenticate = (req, res, next) => {
-    const authHeader = req.headers.authorization;
-    if (authHeader === `Bearer ${AUTH_TOKEN}`) {
-        next();
-    } else {
-        res.status(401).json({ error: "Neural link unauthorized" });
+    if (!AUTH_TOKEN) {
+        return res.status(503).json({ error: "VPS automation authentication is not configured." });
     }
+    const authHeader = req.headers.authorization || '';
+    const expected = `Bearer ${AUTH_TOKEN}`;
+    const suppliedBuffer = Buffer.from(authHeader);
+    const expectedBuffer = Buffer.from(expected);
+    if (suppliedBuffer.length === expectedBuffer.length && timingSafeEqual(suppliedBuffer, expectedBuffer)) {
+        return next();
+    }
+    return res.status(401).json({ error: "Unauthorized" });
 };
 
 // 🟢 Health Check

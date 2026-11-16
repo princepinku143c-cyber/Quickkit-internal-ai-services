@@ -2,6 +2,8 @@
  * Production security helpers.
  * Identity-aware rate limiting with a fail-closed posture.
  */
+import { logSafeError } from "./safeErrorLog.js";
+
 export async function checkRateLimit(admin, userId, action, limitCount = 10) {
   const now = Date.now();
   const windowMs = 60_000;
@@ -46,7 +48,7 @@ export async function checkRateLimit(admin, userId, action, limitCount = 10) {
     if (err?.status === 429) throw err;
 
     // Do not silently bypass abuse controls when the limiter backend is unavailable.
-    console.error("RATE_LIMIT_UNAVAILABLE", err?.message || err);
+    logSafeError("RATE_LIMIT_UNAVAILABLE", err);
     const unavailableError = new Error("Rate limiting is temporarily unavailable.");
     unavailableError.status = 503;
     throw unavailableError;

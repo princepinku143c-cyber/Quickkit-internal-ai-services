@@ -1,9 +1,11 @@
 
 import admin from './_lib/firebaseAdmin.js';
 import nodemailer from 'nodemailer';
-import { askAI } from './services/aiService.js';
+import { askAI } from './_lib/services/aiService.js';
 import { checkRateLimit } from './_lib/security.js';
 import { escapeHtml, getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from './_lib/input.js';
+import { getPublicSystemError } from './_lib/systemErrors.js';
+import { getSystemActionMethods } from './_lib/systemActionMethods.js';
 
 
 const success = (res, data) => res.status(200).json(data);
@@ -12,16 +14,12 @@ const error = (res, msg, code = 400) => res.status(code).json({ error: msg });
 export default async (req, res) => {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     const { action } = req.query;
-    if (action === 'lead' && req.method !== 'POST') {
-        res.setHeader('Allow', 'POST, OPTIONS');
-        return error(res, 'Method Not Allowed', 405);
-    }
     const authHeader = req.headers.authorization;
 
     let userId = null;
@@ -34,8 +32,9 @@ export default async (req, res) => {
             userId = decodedToken.uid;
             const userSnap = await admin.firestore().collection('users').doc(userId).get();
             userData = userSnap.data();
-        } catch (e) {
-            return error(res, "Authentication Failed: " + e.message, 401);
+        } catch {
+            // Do not expose Firebase token-verification details to API callers.
+            return error(res, "Authentication failed", 401);
         }
     }
 
@@ -52,14 +51,24 @@ export default async (req, res) => {
         'lead': handleLead
     };
 
-    if (actionMap[action]) {
+    if (!Object.prototype.hasOwnProperty.call(actionMap, action)) {
+        return error(res, "Invalid Action", 400);
+    }
+
+    const allowedMethods = getSystemActionMethods(action);
+    if (!allowedMethods || !allowedMethods.includes(req.method)) {
+        res.setHeader('Allow', `${(allowedMethods || []).concat('OPTIONS').join(', ')}`);
+        return error(res, 'Method Not Allowed', 405);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(actionMap, action)) {
         // Require auth for all actions except 'lead'
         if (action !== 'lead' && !userId) {
             return error(res, "Unauthorized", 401);
         }
 
         // Admin only actions
-        const adminActions = ['add-credits', 'generate-payment-token', 'project-quote', 'project-update'];
+        const adminActions = ['stats', 'add-credits', 'generate-payment-token', 'project-quote', 'project-update'];
         if (adminActions.includes(action) && userData?.role !== 'admin') {
             return error(res, "Forbidden: Admin access required", 403);
         }
@@ -109,7 +118,7 @@ async function handleLead(req, res, userId) {
                 });
                 console.log(`🤖 AI Draft successfully generated for lead ${leadId}`);
             } catch (err) {
-                console.error(`❌ Failed to generate AI draft for lead ${leadId}:`, err);
+                console.error(`AI draft generation failed for lead ${leadId}.`);
             }
         })();
 
@@ -184,7 +193,7 @@ async function handleLead(req, res, userId) {
                                 clientNiche = userSnap.data().industryType || "Unknown";
                             }
                         } catch (userErr) {
-                            console.error("Failed to fetch user niche for tagging:", userErr);
+                            console.error("Failed to fetch user niche for tagging.");
                         }
                     }
 
@@ -225,12 +234,13 @@ async function handleLead(req, res, userId) {
                 console.warn("⚠️ Odoo environment variables are incomplete.");
             }
         } catch (odooError) {
-            console.error("❌ Failed to sync lead to Odoo CRM:", odooError);
+            console.error("Odoo CRM sync failed.");
         }
 
         return success(res, { status: "LEAD_CREATED", projectId: projectRef.id });
     } catch (e) {
-        return error(res, e.message, e.status || 500);
+        const publicError = getPublicSystemError(e, "Unable to submit lead right now.");
+        return error(res, publicError.message, publicError.status);
     }
 }
 
@@ -240,7 +250,8 @@ async function getStats(req, res, userId) {
         const projects = await admin.firestore().collection('projects').count().get();
         return success(res, { leads: leads.data().count, projects: projects.data().count });
     } catch (e) {
-        return error(res, e.message, 500);
+        const publicError = getPublicSystemError(e);
+        return error(res, publicError.message, publicError.status);
     }
 }
 
@@ -257,7 +268,8 @@ async function handleAddCredits(req, res, adminId) {
         });
         return success(res, { status: "CREDITS_ADDED" });
     } catch (e) {
-        return error(res, e.message, 500);
+        const publicError = getPublicSystemError(e);
+        return error(res, publicError.message, publicError.status);
     }
 }
 
@@ -290,7 +302,8 @@ async function handleRedeemCode(req, res, userId) {
 
         return success(res, { amount: result.amount, status: "CODE_REDEEMED" });
     } catch (e) {
-        return error(res, e.message, 400);
+        const publicError = getPublicSystemError(e, "Unable to redeem promo code.");
+        return error(res, publicError.message, publicError.status);
     }
 }
 
@@ -310,6 +323,12 @@ async function handleCreditRequest(req, res, userId) {
             createdAt: new Date().toISOString()
         });
 
+        // Encode untrusted request fields before inserting them into the admin email HTML.
+        const safeDisplayName = escapeHtml(displayName);
+        const safeEmail = escapeHtml(email);
+        const safeAmount = escapeHtml(amount);
+        const safeCredits = escapeHtml(Number(amount) * 10);
+
         // 📧 Notify Admin
         const transporter = nodemailer.createTransport({
             service: 'gmail',
@@ -322,9 +341,9 @@ async function handleCreditRequest(req, res, userId) {
             subject: `💳 New Credit Request: ${displayName} ($${amount})`,
             html: `
                 <h3>New Credit Purchase Request</h3>
-                <p><strong>Client:</strong> ${displayName} (${email})</p>
-                <p><strong>Amount:</strong> $${amount}</p>
-                <p><strong>Credits to Inject:</strong> ${amount * 10}</p>
+                <p><strong>Client:</strong> ${safeDisplayName} (${safeEmail})</p>
+                <p><strong>Amount:</strong> $${safeAmount}</p>
+                <p><strong>Credits to Inject:</strong> ${safeCredits}</p>
                 <hr/>
                 <p>Please log in to the Admin Portal to approve this request and send a payment link.</p>
             `
@@ -332,7 +351,8 @@ async function handleCreditRequest(req, res, userId) {
 
         return success(res, { status: "REQUEST_SENT" });
     } catch (e) {
-        return error(res, e.message, 500);
+        const publicError = getPublicSystemError(e);
+        return error(res, publicError.message, publicError.status);
     }
 }
 
@@ -346,7 +366,8 @@ async function handleGenerateToken(req, res, adminId) {
         });
         return success(res, { token });
     } catch (e) {
-        return error(res, e.message, 500);
+        const publicError = getPublicSystemError(e);
+        return error(res, publicError.message, publicError.status);
     }
 }
 
@@ -365,7 +386,8 @@ async function handleVerifyToken(req, res, userId) {
         }
         return error(res, "Invalid Token", 400);
     } catch (e) {
-        return error(res, e.message, 500);
+        const publicError = getPublicSystemError(e);
+        return error(res, publicError.message, publicError.status);
     }
 }
 
@@ -379,6 +401,11 @@ async function handleProjectQuote(req, res, adminId) {
             updatedAt: new Date().toISOString()
         });
 
+        const safeProjectName = escapeHtml(projectName);
+        const safePrice = escapeHtml(quote?.price);
+        const safeTimeline = escapeHtml(quote?.timeline);
+        const safeNotes = escapeHtml(quote?.notes);
+
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
@@ -389,17 +416,18 @@ async function handleProjectQuote(req, res, adminId) {
             to: clientEmail,
             subject: `Project Proposal: ${projectName}`,
             html: `
-                <h2>Architectural Proposal for ${projectName}</h2>
-                <p><strong>Investment:</strong> $${quote.price}</p>
-                <p><strong>Estimated Timeline:</strong> ${quote.timeline}</p>
-                <p><strong>Notes:</strong> ${quote.notes}</p>
+                <h2>Architectural Proposal for ${safeProjectName}</h2>
+                <p><strong>Investment:</strong> $${safePrice}</p>
+                <p><strong>Estimated Timeline:</strong> ${safeTimeline}</p>
+                <p><strong>Notes:</strong> ${safeNotes}</p>
                 <p>Please log in to your dashboard to accept this proposal and begin the build.</p>
             `
         });
 
         return success(res, { status: "QUOTE_SENT" });
     } catch (e) {
-        return error(res, e.message, 500);
+        const publicError = getPublicSystemError(e);
+        return error(res, publicError.message, publicError.status);
     }
 }
 
@@ -419,6 +447,10 @@ async function handleProjectUpdate(req, res, adminId) {
             timestamp: new Date().toISOString()
         });
 
+        const safeProjectName = escapeHtml(projectName);
+        const safeProgress = escapeHtml(progress);
+        const safeMessage = escapeHtml(message);
+
         if (progress % 25 === 0 || progress === 100) {
             const transporter = nodemailer.createTransport({
                 service: 'gmail',
@@ -428,13 +460,14 @@ async function handleProjectUpdate(req, res, adminId) {
                 from: `"QuickKit Engineering" <${process.env.EMAIL_USER}>`,
                 to: clientEmail,
                 subject: `Progress Update: ${projectName} (${progress}%)`,
-                html: `<p>Your project <strong>${projectName}</strong> is now <strong>${progress}%</strong> complete.</p><p>Latest update: <em>${message}</em></p>`
+                html: `<p>Your project <strong>${safeProjectName}</strong> is now <strong>${safeProgress}%</strong> complete.</p><p>Latest update: <em>${safeMessage}</em></p>`
             });
         }
 
         return success(res, { status: "UPDATED" });
     } catch (e) {
-        return error(res, e.message, 500);
+        const publicError = getPublicSystemError(e);
+        return error(res, publicError.message, publicError.status);
     }
 }
 
@@ -473,6 +506,7 @@ async function handleProjectStatus(req, res, userId) {
         }
         return success(res, { status: "STATE_TRANSITIONED" });
     } catch (e) {
-        return error(res, e.message, 500);
+        const publicError = getPublicSystemError(e);
+        return error(res, publicError.message, publicError.status);
     }
 }

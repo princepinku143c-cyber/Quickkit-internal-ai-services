@@ -1,9 +1,10 @@
 import admin, { db } from "./_lib/firebaseAdmin.js";
-import { timingSafeEqual } from "node:crypto";
+import { logSafeError } from "./_lib/safeErrorLog.js";
+import { constantTimeSecretEqual } from "./_lib/constantTimeSecret.js";
 import { checkRateLimit } from "./_lib/security.js";
 import { getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from "./_lib/input.js";
 import { success, error } from "./_lib/response.js";
-import { askAI } from "./services/aiService.js";
+import { askAI } from "./_lib/services/aiService.js";
 
 export default async function handler(req, res) {
   // CORS configuration
@@ -36,12 +37,7 @@ export default async function handler(req, res) {
     const userSnap = await db.collection("users").doc(String(targetUid)).get();
     const expectedSecret = userSnap.exists ? userSnap.data()?.webhookSecret : null;
     const suppliedSecret = req.headers["x-webhook-secret"];
-    if (typeof expectedSecret !== "string" || !expectedSecret || typeof suppliedSecret !== "string" || !suppliedSecret) {
-      return error(res, "Unauthorized: a valid X-Webhook-Secret is required.", 401);
-    }
-    const expectedBytes = Buffer.from(expectedSecret, "utf8");
-    const suppliedBytes = Buffer.from(suppliedSecret, "utf8");
-    if (expectedBytes.length !== suppliedBytes.length || !timingSafeEqual(expectedBytes, suppliedBytes)) {
+    if (!constantTimeSecretEqual(expectedSecret, suppliedSecret)) {
       return error(res, "Unauthorized: a valid X-Webhook-Secret is required.", 401);
     }
     await checkRateLimit(admin, String(targetUid) + ":" + getClientIp(req), "webhook", 10);
@@ -91,7 +87,7 @@ export default async function handler(req, res) {
         });
         console.log(`🤖 AI Draft successfully generated for webhook lead ${leadId}`);
       } catch (err) {
-        console.error(`❌ Failed to generate AI draft for webhook lead ${leadId}:`, err);
+        logSafeError("WEBHOOK_AI_DRAFT_FAILED", err);
       }
     })();
 
@@ -183,7 +179,7 @@ export default async function handler(req, res) {
         }
       }
     } catch (odooErr) {
-      console.error("❌ Webhook Odoo Sync failure:", odooErr);
+      logSafeError("WEBHOOK_ODOO_SYNC_FAILED", odooErr);
     }
 
     return success(res, { status: "LEAD_INGESTED", leadId: leadRef.id, projectId: projectRef.id });
@@ -193,7 +189,7 @@ export default async function handler(req, res) {
       return error(res, 'Too many webhook requests. Please retry shortly.', 429);
     }
     if (e?.status === 503) return error(res, 'Webhook service is temporarily unavailable.', 503);
-    console.error('WEBHOOK_ERROR:', e);
+    logSafeError("WEBHOOK_PROCESSING_FAILED", e);
     return error(res, 'Webhook processing failed. Please retry later.', 500);
   }
 }
