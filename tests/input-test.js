@@ -429,6 +429,8 @@ for (const unsafeUrl of [
   "http://127.0.0.1",
   "http://[::1]",
   "http://localhost",
+  "http://home.arpa",
+  "http://router.home.arpa",
   "http://metadata.google.internal",
   "https://user:password@example.com",
   "https://example.com:8443",
