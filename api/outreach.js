@@ -191,12 +191,12 @@ async function scrapeWebsite(url) {
       return { title: "", description: "", techTags: [] };
     }
     const contentType = String(response.headers?.["content-type"] || "");
-    if (contentType && !/\\btext\\/html\\b/i.test(contentType)) {
+    if (contentType && !/\btext\/html\b/i.test(contentType)) {
       return { title: "", description: "", techTags: [] };
     }
 
     const html = response.body;
-    const titleMatch = html.match(/<title[^>]*>([^<]+)<\\/title>/i);
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
     const title = titleMatch ? titleMatch[1].trim() : "";
     const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) ||
                       html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
