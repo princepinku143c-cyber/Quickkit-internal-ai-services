@@ -316,6 +316,12 @@ async function handleCreditRequest(req, res, userId) {
             createdAt: new Date().toISOString()
         });
 
+        // Encode untrusted request fields before inserting them into the admin email HTML.
+        const safeDisplayName = escapeHtml(displayName);
+        const safeEmail = escapeHtml(email);
+        const safeAmount = escapeHtml(amount);
+        const safeCredits = escapeHtml(Number(amount) * 10);
+
         // 📧 Notify Admin
         const transporter = nodemailer.createTransport({
             service: 'gmail',
@@ -328,9 +334,9 @@ async function handleCreditRequest(req, res, userId) {
             subject: `💳 New Credit Request: ${displayName} ($${amount})`,
             html: `
                 <h3>New Credit Purchase Request</h3>
-                <p><strong>Client:</strong> ${displayName} (${email})</p>
-                <p><strong>Amount:</strong> $${amount}</p>
-                <p><strong>Credits to Inject:</strong> ${amount * 10}</p>
+                <p><strong>Client:</strong> ${safeDisplayName} (${safeEmail})</p>
+                <p><strong>Amount:</strong> $${safeAmount}</p>
+                <p><strong>Credits to Inject:</strong> ${safeCredits}</p>
                 <hr/>
                 <p>Please log in to the Admin Portal to approve this request and send a payment link.</p>
             `
@@ -388,6 +394,11 @@ async function handleProjectQuote(req, res, adminId) {
             updatedAt: new Date().toISOString()
         });
 
+        const safeProjectName = escapeHtml(projectName);
+        const safePrice = escapeHtml(quote?.price);
+        const safeTimeline = escapeHtml(quote?.timeline);
+        const safeNotes = escapeHtml(quote?.notes);
+
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
@@ -398,10 +409,10 @@ async function handleProjectQuote(req, res, adminId) {
             to: clientEmail,
             subject: `Project Proposal: ${projectName}`,
             html: `
-                <h2>Architectural Proposal for ${projectName}</h2>
-                <p><strong>Investment:</strong> $${quote.price}</p>
-                <p><strong>Estimated Timeline:</strong> ${quote.timeline}</p>
-                <p><strong>Notes:</strong> ${quote.notes}</p>
+                <h2>Architectural Proposal for ${safeProjectName}</h2>
+                <p><strong>Investment:</strong> $${safePrice}</p>
+                <p><strong>Estimated Timeline:</strong> ${safeTimeline}</p>
+                <p><strong>Notes:</strong> ${safeNotes}</p>
                 <p>Please log in to your dashboard to accept this proposal and begin the build.</p>
             `
         });
@@ -429,6 +440,10 @@ async function handleProjectUpdate(req, res, adminId) {
             timestamp: new Date().toISOString()
         });
 
+        const safeProjectName = escapeHtml(projectName);
+        const safeProgress = escapeHtml(progress);
+        const safeMessage = escapeHtml(message);
+
         if (progress % 25 === 0 || progress === 100) {
             const transporter = nodemailer.createTransport({
                 service: 'gmail',
@@ -438,7 +453,7 @@ async function handleProjectUpdate(req, res, adminId) {
                 from: `"QuickKit Engineering" <${process.env.EMAIL_USER}>`,
                 to: clientEmail,
                 subject: `Progress Update: ${projectName} (${progress}%)`,
-                html: `<p>Your project <strong>${projectName}</strong> is now <strong>${progress}%</strong> complete.</p><p>Latest update: <em>${message}</em></p>`
+                html: `<p>Your project <strong>${safeProjectName}</strong> is now <strong>${safeProgress}%</strong> complete.</p><p>Latest update: <em>${safeMessage}</em></p>`
             });
         }
 
