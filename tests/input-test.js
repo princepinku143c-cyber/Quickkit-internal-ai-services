@@ -462,13 +462,32 @@ const publicFetchResult = await fetchPublicWebsite("https://example.com/path", {
     return { statusCode: 200, headers: { "content-type": "text/html" }, body: "<title>Public</title>" };
   },
 });
-assert.deepEqual(pinnedRequest, {
-  hostname: "example.com",
-  address: "93.184.216.34",
-  timeoutMs: 3000,
-  maxBytes: 512 * 1024,
-});
+assert.equal(pinnedRequest.hostname, "example.com");
+assert.equal(pinnedRequest.address, "93.184.216.34");
+assert.ok(pinnedRequest.timeoutMs > 0 && pinnedRequest.timeoutMs <= 3000);
+assert.equal(pinnedRequest.maxBytes, 512 * 1024);
 assert.equal(publicFetchResult.body, "<title>Public</title>");
+
+// DNS resolution must not hang the prospect scraper before the HTTP deadline starts.
+let lateDnsResolve;
+let requestAfterDnsTimeout = false;
+const dnsTimeoutStartedAt = Date.now();
+const dnsTimeoutResult = await fetchPublicWebsite("https://example.com/dns-timeout", {
+  lookup: () => new Promise((resolve) => {
+    lateDnsResolve = resolve;
+  }),
+  timeoutMs: 50,
+  requestImpl: async () => {
+    requestAfterDnsTimeout = true;
+    return { statusCode: 200, headers: {}, body: "unexpected" };
+  },
+});
+assert.equal(dnsTimeoutResult, null);
+assert.ok(Date.now() - dnsTimeoutStartedAt < 500, "DNS lookup must be bounded by the configured deadline");
+assert.equal(typeof lateDnsResolve, "function");
+lateDnsResolve([{ address: "93.184.216.34", family: 4 }]);
+await new Promise((resolve) => setImmediate(resolve));
+assert.equal(requestAfterDnsTimeout, false, "a late DNS response must not start an HTTP request");
 
 // A peer that continuously trickles data must not extend the scraper's total
 // request deadline. The socket inactivity timeout alone is not a hard deadline.
