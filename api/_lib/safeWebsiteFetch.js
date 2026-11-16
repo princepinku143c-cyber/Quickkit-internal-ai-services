@@ -12,6 +12,7 @@ const BLOCKED_HOST_SUFFIXES = [
   ".test",
   ".invalid",
   ".example",
+  ".home.arpa", // RFC 8375 home-network namespace
   ".onion",
 ];
 
