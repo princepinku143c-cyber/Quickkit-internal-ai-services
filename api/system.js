@@ -5,6 +5,7 @@ import { askAI } from './_lib/services/aiService.js';
 import { checkRateLimit } from './_lib/security.js';
 import { escapeHtml, getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from './_lib/input.js';
 import { getPublicSystemError } from './_lib/systemErrors.js';
+import { getSystemActionMethods } from './_lib/systemActionMethods.js';
 
 
 const success = (res, data) => res.status(200).json(data);
@@ -13,16 +14,12 @@ const error = (res, msg, code = 400) => res.status(code).json({ error: msg });
 export default async (req, res) => {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+    res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
     res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
     const { action } = req.query;
-    if (action === 'lead' && req.method !== 'POST') {
-        res.setHeader('Allow', 'POST, OPTIONS');
-        return error(res, 'Method Not Allowed', 405);
-    }
     const authHeader = req.headers.authorization;
 
     let userId = null;
@@ -54,7 +51,17 @@ export default async (req, res) => {
         'lead': handleLead
     };
 
-    if (actionMap[action]) {
+    if (!Object.prototype.hasOwnProperty.call(actionMap, action)) {
+        return error(res, "Invalid Action", 400);
+    }
+
+    const allowedMethods = getSystemActionMethods(action);
+    if (!allowedMethods || !allowedMethods.includes(req.method)) {
+        res.setHeader('Allow', `${(allowedMethods || []).concat('OPTIONS').join(', ')}`);
+        return error(res, 'Method Not Allowed', 405);
+    }
+
+    if (Object.prototype.hasOwnProperty.call(actionMap, action)) {
         // Require auth for all actions except 'lead'
         if (action !== 'lead' && !userId) {
             return error(res, "Unauthorized", 401);
