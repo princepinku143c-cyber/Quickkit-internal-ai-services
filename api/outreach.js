@@ -8,7 +8,7 @@ import { logSafeError } from "./_lib/safeErrorLog.js";
 const setCorsHeaders = (res) => {
   res.setHeader("Access-Control-Allow-Credentials", true);
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS,PATCH,DELETE,POST,PUT");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.setHeader(
     "Access-Control-Allow-Headers",
     "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization"
@@ -23,6 +23,22 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
 
   const { action } = req.query;
+  const actionMethods = Object.freeze({
+    "telegram-webhook": ["POST"],
+    "process-queue": ["GET", "POST"],
+    analyze: ["POST"],
+    approve: ["POST"],
+    reject: ["POST"],
+    "add-lead": ["POST"],
+  });
+  const allowedMethods = Object.prototype.hasOwnProperty.call(actionMethods, action)
+    ? actionMethods[action]
+    : null;
+  if (!allowedMethods) return error(res, "Invalid Action", 400);
+  if (!allowedMethods.includes(req.method)) {
+    res.setHeader("Allow", `${allowedMethods.join(", ")}, OPTIONS`);
+    return error(res, "Method Not Allowed", 405);
+  }
 
   try {
     // 1. Telegram webhook check
