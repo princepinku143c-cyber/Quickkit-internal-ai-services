@@ -47,10 +47,12 @@ assert.ok(outreachMethodSource.includes('"telegram-webhook": ["POST"]'),
   "Telegram webhook must accept POST only");
 assert.ok(outreachMethodSource.includes('"process-queue": ["GET", "POST"]'),
   "Vercel Cron GET and manual POST must remain supported for queue processing");
-for (const action of ["analyze", "approve", "reject", "add-lead"]) {
+for (const action of ["analyze", "approve", "reject"]) {
   assert.ok(outreachMethodSource.includes(action + ': ["POST"]'),
     action + " must be POST-only");
 }
+assert.ok(outreachMethodSource.includes('"add-lead": ["POST"]'),
+  "add-lead must be POST-only");
 assert.ok(outreachMethodSource.includes("Object.prototype.hasOwnProperty.call(actionMethods, action)"),
   "outreach dispatch must reject inherited object properties");
 assert.ok(outreachMethodSource.includes("!allowedMethods.includes(req.method)"),
