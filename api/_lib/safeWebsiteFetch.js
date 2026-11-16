@@ -27,6 +27,9 @@ function isPublicIpv4(address) {
   if (a === 169 && b === 254) return false;
   if (a === 172 && b >= 16 && b <= 31) return false;
   if (a === 192 && b === 0 && c === 0) return false;
+  if (a === 192 && b === 31 && c === 196) return false; // AS112 special-purpose range
+  if (a === 192 && b === 52 && c === 193) return false; // AMT special-purpose range
+  if (a === 192 && b === 175 && c === 48) return false; // AS112 special-purpose range
   if (a === 192 && b === 0 && c === 2) return false;
   if (a === 192 && b === 88 && c === 99) return false;
   if (a === 192 && b === 168) return false;
@@ -80,7 +83,7 @@ function isPublicIpv6(address) {
   if ((words[0] & 0xffc0) === 0xfe80) return false; // Link-local fe80::/10
   if ((words[0] & 0xff00) === 0xff00) return false; // Multicast ff00::/8
   if ((words[0] & 0xe000) !== 0x2000) return false; // Only global-unicast 2000::/3
-  if (words[0] === 0x2001 && (words[1] === 0x0db8 || words[1] === 0x0000)) return false;
+  if (words[0] === 0x2001 && (words[1] <= 0x01ff || words[1] === 0x0db8)) return false; // IETF special-purpose and documentation ranges
   if (words[0] === 0x2002) return false; // Deprecated 6to4
   return true;
 }
