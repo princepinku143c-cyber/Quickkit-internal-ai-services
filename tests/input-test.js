@@ -235,13 +235,13 @@ assert.ok(!proposalApiSource.includes("Build Cost: ${price}"), "proposal email m
 // Google lead-form sign-in may provision a missing client profile, but must never
 // merge role: "client" into an existing profile (which could downgrade an admin).
 const leadFormSource = readFileSync(new URL("../components/LeadForm.tsx", import.meta.url), "utf8");
-const googleAutofillHandler = leadFormSource.match(/const handleGoogleAutofill\\s*=\\s*async\\s*\\(\\)\\s*=>\\s*\\{([\\s\\S]*?)\\n\\s*\\};/);
+const googleAutofillHandler = leadFormSource.match(/const handleGoogleAutofill\s*=\s*async\s*\(\)\s*=>\s*\{([\s\S]*?)\n\s*\};/);
 assert.ok(googleAutofillHandler, "LeadForm Google autofill handler must remain present");
-assert.match(googleAutofillHandler[1], /const userSnap\\s*=\\s*await getDoc\\(userRef\\)/,
+assert.match(googleAutofillHandler[1], /const userSnap\s*=\s*await getDoc\(userRef\)/,
   "Google autofill must check whether a profile already exists before writing");
-assert.match(googleAutofillHandler[1], /if\\s*\\(\\s*!userSnap\\.exists\\(\\)\\s*\\)\\s*\\{[\\s\\S]*?await setDoc\\(userRef/,
+assert.match(googleAutofillHandler[1], /if\s*\(\s*!userSnap\.exists\(\)\s*\)\s*\{[\s\S]*?await setDoc\(userRef/,
   "Google autofill may create a client profile only when the profile is missing");
-assert.match(googleAutofillHandler[1], /role\\s*:\\s*['"]client['"]/,
+assert.match(googleAutofillHandler[1], /role\s*:\s*['"]client['"]/,
   "new Google profiles must receive only the client role");
-assert.doesNotMatch(googleAutofillHandler[1], /\\{\\s*merge\\s*:\\s*true\\s*\\}/,
+assert.doesNotMatch(googleAutofillHandler[1], /\{\s*merge\s*:\s*true\s*\}/,
   "Google autofill must not merge defaults into an existing profile");
