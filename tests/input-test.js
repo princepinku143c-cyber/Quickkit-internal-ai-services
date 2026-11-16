@@ -328,3 +328,23 @@ assert.ok(
   !JSON.stringify(rateLimitLogEntries).includes("private Firestore connection and credential diagnostics"),
   "raw Firestore diagnostics must not appear in rate limiter logs",
 );
+
+
+// Client authentication must never carry an admin allowlist or call
+// provisioning actions that are not implemented by the server API.
+const loginSource = readFileSync(new URL("../components/Login.tsx", import.meta.url), "utf8");
+assert.doesNotMatch(
+  loginSource,
+  /targetEmails|setup-admin/,
+  "admin promotion must not be controlled by a client-side email allowlist",
+);
+assert.doesNotMatch(
+  loginSource,
+  /welcome-email/,
+  "the client must not call an unimplemented welcome-email action",
+);
+assert.doesNotMatch(
+  loginSource,
+  /role\s*:\s*["']admin["']/,
+  "client authentication must never assign an admin role",
+);
