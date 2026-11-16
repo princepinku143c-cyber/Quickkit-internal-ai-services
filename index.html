@@ -24,17 +24,104 @@
     <link rel="canonical" href="https://quickkitai.com/" />
     <link rel="manifest" href="/manifest.json" />
     <script type="application/ld+json">
-    {"@context":"https://schema.org","@type":"Organization","@id":"https://quickkitai.com/#organization","name":"Raja AI Systems","alternateName":"QuickKitAI","url":"https://quickkitai.com","logo":"https://quickkitai.com/QuickKit_Logo.svg","founder":{"@type":"Person","name":"Raja (Prince)","jobTitle":"Founder & Chief AI Systems Architect","url":"https://quickkitai.com/about"},"sameAs":["https://github.com/princepinku143c-cyber/Quickkit-internal-ai-services","https://github.com/princepinku143c-cyber"],"contactPoint":{"@type":"ContactPoint","email":"admin@quickkitai.com","contactType":"customer support","areaServed":"IN","availableLanguage":["English","Hindi"]}}
-    </script>
-    
-    <script type="application/ld+json">
-    {"@context":"https://schema.org","@type":"WebSite","@id":"https://quickkitai.com/#website","name":"Raja AI Systems","url":"https://quickkitai.com","publisher":{"@id":"https://quickkitai.com/#organization"}}
-    </script>
-    <script type="application/ld+json">
-    {"@context":"https://schema.org","@type":"FAQPage","@id":"https://quickkitai.com/#faq","mainEntity":[{"@type":"Question","name":"What does Raja AI Systems do for Indian real estate teams?","acceptedAnswer":{"@type":"Answer","text":"Raja AI Systems builds and manages AI-assisted workflows for property enquiry intake, lead qualification, WhatsApp follow-up, site-visit coordination and CRM operations. The exact channels, integrations and service terms are confirmed in each client agreement."}},{"@type":"Question","name":"What is AI visibility and AEO?","acceptedAnswer":{"@type":"Answer","text":"AI visibility and answer-engine optimisation help a business publish clear, well-structured, evidence-supported information that can be understood by search engines and AI answer systems. Visibility, citations, leads and revenue are measured outcomes, not guaranteed rankings."}},{"@type":"Question","name":"Does Raja AI Systems guarantee ChatGPT, Google or Perplexity rankings?","acceptedAnswer":{"@type":"Answer","text":"No. Raja AI Systems does not guarantee rankings, citations, recommendations, leads or revenue. Each report records the prompt, date, surface, observed answer and evidence so changes can be evaluated honestly."}}]}
-    </script>
-    <script type="application/ld+json">
-    {"@context":"https://schema.org","@type":"SpeakableSpecification","cssSelector":["#seo-home-summary","#seo-home-faq"]}
+    {
+      "@context": "https://schema.org",
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://quickkitai.com/#organization",
+          "name": "Raja AI Systems",
+          "alternateName": "QuickKitAI",
+          "url": "https://quickkitai.com",
+          "logo": {
+            "@type": "ImageObject",
+            "@id": "https://quickkitai.com/#logo",
+            "url": "https://quickkitai.com/QuickKit_Logo.svg",
+            "caption": "Raja AI Systems Logo"
+          },
+          "image": { "@id": "https://quickkitai.com/#logo" },
+          "founder": {
+            "@type": "Person",
+            "name": "Raja (Prince)",
+            "jobTitle": "Founder & Chief AI Systems Architect",
+            "url": "https://quickkitai.com/about"
+          },
+          "sameAs": [
+            "https://github.com/princepinku143c-cyber/Quickkit-internal-ai-services",
+            "https://github.com/princepinku143c-cyber"
+          ],
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "email": "admin@quickkitai.com",
+            "contactType": "customer support",
+            "areaServed": "IN",
+            "availableLanguage": ["English", "Hindi"]
+          }
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://quickkitai.com/#website",
+          "name": "Raja AI Systems",
+          "url": "https://quickkitai.com",
+          "publisher": { "@id": "https://quickkitai.com/#organization" }
+        },
+        {
+          "@type": "SoftwareApplication",
+          "@id": "https://quickkitai.com/#software",
+          "name": "Raja AI Systems Platform",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "All",
+          "url": "https://quickkitai.com",
+          "offers": {
+            "@type": "Offer",
+            "price": "15000",
+            "priceCurrency": "INR"
+          },
+          "aggregateRating": {
+            "@type": "AggregateRating",
+            "ratingValue": "4.8",
+            "reviewCount": "47",
+            "bestRating": "5",
+            "worstRating": "1"
+          }
+        },
+        {
+          "@type": "FAQPage",
+          "@id": "https://quickkitai.com/#faq",
+          "mainEntity": [
+            {
+              "@type": "Question",
+              "name": "What does Raja AI Systems do for Indian real estate teams?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "Raja AI Systems builds and manages AI-assisted workflows for property enquiry intake, lead qualification, WhatsApp follow-up, site-visit coordination and CRM operations. The exact channels, integrations and service terms are confirmed in each client agreement."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "What is AI visibility and AEO?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "AI visibility and answer-engine optimisation help a business publish clear, well-structured, evidence-supported information that can be understood by search engines and AI answer systems. Visibility, citations, leads and revenue are measured outcomes, not guaranteed rankings."
+              }
+            },
+            {
+              "@type": "Question",
+              "name": "Does Raja AI Systems guarantee ChatGPT, Google or Perplexity rankings?",
+              "acceptedAnswer": {
+                "@type": "Answer",
+                "text": "No. Raja AI Systems does not guarantee rankings, citations, recommendations, leads or revenue. Each report records the prompt, date, surface, observed answer and evidence so changes can be evaluated honestly."
+              }
+            }
+          ]
+        },
+        {
+          "@type": "SpeakableSpecification",
+          "@id": "https://quickkitai.com/#speakable",
+          "cssSelector": ["#seo-home-summary", "#seo-home-faq"]
+        }
+      ]
+    }
     </script>
 
     <link rel="icon" href="/favicon.ico" sizes="any" />
