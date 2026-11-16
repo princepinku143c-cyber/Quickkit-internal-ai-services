@@ -214,6 +214,22 @@ try {
     workspaceName: 'Alice Realty',
     updated_at: stamp,
   }));
+  // The Integrations screen stores a 256-bit webhook secret on the owner's profile.
+  await assertSucceeds(updateDoc(doc(alice, 'users', 'alice'), {
+    webhookSecret: 'a'.repeat(64),
+  }));
+  await assertFails(updateDoc(doc(alice, 'users', 'alice'), {
+    webhookSecret: 'a'.repeat(63),
+  }));
+  await assertFails(updateDoc(doc(alice, 'users', 'alice'), {
+    webhookSecret: 'g'.repeat(64),
+  }));
+  await assertFails(updateDoc(doc(alice, 'users', 'alice'), {
+    webhookSecret: 'A'.repeat(64),
+  }));
+  await assertFails(updateDoc(doc(bob, 'users', 'alice'), {
+    webhookSecret: 'b'.repeat(64),
+  }));
   await assertFails(getDoc(doc(bob, 'users', 'alice')));
   await assertSucceeds(getDoc(doc(admin, 'users', 'alice')));
 
