@@ -22,7 +22,7 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
       - name: Dependency security audit
-        run: npm audit --audit-level=low
+        run: npm audit --audit-level=high
       - name: Production build and route prerender
         run: npm run build
       - name: SEO and prerender validation
