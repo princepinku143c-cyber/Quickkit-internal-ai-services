@@ -6,6 +6,7 @@ import { checkRateLimit } from './_lib/security.js';
 import { escapeHtml, getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from './_lib/input.js';
 import { getPublicSystemError } from './_lib/systemErrors.js';
 import { getSystemActionMethods } from './_lib/systemActionMethods.js';
+import { constantTimeSecretEqual } from './_lib/constantTimeSecret.js';
 
 
 const success = (res, data) => res.status(200).json(data);
@@ -372,19 +373,35 @@ async function handleGenerateToken(req, res, adminId) {
 }
 
 async function handleVerifyToken(req, res, userId) {
-    const { projectId, token } = req.body;
+    const { projectId, token } = req.body || {};
+    if (
+        typeof projectId !== "string" || !projectId.trim()
+        || typeof token !== "string" || !token.trim()
+    ) {
+        return error(res, "Invalid Token", 400);
+    }
+
     try {
         const projectRef = admin.firestore().collection('projects').doc(projectId);
         const snap = await projectRef.get();
-        if (snap.data().paymentToken === token) {
-            await projectRef.update({ 
-                status: 'accepted', 
-                advancePaid: true,
-                paymentToken: null 
-            });
-            return success(res, { status: "VERIFIED" });
+        if (!snap.exists) {
+            return error(res, "Invalid Token", 400);
         }
-        return error(res, "Invalid Token", 400);
+
+        const storedToken = snap.get('paymentToken');
+        if (
+            typeof storedToken !== "string" || !storedToken.length
+            || !constantTimeSecretEqual(storedToken, token)
+        ) {
+            return error(res, "Invalid Token", 400);
+        }
+
+        await projectRef.update({
+            status: 'accepted',
+            advancePaid: true,
+            paymentToken: null
+        });
+        return success(res, { status: "VERIFIED" });
     } catch (e) {
         const publicError = getPublicSystemError(e);
         return error(res, publicError.message, publicError.status);
