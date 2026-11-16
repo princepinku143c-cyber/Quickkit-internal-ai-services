@@ -149,9 +149,11 @@ export async function resolvePublicWebsiteTarget(rawUrl, { lookup = dns.promises
 function requestPinnedWebsite(target, { timeoutMs, maxBytes }) {
   return new Promise((resolve) => {
     let settled = false;
+    let deadline = null;
     const finish = (result) => {
       if (settled) return;
       settled = true;
+      if (deadline) clearTimeout(deadline);
       resolve(result);
     };
     const transport = target.url.protocol === "https:" ? https : http;
@@ -210,8 +212,13 @@ function requestPinnedWebsite(target, { timeoutMs, maxBytes }) {
       response.on("error", () => finish(null));
     });
 
-    request.setTimeout(timeoutMs, () => request.destroy(new Error("timeout")));
     request.on("error", () => finish(null));
+
+    // Socket inactivity timeouts can be extended indefinitely by a peer that
+    // trickles data. Enforce a hard wall-clock deadline for the entire response.
+    deadline = setTimeout(() => request.destroy(new Error("timeout")), timeoutMs);
+    deadline.unref?.();
+    request.setTimeout(timeoutMs, () => request.destroy(new Error("timeout")));
   });
 }
 
