@@ -2,6 +2,7 @@ import nodemailer from "nodemailer";
 import { success, error } from "./_lib/response.js";
 import admin from "./_lib/firebaseAdmin.js";
 import { logSafeError } from "./_lib/safeErrorLog.js";
+import { escapeHtml } from "./_lib/input.js";
 
 /**
  * Administrative Proposal Transmission Endpoint.
@@ -36,6 +37,10 @@ export default async function handler(req, res) {
       return error(res, "Incomplete Proposal Payload: Email, name, price, and features array required.", 400);
   }
 
+  const safeName = escapeHtml(name);
+  const safePrice = escapeHtml(price);
+  const safeFeatures = features.map((feature) => escapeHtml(feature));
+
   try {
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -49,16 +54,16 @@ export default async function handler(req, res) {
       <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto; color: #333;">
           <h2 style="color: #2563eb;">Your Custom AI System Blueprint</h2>
       
-          <p>Hi ${name},</p>
+          <p>Hi ${safeName},</p>
       
           <p>Our architectural team has reviewed your requirements. We’ve designed a custom AI engineering system specifically for your business:</p>
       
           <ul style="background: #f8fafc; padding: 20px 40px; border-radius: 8px; border: 1px solid #e2e8f0;">
-            ${(Array.isArray(features) ? features : []).map(f => `<li style="margin-bottom: 8px;"><strong>${f}</strong></li>`).join("")}
+            ${safeFeatures.map((feature) => `<li style="margin-bottom: 8px;"><strong>${feature}</strong></li>`).join("")}
           </ul>
       
           <div style="margin-top: 30px; padding: 20px; background: #eff6ff; border-left: 4px solid #2563eb;">
-              <h3 style="margin: 0 0 10px 0;">Estimated Fixed Build Cost: $${price}</h3>
+              <h3 style="margin: 0 0 10px 0;">Estimated Fixed Build Cost: &#36;${safePrice}</h3>
               <p style="margin: 0; font-size: 14px; color: #475569;"><em>This pricing is customized exactly based on your scoped requirements to ensure maximum ROI.</em></p>
           </div>
 
