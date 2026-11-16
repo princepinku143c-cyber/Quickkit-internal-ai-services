@@ -557,3 +557,19 @@ assert.ok(
 );
 
 console.log("Webhook secret comparison and public website scraper security tests passed.");
+
+const paymentVerificationHandler = systemApiSource.match(
+  /async function handleVerifyToken\\([\\s\\S]*?\\n\\}/,
+)?.[0];
+assert.ok(paymentVerificationHandler, "payment verification handler must remain present");
+assert.match(paymentVerificationHandler, /typeof projectId !== ["']string["']/);
+assert.match(paymentVerificationHandler, /typeof token !== ["']string["']/);
+assert.match(paymentVerificationHandler, /!snap\\.exists/);
+assert.match(paymentVerificationHandler, /typeof storedToken !== ["']string["']/);
+assert.match(paymentVerificationHandler, /constantTimeSecretEqual\\(storedToken, token\\)/);
+assert.doesNotMatch(
+  paymentVerificationHandler,
+  /snap\\.data\\(\\)\\.paymentToken\\s*===\\s*token/,
+  "payment verification must reject missing tokens instead of relying on undefined equality",
+);
+
