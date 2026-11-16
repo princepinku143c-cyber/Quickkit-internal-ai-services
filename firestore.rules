@@ -35,118 +35,7 @@ service cloud.firestore {
       return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['webhookSecret'])
         || (
           request.resource.data.webhookSecret is string
-          && request.resource.data.webhookSecret.matches('^[a-f0-9]{64}
-          || request.resource.data.email == request.auth.token.email)
-        && (
-          request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-            'displayName', 'email', 'industryType', 'workspaceName',
-            'operatorName', 'contactEmail', 'crmInitialized',
-            'customFormSchema', 'webhookSecret', 'updated_at', 'updatedAt'
-          ])
-          ||
-          (
-            !('credits' in resource.data)
-            && request.resource.data.credits == 500
-            && request.resource.data.plan == 'free'
-            && request.resource.data.role == resource.data.role
-            && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
-              'credits', 'plan', 'createdAt'
-            ])
-          )
-        );
-    }
-
-    // Profiles: clients may create only their own non-privileged profile.
-    // Admin roles, quotas, plans and tenant identifiers are server-managed.
-    match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow create: if validClientProfileCreate(userId);
-      allow update: if isAdmin() || validClientProfileUpdate(userId);
-      allow delete: if isAdmin();
-    }
-
-    // Leads are created by the validated server API. Clients can read only
-    // leads assigned to their own UID; all lead mutations remain admin-only.
-    match /leads/{leadId} {
-      allow create: if false;
-      allow read: if isAdmin() || isOwner(resource.data.userId);
-      allow update, delete: if isAdmin();
-    }
-
-    // Project creation is performed by the admin workflow or server API.
-    match /projects/{projectId} {
-      allow read: if isAdmin() || isOwner(resource.data.userId);
-      allow create: if isAdmin()
-        && request.resource.data.userId is string
-        && exists(/databases/$(database)/documents/users/$(request.resource.data.userId));
-      allow update, delete: if isAdmin();
-    }
-
-    match /payments/{paymentId} {
-      allow read: if isAdmin() || isOwner(resource.data.userId);
-      allow write: if false;
-    }
-
-    // Admins publish client-facing workflow logs; each client can read only
-    // log records addressed to their own UID.
-    match /logs/{logId} {
-      allow read: if isAdmin()
-        || isOwner(resource.data.user_id)
-        || isOwner(resource.data.userId);
-      allow create, update, delete: if isAdmin();
-    }
-
-    // Agent ownership and tenant metadata are server/admin managed.
-    function validClientAgentCreate() {
-      return isOwner(request.resource.data.userId)
-        && !request.resource.data.keys().hasAny([
-          'tenantId', 'workspaceId', 'companyId', 'organizationId'
-        ]);
-    }
-
-    // Agent ownership cannot be reassigned by the current owner.
-    match /agents/{agentId} {
-      allow read: if isAdmin() || isOwner(resource.data.userId);
-      allow create: if isAdmin() || validClientAgentCreate();
-      allow update: if isAdmin()
-        || (
-          isOwner(resource.data.userId)
-          && request.resource.data.userId == resource.data.userId
-          && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-            'tenantId', 'workspaceId', 'companyId', 'organizationId'
-          ])
-        );
-      allow delete: if isAdmin() || isOwner(resource.data.userId);
-    }
-
-    match /leads_outreach/{leadId} {
-      allow read, write: if isAdmin();
-    }
-
-    match /promo_codes/{promoCodeId} {
-      allow read, write: if isAdmin();
-    }
-
-    // Clients may submit their own pending credit request. Approval and all
-    // subsequent mutations are restricted to admins.
-    match /payment_requests/{requestId} {
-      allow read: if isAdmin() || isOwner(resource.data.userId);
-      allow create: if isOwner(request.resource.data.userId)
-        && request.resource.data.userEmail == request.auth.token.email
-        && request.resource.data.status == 'pending'
-        && request.resource.data.credits is number
-        && request.resource.data.credits > 0
-        && request.resource.data.price is number
-        && request.resource.data.price > 0
-        && request.resource.data.createdAt is string
-        && request.resource.data.keys().hasOnly([
-          'userId', 'userEmail', 'credits', 'price', 'status', 'createdAt'
-        ]);
-      allow update, delete: if isAdmin();
-    }
-  }
-}
-)
+          && request.resource.data.webhookSecret.matches('^[a-f0-9]{64}$')
         );
     }
 
@@ -159,7 +48,7 @@ service cloud.firestore {
           request.resource.data.diff(resource.data).affectedKeys().hasOnly([
             'displayName', 'email', 'industryType', 'workspaceName',
             'operatorName', 'contactEmail', 'crmInitialized',
-            'customFormSchema', 'updated_at', 'updatedAt'
+            'customFormSchema', 'webhookSecret', 'updated_at', 'updatedAt'
           ])
           ||
           (
