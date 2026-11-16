@@ -5,6 +5,16 @@ import net from "node:net";
 
 const DEFAULT_TIMEOUT_MS = 3000;
 const DEFAULT_MAX_BYTES = 512 * 1024;
+
+function withTimeout(promise, timeoutMs) {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error("timeout")), timeoutMs);
+  });
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timer) clearTimeout(timer);
+  });
+}
 const BLOCKED_HOST_SUFFIXES = [
   ".localhost",
   ".local",
@@ -97,7 +107,10 @@ export function isPublicIpAddress(address) {
   return false;
 }
 
-export async function resolvePublicWebsiteTarget(rawUrl, { lookup = dns.promises.lookup } = {}) {
+export async function resolvePublicWebsiteTarget(
+  rawUrl,
+  { lookup = dns.promises.lookup, timeoutMs = DEFAULT_TIMEOUT_MS } = {},
+) {
   if (typeof rawUrl !== "string" || !rawUrl.trim() || rawUrl.length > 2048) return null;
 
   const input = rawUrl.trim();
@@ -127,7 +140,10 @@ export async function resolvePublicWebsiteTarget(rawUrl, { lookup = dns.promises
 
   let resolved;
   try {
-    resolved = await lookup(hostname, { all: true, verbatim: true });
+    resolved = await withTimeout(
+      Promise.resolve().then(() => lookup(hostname, { all: true, verbatim: true })),
+      timeoutMs,
+    );
   } catch {
     return null;
   }
@@ -230,12 +246,20 @@ function requestPinnedWebsite(target, { timeoutMs, maxBytes }) {
 export async function fetchPublicWebsite(rawUrl, options = {}) {
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const maxBytes = options.maxBytes ?? DEFAULT_MAX_BYTES;
-  const target = await resolvePublicWebsiteTarget(rawUrl, { lookup: options.lookup ?? dns.promises.lookup });
+  const startedAt = Date.now();
+  const target = await resolvePublicWebsiteTarget(rawUrl, {
+    lookup: options.lookup ?? dns.promises.lookup,
+    timeoutMs,
+  });
   if (!target) return null;
+
+  // DNS resolution and the HTTP response share one wall-clock budget.
+  const remainingTimeoutMs = timeoutMs - (Date.now() - startedAt);
+  if (!Number.isFinite(remainingTimeoutMs) || remainingTimeoutMs <= 0) return null;
 
   const requestImpl = options.requestImpl ?? requestPinnedWebsite;
   try {
-    return await requestImpl(target, { timeoutMs, maxBytes });
+    return await requestImpl(target, { timeoutMs: remainingTimeoutMs, maxBytes });
   } catch {
     return null;
   }
