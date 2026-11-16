@@ -41,21 +41,21 @@ for (const requiredField of ["apiKey", "authDomain", "projectId", "appId"]) {
 assert.equal(isFirebaseClientConfigComplete(null), false);
 
 const systemApiSource = readFileSync(new URL("../api/system.js", import.meta.url), "utf8");
-const outreachApiSource = readFileSync(new URL("../api/outreach.js", import.meta.url), "utf8");
+const outreachMethodSource = readFileSync(new URL("../api/outreach.js", import.meta.url), "utf8");
 
-assert.ok(outreachApiSource.includes('"telegram-webhook": ["POST"]'),
+assert.ok(outreachMethodSource.includes('"telegram-webhook": ["POST"]'),
   "Telegram webhook must accept POST only");
-assert.ok(outreachApiSource.includes('"process-queue": ["GET", "POST"]'),
+assert.ok(outreachMethodSource.includes('"process-queue": ["GET", "POST"]'),
   "Vercel Cron GET and manual POST must remain supported for queue processing");
 for (const action of ["analyze", "approve", "reject", "add-lead"]) {
-  assert.ok(outreachApiSource.includes(action + ': ["POST"]'),
+  assert.ok(outreachMethodSource.includes(action + ': ["POST"]'),
     action + " must be POST-only");
 }
-assert.ok(outreachApiSource.includes("Object.prototype.hasOwnProperty.call(actionMethods, action)"),
+assert.ok(outreachMethodSource.includes("Object.prototype.hasOwnProperty.call(actionMethods, action)"),
   "outreach dispatch must reject inherited object properties");
-assert.ok(outreachApiSource.includes("!allowedMethods.includes(req.method)"),
+assert.ok(outreachMethodSource.includes("!allowedMethods.includes(req.method)"),
   "outreach actions must reject methods outside their allowlist");
-assert.ok(outreachApiSource.includes('Access-Control-Allow-Methods", "GET,POST,OPTIONS"'),
+assert.ok(outreachMethodSource.includes('Access-Control-Allow-Methods", "GET,POST,OPTIONS"'),
   "outreach CORS must advertise only supported methods");
 
 const expectedSystemActions = [
