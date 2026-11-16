@@ -219,3 +219,15 @@ for (const [label, source] of errorLogSources) {
 assert.ok(!errorLogSources[0][1].includes("errText"), "outreach provider error bodies must not be logged");
 assert.ok(!errorLogSources[4][1].includes("lastError: String(error?.message"),
   "customer-readable lead metadata must not persist raw email provider diagnostics");
+
+const proposalApiSource = readFileSync(new URL("../api/send-proposal.js", import.meta.url), "utf8");
+assert.ok(proposalApiSource.includes('import { escapeHtml } from "./_lib/input.js";'));
+assert.ok(proposalApiSource.includes("const safeName = escapeHtml(name);"));
+assert.ok(proposalApiSource.includes("const safePrice = escapeHtml(price);"));
+assert.ok(proposalApiSource.includes("const safeFeatures = features.map((feature) => escapeHtml(feature));"));
+assert.ok(proposalApiSource.includes("Hi ${safeName},"));
+assert.ok(proposalApiSource.includes("&#36;${safePrice}"));
+assert.ok(proposalApiSource.includes("${safeFeatures.map((feature)"));
+assert.ok(!proposalApiSource.includes("Hi ${name},"), "proposal email must not interpolate raw recipient name");
+assert.ok(!proposalApiSource.includes("${f}</strong>"), "proposal email must not interpolate raw feature text");
+assert.ok(!proposalApiSource.includes("Build Cost: ${price}"), "proposal email must not interpolate raw price text");
