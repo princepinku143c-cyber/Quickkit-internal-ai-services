@@ -1,5 +1,6 @@
 # QuickKitAI / Raja AI Systems
 
+> Full Architecture Blueprint: https://quickkitai.com/llms-full.txt
 > Raja AI Systems provides managed AI automation workflows for Indian real estate teams, including lead capture, qualification, customer follow-up, appointment and site-visit workflows, CRM operations, and reputation workflows. Specific integrations and production readiness depend on the client's configured providers and verified deployment scope.
 
 ## Primary pages

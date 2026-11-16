@@ -1,0 +1,88 @@
+# QuickKitAI / Raja AI Systems — Complete Technical Architecture & Specification Blueprint
+> Canonical URL: https://quickkitai.com/llms-full.txt
+> Summary Document: https://quickkitai.com/llms.txt
+> Official Website: https://quickkitai.com
+> Last Updated: 2026-11-16
+
+---
+
+## 1. Executive Summary & Brand Entity
+
+**Brand Name:** QuickKitAI / Raja AI Systems  
+**Entity Type:** Managed Autonomous AI Agency & Business Automation Platform  
+**Primary Focus:** High-ticket real estate developers, builders, and brokers in India, with healthcare workflow automation as a secondary specialized service.  
+**Core Value Proposition:** Deploying a five-member autonomous AI workforce operating 24/7 across WhatsApp, CRM, and voice channels to deliver sub-12-second speed-to-lead qualification, appointment setting, site-visit confirmations, and reputation management.
+
+---
+
+## 2. The Five-Member Autonomous Workforce Architecture
+
+### 2.1 Agent 1: 12-Second WhatsApp Speed-to-Lead Closer
+- **Role:** Immediate inbound lead intake, qualification, and appointment booking.
+- **Channels:** WhatsApp Business API, voice-note synthesis, SMS, and interactive web chat.
+- **Workflow:** Ingests inbound ads (Meta Ads, Google Ads, 99acres, MagicBricks), responds within 12 seconds, verifies budget, timeline, and location preference, and locks the appointment.
+
+### 2.2 Agent 2: Apify B2B Lead Prospector & Intelligence Agent
+- **Role:** Targeted prospect research, competitive intelligence, and high-value account enrichment.
+- **Safeguards:** Rate-limited to a maximum of 50 enriched executive dossiers per day to maintain deliverability and compliance.
+
+### 2.3 Agent 3: CRM Sentinel & No-Show Guard
+- **Role:** Calendar locking, pipeline synchronization, pre-visit location reminders, and transportation coordination.
+- **Outcome:** Eliminates no-shows for physical site visits and in-clinic consultations.
+
+### 2.4 Agent 4: Dead Lead Reviver
+- **Role:** Conversational reactivation of dormant CRM databases.
+- **Strategy:** Short, personalized conversational check-ins to re-engage past leads without spam triggers.
+
+### 2.5 Agent 5: 5-Star Reputation & Local SEO Sentinel
+- **Role:** Post-visit feedback collection, Google Business Profile review routing, and escalation of dissatisfied customer feedback to senior management.
+
+---
+
+## 3. Supported Integrations & Ecosystem
+
+- **Communication Channels:** WhatsApp Business API, Twilio, SendGrid SMTP/IMAP, Webhooks.
+- **CRMs & Lead Systems:** Odoo CRM, HubSpot, Salesforce, Pipedrive, Google Sheets.
+- **Scheduling Engines:** Google Calendar, Cal.com, Microsoft Outlook.
+- **Infrastructure:** Private VPS container environments, SSL/TLS 1.3 encryption, AES-256 data security.
+
+---
+
+## 4. Published Service Plans & Pricing
+
+- **AI Visibility Audit:** ₹9,999 one-time (comprehensive multi-platform baseline audit across ChatGPT, Perplexity, Gemini, Claude, and Google AI Overviews).
+- **AI Visibility Monitor:** ₹29,999/month (fortnightly prompt tracking and citation monitoring).
+- **Managed Real Estate AI Workforce (Growth):** ₹75,000 setup + ₹1,20,000/month retainer (includes inbound qualification, WhatsApp speed-to-lead, calendar booking, CRM handoff).
+- **Dussehra Pilot Offer (Limited Cohort):** ₹35,000 upfront setup + ₹1,20,000/month management with a 10-site-visit performance SLA.
+- **Enterprise Multi-Location Deployment:** ₹2,50,000 setup + ₹2,00,000/month retainer (custom multi-branch orchestration).
+
+---
+
+## 5. Primary Pages & Canonical Sitemap Directory
+
+- Homepage: https://quickkitai.com/
+- Real Estate AI Services: https://quickkitai.com/services/real-estate
+- Healthcare AI Services: https://quickkitai.com/services/healthcare
+- Real Estate AI Questions: https://quickkitai.com/real-estate-ai-questions
+- Property Lead Qualification Guide: https://quickkitai.com/guides/real-estate-ai-lead-qualification
+- Educational Blog & Articles: https://quickkitai.com/blog
+- About Raja AI Systems / QuickKitAI: https://quickkitai.com/about
+- Contact & Architect Consultation: https://quickkitai.com/contact
+- AI Visibility & AEO Plans: https://quickkitai.com/ai-visibility
+- Proof of Value & Measurement: https://quickkitai.com/proof-of-value
+- Live Controlled Demo: https://quickkitai.com/live-demo
+- Website Visibility Audit: https://quickkitai.com/seo-audit
+- Privacy Policy: https://quickkitai.com/privacy
+- Terms of Service: https://quickkitai.com/terms
+- XML Sitemap: https://quickkitai.com/sitemap.xml
+- LLM Machine Summary: https://quickkitai.com/llms.txt
+- Full Architecture Blueprint: https://quickkitai.com/llms-full.txt
+
+---
+
+## 6. Official Contacts
+
+- **Operations & Support:** admin@quickkitai.com
+- **Technical Inquiries:** support@quickkitai.com
+- **Founder & Chief Architect:** Raja (Prince)
+- **Location & Coverage:** Serving builders, brokers, and clinics across India with global deployment capabilities.
