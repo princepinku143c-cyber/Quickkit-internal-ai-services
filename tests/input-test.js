@@ -416,6 +416,8 @@ assert.equal(isPublicIpAddress("2001:db8::1"), false);
 assert.equal(isPublicIpAddress("2001:2::1"), false);
 assert.equal(isPublicIpAddress("2001:10::1"), false);
 assert.equal(isPublicIpAddress("2001:20::1"), false);
+assert.equal(isPublicIpAddress("3fff::1"), false);
+assert.equal(isPublicIpAddress("3fff:0fff:ffff::1"), false);
 assert.equal(isPublicIpAddress("2001:4860:4860::8888"), true);
 assert.equal(isPublicIpAddress("::ffff:127.0.0.1"), false);
 
