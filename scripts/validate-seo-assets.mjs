@@ -83,4 +83,19 @@ for (const claim of ['≤ 12 sec', '≤ 12-second response target', '12-Second W
 for (const claim of ['50 / day', '8–15%', '5★']) assert.ok(!landing.toLowerCase().includes(claim.toLowerCase()), `landing contains unverified metric: ${claim}`);
 assert.doesNotMatch(outreach, /bookings 20-30%|up to 25% more after-hours|80% of their time|3x zyada bookings|triples lead-to-booking rates|response time by 90%/i, 'generated outreach must not make unverified quantified outcome claims');
 assert.doesNotMatch(comparisonTable, /90% cheaper|90% faster/i, 'comparison copy must not make unsubstantiated savings claims');
+const llmsFull = await read('public/llms-full.txt');
+assert.ok(llms.includes('Full Public Reference: https://quickkitai.com/llms-full.txt'), 'llms.txt must link to the full public reference');
+assert.ok(llmsFull.startsWith('# QuickKitAI / Raja AI Systems — Full Public Reference'), 'full reference must have its canonical title');
+assert.ok(llmsFull.includes('AI Visibility Growth'));
+assert.ok(llmsFull.includes('Managed real-estate AI workforce'));
+assert.match(llmsFull, /No rankings, AI citations, leads, revenue or ROI are guaranteed/i);
+assert.doesNotMatch(llmsFull, /sub-12-second speed-to-lead|eliminates no-shows|all integrations are live by default/i, 'full reference must not publish unqualified performance or integration claims');
+assert.ok(llms.includes('AI Visibility Growth: ₹75,000 setup + ₹1,20,000/month'));
+assert.ok(llms.includes('Managed Real Estate AI Workforce (separate offer)'));
+assert.ok(!llms.includes('Managed Real Estate AI Workforce (Growth)'), 'AEO Growth must not be mislabeled as the real-estate workforce');
+const llmsHeaders = vercelConfig.headers.find((rule) => rule.source.includes('llms-full'));
+assert.ok(llmsHeaders, 'both LLM reference files need a text content-type and cache policy');
+assert.ok(spaFallback.source.includes('llms-full'), 'SPA fallback must exclude llms-full.txt');
+assert.ok(!fallbackMatcher.test('/llms-full.txt'), 'SPA fallback must not rewrite llms-full.txt');
+
 console.log(`SEO asset validation passed: ${urls.length} unique sitemap URLs, crawler policy, llms.txt, shared schema, route registration, and public-offer wording.`);

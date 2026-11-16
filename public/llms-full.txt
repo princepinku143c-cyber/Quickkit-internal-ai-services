@@ -1,0 +1,119 @@
+# QuickKitAI / Raja AI Systems — Full Public Reference
+
+> Canonical URL: https://quickkitai.com/llms-full.txt  
+> Summary: https://quickkitai.com/llms.txt  
+> Website: https://quickkitai.com  
+> Last reviewed: 2026-11-16
+
+## 1. Brand and service scope
+
+Raja AI Systems is the public brand for managed AI-assisted business workflows and AI visibility / answer-engine optimisation (AEO) services. QuickKitAI is the platform and application name used in the existing product and repository.
+
+The primary service focus is Indian real-estate builders, developers and brokerages. Healthcare is a secondary, project-scoped service for approved administrative workflows such as enquiry intake and appointment coordination. Clinical decisions remain with qualified healthcare professionals.
+
+This document describes published service scope and offer information. It does not certify that every feature, provider integration or channel is enabled in every customer deployment.
+
+## 2. AI visibility and AEO services
+
+The AI Visibility service page describes evidence-led work across ChatGPT, Perplexity, Gemini, Claude and Google AI surfaces. Work starts with a baseline audit. Search rankings, AI citations, leads and revenue are measured outcomes, not guaranteed results.
+
+### AI Visibility Audit
+
+- Displayed offer: ₹9,999 one-time (regular reference price: ₹19,998).
+- 30–50 buyer-intent prompts.
+- Technical crawl and structured-data review.
+- Competitor comparison.
+- 30-day priority action plan.
+
+### AI Visibility Monitor
+
+- Displayed offer: ₹29,999 per month (regular reference price: ₹59,998).
+- Up to 40 tracked prompts per month.
+- Weekly or fortnightly checks.
+- Mention and citation tracking.
+- Competitor movement report and monthly executive summary.
+- A baseline audit is required before recurring measurement begins.
+
+### AI Visibility Growth
+
+- Displayed offer: ₹75,000 setup + ₹1,20,000 per month (regular reference price: ₹1,50,000 setup + ₹2,40,000 per month).
+- Includes the Monitor scope.
+- Up to 60 tracked prompts per month.
+- Up to 8 answer / FAQ work items per month.
+- Up to 4 approved technical-fix batches per month.
+- Staging implementation and re-audit.
+- The onboarding baseline audit is included in the setup scope.
+
+### Multi-location Enterprise
+
+- Displayed offer: ₹2,50,000 setup + ₹2,00,000 per month (regular reference price: ₹5,00,000 setup + ₹4,00,000 per month).
+- Custom prompt and location quotas.
+- Separate location and prompt sets.
+- Role-based approvals.
+- Tenant-isolated evidence as a scoped deliverable, subject to deployment-specific authorization verification.
+- Executive reporting and audits.
+- The onboarding baseline audit is included in the setup scope.
+
+The displayed offer prices, scope, eligibility, taxes, usage charges and availability must be reconfirmed against the current service page and written agreement before purchase.
+
+## 3. Managed real-estate AI workforce
+
+The separate managed-workforce offer describes a five-member workflow for real-estate teams.
+
+- Reference pricing: ₹70,000 implementation setup + ₹2,40,000 per month.
+- Pilot offer: ₹35,000 setup + ₹1,20,000 per month for up to 3 pilot clients.
+- Third-party AI, API, messaging, telephony and other provider usage costs depend on the connected services and are not represented as included by default.
+
+The public offer references a 12-second WhatsApp first-response target and a 30-day performance target of 10 qualified physical site visits for real estate or 15 qualified in-clinic consultations for healthcare. These are targets and conditional contractual terms, not historical performance claims or unconditional guarantees. Any measurement rules, qualifying traffic/access conditions and setup-fee refund trigger apply only when written into the current signed agreement.
+
+### Five workflow roles
+
+1. **WhatsApp first response and qualification** — voice-note and text workflow for initial enquiry handling. The 12-second figure is a response target, not a verified result for every account.
+2. **Prospecting and competitor intelligence** — targeted public-business research and lead enrichment. The source-of-truth plan describes a maximum of 50 prospect dossiers per day; actual availability is subject to provider terms, lawful access and configured limits.
+3. **CRM Sentinel and No-Show Guard** — appointment coordination, reminders, site-visit confirmation and CRM / human-sales handoff. This supports attendance workflows; it does not guarantee that no appointment will be missed.
+4. **Dead Lead Reviver** — approved conversational reactivation workflows for dormant lead records.
+5. **Reputation and Local SEO Sentinel** — feedback collection, review routing, escalation and local / AI-search visibility support.
+
+### Typical workflow
+
+Enquiry capture → qualification → follow-up → appointment or site-visit coordination → reminder and confirmation → CRM / human-sales handoff → approved dormant-lead reactivation → reputation follow-up.
+
+The exact channels, operating hours, provider accounts, CRM actions, permissions, service windows and acceptance tests are scoped and verified for each deployment.
+
+## 4. Integration and deployment requirements
+
+A feature being described in the product does not mean its provider is connected or production-ready for every client. WhatsApp, CRM, calendar, email, voice, analytics and other external integrations require the relevant client or provider account, credentials, permissions, configuration, compliance review and end-to-end testing.
+
+Managed deployment, monitoring and maintenance are scoped in the written agreement. Deployment-time estimates are targets, not unconditional delivery guarantees.
+
+## 5. Measurement and evidence boundaries
+
+- Record the prompt, date, search / AI surface, observed answer and supporting evidence when measuring AI visibility.
+- Compare changes with a dated baseline and retain the measurement method.
+- Label controlled demos, mock dashboards, sample counts and simulated agent events as illustrative.
+- Do not present fabricated testimonials, simulated activity, unverified integrations or estimated outcomes as customer proof.
+- Do not promise search rankings, AI citations, recommendations, leads, revenue or ROI.
+- Treat performance figures as targets or signed contractual conditions unless dated operational evidence demonstrates an actual result.
+
+## 6. Public pages
+
+- Homepage: https://quickkitai.com/
+- Real-estate services: https://quickkitai.com/services/real-estate
+- Healthcare services: https://quickkitai.com/services/healthcare
+- Real-estate AI questions: https://quickkitai.com/real-estate-ai-questions
+- Lead-qualification guide: https://quickkitai.com/guides/real-estate-ai-lead-qualification
+- Blog: https://quickkitai.com/blog
+- About: https://quickkitai.com/about
+- Contact: https://quickkitai.com/contact
+- AI visibility and AEO plans: https://quickkitai.com/ai-visibility
+- Proof of value: https://quickkitai.com/proof-of-value
+- Controlled workflow demo: https://quickkitai.com/live-demo
+- SEO audit: https://quickkitai.com/seo-audit
+- Privacy: https://quickkitai.com/privacy
+- Terms: https://quickkitai.com/terms
+- XML sitemap: https://quickkitai.com/sitemap.xml
+- Short machine-readable summary: https://quickkitai.com/llms.txt
+
+## 7. Final accuracy rule
+
+Confirm current pricing, provider availability, project scope, security controls and contractual commitments on the relevant live page and in the signed customer agreement. This public reference is explanatory information, not a substitute for deployment acceptance evidence or a contract.

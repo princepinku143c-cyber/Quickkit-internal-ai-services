@@ -1,5 +1,6 @@
 # QuickKitAI / Raja AI Systems
 
+> Full Public Reference: https://quickkitai.com/llms-full.txt
 > Raja AI Systems provides managed AI automation workflows for Indian real estate teams, including lead capture, qualification, customer follow-up, appointment and site-visit workflows, CRM operations, and reputation workflows. Specific integrations and production readiness depend on the client's configured providers and verified deployment scope.
 
 ## Primary pages
@@ -29,10 +30,20 @@
 
 ## Published Service Plans & Pricing
 
-- AI Visibility Audit: ₹9,999 (comprehensive multi-platform baseline audit)
-- AI Visibility Monitor: ₹29,999/month (fortnightly prompt tracking across ChatGPT, Gemini, Perplexity, Claude and Google)
-- Managed Real Estate AI Workforce (Growth): ₹75,000 setup + ₹1,20,000/month (inbound qualification, WhatsApp follow-up, calendar booking, CRM handoff)
-- Enterprise Multi-Location Deployment: ₹2,50,000 setup + ₹2,00,000/month (custom integration and multi-branch orchestration)
+### AI Visibility and AEO
+
+- AI Visibility Audit: ₹9,999 one-time (regular reference price ₹19,998).
+- AI Visibility Monitor: ₹29,999/month (regular reference price ₹59,998).
+- AI Visibility Growth: ₹75,000 setup + ₹1,20,000/month (regular reference price ₹1,50,000 setup + ₹2,40,000/month).
+- Multi-location Enterprise: ₹2,50,000 setup + ₹2,00,000/month (regular reference price ₹5,00,000 setup + ₹4,00,000/month).
+- Audit, Monitor, Growth and Enterprise have different scopes and prompt / implementation limits. Confirm the current service page and written agreement for eligibility and availability.
+
+### Managed Real Estate AI Workforce (separate offer)
+
+- Reference pricing: ₹70,000 setup + ₹2,40,000/month.
+- Pilot offer: ₹35,000 setup + ₹1,20,000/month for up to 3 pilot clients.
+- Any 30-day site-visit / consultation target, deployment target, price lock or setup-fee refund condition applies only when its qualifying conditions are written into the current signed agreement.
+- Third-party AI, API, messaging, telephony and provider usage costs depend on the connected services and are not included by default.
 
 ## Accuracy notes
 
