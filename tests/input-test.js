@@ -5,6 +5,7 @@ import { getMissingFirebaseClientConfig, isFirebaseClientConfigComplete } from "
 import { getPublicSystemError } from "../api/_lib/systemErrors.js";
 import { logSafeError, safeErrorType } from "../api/_lib/safeErrorLog.js";
 import { checkRateLimit } from "../api/_lib/security.js";
+import { SYSTEM_ACTION_METHODS, getSystemActionMethods } from "../api/_lib/systemActionMethods.js";
 assert.equal(isPlainObject({ a: 1 }), true);
 assert.equal(isPlainObject([]), false);
 assert.equal(isPlainObject(null), false);
@@ -40,6 +41,32 @@ for (const requiredField of ["apiKey", "authDomain", "projectId", "appId"]) {
 assert.equal(isFirebaseClientConfigComplete(null), false);
 
 const systemApiSource = readFileSync(new URL("../api/system.js", import.meta.url), "utf8");
+
+const expectedSystemActions = [
+  "stats", "add-credits", "redeem-code", "credit-request",
+  "generate-payment-token", "verify-payment-token", "project-quote",
+  "project-update", "project-status", "lead",
+];
+assert.deepEqual(
+  Object.keys(SYSTEM_ACTION_METHODS).sort(),
+  [...expectedSystemActions].sort(),
+  "every system API action must have an explicit HTTP method policy",
+);
+assert.deepEqual(getSystemActionMethods("stats"), ["GET", "POST"],
+  "stats remains compatible with GET and POST callers");
+for (const action of expectedSystemActions.filter((name) => name !== "stats")) {
+  assert.deepEqual(getSystemActionMethods(action), ["POST"], action + " must be POST-only");
+}
+assert.equal(getSystemActionMethods("__proto__"), null, "prototype properties are not valid actions");
+assert.equal(getSystemActionMethods("constructor"), null, "inherited constructor is not a valid action");
+assert.match(systemApiSource, /Object\\.prototype\\.hasOwnProperty\\.call\\(actionMap, action\\)/,
+  "system API dispatch must reject inherited object properties");
+assert.match(systemApiSource, /const allowedMethods = getSystemActionMethods\\(action\\)/,
+  "system API must consult the explicit method policy");
+assert.match(systemApiSource, /!allowedMethods\\.includes\\(req\\.method\\)/,
+  "system API must reject methods not allowed for the selected action");
+assert.match(systemApiSource, /Access-Control-Allow-Methods', 'GET,POST,OPTIONS'/,
+  "CORS must advertise only the methods the system API supports");
 assert.match(
   systemApiSource,
   /catch\s*\{\s*\/\/ Do not expose Firebase token-verification details to API callers\.\s*return error\(res, "Authentication failed", 401\);/s,
