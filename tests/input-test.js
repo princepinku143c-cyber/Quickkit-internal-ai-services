@@ -7,6 +7,7 @@ import { logSafeError, safeErrorType } from "../api/_lib/safeErrorLog.js";
 import { checkRateLimit } from "../api/_lib/security.js";
 import { fetchPublicWebsite, isPublicIpAddress, resolvePublicWebsiteTarget } from "../api/_lib/safeWebsiteFetch.js";
 import { SYSTEM_ACTION_METHODS, getSystemActionMethods } from "../api/_lib/systemActionMethods.js";
+import { constantTimeSecretEqual } from "../api/_lib/constantTimeSecret.js";
 assert.equal(isPlainObject({ a: 1 }), true);
 assert.equal(isPlainObject([]), false);
 assert.equal(isPlainObject(null), false);
@@ -456,4 +457,21 @@ assert.deepEqual(pinnedRequest, {
   maxBytes: 512 * 1024,
 });
 assert.equal(publicFetchResult.body, "<title>Public</title>");
-console.log("Public website scraper SSRF and response-boundary tests passed.");
+
+assert.equal(constantTimeSecretEqual("webhook-secret", "webhook-secret"), true);
+assert.equal(constantTimeSecretEqual("webhook-secret", "Webhook-secret"), false);
+assert.equal(constantTimeSecretEqual("webhook-secret", "webhook-secret-extra"), false);
+assert.equal(constantTimeSecretEqual("", ""), false);
+assert.equal(constantTimeSecretEqual("webhook-secret", undefined), false);
+assert.equal(constantTimeSecretEqual(["webhook-secret"], "webhook-secret"), false);
+
+const telegramWebhookSource = readFileSync(new URL("../api/outreach.js", import.meta.url), "utf8");
+const inboundWebhookSource = readFileSync(new URL("../api/webhook.js", import.meta.url), "utf8");
+const secretCompareSource = readFileSync(new URL("../api/_lib/constantTimeSecret.js", import.meta.url), "utf8");
+assert.ok(secretCompareSource.includes("timingSafeEqual"), "shared webhook secret comparison must use timingSafeEqual");
+assert.ok(telegramWebhookSource.includes("constantTimeSecretEqual(expectedSecret, secretParam)"),
+  "Telegram webhook must use the constant-time secret helper");
+assert.ok(inboundWebhookSource.includes("constantTimeSecretEqual(expectedSecret, suppliedSecret)"),
+  "generic inbound webhook must use the constant-time secret helper");
+
+console.log("Webhook secret comparison and public website scraper security tests passed.");
