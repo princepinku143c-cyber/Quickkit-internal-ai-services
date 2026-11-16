@@ -245,3 +245,37 @@ assert.match(googleAutofillHandler[1], /role\s*:\s*['"]client['"]/,
   "new Google profiles must receive only the client role");
 assert.doesNotMatch(googleAutofillHandler[1], /\{\s*merge\s*:\s*true\s*\}/,
   "Google autofill must not merge defaults into an existing profile");
+
+
+// Admin and customer email templates must HTML-encode every untrusted field
+// before interpolation. This covers the legacy system API alongside send-proposal.
+function assertEmailTemplateEscapes(handlerSource, label, safeFields, rawFields) {
+  assert.ok(handlerSource, label + " handler must remain present");
+  const htmlTemplate = handlerSource.match(/html\\s*:\\s*`([\\s\\S]*?)`/);
+  assert.ok(htmlTemplate, label + " HTML email template must remain present");
+  for (const field of safeFields) {
+    assert.ok(htmlTemplate[1].includes("${" + field + "}"), label + " must interpolate escaped " + field);
+  }
+  for (const field of rawFields) {
+    assert.ok(!htmlTemplate[1].includes("${" + field + "}"), label + " must not interpolate raw " + field);
+  }
+}
+
+assertEmailTemplateEscapes(
+  systemApiSource.match(/async function handleCreditRequest[\\s\\S]*?(?=async function handleGenerateToken)/)?.[0],
+  "credit request",
+  ["safeDisplayName", "safeEmail", "safeAmount", "safeCredits"],
+  ["displayName", "email", "amount", "amount * 10"],
+);
+assertEmailTemplateEscapes(
+  systemApiSource.match(/async function handleProjectQuote[\\s\\S]*?(?=async function handleProjectUpdate)/)?.[0],
+  "project quote",
+  ["safeProjectName", "safePrice", "safeTimeline", "safeNotes"],
+  ["projectName", "quote.price", "quote.timeline", "quote.notes"],
+);
+assertEmailTemplateEscapes(
+  systemApiSource.match(/async function handleProjectUpdate[\\s\\S]*?(?=async function handleProjectStatus)/)?.[0],
+  "project update",
+  ["safeProjectName", "safeProgress", "safeMessage"],
+  ["projectName", "progress", "message"],
+);
