@@ -405,11 +405,17 @@ const publicLookup = async (hostname, options) => {
 assert.equal(isPublicIpAddress("93.184.216.34"), true);
 assert.equal(isPublicIpAddress("127.0.0.1"), false);
 assert.equal(isPublicIpAddress("10.0.0.8"), false);
+assert.equal(isPublicIpAddress("192.31.196.1"), false);
+assert.equal(isPublicIpAddress("192.52.193.1"), false);
+assert.equal(isPublicIpAddress("192.175.48.1"), false);
 assert.equal(isPublicIpAddress("169.254.169.254"), false);
 assert.equal(isPublicIpAddress("::1"), false);
 assert.equal(isPublicIpAddress("fc00::1"), false);
 assert.equal(isPublicIpAddress("fe80::1"), false);
 assert.equal(isPublicIpAddress("2001:db8::1"), false);
+assert.equal(isPublicIpAddress("2001:2::1"), false);
+assert.equal(isPublicIpAddress("2001:10::1"), false);
+assert.equal(isPublicIpAddress("2001:20::1"), false);
 assert.equal(isPublicIpAddress("2001:4860:4860::8888"), true);
 assert.equal(isPublicIpAddress("::ffff:127.0.0.1"), false);
 
