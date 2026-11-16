@@ -84,6 +84,7 @@ function isPublicIpv6(address) {
   if ((words[0] & 0xff00) === 0xff00) return false; // Multicast ff00::/8
   if ((words[0] & 0xe000) !== 0x2000) return false; // Only global-unicast 2000::/3
   if (words[0] === 0x2001 && (words[1] <= 0x01ff || words[1] === 0x0db8)) return false; // IETF special-purpose and documentation ranges
+  if (words[0] === 0x3fff && (words[1] & 0xf000) === 0) return false; // IPv6 documentation prefix 3fff::/20 (RFC 9637)
   if (words[0] === 0x2002) return false; // Deprecated 6to4
   return true;
 }
