@@ -558,18 +558,20 @@ assert.ok(
 
 console.log("Webhook secret comparison and public website scraper security tests passed.");
 
-const paymentVerificationHandler = systemApiSource.match(
-  /async function handleVerifyToken\\([\\s\\S]*?\\n\\}/,
-)?.[0];
-assert.ok(paymentVerificationHandler, "payment verification handler must remain present");
-assert.match(paymentVerificationHandler, /typeof projectId !== ["']string["']/);
-assert.match(paymentVerificationHandler, /typeof token !== ["']string["']/);
-assert.match(paymentVerificationHandler, /!snap\\.exists/);
-assert.match(paymentVerificationHandler, /typeof storedToken !== ["']string["']/);
-assert.match(paymentVerificationHandler, /constantTimeSecretEqual\\(storedToken, token\\)/);
-assert.doesNotMatch(
-  paymentVerificationHandler,
-  /snap\\.data\\(\\)\\.paymentToken\\s*===\\s*token/,
+
+const paymentHandlerStart = systemApiSource.indexOf("async function handleVerifyToken");
+const paymentHandlerEnd = systemApiSource.indexOf("\nasync function ", paymentHandlerStart + 1);
+const paymentVerificationHandler = systemApiSource.slice(
+  paymentHandlerStart,
+  paymentHandlerEnd > paymentHandlerStart ? paymentHandlerEnd : undefined,
+);
+assert.ok(paymentHandlerStart >= 0, "payment verification handler must remain present");
+assert.ok(paymentVerificationHandler.includes('typeof projectId !== "string"'));
+assert.ok(paymentVerificationHandler.includes('typeof token !== "string"'));
+assert.ok(paymentVerificationHandler.includes("!snap.exists"));
+assert.ok(paymentVerificationHandler.includes('typeof storedToken !== "string"'));
+assert.ok(paymentVerificationHandler.includes("constantTimeSecretEqual(storedToken, token)"));
+assert.ok(
+  !paymentVerificationHandler.includes("snap.data().paymentToken === token"),
   "payment verification must reject missing tokens instead of relying on undefined equality",
 );
-
