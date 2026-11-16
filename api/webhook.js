@@ -1,6 +1,6 @@
 import admin, { db } from "./_lib/firebaseAdmin.js";
 import { logSafeError } from "./_lib/safeErrorLog.js";
-import { timingSafeEqual } from "node:crypto";
+import { constantTimeSecretEqual } from "./_lib/constantTimeSecret.js";
 import { checkRateLimit } from "./_lib/security.js";
 import { getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from "./_lib/input.js";
 import { success, error } from "./_lib/response.js";
@@ -37,12 +37,7 @@ export default async function handler(req, res) {
     const userSnap = await db.collection("users").doc(String(targetUid)).get();
     const expectedSecret = userSnap.exists ? userSnap.data()?.webhookSecret : null;
     const suppliedSecret = req.headers["x-webhook-secret"];
-    if (typeof expectedSecret !== "string" || !expectedSecret || typeof suppliedSecret !== "string" || !suppliedSecret) {
-      return error(res, "Unauthorized: a valid X-Webhook-Secret is required.", 401);
-    }
-    const expectedBytes = Buffer.from(expectedSecret, "utf8");
-    const suppliedBytes = Buffer.from(suppliedSecret, "utf8");
-    if (expectedBytes.length !== suppliedBytes.length || !timingSafeEqual(expectedBytes, suppliedBytes)) {
+    if (!constantTimeSecretEqual(expectedSecret, suppliedSecret)) {
       return error(res, "Unauthorized: a valid X-Webhook-Secret is required.", 401);
     }
     await checkRateLimit(admin, String(targetUid) + ":" + getClientIp(req), "webhook", 10);
