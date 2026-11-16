@@ -59,11 +59,11 @@ for (const action of expectedSystemActions.filter((name) => name !== "stats")) {
 }
 assert.equal(getSystemActionMethods("__proto__"), null, "prototype properties are not valid actions");
 assert.equal(getSystemActionMethods("constructor"), null, "inherited constructor is not a valid action");
-assert.match(systemApiSource, /Object\\.prototype\\.hasOwnProperty\\.call\\(actionMap, action\\)/,
+assert.ok(systemApiSource.includes("Object.prototype.hasOwnProperty.call(actionMap, action)"),
   "system API dispatch must reject inherited object properties");
-assert.match(systemApiSource, /const allowedMethods = getSystemActionMethods\\(action\\)/,
+assert.ok(systemApiSource.includes("const allowedMethods = getSystemActionMethods(action)"),
   "system API must consult the explicit method policy");
-assert.match(systemApiSource, /!allowedMethods\\.includes\\(req\\.method\\)/,
+assert.ok(systemApiSource.includes("!allowedMethods.includes(req.method)"),
   "system API must reject methods not allowed for the selected action");
 assert.match(systemApiSource, /Access-Control-Allow-Methods', 'GET,POST,OPTIONS'/,
   "CORS must advertise only the methods the system API supports");
