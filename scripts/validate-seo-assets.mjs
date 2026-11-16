@@ -88,7 +88,7 @@ assert.ok(llms.includes('Full Public Reference: https://quickkitai.com/llms-full
 assert.ok(llmsFull.startsWith('# QuickKitAI / Raja AI Systems — Full Public Reference'), 'full reference must have its canonical title');
 assert.ok(llmsFull.includes('AI Visibility Growth'));
 assert.ok(llmsFull.includes('Managed real-estate AI workforce'));
-assert.match(llmsFull, /No rankings, AI citations, leads, revenue or ROI are guaranteed/i);
+assert.ok(llmsFull.includes('Do not promise search rankings, AI citations, recommendations, leads, revenue or ROI.'), 'full reference must state the no-guarantee policy');
 assert.doesNotMatch(llmsFull, /sub-12-second speed-to-lead|eliminates no-shows|all integrations are live by default/i, 'full reference must not publish unqualified performance or integration claims');
 assert.ok(llms.includes('AI Visibility Growth: ₹75,000 setup + ₹1,20,000/month'));
 assert.ok(llms.includes('Managed Real Estate AI Workforce (separate offer)'));
