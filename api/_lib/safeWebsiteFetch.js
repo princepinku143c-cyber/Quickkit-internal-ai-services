@@ -22,7 +22,7 @@ const BLOCKED_HOST_SUFFIXES = [
   ".test",
   ".invalid",
   ".example",
-  ".home.arpa", // RFC 8375 home-network namespace
+  ".arpa", // IANA-administered infrastructure TLD, including RFC 8375 home.arpa
   ".onion",
 ];
 
