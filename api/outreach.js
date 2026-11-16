@@ -4,6 +4,7 @@ import dns from "dns";
 import { hasValidCronAuthorization } from "./_lib/cronAuth.js";
 import { logSafeError } from "./_lib/safeErrorLog.js";
 import { fetchPublicWebsite } from "./_lib/safeWebsiteFetch.js";
+import { constantTimeSecretEqual } from "./_lib/constantTimeSecret.js";
 
 // CORS Headers Configuration
 const setCorsHeaders = (res) => {
@@ -47,7 +48,7 @@ export default async function handler(req, res) {
       const botToken = process.env.TELEGRAM_BOT_TOKEN;
       const secretParam = req.query.secret;
       const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET || botToken;
-      if (!secretParam || secretParam !== expectedSecret) {
+      if (!constantTimeSecretEqual(expectedSecret, secretParam)) {
         console.warn("Unauthorized Telegram webhook call attempted.");
         return res.status(403).json({ error: "Unauthorized: Invalid Webhook Secret Signature" });
       }
