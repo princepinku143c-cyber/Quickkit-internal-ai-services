@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { EventEmitter } from "node:events";
+import http from "node:http";
 import { existsSync, readFileSync } from "node:fs";
 import { escapeHtml, getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from "../api/_lib/input.js";
 import { getMissingFirebaseClientConfig, isFirebaseClientConfigComplete } from "../lib/firebaseConfig.js";
@@ -467,6 +469,44 @@ assert.deepEqual(pinnedRequest, {
   maxBytes: 512 * 1024,
 });
 assert.equal(publicFetchResult.body, "<title>Public</title>");
+
+// A peer that continuously trickles data must not extend the scraper's total
+// request deadline. The socket inactivity timeout alone is not a hard deadline.
+const originalHttpGet = http.get;
+let slowResponseTimer;
+let slowRequestDestroyed = false;
+http.get = (_url, _options, callback) => {
+  const request = new EventEmitter();
+  request.setTimeout = () => request;
+  request.destroy = (error) => {
+    slowRequestDestroyed = true;
+    if (slowResponseTimer) clearInterval(slowResponseTimer);
+    queueMicrotask(() => request.emit("error", error || new Error("destroyed")));
+    return request;
+  };
+  queueMicrotask(() => {
+    const response = new EventEmitter();
+    response.statusCode = 200;
+    response.headers = {};
+    response.resume = () => {};
+    response.destroy = () => {};
+    callback(response);
+    slowResponseTimer = setInterval(() => response.emit("data", Buffer.from("x")), 15);
+  });
+  return request;
+};
+let slowFetchResult;
+try {
+  slowFetchResult = await fetchPublicWebsite("http://example.com/slow", {
+    lookup: publicLookup,
+    timeoutMs: 90,
+  });
+} finally {
+  if (slowResponseTimer) clearInterval(slowResponseTimer);
+  http.get = originalHttpGet;
+}
+assert.equal(slowFetchResult, null);
+assert.equal(slowRequestDestroyed, true);
 
 assert.equal(constantTimeSecretEqual("webhook-secret", "webhook-secret"), true);
 assert.equal(constantTimeSecretEqual("webhook-secret", "Webhook-secret"), false);
