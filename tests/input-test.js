@@ -247,34 +247,48 @@ assert.doesNotMatch(googleAutofillHandler[1], /\{\s*merge\s*:\s*true\s*\}/,
   "Google autofill must not merge defaults into an existing profile");
 
 
+
+
 // Admin and customer email templates must HTML-encode every untrusted field
 // before interpolation. This covers the legacy system API alongside send-proposal.
+function extractHandler(source, startMarker, endMarker, label) {
+  const start = source.indexOf(startMarker);
+  assert.ok(start >= 0, label + " handler must remain present");
+  const end = source.indexOf(endMarker, start + startMarker.length);
+  assert.ok(end > start, label + " handler boundary must remain present");
+  return source.slice(start, end);
+}
+
 function assertEmailTemplateEscapes(handlerSource, label, safeFields, rawFields) {
-  assert.ok(handlerSource, label + " handler must remain present");
-  const htmlTemplate = handlerSource.match(/html\\s*:\\s*`([\\s\\S]*?)`/);
-  assert.ok(htmlTemplate, label + " HTML email template must remain present");
+  const marker = "html: `";
+  const start = handlerSource.indexOf(marker);
+  assert.ok(start >= 0, label + " HTML email template must remain present");
+  const end = handlerSource.indexOf("`", start + marker.length);
+  assert.ok(end > start, label + " HTML email template must be closed");
+  const html = handlerSource.slice(start + marker.length, end);
+
   for (const field of safeFields) {
-    assert.ok(htmlTemplate[1].includes("${" + field + "}"), label + " must interpolate escaped " + field);
+    assert.ok(html.includes("${" + field + "}"), label + " must interpolate escaped " + field);
   }
   for (const field of rawFields) {
-    assert.ok(!htmlTemplate[1].includes("${" + field + "}"), label + " must not interpolate raw " + field);
+    assert.ok(!html.includes("${" + field + "}"), label + " must not interpolate raw " + field);
   }
 }
 
 assertEmailTemplateEscapes(
-  systemApiSource.match(/async function handleCreditRequest[\\s\\S]*?(?=async function handleGenerateToken)/)?.[0],
+  extractHandler(systemApiSource, "async function handleCreditRequest", "async function handleGenerateToken", "credit request"),
   "credit request",
   ["safeDisplayName", "safeEmail", "safeAmount", "safeCredits"],
   ["displayName", "email", "amount", "amount * 10"],
 );
 assertEmailTemplateEscapes(
-  systemApiSource.match(/async function handleProjectQuote[\\s\\S]*?(?=async function handleProjectUpdate)/)?.[0],
+  extractHandler(systemApiSource, "async function handleProjectQuote", "async function handleProjectUpdate", "project quote"),
   "project quote",
   ["safeProjectName", "safePrice", "safeTimeline", "safeNotes"],
   ["projectName", "quote.price", "quote.timeline", "quote.notes"],
 );
 assertEmailTemplateEscapes(
-  systemApiSource.match(/async function handleProjectUpdate[\\s\\S]*?(?=async function handleProjectStatus)/)?.[0],
+  extractHandler(systemApiSource, "async function handleProjectUpdate", "async function handleProjectStatus", "project update"),
   "project update",
   ["safeProjectName", "safeProgress", "safeMessage"],
   ["projectName", "progress", "message"],
