@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 import dns from "dns";
 import { hasValidCronAuthorization } from "./_lib/cronAuth.js";
 import { logSafeError } from "./_lib/safeErrorLog.js";
+import { fetchPublicWebsite } from "./_lib/safeWebsiteFetch.js";
 
 // CORS Headers Configuration
 const setCorsHeaders = (res) => {
@@ -181,27 +182,21 @@ async function handleAnalyze(req, res) {
   }
 }
 
-// Lightweight HTML scraper helper with a strict timeout and tech signature detection
+// Lightweight HTML scraper helper. Network access is restricted to pinned public hosts.
 async function scrapeWebsite(url) {
   if (!url) return { title: "", description: "", techTags: [] };
-  let targetUrl = url.trim();
-  if (!/^https?:\/\//i.test(targetUrl)) {
-    targetUrl = "https://" + targetUrl;
-  }
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 3000);
-    const response = await fetch(targetUrl, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/100.0.0.0 Safari/537.36",
-        "Accept": "text/html"
-      }
-    });
-    clearTimeout(timeoutId);
-    if (!response.ok) return { title: "", description: "", techTags: [], error: `HTTP ${response.status}` };
-    const html = await response.text();
-    const titleMatch = html.match(/<title[^>]*>([^<]+)<\/title>/i);
+    const response = await fetchPublicWebsite(url, { timeoutMs: 3000, maxBytes: 512 * 1024 });
+    if (!response || response.statusCode < 200 || response.statusCode >= 300 || response.tooLarge) {
+      return { title: "", description: "", techTags: [] };
+    }
+    const contentType = String(response.headers?.["content-type"] || "");
+    if (contentType && !/\\btext\\/html\\b/i.test(contentType)) {
+      return { title: "", description: "", techTags: [] };
+    }
+
+    const html = response.body;
+    const titleMatch = html.match(/<title[^>]*>([^<]+)<\\/title>/i);
     const title = titleMatch ? titleMatch[1].trim() : "";
     const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i) ||
                       html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);

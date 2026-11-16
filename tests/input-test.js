@@ -5,6 +5,7 @@ import { getMissingFirebaseClientConfig, isFirebaseClientConfigComplete } from "
 import { getPublicSystemError } from "../api/_lib/systemErrors.js";
 import { logSafeError, safeErrorType } from "../api/_lib/safeErrorLog.js";
 import { checkRateLimit } from "../api/_lib/security.js";
+import { fetchPublicWebsite, isPublicIpAddress, resolvePublicWebsiteTarget } from "../api/_lib/safeWebsiteFetch.js";
 import { SYSTEM_ACTION_METHODS, getSystemActionMethods } from "../api/_lib/systemActionMethods.js";
 assert.equal(isPlainObject({ a: 1 }), true);
 assert.equal(isPlainObject([]), false);
@@ -393,3 +394,66 @@ assert.doesNotMatch(
   /role\s*:\s*["']admin["']/,
   "client authentication must never assign an admin role",
 );
+
+const publicLookup = async (hostname, options) => {
+  assert.equal(hostname, "example.com");
+  assert.equal(options.all, true);
+  return [{ address: "93.184.216.34", family: 4 }];
+};
+
+assert.equal(isPublicIpAddress("93.184.216.34"), true);
+assert.equal(isPublicIpAddress("127.0.0.1"), false);
+assert.equal(isPublicIpAddress("10.0.0.8"), false);
+assert.equal(isPublicIpAddress("169.254.169.254"), false);
+assert.equal(isPublicIpAddress("::1"), false);
+assert.equal(isPublicIpAddress("fc00::1"), false);
+assert.equal(isPublicIpAddress("fe80::1"), false);
+assert.equal(isPublicIpAddress("2001:db8::1"), false);
+assert.equal(isPublicIpAddress("2001:4860:4860::8888"), true);
+assert.equal(isPublicIpAddress("::ffff:127.0.0.1"), false);
+
+const safeWebsiteTarget = await resolvePublicWebsiteTarget("example.com", { lookup: publicLookup });
+assert.equal(safeWebsiteTarget.url.hostname, "example.com");
+assert.equal(safeWebsiteTarget.address.address, "93.184.216.34");
+
+for (const unsafeUrl of [
+  "http://127.0.0.1",
+  "http://[::1]",
+  "http://localhost",
+  "http://metadata.google.internal",
+  "https://user:password@example.com",
+  "https://example.com:8443",
+  "file:///etc/passwd",
+]) {
+  assert.equal(await resolvePublicWebsiteTarget(unsafeUrl, { lookup: publicLookup }), null, unsafeUrl);
+}
+
+const privateLookup = async () => [{ address: "10.0.0.8", family: 4 }];
+const mixedLookup = async () => [
+  { address: "93.184.216.34", family: 4 },
+  { address: "192.168.1.10", family: 4 },
+];
+assert.equal(await resolvePublicWebsiteTarget("https://example.com", { lookup: privateLookup }), null);
+assert.equal(await resolvePublicWebsiteTarget("https://example.com", { lookup: mixedLookup }), null);
+
+let pinnedRequest;
+const publicFetchResult = await fetchPublicWebsite("https://example.com/path", {
+  lookup: publicLookup,
+  requestImpl: async (target, options) => {
+    pinnedRequest = {
+      hostname: target.url.hostname,
+      address: target.address.address,
+      timeoutMs: options.timeoutMs,
+      maxBytes: options.maxBytes,
+    };
+    return { statusCode: 200, headers: { "content-type": "text/html" }, body: "<title>Public</title>" };
+  },
+});
+assert.deepEqual(pinnedRequest, {
+  hostname: "example.com",
+  address: "93.184.216.34",
+  timeoutMs: 3000,
+  maxBytes: 512 * 1024,
+});
+assert.equal(publicFetchResult.body, "<title>Public</title>");
+console.log("Public website scraper SSRF and response-boundary tests passed.");
