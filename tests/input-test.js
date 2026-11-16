@@ -480,4 +480,14 @@ assert.ok(telegramWebhookSource.includes("constantTimeSecretEqual(expectedSecret
 assert.ok(inboundWebhookSource.includes("constantTimeSecretEqual(expectedSecret, suppliedSecret)"),
   "generic inbound webhook must use the constant-time secret helper");
 
+const postcssConfigSource = readFileSync(new URL("../postcss.config.js", import.meta.url), "utf8");
+assert.ok(
+  postcssConfigSource.includes('from "@tailwindcss/postcss"'),
+  "Tailwind v4 must use the dedicated @tailwindcss/postcss plugin",
+);
+assert.ok(
+  !/plugins:\s*\{\s*tailwindcss\s*:/.test(postcssConfigSource),
+  "Tailwind core must not be registered directly as a PostCSS plugin",
+);
+
 console.log("Webhook secret comparison and public website scraper security tests passed.");
