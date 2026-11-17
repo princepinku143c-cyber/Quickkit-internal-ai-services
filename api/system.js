@@ -22,6 +22,9 @@ export default async (req, res) => {
 
     const { action } = req.query;
     const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ') && !admin.apps.length) {
+        return error(res, "System service is temporarily unavailable.", 503);
+    }
 
     let userId = null;
     let userData = null;
