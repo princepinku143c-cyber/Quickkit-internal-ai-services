@@ -7,6 +7,7 @@ import { escapeHtml, getClientIp, isPlainObject, payloadTooLarge, safeMetadata, 
 import { getPublicSystemError } from './_lib/systemErrors.js';
 import { getSystemActionMethods } from './_lib/systemActionMethods.js';
 import { constantTimeSecretEqual } from './_lib/constantTimeSecret.js';
+import { generatePaymentToken } from './_lib/paymentToken.js';
 
 
 const success = (res, data) => res.status(200).json(data);
@@ -359,7 +360,7 @@ async function handleCreditRequest(req, res, userId) {
 
 async function handleGenerateToken(req, res, adminId) {
     const { projectId } = req.body;
-    const token = Math.random().toString(36).substring(2, 8).toUpperCase();
+    const token = generatePaymentToken();
     try {
         await admin.firestore().collection('projects').doc(projectId).update({
             paymentToken: token,

@@ -13,7 +13,7 @@
     "validate:seo": "node scripts/validate-seo-assets.mjs",
     "validate:prerender": "node scripts/validate-prerendered-pages.mjs",
     "test:seo": "npm run validate:seo && npm run validate:prerender",
-    "test:security": "node tests/input-test.js",
+    "test:security": "node tests/input-test.js && node tests/payment-token.test.js",
     "test:rank-tracker": "node tests/rank-tracker.test.js",
     "test:cron-auth": "node tests/cron-auth.test.js",
     "test:firestore-rules": "firebase emulators:exec --only firestore --project demo-quickkitai-rules \"node tests/firestore-rules.test.mjs\""
