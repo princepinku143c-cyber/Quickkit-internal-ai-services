@@ -568,6 +568,14 @@ const paymentVerificationHandler = systemApiSource.slice(
 assert.ok(paymentHandlerStart >= 0, "payment verification handler must remain present");
 assert.ok(paymentVerificationHandler.includes('typeof projectId !== "string"'));
 assert.ok(paymentVerificationHandler.includes('typeof token !== "string"'));
+assert.ok(paymentVerificationHandler.includes("token.length !== 6"));
+assert.ok(paymentVerificationHandler.includes("/^[0-9A-Z]{6}$/.test(token)"));
+assert.ok(
+  paymentVerificationHandler.includes(
+    'await checkRateLimit(admin, userId, "verify-payment-token", 5)',
+  ),
+  "payment token verification must rate-limit authenticated guesses and fail closed",
+);
 assert.ok(
   paymentVerificationHandler.includes(
     "verifyAndConsumePaymentToken(admin.firestore(), projectRef, token, userId)",

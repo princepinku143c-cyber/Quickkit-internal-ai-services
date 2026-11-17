@@ -377,11 +377,14 @@ async function handleVerifyToken(req, res, userId) {
     if (
         typeof projectId !== "string" || !projectId.trim()
         || typeof token !== "string" || !token.trim()
+        || token.length !== 6 || !/^[0-9A-Z]{6}$/.test(token)
     ) {
         return error(res, "Invalid Token", 400);
     }
 
     try {
+        // Limit authenticated token guesses; fail closed if the limiter backend is unavailable.
+        await checkRateLimit(admin, userId, "verify-payment-token", 5);
         const projectRef = admin.firestore().collection('projects').doc(projectId);
         const verified = await verifyAndConsumePaymentToken(admin.firestore(), projectRef, token, userId);
         if (!verified) {
