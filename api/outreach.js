@@ -43,6 +43,11 @@ export default async function handler(req, res) {
     return error(res, "Method Not Allowed", 405);
   }
 
+  const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ") && !admin.apps.length) {
+    return error(res, "Outreach service is temporarily unavailable.", 503);
+  }
+
   try {
     // 1. Telegram webhook check
     if (action === "telegram-webhook") {
@@ -60,7 +65,6 @@ export default async function handler(req, res) {
 
     // 2. Resolve user authentication
     let userData = null;
-    const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       try {
         const token = authHeader.split(' ')[1];
