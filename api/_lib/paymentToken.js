@@ -12,14 +12,28 @@ export function generatePaymentToken() {
 
 // Verify and consume a token in one Firestore transaction. This makes the
 // one-time token semantics atomic under concurrent verification requests.
-export async function verifyAndConsumePaymentToken(db, projectRef, token) {
-  if (typeof token !== "string" || !token.trim()) return false;
+export async function verifyAndConsumePaymentToken(db, projectRef, token, actorUserId) {
+  if (
+    typeof token !== "string" || !token.trim()
+    || typeof actorUserId !== "string" || !actorUserId.trim()
+  ) {
+    return false;
+  }
+
+  const actorRef = db.collection("users").doc(actorUserId);
 
   return db.runTransaction(async (transaction) => {
-    const snapshot = await transaction.get(projectRef);
-    if (!snapshot.exists) return false;
+    const projectSnapshot = await transaction.get(projectRef);
+    if (!projectSnapshot.exists) return false;
 
-    const storedToken = snapshot.get("paymentToken");
+    // Read the actor's trusted server-managed profile in the same transaction.
+    // Firebase custom claims or request-supplied role fields are not consulted.
+    const actorSnapshot = await transaction.get(actorRef);
+    const isOwner = projectSnapshot.get("userId") === actorUserId;
+    const isAdmin = actorSnapshot.exists && actorSnapshot.get("role") === "admin";
+    if (!isOwner && !isAdmin) return false;
+
+    const storedToken = projectSnapshot.get("paymentToken");
     if (
       typeof storedToken !== "string" || !storedToken.length
       || !constantTimeSecretEqual(storedToken, token)

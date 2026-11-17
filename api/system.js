@@ -383,7 +383,7 @@ async function handleVerifyToken(req, res, userId) {
 
     try {
         const projectRef = admin.firestore().collection('projects').doc(projectId);
-        const verified = await verifyAndConsumePaymentToken(admin.firestore(), projectRef, token);
+        const verified = await verifyAndConsumePaymentToken(admin.firestore(), projectRef, token, userId);
         if (!verified) {
             return error(res, "Invalid Token", 400);
         }

@@ -568,10 +568,24 @@ const paymentVerificationHandler = systemApiSource.slice(
 assert.ok(paymentHandlerStart >= 0, "payment verification handler must remain present");
 assert.ok(paymentVerificationHandler.includes('typeof projectId !== "string"'));
 assert.ok(paymentVerificationHandler.includes('typeof token !== "string"'));
-assert.ok(paymentVerificationHandler.includes("!snap.exists"));
-assert.ok(paymentVerificationHandler.includes('typeof storedToken !== "string"'));
-assert.ok(paymentVerificationHandler.includes("constantTimeSecretEqual(storedToken, token)"));
 assert.ok(
-  !paymentVerificationHandler.includes("snap.data().paymentToken === token"),
-  "payment verification must reject missing tokens instead of relying on undefined equality",
+  paymentVerificationHandler.includes(
+    "verifyAndConsumePaymentToken(admin.firestore(), projectRef, token, userId)",
+  ),
+  "payment verification must pass the authenticated actor to the atomic authorization helper",
+);
+
+const paymentTokenSource = readFileSync(
+  new URL("../api/_lib/paymentToken.js", import.meta.url),
+  "utf8",
+);
+assert.ok(paymentTokenSource.includes("if (!projectSnapshot.exists) return false;"));
+assert.ok(paymentTokenSource.includes('typeof storedToken !== "string"'));
+assert.ok(paymentTokenSource.includes("constantTimeSecretEqual(storedToken, token)"));
+assert.ok(paymentTokenSource.includes('projectSnapshot.get("userId") === actorUserId'));
+assert.ok(paymentTokenSource.includes('actorSnapshot.get("role") === "admin"'));
+assert.ok(paymentTokenSource.includes("if (!isOwner && !isAdmin) return false;"));
+assert.ok(
+  !paymentTokenSource.includes('projectSnapshot.get("paymentToken") === token'),
+  "payment verification must not rely on direct token equality",
 );
