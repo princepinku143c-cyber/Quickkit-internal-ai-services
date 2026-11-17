@@ -25,6 +25,9 @@ export default async function handler(req, res) {
 
   try {
     const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ") && !admin.apps.length) {
+      return error(res, "AI service is temporarily unavailable.", 503);
+    }
     let userId = null;
     let decodedToken = null;
 
