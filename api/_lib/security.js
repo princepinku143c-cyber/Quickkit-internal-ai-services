@@ -9,10 +9,12 @@ export async function checkRateLimit(admin, userId, action, limitCount = 10) {
   const windowMs = 60_000;
   const safeUserId = String(userId || "anonymous").slice(0, 160);
   const safeAction = String(action || "unknown").slice(0, 80);
-  const limitRef = admin.firestore().collection("rate_limits").doc(`${safeUserId}_${safeAction}`);
-
   try {
-    const result = await admin.firestore().runTransaction(async (transaction) => {
+    // Initialize Firestore inside the guarded block so missing Admin credentials
+    // or a failed client initialization is treated as an unavailable limiter.
+    const db = admin.firestore();
+    const limitRef = db.collection("rate_limits").doc(`${safeUserId}_${safeAction}`);
+    const result = await db.runTransaction(async (transaction) => {
       const doc = await transaction.get(limitRef);
       const data = doc.data() || { count: 0, firstCall: now };
       const firstCall = Number(data.firstCall) || now;
