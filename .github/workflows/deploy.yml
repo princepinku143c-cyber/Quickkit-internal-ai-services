@@ -23,7 +23,7 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install locked dependencies
-        run: npm ci
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Dependency security audit
         run: npm audit --audit-level=low
       - name: Production build and route prerender
