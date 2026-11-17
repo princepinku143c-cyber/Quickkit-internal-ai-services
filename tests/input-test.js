@@ -120,6 +120,21 @@ assert.ok(projectApiSource.includes("normalizeProjectCreateInput(req.body)"),
 assert.doesNotMatch(projectApiSource, /const validPrice = Number\(price\)/,
   "project creation API must not accept unchecked numeric coercion");
 
+const projectRateLimitIndex = projectApiSource.indexOf(
+  'await checkRateLimit(admin, userId, "project-create", 5)',
+);
+const projectCreateIndex = projectApiSource.indexOf("return handleCreateProject(req, res, userId)");
+assert.ok(
+  projectRateLimitIndex >= 0 && projectRateLimitIndex < projectCreateIndex,
+  "authenticated project creation must be rate-limited before writing a project",
+);
+assert.ok(
+  projectApiSource.includes('err?.status === 429')
+    && projectApiSource.includes('err?.status === 503')
+    && projectApiSource.includes('res.setHeader("Retry-After", String(err.retryAfter))'),
+  "project creation must preserve safe 429/503 responses and Retry-After",
+);
+
 assert.equal(normalizeFirestoreDocumentId("client-123"), "client-123");
 assert.equal(normalizeFirestoreDocumentId("  client-123  "), "client-123");
 for (const invalidDocumentId of [
