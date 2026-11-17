@@ -2,6 +2,7 @@ import admin from "./_lib/firebaseAdmin.js";
 import { logSafeError } from "./_lib/safeErrorLog.js";
 import { success, error } from "./_lib/response.js";
 import { normalizeProjectCreateInput } from "./_lib/projectInput.js";
+import { checkRateLimit } from "./_lib/security.js";
 
 /**
  * Hardened Project Lifecycle Engine.
@@ -25,12 +26,22 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      if (action === 'create') return handleCreateProject(req, res, userId);
+      if (action === 'create') {
+        await checkRateLimit(admin, userId, "project-create", 5);
+        return handleCreateProject(req, res, userId);
+      }
     }
 
     return error(res, "Lifecycle Action Not Allowed", 405);
   } catch (err) {
     logSafeError("PROJECT_ENGINE_CRASH", err);
+    if (err?.status === 429) {
+      if (err.retryAfter) res.setHeader("Retry-After", String(err.retryAfter));
+      return error(res, "Too many project creation requests. Please retry shortly.", 429);
+    }
+    if (err?.status === 503) {
+      return error(res, "Project creation is temporarily unavailable.", 503);
+    }
     return error(res, "Build Logic Verification Failure", 403);
   }
 }
