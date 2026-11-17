@@ -1,6 +1,7 @@
 import admin from "./_lib/firebaseAdmin.js";
 import { logSafeError } from "./_lib/safeErrorLog.js";
 import { success, error } from "./_lib/response.js";
+import { normalizeProjectCreateInput } from "./_lib/projectInput.js";
 
 /**
  * Hardened Project Lifecycle Engine.
@@ -56,21 +57,17 @@ async function handleGetBilling(res, userId) {
 }
 
 async function handleCreateProject(req, res, userId) {
-  const { projectName, packageId, price } = req.body;
-  
-  // 1. Strict Schema Validation
-  if (!projectName || projectName.length < 3) return error(res, "Invalid Project Name", 400);
-  if (!packageId) return error(res, "Engineering Package Missing", 400);
-  
-  const validPrice = Number(price);
-  if (isNaN(validPrice) || validPrice <= 0) return error(res, "Invalid Value Scoping", 400);
+  const projectInput = normalizeProjectCreateInput(req.body);
+  if (!projectInput) return error(res, "Invalid project details", 400);
+  const { projectName, packageId, price } = projectInput;
 
-  // 2. Deterministic State Initialization
+  // Price policy remains owned by the existing package/admin workflow.
+  // This endpoint only rejects malformed, non-finite, or unsafe numeric input.
   const docRef = await admin.firestore().collection('projects').add({
-    userId, 
-    projectName, 
-    packageId, 
-    price: validPrice,
+    userId,
+    projectName,
+    packageId,
+    price,
     status: 'PENDING_PAYMENT', // Default SaaS Starting State
     progress: 5,
     advancePaid: false,

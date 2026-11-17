@@ -4,6 +4,7 @@ import http from "node:http";
 import { existsSync, readFileSync } from "node:fs";
 import { escapeHtml, getClientIp, isPlainObject, normalizeCreditPackage, payloadTooLarge, safeMetadata, safeNumber, safeText } from "../api/_lib/input.js";
 import { getMissingFirebaseClientConfig, isFirebaseClientConfigComplete } from "../lib/firebaseConfig.js";
+import { normalizeProjectCreateInput } from "../api/_lib/projectInput.js";
 import { getPublicSystemError } from "../api/_lib/systemErrors.js";
 import { logSafeError, safeErrorType } from "../api/_lib/safeErrorLog.js";
 import { checkRateLimit } from "../api/_lib/security.js";
@@ -53,6 +54,39 @@ for (const requiredField of ["apiKey", "authDomain", "projectId", "appId"]) {
   assert.ok(getMissingFirebaseClientConfig(incomplete).includes(requiredField));
 }
 assert.equal(isFirebaseClientConfigComplete(null), false);
+
+assert.deepEqual(
+  normalizeProjectCreateInput({ projectName: "QuickKit CRM", packageId: "starter", price: 1200 }),
+  { projectName: "QuickKit CRM", packageId: "starter", price: 1200 },
+);
+assert.deepEqual(
+  normalizeProjectCreateInput({ projectName: "  QuickKit CRM  ", packageId: " starter ", price: "1200.50" }),
+  { projectName: "QuickKit CRM", packageId: "starter", price: 1200.5 },
+);
+for (const invalidProject of [
+  null,
+  [],
+  "not-an-object",
+  { projectName: "ab", packageId: "starter", price: 100 },
+  { projectName: "QuickKit", packageId: "", price: 100 },
+  { projectName: "QuickKit", packageId: {}, price: 100 },
+  { projectName: "QuickKit", packageId: "starter", price: true },
+  { projectName: "QuickKit", packageId: "starter", price: null },
+  { projectName: "QuickKit", packageId: "starter", price: "" },
+  { projectName: "QuickKit", packageId: "starter", price: "Infinity" },
+  { projectName: "QuickKit", packageId: "starter", price: Infinity },
+  { projectName: "QuickKit", packageId: "starter", price: NaN },
+  { projectName: "QuickKit", packageId: "starter", price: 0 },
+  { projectName: "QuickKit", packageId: "starter", price: -1 },
+  { projectName: "QuickKit", packageId: "starter", price: Number.MAX_SAFE_INTEGER + 1 },
+]) {
+  assert.equal(normalizeProjectCreateInput(invalidProject), null, "malformed project input must be rejected");
+}
+const projectApiSource = readFileSync(new URL("../api/projects.js", import.meta.url), "utf8");
+assert.ok(projectApiSource.includes("normalizeProjectCreateInput(req.body)"),
+  "project creation API must use the strict input normalizer");
+assert.doesNotMatch(projectApiSource, /const validPrice = Number\(price\)/,
+  "project creation API must not accept unchecked numeric coercion");
 
 const systemApiSource = readFileSync(new URL("../api/system.js", import.meta.url), "utf8");
 const outreachMethodSource = readFileSync(new URL("../api/outreach.js", import.meta.url), "utf8");
