@@ -34,6 +34,8 @@ export default async function handler(req, res) {
     if (!db) {
       return error(res, "Database Offline: Firestore admin instance is unavailable.", 503);
     }
+    // Rate-limit by source IP before checking the shared secret so invalid guesses are counted.
+    await checkRateLimit(admin, getClientIp(req), "webhook-auth", 30);
     const userSnap = await db.collection("users").doc(String(targetUid)).get();
     const expectedSecret = userSnap.exists ? userSnap.data()?.webhookSecret : null;
     const suppliedSecret = req.headers["x-webhook-secret"];

@@ -5,6 +5,8 @@ import { hasValidCronAuthorization } from "./_lib/cronAuth.js";
 import { logSafeError } from "./_lib/safeErrorLog.js";
 import { fetchPublicWebsite } from "./_lib/safeWebsiteFetch.js";
 import { constantTimeSecretEqual } from "./_lib/constantTimeSecret.js";
+import { checkRateLimit } from "./_lib/security.js";
+import { getClientIp } from "./_lib/input.js";
 
 // CORS Headers Configuration
 const setCorsHeaders = (res) => {
@@ -44,6 +46,8 @@ export default async function handler(req, res) {
   try {
     // 1. Telegram webhook check
     if (action === "telegram-webhook") {
+      // Count unauthenticated attempts before secret comparison; fail closed if Firestore is unavailable.
+      await checkRateLimit(admin, getClientIp(req), "telegram-webhook-auth", 30);
       const botToken = process.env.TELEGRAM_BOT_TOKEN;
       const secretParam = req.query.secret;
       const expectedSecret = process.env.TELEGRAM_WEBHOOK_SECRET || botToken;
@@ -94,6 +98,13 @@ export default async function handler(req, res) {
 
     return error(res, "Invalid Action", 400);
   } catch (err) {
+    if (err?.status === 429) {
+      if (err.retryAfter) res.setHeader("Retry-After", String(err.retryAfter));
+      return error(res, "Too many webhook attempts. Please retry shortly.", 429);
+    }
+    if (err?.status === 503) {
+      return error(res, "Webhook authentication is temporarily unavailable.", 503);
+    }
     logSafeError("OUTREACH_CRASH", err);
     return error(res, "Request could not be completed.", 500);
   }

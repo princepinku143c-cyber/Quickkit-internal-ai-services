@@ -623,6 +623,34 @@ assert.ok(telegramWebhookSource.includes("constantTimeSecretEqual(expectedSecret
   "Telegram webhook must use the constant-time secret helper");
 assert.ok(inboundWebhookSource.includes("constantTimeSecretEqual(expectedSecret, suppliedSecret)"),
   "generic inbound webhook must use the constant-time secret helper");
+const inboundWebhookRateLimit = inboundWebhookSource.indexOf(
+  'await checkRateLimit(admin, getClientIp(req), "webhook-auth", 30)',
+);
+const inboundWebhookSecretCheck = inboundWebhookSource.indexOf(
+  "constantTimeSecretEqual(expectedSecret, suppliedSecret)",
+);
+assert.ok(
+  inboundWebhookRateLimit >= 0 && inboundWebhookRateLimit < inboundWebhookSecretCheck,
+  "generic inbound webhook must rate-limit source IP attempts before comparing the secret",
+);
+const telegramWebhookRateLimit = telegramWebhookSource.indexOf(
+  'await checkRateLimit(admin, getClientIp(req), "telegram-webhook-auth", 30)',
+);
+const telegramWebhookSecretCheck = telegramWebhookSource.indexOf(
+  "constantTimeSecretEqual(expectedSecret, secretParam)",
+);
+assert.ok(
+  telegramWebhookRateLimit >= 0 && telegramWebhookRateLimit < telegramWebhookSecretCheck,
+  "Telegram webhook must rate-limit source IP attempts before comparing the secret",
+);
+assert.ok(
+  telegramWebhookSource.includes('return error(res, "Too many webhook attempts. Please retry shortly.", 429)'),
+  "Telegram webhook must return the rate-limit status instead of masking it as HTTP 500",
+);
+assert.ok(
+  telegramWebhookSource.includes('return error(res, "Webhook authentication is temporarily unavailable.", 503)'),
+  "Telegram webhook must fail closed when its rate-limit backend is unavailable",
+);
 
 const postcssConfigSource = readFileSync(new URL("../postcss.config.js", import.meta.url), "utf8");
 assert.ok(
