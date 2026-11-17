@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 import http from "node:http";
 import { existsSync, readFileSync } from "node:fs";
-import { escapeHtml, getClientIp, isPlainObject, normalizeCreditAdjustment, normalizeCreditPackage, payloadTooLarge, safeMetadata, safeNumber, safeText } from "../api/_lib/input.js";
+import { escapeHtml, getClientIp, isPlainObject, normalizeCreditAdjustment, normalizeCreditPackage, normalizeFirestoreDocumentId, payloadTooLarge, safeMetadata, safeNumber, safeText } from "../api/_lib/input.js";
 import { getMissingFirebaseClientConfig, isFirebaseClientConfigComplete } from "../lib/firebaseConfig.js";
 import { normalizeProjectCreateInput } from "../api/_lib/projectInput.js";
 import { getPublicSystemError } from "../api/_lib/systemErrors.js";
@@ -119,6 +119,28 @@ assert.ok(projectApiSource.includes("normalizeProjectCreateInput(req.body)"),
   "project creation API must use the strict input normalizer");
 assert.doesNotMatch(projectApiSource, /const validPrice = Number\(price\)/,
   "project creation API must not accept unchecked numeric coercion");
+
+assert.equal(normalizeFirestoreDocumentId("client-123"), "client-123");
+assert.equal(normalizeFirestoreDocumentId("  client-123  "), "client-123");
+for (const invalidDocumentId of [
+  null,
+  ["client-123"],
+  "",
+  "   ",
+  "tenant/client-123",
+  "x".repeat(129),
+]) {
+  assert.equal(
+    normalizeFirestoreDocumentId(invalidDocumentId, 128),
+    "",
+    "invalid Firestore document IDs must be rejected instead of being truncated or used as paths",
+  );
+}
+const webhookApiSource = readFileSync(new URL("../api/webhook.js", import.meta.url), "utf8");
+assert.ok(
+  webhookApiSource.includes("normalizeFirestoreDocumentId(req.query.client_id || req.query.uid, 128)"),
+  "webhook tenant lookup must reject invalid or overlong Firestore document IDs",
+);
 
 const systemApiSource = readFileSync(new URL("../api/system.js", import.meta.url), "utf8");
 const addCreditsHandlerStart = systemApiSource.indexOf("async function handleAddCredits");

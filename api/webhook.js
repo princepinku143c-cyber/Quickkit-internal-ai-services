@@ -2,7 +2,7 @@ import admin, { db } from "./_lib/firebaseAdmin.js";
 import { logSafeError } from "./_lib/safeErrorLog.js";
 import { constantTimeSecretEqual } from "./_lib/constantTimeSecret.js";
 import { checkRateLimit } from "./_lib/security.js";
-import { getClientIp, isPlainObject, payloadTooLarge, safeMetadata, safeNumber, safeText } from "./_lib/input.js";
+import { getClientIp, isPlainObject, normalizeFirestoreDocumentId, payloadTooLarge, safeMetadata, safeNumber, safeText } from "./_lib/input.js";
 import { success, error } from "./_lib/response.js";
 import { askAI } from "./_lib/services/aiService.js";
 
@@ -22,9 +22,9 @@ export default async function handler(req, res) {
   }
 
   // Parse client_id or uid to match query formats
-  const targetUid = safeText(req.query.client_id || req.query.uid, 128);
+  const targetUid = normalizeFirestoreDocumentId(req.query.client_id || req.query.uid, 128);
   if (!targetUid) {
-    return error(res, "Bad Request: Missing client_id/uid verification parameter.", 400);
+    return error(res, "Bad Request: Invalid client_id/uid verification parameter.", 400);
   }
   const data = req.body;
   if (!isPlainObject(data)) return error(res, "Invalid webhook payload.", 400);

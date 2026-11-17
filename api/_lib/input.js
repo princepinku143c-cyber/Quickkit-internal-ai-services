@@ -51,6 +51,13 @@ export function normalizeCreditPackage(creditsValue, priceValue) {
   if (!isPresetPackage && price !== customPrice) return null;
   return { credits, price };
 }
+export function normalizeFirestoreDocumentId(value, maxLength = 128) {
+  if (typeof value !== "string") return "";
+  const normalized = value.trim();
+  if (!normalized || value.length > maxLength || normalized.includes("/")) return "";
+  return normalized;
+}
+
 export function safeMetadata(value, maxEntries = 30) {
   if (!isPlainObject(value)) return {};
   const result = {};
