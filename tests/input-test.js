@@ -11,6 +11,7 @@ import { checkRateLimit } from "../api/_lib/security.js";
 import { fetchPublicWebsite, isPublicIpAddress, resolvePublicWebsiteTarget } from "../api/_lib/safeWebsiteFetch.js";
 import { SYSTEM_ACTION_METHODS, getSystemActionMethods } from "../api/_lib/systemActionMethods.js";
 import { constantTimeSecretEqual } from "../api/_lib/constantTimeSecret.js";
+import outreachHandler from "../api/outreach.js";
 assert.equal(isPlainObject({ a: 1 }), true);
 assert.equal(isPlainObject([]), false);
 assert.equal(isPlainObject(null), false);
@@ -674,3 +675,31 @@ assert.ok(
   !paymentTokenSource.includes('projectSnapshot.get("paymentToken") === token'),
   "payment verification must not rely on direct token equality",
 );
+
+
+// Wildcard CORS must not be combined with credentialed cross-origin requests.
+// The app authenticates outreach API calls with an explicit Bearer header, not cookies.
+const outreachCorsHeaders = new Map();
+const outreachCorsResponse = {
+  statusCode: null,
+  ended: false,
+  setHeader(name, value) {
+    outreachCorsHeaders.set(String(name).toLowerCase(), value);
+    return this;
+  },
+  status(code) {
+    this.statusCode = code;
+    return this;
+  },
+  end() {
+    this.ended = true;
+    return this;
+  },
+};
+await outreachHandler({ method: "OPTIONS", query: {}, headers: {} }, outreachCorsResponse);
+assert.equal(outreachCorsResponse.statusCode, 200);
+assert.equal(outreachCorsResponse.ended, true);
+assert.equal(outreachCorsHeaders.get("access-control-allow-origin"), "*");
+assert.equal(outreachCorsHeaders.has("access-control-allow-credentials"), false);
+assert.match(outreachCorsHeaders.get("access-control-allow-headers"), /Authorization/);
+console.log("Outreach CORS preflight regression test passed.");
