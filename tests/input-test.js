@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { EventEmitter } from "node:events";
 import http from "node:http";
 import { existsSync, readFileSync } from "node:fs";
-import { escapeHtml, getClientIp, isPlainObject, normalizeCreditPackage, payloadTooLarge, safeMetadata, safeNumber, safeText } from "../api/_lib/input.js";
+import { escapeHtml, getClientIp, isPlainObject, normalizeCreditAdjustment, normalizeCreditPackage, payloadTooLarge, safeMetadata, safeNumber, safeText } from "../api/_lib/input.js";
 import { getMissingFirebaseClientConfig, isFirebaseClientConfigComplete } from "../lib/firebaseConfig.js";
 import { normalizeProjectCreateInput } from "../api/_lib/projectInput.js";
 import { getPublicSystemError } from "../api/_lib/systemErrors.js";
@@ -27,6 +27,16 @@ for (const [credits, price] of [
   [1000000001, 10000001], [100, 0], ["", 1], [true, 1], [100, Infinity],
 ]) {
   assert.equal(normalizeCreditPackage(credits, price), null, "invalid credit package must be rejected");
+}
+assert.deepEqual(normalizeCreditAdjustment("  alice  ", 1000), { targetUserId: "alice", amount: 1000 });
+assert.deepEqual(normalizeCreditAdjustment("alice", "25"), { targetUserId: "alice", amount: 25 });
+for (const [userId, amount] of [
+  [null, 10], ["", 10], ["   ", 10], ["alice/bob", 10], ["x".repeat(129), 10],
+  ["alice", 0], ["alice", -1], ["alice", 1.5], ["alice", Infinity],
+  ["alice", NaN], ["alice", ""], ["alice", "Infinity"], ["alice", "1.5"],
+  ["alice", 1000000001], ["alice", true],
+]) {
+  assert.equal(normalizeCreditAdjustment(userId, amount), null, "invalid admin credit adjustment must be rejected");
 }
 assert.deepEqual(safeMetadata(["not", "an", "object"]), {});
 const metadata = JSON.parse('{"allowed":"ok","count":3,"flag":true,"huge":{"nested":true},"__proto__":"blocked","has spaces":"blocked"}');
@@ -89,6 +99,15 @@ assert.doesNotMatch(projectApiSource, /const validPrice = Number\(price\)/,
   "project creation API must not accept unchecked numeric coercion");
 
 const systemApiSource = readFileSync(new URL("../api/system.js", import.meta.url), "utf8");
+const addCreditsHandlerStart = systemApiSource.indexOf("async function handleAddCredits");
+const addCreditsHandlerEnd = systemApiSource.indexOf("async function handleRedeemCode", addCreditsHandlerStart);
+const addCreditsHandler = systemApiSource.slice(addCreditsHandlerStart, addCreditsHandlerEnd);
+assert.ok(addCreditsHandler.includes("normalizeCreditAdjustment(targetUserId, amount)"),
+  "admin credit adjustment must validate the target UID and whole-number amount");
+assert.ok(addCreditsHandler.includes('if (!doc.exists) return "not_found"'),
+  "admin credit adjustment must not dereference a missing user profile");
+assert.ok(addCreditsHandler.includes("Number.isSafeInteger(current)"),
+  "admin credit adjustment must reject invalid stored balances");
 const outreachMethodSource = readFileSync(new URL("../api/outreach.js", import.meta.url), "utf8");
 const creditWalletSource = readFileSync(new URL("../components/CreditWallet.tsx", import.meta.url), "utf8");
 const creditRequestHandlerStart = systemApiSource.indexOf("async function handleCreditRequest");

@@ -14,6 +14,19 @@ export function safeNumber(value, fallback = 0, maxAbs = 1_000_000_000) {
   return Number.isFinite(number) && Math.abs(number) <= maxAbs ? number : fallback;
 }
 
+/** Validate an admin credit adjustment before changing a user's balance. */
+export function normalizeCreditAdjustment(targetUserIdValue, amountValue) {
+  if (typeof targetUserIdValue !== "string") return null;
+  const targetUserId = targetUserIdValue.trim();
+  if (!targetUserId || targetUserId.length > 128 || targetUserId.includes("/")) return null;
+  if (typeof amountValue !== "number" && typeof amountValue !== "string") return null;
+  if (typeof amountValue === "string" && !amountValue.trim()) return null;
+
+  const amount = Number(amountValue);
+  if (!Number.isSafeInteger(amount) || amount <= 0 || amount > 1_000_000_000) return null;
+  return { targetUserId, amount };
+}
+
 export function normalizeCreditPackage(creditsValue, priceValue) {
   const parsePositiveInteger = (value) => {
     if (typeof value !== "number" && typeof value !== "string") return null;

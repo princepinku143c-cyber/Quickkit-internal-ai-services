@@ -3,7 +3,7 @@ import admin from './_lib/firebaseAdmin.js';
 import nodemailer from 'nodemailer';
 import { askAI } from './_lib/services/aiService.js';
 import { checkRateLimit } from './_lib/security.js';
-import { escapeHtml, getClientIp, isPlainObject, normalizeCreditPackage, payloadTooLarge, safeMetadata, safeNumber, safeText } from './_lib/input.js';
+import { escapeHtml, getClientIp, isPlainObject, normalizeCreditAdjustment, normalizeCreditPackage, payloadTooLarge, safeMetadata, safeNumber, safeText } from './_lib/input.js';
 import { getPublicSystemError } from './_lib/systemErrors.js';
 import { getSystemActionMethods } from './_lib/systemActionMethods.js';
 import { generatePaymentToken, verifyAndConsumePaymentToken } from './_lib/paymentToken.js';
@@ -262,16 +262,30 @@ async function getStats(req, res, userId) {
 }
 
 async function handleAddCredits(req, res, adminId) {
-    const { targetUserId, amount } = req.body;
-    if (!targetUserId || !amount) return error(res, "Missing params", 400);
+    const { targetUserId, amount } = req.body || {};
+    const adjustment = normalizeCreditAdjustment(targetUserId, amount);
+    if (!adjustment) return error(res, "Invalid credit adjustment", 400);
 
     try {
-        const userRef = admin.firestore().collection('users').doc(targetUserId);
-        await admin.firestore().runTransaction(async (t) => {
+        const userRef = admin.firestore().collection('users').doc(adjustment.targetUserId);
+        const result = await admin.firestore().runTransaction(async (t) => {
             const doc = await t.get(userRef);
-            const current = doc.data().credits || 0;
-            t.update(userRef, { credits: current + Number(amount) });
+            if (!doc.exists) return "not_found";
+
+            const current = doc.data()?.credits ?? 0;
+            if (
+                !Number.isSafeInteger(current) || current < 0
+                || current > Number.MAX_SAFE_INTEGER - adjustment.amount
+            ) {
+                return "invalid_balance";
+            }
+
+            t.update(userRef, { credits: current + adjustment.amount });
+            return "updated";
         });
+
+        if (result === "not_found") return error(res, "Target user not found", 404);
+        if (result !== "updated") return error(res, "Credit balance cannot be updated", 409);
         return success(res, { status: "CREDITS_ADDED" });
     } catch (e) {
         const publicError = getPublicSystemError(e);
