@@ -45,7 +45,28 @@ assert.deepEqual(safeMetadata(metadata), { allowed: "ok", count: 3, flag: true }
 assert.equal(payloadTooLarge({ x: "a".repeat(100) }, 50), true);
 assert.equal(payloadTooLarge({ x: "small" }, 100), false);
 assert.equal(getClientIp({ headers: { "x-real-ip": "203.0.113.7", "x-forwarded-for": "198.51.100.8, 203.0.113.7" } }), "203.0.113.7");
+assert.equal(getClientIp({ headers: { "x-real-ip": "2001:db8::7" } }), "2001:db8::7");
 assert.equal(getClientIp({ headers: { "x-forwarded-for": "198.51.100.8, 203.0.113.7" } }), "198.51.100.8");
+assert.equal(
+  getClientIp({ headers: { "x-real-ip": "not/an/ip", "x-forwarded-for": "198.51.100.8, 203.0.113.7" } }),
+  "198.51.100.8",
+  "invalid proxy IP headers must not become Firestore rate-limit document IDs",
+);
+assert.equal(
+  getClientIp({ headers: { "x-real-ip": "not/an/ip", "x-forwarded-for": "also/not/an/ip" }, socket: { remoteAddress: "192.0.2.10" } }),
+  "192.0.2.10",
+  "invalid proxy headers must fall back to a valid socket address",
+);
+assert.equal(
+  getClientIp({ headers: { "x-real-ip": "not/an/ip", "x-forwarded-for": "also/not/an/ip" } }),
+  "unknown",
+  "invalid IP values must never be used as rate-limit keys",
+);
+assert.equal(
+  getClientIp({ headers: { "x-real-ip": ["203.0.113.7"] }, socket: { remoteAddress: "192.0.2.11" } }),
+  "192.0.2.11",
+  "non-string proxy headers must be ignored",
+);
 assert.equal(escapeHtml("<img src=\"x\" onerror='x'>"), "&lt;img src=&quot;x&quot; onerror=&#39;x&#39;&gt;");
 const completeFirebaseClientConfig = {
   apiKey: "public-key",
