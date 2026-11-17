@@ -423,6 +423,76 @@ assertEmailTemplateEscapes(
 );
 
 
+// Exercise the actual rate-limit transaction behavior with an isolated in-memory Firestore fake.
+function createInMemoryRateLimitAdmin() {
+  const documents = new Map();
+  return {
+    firestore() {
+      return {
+        collection(name) {
+          return {
+            doc(id) {
+              return { path: `${name}/${id}` };
+            },
+          };
+        },
+        async runTransaction(callback) {
+          const transaction = {
+            async get(reference) {
+              const stored = documents.get(reference.path);
+              return { data: () => stored ? { ...stored } : undefined };
+            },
+            set(reference, value) {
+              documents.set(reference.path, { ...value });
+            },
+          };
+          return callback(transaction);
+        },
+      };
+    },
+  };
+}
+
+const originalDateNowForRateLimit = Date.now;
+let controlledRateLimitNow = 1_000_000;
+Date.now = () => controlledRateLimitNow;
+try {
+  const inMemoryRateLimitAdmin = createInMemoryRateLimitAdmin();
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    assert.equal(
+      await checkRateLimit(inMemoryRateLimitAdmin, "203.0.113.7", "webhook-auth", 30),
+      true,
+      "the first 30 authentication attempts in a window must be allowed",
+    );
+  }
+
+  await assert.rejects(
+    checkRateLimit(inMemoryRateLimitAdmin, "203.0.113.7", "webhook-auth", 30),
+    (error) => error?.status === 429 && error?.retryAfter === 60,
+    "the 31st attempt must be rejected with a 60-second retry window",
+  );
+
+  assert.equal(
+    await checkRateLimit(inMemoryRateLimitAdmin, "203.0.113.8", "webhook-auth", 30),
+    true,
+    "a different source IP must have an independent rate-limit bucket",
+  );
+  assert.equal(
+    await checkRateLimit(inMemoryRateLimitAdmin, "203.0.113.7", "different-action", 30),
+    true,
+    "a different action must have an independent rate-limit bucket",
+  );
+
+  controlledRateLimitNow += 60_000;
+  assert.equal(
+    await checkRateLimit(inMemoryRateLimitAdmin, "203.0.113.7", "webhook-auth", 30),
+    true,
+    "the rate-limit bucket must reset after the one-minute window expires",
+  );
+} finally {
+  Date.now = originalDateNowForRateLimit;
+}
+
 // Rate-limit backend diagnostics must never be copied into application logs.
 const previousConsoleErrorForRateLimit = console.error;
 const rateLimitLogEntries = [];
