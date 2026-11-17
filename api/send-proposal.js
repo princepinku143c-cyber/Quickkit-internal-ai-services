@@ -14,6 +14,9 @@ export default async function handler(req, res) {
 
   // Authenticate user & role
   const authHeader = req.headers.authorization;
+  if (authHeader && authHeader.startsWith("Bearer ") && !admin.apps.length) {
+    return error(res, "Proposal service is temporarily unavailable.", 503);
+  }
   let isAdmin = false;
 
   if (authHeader && authHeader.startsWith('Bearer ')) {
