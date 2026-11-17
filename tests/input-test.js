@@ -569,19 +569,35 @@ try {
 
   await assert.rejects(
     checkRateLimit(failingRateLimitAdmin, "test-user", "test-action"),
-    /Rate limiting is temporarily unavailable/,
+    (error) => error?.status === 503 && /Rate limiting is temporarily unavailable/.test(error.message),
+    "transaction failures must fail closed with HTTP 503",
+  );
+
+  const unavailableFirebaseAdmin = {
+    firestore() {
+      throw new Error("private Firebase Admin initialization diagnostics");
+    },
+  };
+  await assert.rejects(
+    checkRateLimit(unavailableFirebaseAdmin, "test-user", "test-action"),
+    (error) => error?.status === 503 && /Rate limiting is temporarily unavailable/.test(error.message),
+    "Firebase Admin initialization failures must fail closed with HTTP 503",
   );
 } finally {
   console.error = previousConsoleErrorForRateLimit;
 }
 assert.deepEqual(
   rateLimitLogEntries,
-  [["[RATE_LIMIT_UNAVAILABLE]", "Error"]],
-  "rate limiter logs must contain only the bounded error type, never backend exception details",
+  [
+    ["[RATE_LIMIT_UNAVAILABLE]", "Error"],
+    ["[RATE_LIMIT_UNAVAILABLE]", "Error"],
+  ],
+  "transaction and Firebase Admin initialization failures must log only a bounded error type",
 );
 assert.ok(
-  !JSON.stringify(rateLimitLogEntries).includes("private Firestore connection and credential diagnostics"),
-  "raw Firestore diagnostics must not appear in rate limiter logs",
+  !JSON.stringify(rateLimitLogEntries).includes("private Firestore connection and credential diagnostics")
+    && !JSON.stringify(rateLimitLogEntries).includes("private Firebase Admin initialization diagnostics"),
+  "raw Firestore and Firebase Admin diagnostics must not appear in rate limiter logs",
 );
 
 
