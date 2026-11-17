@@ -14,6 +14,11 @@ export default async function handler(req, res) {
     return error(res, "UNAUTHORIZED: Operator Token Required", 401);
   }
 
+  // Do not misreport missing Firebase Admin configuration as an invalid user token.
+  if (!admin.apps.length) {
+    return error(res, "Project service is temporarily unavailable.", 503);
+  }
+
   try {
     const idToken = authHeader.split('Bearer ')[1];
     const decodedToken = await admin.auth().verifyIdToken(idToken);
