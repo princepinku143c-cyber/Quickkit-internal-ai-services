@@ -1,3 +1,5 @@
+import { isIP } from "node:net";
+
 export function isPlainObject(value) {
   if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
   const prototype = Object.getPrototypeOf(value);
@@ -65,14 +67,24 @@ export function payloadTooLarge(value, maxBytes = 32 * 1024) {
   try { return Buffer.byteLength(JSON.stringify(value), "utf8") > maxBytes; }
   catch { return true; }
 }
+function normalizeClientIp(value) {
+  if (typeof value !== "string") return "";
+  const candidate = value.trim();
+  return isIP(candidate) ? candidate.toLowerCase() : "";
+}
+
 export function getClientIp(req) {
   const headers = req?.headers || {};
-  const realIp = headers["x-real-ip"];
-  const forwarded = headers["x-forwarded-for"];
-  const candidate = typeof realIp === "string" && realIp.trim()
-    ? realIp.trim()
-    : typeof forwarded === "string" ? forwarded.split(",")[0].trim() : "";
-  return safeText(candidate || req?.socket?.remoteAddress || "unknown", 96) || "unknown";
+  const realIp = normalizeClientIp(headers["x-real-ip"]);
+  if (realIp) return realIp;
+
+  const forwarded = typeof headers["x-forwarded-for"] === "string"
+    ? headers["x-forwarded-for"].split(",")[0].trim()
+    : "";
+  const forwardedIp = normalizeClientIp(forwarded);
+  if (forwardedIp) return forwardedIp;
+
+  return normalizeClientIp(req?.socket?.remoteAddress) || "unknown";
 }
 export function escapeHtml(value) {
   return String(value ?? "").replace(/[&<>"']/g, (char) => ({
