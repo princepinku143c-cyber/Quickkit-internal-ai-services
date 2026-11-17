@@ -87,6 +87,24 @@ for (const requiredField of ["apiKey", "authDomain", "projectId", "appId"]) {
 }
 assert.equal(isFirebaseClientConfigComplete(null), false);
 
+const productionEnvTemplate = readFileSync(new URL("../.env.production.example", import.meta.url), "utf8");
+for (const requiredEnvName of [
+  "FIREBASE_PROJECT_ID",
+  "FIREBASE_CLIENT_EMAIL",
+  "FIREBASE_PRIVATE_KEY",
+  "VITE_FIREBASE_API_KEY",
+  "VITE_FIREBASE_AUTH_DOMAIN",
+  "VITE_FIREBASE_PROJECT_ID",
+  "VITE_FIREBASE_APP_ID",
+]) {
+  assert.match(
+    productionEnvTemplate,
+    new RegExp(`^${requiredEnvName}=`, "m"),
+    `production environment template must document ${requiredEnvName}`,
+  );
+}
+
+
 assert.deepEqual(
   normalizeProjectCreateInput({ projectName: "QuickKit CRM", packageId: "starter", price: 1200 }),
   { projectName: "QuickKit CRM", packageId: "starter", price: 1200 },
