@@ -906,3 +906,49 @@ assert.equal(outreachCorsHeaders.get("access-control-allow-origin"), "*");
 assert.equal(outreachCorsHeaders.has("access-control-allow-credentials"), false);
 assert.match(outreachCorsHeaders.get("access-control-allow-headers"), /Authorization/);
 console.log("Outreach CORS preflight regression test passed.");
+
+
+// Protected API routes must distinguish unavailable Firebase Admin configuration
+// from an invalid user token. This keeps infrastructure failures as safe HTTP 503s.
+const firebaseReadinessRouteCases = [
+  {
+    label: "AI",
+    path: "../api/ai.js",
+    guard: 'authHeader.startsWith("Bearer ") && !admin.apps.length',
+    response: 'return error(res, "AI service is temporarily unavailable.", 503);',
+  },
+  {
+    label: "system",
+    path: "../api/system.js",
+    guard: "authHeader.startsWith('Bearer ') && !admin.apps.length",
+    response: 'return error(res, "System service is temporarily unavailable.", 503);',
+  },
+  {
+    label: "outreach",
+    path: "../api/outreach.js",
+    guard: 'authHeader.startsWith("Bearer ") && !admin.apps.length',
+    response: 'return error(res, "Outreach service is temporarily unavailable.", 503);',
+  },
+  {
+    label: "proposal",
+    path: "../api/send-proposal.js",
+    guard: 'authHeader.startsWith("Bearer ") && !admin.apps.length',
+    response: 'return error(res, "Proposal service is temporarily unavailable.", 503);',
+  },
+];
+
+for (const routeCase of firebaseReadinessRouteCases) {
+  const source = readFileSync(new URL(routeCase.path, import.meta.url), "utf8");
+  const readinessIndex = source.indexOf("!admin.apps.length");
+  const tokenVerificationIndex = source.indexOf("admin.auth().verifyIdToken");
+  assert.ok(
+    source.includes(routeCase.guard)
+      && readinessIndex >= 0
+      && readinessIndex < tokenVerificationIndex,
+    routeCase.label + " API must check Firebase Admin readiness before verifying a bearer token",
+  );
+  assert.ok(
+    source.includes(routeCase.response),
+    routeCase.label + " API must return a safe HTTP 503 when Firebase Admin is unavailable",
+  );
+}
