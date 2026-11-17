@@ -25,6 +25,8 @@ jobs:
       - name: Install locked dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Dependency security audit
+        id: dependency_audit
+        continue-on-error: true
         run: npm audit --audit-level=low
       - name: Production build and route prerender
         run: npm run build
@@ -53,3 +55,12 @@ jobs:
         run: npm install --ignore-scripts --no-save --no-package-lock --legacy-peer-deps @firebase/rules-unit-testing@5.0.2 firebase-tools@15.36.0
       - name: Firestore authorization regression tests
         run: npm run test:firestore-rules
+      - name: Enforce dependency security gate
+        if: always()
+        env:
+          DEPENDENCY_AUDIT_OUTCOME: ${{ steps.dependency_audit.outcome }}
+        run: |
+          if [ "$DEPENDENCY_AUDIT_OUTCOME" != "success" ]; then
+            echo "::error::Dependency audit reported advisories. Review the audit output above; release remains blocked."
+            exit 1
+          fi
