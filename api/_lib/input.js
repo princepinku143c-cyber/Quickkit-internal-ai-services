@@ -31,4 +31,38 @@ export function normalizeCreditPackage(creditsValue, priceValue) {
   const isPresetPackage =
     (credits === 1000 && price === 5) ||
     (credits === 10000 && price === 40);
- ¶»§q«^
+  const customPrice = Math.ceil(credits * 0.01);
+
+  if (!isPresetPackage && price !== customPrice) return null;
+  return { credits, price };
+}
+export function safeMetadata(value, maxEntries = 30) {
+  if (!isPlainObject(value)) return {};
+  const result = {};
+  for (const [rawKey, rawValue] of Object.entries(value).slice(0, maxEntries)) {
+    const key = safeText(rawKey, 80);
+    if (!key || !/^[a-zA-Z0-9_.-]+$/.test(key) || ["__proto__", "prototype", "constructor"].includes(key)) continue;
+    if (typeof rawValue === "string") result[key] = rawValue.trim().slice(0, 500);
+    else if (typeof rawValue === "boolean") result[key] = rawValue;
+    else if (typeof rawValue === "number" && Number.isFinite(rawValue)) result[key] = rawValue;
+  }
+  return result;
+}
+export function payloadTooLarge(value, maxBytes = 32 * 1024) {
+  try { return Buffer.byteLength(JSON.stringify(value), "utf8") > maxBytes; }
+  catch { return true; }
+}
+export function getClientIp(req) {
+  const headers = req?.headers || {};
+  const realIp = headers["x-real-ip"];
+  const forwarded = headers["x-forwarded-for"];
+  const candidate = typeof realIp === "string" && realIp.trim()
+    ? realIp.trim()
+    : typeof forwarded === "string" ? forwarded.split(",")[0].trim() : "";
+  return safeText(candidate || req?.socket?.remoteAddress || "unknown", 96) || "unknown";
+}
+export function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  })[char]);
+}
