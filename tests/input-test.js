@@ -133,6 +133,19 @@ for (const invalidProject of [
   assert.equal(normalizeProjectCreateInput(invalidProject), null, "malformed project input must be rejected");
 }
 const projectApiSource = readFileSync(new URL("../api/projects.js", import.meta.url), "utf8");
+const projectAuthHeaderGuardIndex = projectApiSource.indexOf('if (!authHeader || !authHeader.startsWith("Bearer "))');
+const projectFirebaseReadyGuardIndex = projectApiSource.indexOf("if (!admin.apps.length)");
+const projectTokenVerificationIndex = projectApiSource.indexOf("await admin.auth().verifyIdToken(idToken)");
+assert.ok(
+  projectAuthHeaderGuardIndex >= 0
+    && projectFirebaseReadyGuardIndex > projectAuthHeaderGuardIndex
+    && projectFirebaseReadyGuardIndex < projectTokenVerificationIndex,
+  "projects API must return service-unavailable before token verification when Firebase Admin is not initialized",
+);
+assert.ok(
+  projectApiSource.includes('return error(res, "Project service is temporarily unavailable.", 503);'),
+  "projects API must report missing Firebase Admin configuration as HTTP 503",
+);
 assert.ok(projectApiSource.includes("normalizeProjectCreateInput(req.body)"),
   "project creation API must use the strict input normalizer");
 assert.doesNotMatch(projectApiSource, /const validPrice = Number\(price\)/,
