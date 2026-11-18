@@ -16,10 +16,44 @@ const KEYWORDS = [
   "best AI platform for business",
 ];
 
+export async function fetchTavilyJsonWithTimeout(input, init = {}, {
+  timeoutMs = 7000,
+  fetchImpl = globalThis.fetch,
+  setTimeoutImpl = setTimeout,
+  clearTimeoutImpl = clearTimeout,
+} = {}) {
+  if (typeof fetchImpl !== "function") {
+    throw new TypeError("A fetch implementation is required.");
+  }
+  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 30000) {
+    throw new RangeError("timeoutMs must be an integer between 1 and 30000.");
+  }
+
+  const controller = new AbortController();
+  const timeout = setTimeoutImpl(
+    () => controller.abort(new Error("Search provider request timed out.")),
+    timeoutMs,
+  );
+
+  try {
+    const response = await fetchImpl(input, { ...init, signal: controller.signal });
+    if (!response || typeof response.json !== "function") {
+      throw new TypeError("Search provider response must provide JSON.");
+    }
+    if (!response.ok) return { ok: false, data: null };
+    return { ok: true, data: await response.json() };
+  } finally {
+    clearTimeoutImpl(timeout);
+  }
+}
+
 export function createRankTrackerHandler({
   rateLimit = checkRateLimit,
   adminClient = admin,
   resolveClientIp = getClientIp,
+  fetchJson = fetchTavilyJsonWithTimeout,
+  sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
+  requestTimeoutMs = 7000,
 } = {}) {
   return async function handler(req, res) {
     res.setHeader("Access-Control-Allow-Origin", "*");
@@ -53,7 +87,7 @@ export function createRankTrackerHandler({
     const results = [];
     for (const keyword of KEYWORDS) {
       try {
-        const response = await fetch(TAVILY_ENDPOINT, {
+        const providerResponse = await fetchJson(TAVILY_ENDPOINT, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -62,12 +96,12 @@ export function createRankTrackerHandler({
             search_depth: "basic",
             max_results: 5,
           }),
-        });
+        }, { timeoutMs: requestTimeoutMs });
 
-        if (!response.ok) {
+        if (!providerResponse?.ok) {
           results.push({ keyword, rank: null, found: false, error: "Search provider request failed" });
         } else {
-          const data = await response.json();
+          const data = providerResponse.data;
           const items = Array.isArray(data?.results) ? data.results : [];
           const index = items.findIndex((item) => (
             typeof item?.url === "string" && item.url.includes("quickkitai.com")
@@ -79,7 +113,7 @@ export function createRankTrackerHandler({
         results.push({ keyword, rank: null, found: false, error: "Search request failed" });
       }
 
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await sleep(1500);
     }
 
     return res.json({
