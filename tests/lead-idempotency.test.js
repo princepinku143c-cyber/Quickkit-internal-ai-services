@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { getOrCreateLead, hashIdempotencyKey } from "../api/_lib/leadIdempotency.js";
+import { getOrCreateLead, getOrCreateWebhookSubmission, hashIdempotencyKey } from "../api/_lib/leadIdempotency.js";
 
 class FakeDocumentReference {
   constructor(db, collectionName, id) {
@@ -106,4 +106,60 @@ assert.notEqual(repaired.ref.id, "missing-lead-record");
 assert.equal(db.read("lead_idempotency", orphanHash).leadId, repaired.ref.id);
 assert.equal(db.count("leads"), 2);
 
-console.log("Lead idempotency regression tests passed (create, replay, and orphan repair).");
+const webhookDb = new FakeFirestore();
+const webhookKey = "webhook-event-00000001";
+const aliceLead = { userId: "alice", name: "Alice inbound lead" };
+const aliceProject = { userId: "alice", projectName: "Alice Realty" };
+
+const firstWebhook = await getOrCreateWebhookSubmission(
+  webhookDb, "alice", webhookKey, aliceLead, aliceProject
+);
+assert.equal(firstWebhook.created, true);
+assert.equal(firstWebhook.leadRef.id, firstWebhook.lead.id);
+assert.equal(firstWebhook.lead.projectId, firstWebhook.projectRef.id);
+assert.equal(firstWebhook.project.leadId, firstWebhook.leadRef.id);
+assert.equal(webhookDb.count("leads"), 1);
+assert.equal(webhookDb.count("projects"), 1);
+assert.equal(webhookDb.count("webhook_idempotency"), 1);
+
+const webhookRetry = await getOrCreateWebhookSubmission(
+  webhookDb,
+  "alice",
+  webhookKey,
+  { ...aliceLead, name: "Changed retry payload" },
+  { ...aliceProject, projectName: "Changed retry project" }
+);
+assert.equal(webhookRetry.created, false);
+assert.equal(webhookRetry.leadRef.id, firstWebhook.leadRef.id);
+assert.equal(webhookRetry.projectRef.id, firstWebhook.projectRef.id);
+assert.equal(webhookRetry.lead.name, "Alice inbound lead");
+assert.equal(webhookRetry.project.projectName, "Alice Realty");
+assert.equal(webhookDb.count("leads"), 1, "webhook replay must not create duplicate leads");
+assert.equal(webhookDb.count("projects"), 1, "webhook replay must not create duplicate projects");
+
+const bobWebhook = await getOrCreateWebhookSubmission(
+  webhookDb,
+  "bob",
+  webhookKey,
+  { userId: "bob", name: "Bob inbound lead" },
+  { userId: "bob", projectName: "Bob Realty" }
+);
+assert.equal(bobWebhook.created, true);
+assert.notEqual(bobWebhook.leadRef.id, firstWebhook.leadRef.id);
+assert.notEqual(bobWebhook.projectRef.id, firstWebhook.projectRef.id);
+assert.equal(webhookDb.count("leads"), 2, "the same idempotency key must be isolated by tenant");
+assert.equal(webhookDb.count("projects"), 2, "tenant-scoped webhook retries must not share projects");
+
+await assert.rejects(
+  () => getOrCreateWebhookSubmission(
+    webhookDb,
+    "alice",
+    "webhook-event-00000002",
+    { userId: "bob", name: "Mismatched tenant" },
+    { userId: "alice", projectName: "Alice Realty" }
+  ),
+  /ownership must match/,
+  "webhook lead ownership must match the authenticated tenant UID"
+);
+
+console.log("Lead and webhook idempotency regression tests passed (create, replay, tenant isolation, and orphan repair).");

@@ -2,6 +2,7 @@ import admin, { db } from "./_lib/firebaseAdmin.js";
 import { logSafeError } from "./_lib/safeErrorLog.js";
 import { constantTimeSecretEqual } from "./_lib/constantTimeSecret.js";
 import { checkRateLimit } from "./_lib/security.js";
+import { getOrCreateWebhookSubmission } from "./_lib/leadIdempotency.js";
 import { getClientIp, isPlainObject, normalizeFirestoreDocumentId, payloadTooLarge, safeMetadata, safeNumber, safeText } from "./_lib/input.js";
 import { success, error } from "./_lib/response.js";
 import { askAI } from "./_lib/services/aiService.js";
@@ -10,7 +11,7 @@ export default async function handler(req, res) {
   // CORS configuration
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST,OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Webhook-Secret');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Webhook-Secret, Idempotency-Key');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
@@ -29,6 +30,12 @@ export default async function handler(req, res) {
   const data = req.body;
   if (!isPlainObject(data)) return error(res, "Invalid webhook payload.", 400);
   if (payloadTooLarge(data)) return error(res, "Webhook payload is too large.", 413);
+  const rawIdempotencyKey = req.headers?.["idempotency-key"] ?? data.idempotencyKey;
+  const idempotencyKey = typeof rawIdempotencyKey === "string" ? rawIdempotencyKey.trim() : "";
+  if (rawIdempotencyKey !== undefined && rawIdempotencyKey !== null
+    && !/^[a-zA-Z0-9_-]{16,128}$/.test(idempotencyKey)) {
+    return error(res, "Invalid Idempotency-Key. Use 16–128 letters, numbers, underscores or hyphens.", 400);
+  }
 
   try {
     if (!db) {
@@ -43,21 +50,6 @@ export default async function handler(req, res) {
       return error(res, "Unauthorized: a valid X-Webhook-Secret is required.", 401);
     }
     await checkRateLimit(admin, String(targetUid) + ":" + getClientIp(req), "webhook", 10);
-    const leadRef = db.collection('leads').doc();
-    const projectRef = db.collection('projects').doc();
-
-    const budgetVal = safeNumber(data.budget) || safeNumber(data.price) || 0;
-
-    // Keep only bounded scalar metadata; never mutate an untrusted nested value.
-    const standardKeys = ['name', 'email', 'phone', 'businessName', 'company', 'projectName', 'price', 'budget', 'requirement', 'notes', 'custom_metadata'];
-    const extraMetadata = {};
-    for (const [key, value] of Object.entries(data)) {
-      if (!standardKeys.includes(key) && ['string', 'number', 'boolean'].includes(typeof value)) extraMetadata[key] = value;
-    }
-    const custom_metadata = safeMetadata({
-      ...(isPlainObject(data.custom_metadata) ? data.custom_metadata : {}),
-      ...extraMetadata
-    });
     const leadData = {
       name: safeText(data.name, 120) || 'Webhook Inbound Lead',
       email: safeText(data.email, 254),
@@ -72,29 +64,7 @@ export default async function handler(req, res) {
       custom_metadata,
       createdAt: new Date().toISOString()
     };
-
-    // Save lead record
-    await leadRef.set(leadData);
-
-    // Asynchronously call the askAI service to draft a welcome email
-    const leadId = leadRef.id;
-    const leadName = leadData.name || 'Webhook Inbound Lead';
-    const projectName = leadData.projectName || 'External Webhook Sync';
-    (async () => {
-      try {
-        const prompt = `Write a short, highly professional 3-sentence welcome email for a new lead named ${leadName} inquiring about ${projectName}. Offer to schedule a quick call.`;
-        const draft = await askAI([{ role: "user", content: prompt }]);
-        await db.collection('leads').doc(leadId).update({
-          aiDraftReply: draft
-        });
-        console.log(`🤖 AI Draft successfully generated for webhook lead ${leadId}`);
-      } catch (err) {
-        logSafeError("WEBHOOK_AI_DRAFT_FAILED", err);
-      }
-    })();
-
-    // Save project node
-    await projectRef.set({
+    const projectData = {
       userId: targetUid,
       clientEmail: leadData.email,
       clientName: leadData.name,
@@ -105,9 +75,58 @@ export default async function handler(req, res) {
       price: leadData.price,
       advancePaid: false,
       createdAt: new Date().toISOString()
-    });
+    };
+
+    let leadRef;
+    let projectRef;
+    let lead;
+    let created = true;
+
+    if (idempotencyKey) {
+      const submission = await getOrCreateWebhookSubmission(
+        db,
+        targetUid,
+        idempotencyKey,
+        leadData,
+        projectData
+      );
+      leadRef = submission.leadRef;
+      projectRef = submission.projectRef;
+      lead = submission.lead;
+      created = submission.created;
+    } else {
+      // Preserve legacy clients while making the lead/project writes atomic.
+      leadRef = db.collection("leads").doc();
+      projectRef = db.collection("projects").doc();
+      lead = { ...leadData, id: leadRef.id, projectId: projectRef.id };
+      await db.runTransaction(async (transaction) => {
+        transaction.create(leadRef, lead);
+        transaction.create(projectRef, { ...projectData, leadId: leadRef.id });
+      });
+    }
+
+    // Only the first accepted delivery starts side effects. Replays return the
+    // original IDs without sending duplicate AI drafts or duplicate CRM records.
+    if (created) {
+      const leadId = leadRef.id;
+      const leadName = lead.name || 'Webhook Inbound Lead';
+      const projectName = lead.projectName || 'External Webhook Sync';
+      (async () => {
+        try {
+          const prompt = `Write a short, highly professional 3-sentence welcome email for a new lead named ${leadName} inquiring about ${projectName}. Offer to schedule a quick call.`;
+          const draft = await askAI([{ role: "user", content: prompt }]);
+          await db.collection('leads').doc(leadId).update({
+            aiDraftReply: draft
+          });
+          console.log(`🤖 AI Draft successfully generated for webhook lead ${leadId}`);
+        } catch (err) {
+          logSafeError("WEBHOOK_AI_DRAFT_FAILED", err);
+        }
+      })();
+    }
 
     // Odoo CRM Integration (Fault tolerant tunnel matching system.js)
+    if (created) {
     try {
       const odooUrl = process.env.ODOO_URL;
       const odooDb = process.env.ODOO_DB;
@@ -183,8 +202,13 @@ export default async function handler(req, res) {
     } catch (odooErr) {
       logSafeError("WEBHOOK_ODOO_SYNC_FAILED", odooErr);
     }
+    }
 
-    return success(res, { status: "LEAD_INGESTED", leadId: leadRef.id, projectId: projectRef.id });
+    return success(res, {
+      status: created ? "LEAD_INGESTED" : "LEAD_ALREADY_RECEIVED",
+      leadId: leadRef.id,
+      projectId: projectRef.id,
+    });
   } catch (e) {
     if (e?.status === 429) {
       if (e.retryAfter) res.setHeader('Retry-After', String(e.retryAfter));
