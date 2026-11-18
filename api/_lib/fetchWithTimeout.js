@@ -1,8 +1,8 @@
 /**
- * Run an upstream fetch with a bounded deadline.
- * The abort signal is local to this request and never exposes request data.
+ * Fetch and parse an upstream JSON response within a bounded deadline.
+ * The timeout remains active while the response body is being read.
  */
-export async function fetchWithTimeout(
+export async function fetchJsonWithTimeout(
   input,
   init = {},
   { timeoutMs = 7000, fetchImpl = globalThis.fetch } = {},
@@ -21,7 +21,11 @@ export async function fetchWithTimeout(
   );
 
   try {
-    return await fetchImpl(input, { ...init, signal: controller.signal });
+    const response = await fetchImpl(input, { ...init, signal: controller.signal });
+    if (!response || typeof response.json !== "function") {
+      throw new TypeError("Upstream response must provide JSON.");
+    }
+    return await response.json();
   } finally {
     clearTimeout(timeout);
   }
