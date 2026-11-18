@@ -9,6 +9,7 @@ import { getSystemActionMethods } from './_lib/systemActionMethods.js';
 import { generatePaymentToken, verifyAndConsumePaymentToken } from './_lib/paymentToken.js';
 import { createLeadAndProjectAtomically } from './_lib/leadIdempotency.js';
 import { sendLeadNotification } from './_lib/leadNotifications.js';
+import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
 
 
 const success = (res, data) => res.status(200).json(data);
@@ -154,7 +155,10 @@ async function handleLead(req, res, userId) {
         await sendLeadNotification(async () => {
             const transporter = nodemailer.createTransport({
                 service: 'gmail',
-                auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+                auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
+                connectionTimeout: 7000,
+                greetingTimeout: 7000,
+                socketTimeout: 7000
             });
 
             await transporter.sendMail({
@@ -182,7 +186,7 @@ async function handleLead(req, res, userId) {
 
             if (odooUrl && odooDb && odooUsername && odooApiKey) {
                 // Step A: Authenticate
-                const authResponse = await fetch(`${odooUrl}/jsonrpc`, {
+                const authResponse = await fetchWithTimeout(`${odooUrl}/jsonrpc`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -194,7 +198,7 @@ async function handleLead(req, res, userId) {
                             args: [odooDb, odooUsername, odooApiKey]
                         },
                         id: Date.now()
-                    })
+                    }, { timeoutMs: 7000 })
                 });
                 
                 const authData = await authResponse.json();
@@ -217,7 +221,7 @@ async function handleLead(req, res, userId) {
 
                     const leadDescription = `Project: ${data.projectName || 'Custom Build'}\nRequirements: ${data.requirement || data.notes || 'N/A'}\n\n--- CRM Mappings ---\nClient_ID: ${targetUid || 'Guest'}\nNiche: ${clientNiche}`;
                     
-                    await fetch(`${odooUrl}/jsonrpc`, {
+                    await fetchWithTimeout(`${odooUrl}/jsonrpc`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -242,7 +246,7 @@ async function handleLead(req, res, userId) {
                                 ]
                             },
                             id: Date.now() + 1
-                        })
+                    }, { timeoutMs: 7000 })
                     });
                     console.log("✅ Lead successfully synced to Odoo CRM.");
                 } else {
