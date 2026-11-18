@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import { createLeadAndProjectAtomically, getOrCreateLead, getOrCreateWebhookSubmission, hashIdempotencyKey } from "../api/_lib/leadIdempotency.js";
 import { stripWebhookIdempotencyMetadata } from "../api/_lib/input.js";
 import { sendLeadNotification } from "../api/_lib/leadNotifications.js";
+import { fetchWithTimeout } from "../api/_lib/fetchWithTimeout.js";
 
 class FakeDocumentReference {
   constructor(db, collectionName, id) {
@@ -311,3 +312,54 @@ assert.doesNotMatch(systemRouteSource, /await leadRef\.set\(leadData\)/);
 assert.doesNotMatch(systemRouteSource, /await projectRef\.set\(/);
 
 console.log("Lead and webhook idempotency regression tests passed (create, replay, tenant isolation, and orphan repair).");
+
+
+const successfulFetch = await fetchWithTimeout(
+  "https://odoo.example.invalid/jsonrpc",
+  { method: "POST" },
+  {
+    timeoutMs: 100,
+    fetchImpl: async (_input, options) => ({ ok: true, signal: options.signal }),
+  },
+);
+assert.equal(successfulFetch.ok, true, "bounded fetch should return a successful upstream response");
+assert.ok(successfulFetch.signal instanceof AbortSignal, "bounded fetch must pass an abort signal");
+
+let timeoutAbortObserved = false;
+await assert.rejects(
+  () => fetchWithTimeout(
+    "https://odoo.example.invalid/jsonrpc",
+    {},
+    {
+      timeoutMs: 5,
+      fetchImpl: (_input, options) => new Promise((_resolve, reject) => {
+        options.signal.addEventListener("abort", () => {
+          timeoutAbortObserved = true;
+          reject(options.signal.reason);
+        }, { once: true });
+      }),
+    },
+  ),
+  /Upstream request timed out/,
+  "slow upstream requests must be aborted at the configured deadline",
+);
+assert.equal(timeoutAbortObserved, true, "timeout must abort the in-flight upstream request");
+
+assert.ok(
+  systemRouteSource.includes("fetchWithTimeout"),
+  "the system route must use the bounded upstream fetch helper",
+);
+assert.equal(
+  (systemRouteSource.match(/fetchWithTimeout\(\x60\$\{odooUrl\}\/jsonrpc\x60/g) || []).length,
+  2,
+  "both Odoo JSON-RPC requests must be bounded",
+);
+assert.ok(systemRouteSource.includes("timeoutMs: 7000"), "Odoo requests must use the 7-second deadline");
+assert.ok(systemRouteSource.includes("connectionTimeout: 7000"), "SMTP connection timeout must be bounded");
+assert.ok(systemRouteSource.includes("greetingTimeout: 7000"), "SMTP greeting timeout must be bounded");
+assert.ok(systemRouteSource.includes("socketTimeout: 7000"), "SMTP socket timeout must be bounded");
+assert.doesNotMatch(
+  systemRouteSource,
+  /await fetch\(\x60\$\{odooUrl\}\/jsonrpc\x60/,
+  "Odoo calls must not bypass the timeout helper",
+);
