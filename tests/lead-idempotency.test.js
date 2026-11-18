@@ -295,6 +295,23 @@ assert.deepEqual(
   "notification logging must not expose transport details",
 );
 
+
+const webhookRouteSource = readFileSync(new URL("../api/webhook.js", import.meta.url), "utf8");
+assert.ok(
+  webhookRouteSource.includes("fetchJsonWithTimeout"),
+  "the webhook route must use the bounded JSON fetch helper for Odoo",
+);
+assert.equal(
+  webhookRouteSource.split("fetchJsonWithTimeout(`${odooUrl}/jsonrpc`,").length - 1,
+  2,
+  "both webhook Odoo JSON-RPC requests must be bounded",
+);
+assert.ok(webhookRouteSource.includes("timeoutMs: 7000"), "webhook Odoo requests must use the 7-second deadline");
+assert.ok(
+  !webhookRouteSource.includes("await fetch(`${odooUrl}/jsonrpc`,"),
+  "webhook Odoo calls must not bypass the timeout helper",
+);
+
 const systemRouteSource = readFileSync(new URL("../api/system.js", import.meta.url), "utf8");
 assert.ok(
   systemRouteSource.includes("createLeadAndProjectAtomically"),
