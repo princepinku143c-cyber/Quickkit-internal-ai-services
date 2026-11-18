@@ -9,7 +9,7 @@ import { getSystemActionMethods } from './_lib/systemActionMethods.js';
 import { generatePaymentToken, verifyAndConsumePaymentToken } from './_lib/paymentToken.js';
 import { createLeadAndProjectAtomically } from './_lib/leadIdempotency.js';
 import { sendLeadNotification } from './_lib/leadNotifications.js';
-import { fetchWithTimeout } from './_lib/fetchWithTimeout.js';
+import { fetchJsonWithTimeout } from './_lib/fetchWithTimeout.js';
 
 
 const success = (res, data) => res.status(200).json(data);
@@ -186,7 +186,7 @@ async function handleLead(req, res, userId) {
 
             if (odooUrl && odooDb && odooUsername && odooApiKey) {
                 // Step A: Authenticate
-                const authResponse = await fetchWithTimeout(`${odooUrl}/jsonrpc`, {
+                const authData = await fetchJsonWithTimeout(`${odooUrl}/jsonrpc`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -201,8 +201,7 @@ async function handleLead(req, res, userId) {
                     })
                 }, { timeoutMs: 7000 });
                 
-                const authData = await authResponse.json();
-                const uid = authData.result;
+                        const uid = authData.result;
                 
                 if (uid) {
                     // Step B: Create crm.lead
@@ -221,7 +220,7 @@ async function handleLead(req, res, userId) {
 
                     const leadDescription = `Project: ${data.projectName || 'Custom Build'}\nRequirements: ${data.requirement || data.notes || 'N/A'}\n\n--- CRM Mappings ---\nClient_ID: ${targetUid || 'Guest'}\nNiche: ${clientNiche}`;
                     
-                    await fetchWithTimeout(`${odooUrl}/jsonrpc`, {
+                    await fetchJsonWithTimeout(`${odooUrl}/jsonrpc`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
