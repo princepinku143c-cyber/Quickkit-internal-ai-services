@@ -128,3 +128,26 @@ export async function getOrCreateWebhookSubmission(db, userId, idempotencyKey, l
     return { leadRef, projectRef, lead, project, created: true, projectCreated: true };
   });
 }
+
+
+/**
+ * Atomically persist the public system lead and its linked project.
+ * This prevents a failed second write from leaving an orphaned lead.
+ */
+export async function createLeadAndProjectAtomically(db, leadData, projectData) {
+  if (!db || !leadData || !projectData || leadData.userId !== projectData.userId) {
+    throw new Error("Lead and project ownership must match.");
+  }
+
+  const leadRef = db.collection("leads").doc();
+  const projectRef = db.collection("projects").doc();
+  const lead = { ...leadData, id: leadRef.id, projectId: projectRef.id };
+  const project = { ...projectData, leadId: leadRef.id };
+
+  await db.runTransaction(async (tx) => {
+    tx.create(leadRef, lead);
+    tx.create(projectRef, project);
+  });
+
+  return { leadRef, projectRef, lead, project };
+}
