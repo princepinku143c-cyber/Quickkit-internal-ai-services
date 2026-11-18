@@ -17,7 +17,7 @@ const KEYWORDS = [
 ];
 
 export async function fetchTavilyJsonWithTimeout(input, init = {}, {
-  timeoutMs = 7000,
+  timeoutMs = 3000,
   fetchImpl = globalThis.fetch,
   setTimeoutImpl = setTimeout,
   clearTimeoutImpl = clearTimeout,
@@ -53,7 +53,7 @@ export function createRankTrackerHandler({
   resolveClientIp = getClientIp,
   fetchJson = fetchTavilyJsonWithTimeout,
   sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-  requestTimeoutMs = 7000,
+  requestTimeoutMs = 3000,
 } = {}) {
   return async function handler(req, res) {
     res.setHeader("Access-Control-Allow-Origin", "*");
