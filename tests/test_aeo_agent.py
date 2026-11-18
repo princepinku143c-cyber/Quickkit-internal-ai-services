@@ -82,9 +82,17 @@ class AeoAgentCredentialTests(unittest.TestCase):
         source = (Path(__file__).resolve().parents[1] / "agents" / "aeo_agent.py").read_text()
         self.assertIsNone(re.search(r"Bearer\s+sk-[A-Za-z0-9]", source))
 
-    def test_production_template_documents_aeo_agent_key(self):
-        template = (Path(__file__).resolve().parents[1] / ".env.production.example").read_text()
-        self.assertRegex(template, r"(?m)^OPENCODE_API_KEY=your_opencode_api_key$")
+    def test_production_template_marks_aeo_key_optional_and_disabled_by_default(self):
+        root = Path(__file__).resolve().parents[1]
+        template = (root / ".env.production.example").read_text()
+        dev_template = (root / ".env.example").read_text()
+
+        self.assertIn("AEO Python agent (optional", template)
+        self.assertRegex(template, r"(?m)^# OPENCODE_API_KEY=your_opencode_api_key$")
+        self.assertNotRegex(template, r"(?m)^OPENCODE_API_KEY=")
+        self.assertIn("without network access", template)
+        self.assertIn("Optional AEO agent provider key", dev_template)
+        self.assertRegex(dev_template, r"(?m)^# OPENCODE_API_KEY=$")
 
 
 if __name__ == "__main__":
