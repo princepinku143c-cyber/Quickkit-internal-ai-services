@@ -187,8 +187,6 @@ Always end your responses by asking if the client has more questions or if they'
       signal: controller.signal
     });
 
-    clearTimeout(timeoutId);
-
     if (!res.ok) {
         // Never log provider response bodies; they may echo request or credential details.
         console.error("[NEURAL_NODE_ERROR] HTTP status:", res.status);
@@ -196,6 +194,7 @@ Always end your responses by asking if the client has more questions or if they'
     }
 
     const data = await res.json();
+    clearTimeout(timeoutId);
     const reply = data?.choices?.[0]?.message?.content;
     
     if (!reply) throw new Error("Neural node returned empty response.");
