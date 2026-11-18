@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { getOrCreateLead, getOrCreateWebhookSubmission, hashIdempotencyKey } from "../api/_lib/leadIdempotency.js";
+import { createLeadAndProjectAtomically, getOrCreateLead, getOrCreateWebhookSubmission, hashIdempotencyKey } from "../api/_lib/leadIdempotency.js";
 import { stripWebhookIdempotencyMetadata } from "../api/_lib/input.js";
 
 class FakeDocumentReference {
@@ -249,5 +249,37 @@ assert.equal(repairedLinks.project.leadId, "alice-stale-link-lead");
 assert.equal(webhookDb.read("projects", "alice-stale-link-project").leadId, "alice-stale-link-lead");
 assert.equal(webhookDb.read("leads", "bob-private-lead").userId, "bob");
 assert.equal(webhookDb.read("projects", "bob-private-project").userId, "bob");
+
+const atomicDb = new FakeFirestore();
+const atomicSubmission = await createLeadAndProjectAtomically(
+  atomicDb,
+  { userId: "alice", name: "Atomic system lead" },
+  { userId: "alice", projectName: "Atomic system project" },
+);
+assert.equal(atomicDb.count("leads"), 1);
+assert.equal(atomicDb.count("projects"), 1);
+assert.equal(atomicSubmission.lead.projectId, atomicSubmission.projectRef.id);
+assert.equal(atomicSubmission.project.leadId, atomicSubmission.leadRef.id);
+assert.equal(atomicDb.read("leads", atomicSubmission.leadRef.id).projectId, atomicSubmission.projectRef.id);
+assert.equal(atomicDb.read("projects", atomicSubmission.projectRef.id).leadId, atomicSubmission.leadRef.id);
+
+await assert.rejects(
+  () => createLeadAndProjectAtomically(
+    atomicDb,
+    { userId: "alice", name: "Mismatched lead" },
+    { userId: "bob", projectName: "Mismatched project" },
+  ),
+  /ownership must match/,
+);
+assert.equal(atomicDb.count("leads"), 1, "mismatched ownership must not create a lead");
+assert.equal(atomicDb.count("projects"), 1, "mismatched ownership must not create a project");
+
+const systemRouteSource = readFileSync(new URL("../api/system.js", import.meta.url), "utf8");
+assert.ok(
+  systemRouteSource.includes("createLeadAndProjectAtomically"),
+  "the public system lead route must use the atomic lead/project helper",
+);
+assert.doesNotMatch(systemRouteSource, /await leadRef\.set\(leadData\)/);
+assert.doesNotMatch(systemRouteSource, /await projectRef\.set\(/);
 
 console.log("Lead and webhook idempotency regression tests passed (create, replay, tenant isolation, and orphan repair).");
