@@ -5,41 +5,52 @@ import { Helmet } from 'react-helmet-async';
 
 const plans = [
   {
-    name: 'AI Visibility Audit',
-    regular: '₹19,998',
-    offer: '₹9,999',
-    suffix: 'one-time',
+    name: 'AI Technical Foundation & Schema Fix',
+    regular: '₹30,000',
+    offer: '₹15,000',
+    suffix: 'one-time setup · zero monthly fee',
     icon: Eye,
-    description: 'A measured baseline showing how your website is understood across search and AI surfaces.',
-    items: ['30–50 buyer-intent prompts', 'Technical crawl and schema review', 'Competitor comparison', '30-day priority action plan'],
+    description: 'Complete code architecture overhaul to make your website readable, verified, and eligible for Google Rich Snippets and AI Search discovery.',
+    items: [
+      'Enterprise JSON-LD Schema Architecture (Organization, LocalBusiness, FAQ)',
+      'Autonomous AI Crawler Ingestion Protocols (llms.txt, llms-full.txt, robots.txt)',
+      'Core Web Vitals & Asset Latency Compression (Target <1.5s load speed)',
+      'Google Rich Results Official Validation Certificate (100% Green Pass)',
+      'Google Search Console & Canonical Sitemap Indexing Submission',
+      '7-Day Fast-Track Deployment Target · Staged & Verified'
+    ],
   },
   {
-    name: 'AI Visibility Monitor',
-    regular: '₹59,998',
-    offer: '₹29,999',
-    suffix: 'per month',
-    icon: LineChart,
-    description: 'Recurring visibility checks so you can see mentions, sources and competitor movement over time.',
-    items: ['Up to 40 tracked prompts/month', 'Weekly or fortnightly checks', 'Mention and citation tracking', 'Competitor movement report', 'Monthly executive summary'],
-  },
-  {
-    name: 'AI Visibility Growth',
-    regular: '₹1,50,000 setup + ₹2,40,000/month',
-    offer: '₹75,000 setup + ₹1,20,000/month',
-    suffix: 'managed implementation',
+    name: 'AI Search Growth & Autonomous Sentinel',
+    regular: '₹40,000 setup + ₹50,000/month',
+    offer: '₹20,000 setup + ₹25,000/month',
+    suffix: 'monthly retainer (Day 30+)',
     icon: Rocket,
     featured: true,
-    description: 'The flagship plan: approved website improvements plus monitoring and before/after evidence.',
-    items: ['Everything in Monitor', 'Up to 60 tracked prompts/month', 'Up to 8 answer/FAQ work items/month', 'Up to 4 approved technical fix batches/month', 'Staging implementation and re-audit'],
+    description: 'Continuous AI citation visibility and health defense across ChatGPT, Perplexity, Gemini, and Claude with automated daily audit logs and bi-weekly reports.',
+    items: [
+      'Everything included in AI Technical Foundation Fix',
+      'Automated Daily Health & AI Indexing Sentinel (30-day rolling log)',
+      'Multi-Engine Citation Tracking (ChatGPT, Perplexity, Gemini, Claude)',
+      'Continuous Entity Schema Expansions (New inventory, services & FAQs)',
+      'Bi-Weekly Executive Proof & Verification Audit Reports',
+      'Ongoing Core Web Vitals, Bot Access & Security Guard'
+    ],
   },
   {
-    name: 'Multi-location Enterprise',
-    regular: '₹5,00,000 setup + ₹4,00,000/month',
-    offer: '₹2,50,000 setup + ₹2,00,000/month',
-    suffix: 'custom scope',
+    name: 'Multi-Location Enterprise AEO',
+    regular: '₹1,00,000 setup + ₹1,50,000/month',
+    offer: '₹50,000 setup + ₹75,000/month',
+    suffix: 'custom regional scope',
     icon: ShieldCheck,
-    description: 'For multiple cities, services, brands or domains that need isolated workspaces and approvals.',
-    items: ['Custom prompt and location quotas', 'Separate locations and prompt sets', 'Role-based approvals', 'Tenant-isolated evidence', 'Executive reporting and audits'],
+    description: 'For multi-city developers, luxury healthcare chains, or regional franchises requiring multi-branch entity mapping and dedicated AI citation defense.',
+    items: [
+      'Everything in AI Search Growth & Sentinel',
+      'Multi-City & Multi-Branch Schema Entity Clustering',
+      'High-Volume Prompt & Geo-Fenced Tracking (100+ prompts/month)',
+      'Role-Based Staging, Tenant-Isolated Evidence & Priority SLA',
+      'Dedicated Technical Engineering Support'
+    ],
   },
 ];
 
@@ -79,7 +90,7 @@ export const AIVisibility: React.FC = () => (
     </section>
 
     <section id="plans" className="container mx-auto max-w-6xl px-5 pb-20 md:px-8">
-      <div className="mb-10 max-w-2xl"><p className="text-xs font-black uppercase tracking-[.25em] text-blue-300">Choose the right level</p><h2 className="mt-3 text-3xl font-black md:text-5xl">Four plans. One evidence-led system.</h2><p className="mt-4 text-slate-400">The 50% introductory offer keeps the approved offer prices unchanged. Scope and eligibility apply.</p></div>
+      <div className="mb-10 max-w-2xl"><p className="text-xs font-black uppercase tracking-[.25em] text-blue-300">Choose the right level</p><h2 className="mt-3 text-3xl font-black md:text-5xl">Three plans. One evidence-led system.</h2><p className="mt-4 text-slate-400">The 50% introductory offer keeps the approved offer prices unchanged. Scope and eligibility apply.</p></div>
       <div className="grid gap-5 lg:grid-cols-2">
         {plans.map((plan) => { const Icon = plan.icon; return <article key={plan.name} className={`glass-card rounded-3xl p-6 ${plan.featured ? 'border-amber-300/40 shadow-[0_0_50px_rgba(245,158,11,.1)]' : ''}`}>
           <div className="flex items-start justify-between gap-4"><div><div className="flex items-center gap-3"><Icon className="text-amber-300" size={22} /><h3 className="text-xl font-black">{plan.name}</h3></div><p className="mt-3 text-sm leading-6 text-slate-400">{plan.description}</p></div>{plan.featured && <span className="rounded-full bg-amber-300/15 px-3 py-1 text-[10px] font-black uppercase tracking-wider text-amber-200">Flagship</span>}</div>
