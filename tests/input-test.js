@@ -1001,6 +1001,21 @@ assert.equal(
   "AI provider response bodies must not be logged or retained in the error path",
 );
 
+const aiFetchStartIndex = aiServiceSource.indexOf("const res = await fetch(endpoint");
+const aiResponseBodyIndex = aiServiceSource.indexOf("const data = await res.json();", aiFetchStartIndex);
+const aiResponseTimeoutClearIndex = aiServiceSource.indexOf("clearTimeout(timeoutId);", aiResponseBodyIndex);
+assert.ok(
+  aiFetchStartIndex >= 0
+    && aiResponseBodyIndex > aiFetchStartIndex
+    && aiResponseTimeoutClearIndex > aiResponseBodyIndex,
+  "AI provider timeout must remain active until the response body has been parsed",
+);
+assert.match(
+  aiServiceSource,
+  /const data = await res\\.json\\(\\);\\s*clearTimeout\\(timeoutId\\);/,
+  "successful AI responses must clear the deadline only after JSON parsing completes",
+);
+
 
 // Google autofill must be unavailable when the browser Firebase client is incomplete.
 const firebaseReadinessLeadFormSource = readFileSync(new URL("../components/LeadForm.tsx", import.meta.url), "utf8");
