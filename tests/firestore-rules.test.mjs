@@ -426,6 +426,25 @@ try {
     }));
   }
 
+  // Conflicting owner aliases must not let the non-canonical tenant read a log.
+  // The canonical user_id field is the existing AdminLeads writer contract.
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    const db = context.firestore();
+    await setDoc(doc(db, 'logs', 'mismatched-owner-log'), {
+      user_id: 'alice',
+      userId: 'bob',
+      action: 'mismatched owner aliases',
+    });
+    await setDoc(doc(db, 'logs', 'legacy-camel-owner-log'), {
+      userId: 'alice',
+      action: 'legacy camel-case owner',
+    });
+  });
+  await assertSucceeds(getDoc(doc(alice, 'logs', 'mismatched-owner-log')));
+  await assertFails(getDoc(doc(bob, 'logs', 'mismatched-owner-log')));
+  await assertSucceeds(getDoc(doc(alice, 'logs', 'legacy-camel-owner-log')));
+  await assertFails(getDoc(doc(bob, 'logs', 'legacy-camel-owner-log')));
+
   console.log('Firestore security rules emulator tests passed.');
 } finally {
   await testEnv.cleanup();
