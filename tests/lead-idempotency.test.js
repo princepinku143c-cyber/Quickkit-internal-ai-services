@@ -311,6 +311,11 @@ assert.ok(
   "webhook Odoo calls must not bypass the timeout helper",
 );
 
+const leadSubmitRouteSource = readFileSync(new URL("../api/lead-submit.js", import.meta.url), "utf8");
+assert.ok(leadSubmitRouteSource.includes("connectionTimeout: 7000"), "website lead SMTP connection timeout must be bounded");
+assert.ok(leadSubmitRouteSource.includes("greetingTimeout: 7000"), "website lead SMTP greeting timeout must be bounded");
+assert.ok(leadSubmitRouteSource.includes("socketTimeout: 7000"), "website lead SMTP socket timeout must be bounded");
+
 const systemRouteSource = readFileSync(new URL("../api/system.js", import.meta.url), "utf8");
 assert.ok(
   systemRouteSource.includes("createLeadAndProjectAtomically"),
