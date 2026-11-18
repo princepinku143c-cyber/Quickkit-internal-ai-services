@@ -3,6 +3,7 @@ import { logSafeError } from "./_lib/safeErrorLog.js";
 import { constantTimeSecretEqual } from "./_lib/constantTimeSecret.js";
 import { checkRateLimit } from "./_lib/security.js";
 import { getOrCreateWebhookSubmission } from "./_lib/leadIdempotency.js";
+import { fetchJsonWithTimeout } from "./_lib/fetchWithTimeout.js";
 import { getClientIp, isPlainObject, normalizeFirestoreDocumentId, payloadTooLarge, safeMetadata, safeNumber, safeText, stripWebhookIdempotencyMetadata } from "./_lib/input.js";
 import { success, error } from "./_lib/response.js";
 import { askAI } from "./_lib/services/aiService.js";
@@ -148,7 +149,7 @@ export default async function handler(req, res) {
 
       if (odooUrl && odooDb && odooUsername && odooApiKey) {
         // Authenticate
-        const authResponse = await fetch(`${odooUrl}/jsonrpc`, {
+        const authData = await fetchJsonWithTimeout(`${odooUrl}/jsonrpc`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -161,9 +162,7 @@ export default async function handler(req, res) {
             },
             id: Date.now()
           })
-        });
-        
-        const authData = await authResponse.json();
+        }, { timeoutMs: 7000 });
         const odooUid = authData.result;
         
         if (odooUid) {
@@ -180,7 +179,7 @@ export default async function handler(req, res) {
 
           const leadDescription = `Project: ${leadData.projectName}\nRequirements: ${leadData.requirement}\n\n--- CRM Mappings ---\nClient_ID: ${targetUid}\nNiche: ${clientNiche}\n\n--- CUSTOM METADATA ---\n${formattedMetadataStr || 'None'}`;
           
-          await fetch(`${odooUrl}/jsonrpc`, {
+          await fetchJsonWithTimeout(`${odooUrl}/jsonrpc`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -206,7 +205,7 @@ export default async function handler(req, res) {
               },
               id: Date.now() + 1
             })
-          });
+          }, { timeoutMs: 7000 });
           console.log("✅ Lead successfully synced to Odoo CRM via webhook.");
         } else {
           console.error("❌ Odoo Webhook Authentication failed.");
