@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { getDoc, setDoc, doc } from 'firebase/firestore';
 import { signInWithPopup } from 'firebase/auth';
-import { db, auth, googleProvider } from '../lib/firebase';
+import { db, auth, googleProvider, isFirebaseConfigured } from '../lib/firebase';
 import { X, CheckCircle, Loader2, Building2, User, FileText, Mail, Lock, ArrowLeft, Globe, Briefcase, ShieldCheck } from 'lucide-react';
 import { PlanTier, Language, AIQuote } from '../types';
 import { CONTACT_EMAIL, RAJA_COMMERCIAL_OFFER } from '../constants';
@@ -31,6 +31,7 @@ export const LeadForm: React.FC<Props> = ({ close, onBack, onVerified, initialDa
     try{const submissionResult=await apiCall(`${window.location.origin}/api/lead-submit`,newLead,{allowGuest:true});if(submissionResult?.notificationsPending) throw new Error('Your request is saved, but email delivery is still pending. Please retry this same form in about 2 minutes; the same submission key prevents duplicate leads.');setSubmitted(true);setIsSending(false);if(aiFinancials&&onVerified)setTimeout(()=>onVerified(newLead),900);else setTimeout(()=>close(),2200);}catch(err:any){console.error('Submission error:',err);alert(err?.message||`Unable to submit right now. Please email ${CONTACT_EMAIL}.`);setIsSending(false);}
   };
   const handleGoogleAutofill = async () => {
+    if (!isFirebaseConfigured) return;
     try {
       const result = await signInWithPopup(auth as any, googleProvider as any);
       const user = result.user;
@@ -61,7 +62,7 @@ export const LeadForm: React.FC<Props> = ({ close, onBack, onVerified, initialDa
       <div className="text-center"><Logo size={48} className="mx-auto mb-5"/><h2 className="text-3xl font-black text-white tracking-tighter">Claim the <span className="text-amber-300">pilot offer</span></h2><p className="mt-2 text-xs font-bold uppercase tracking-widest text-slate-500">Up to 3 pilot clients · any ongoing price lock must be stated in the signed agreement</p></div>
       <div className="rounded-2xl border border-amber-400/20 bg-amber-400/5 p-5"><div className="flex items-end justify-between gap-4"><div><div className="text-[9px] font-mono uppercase tracking-widest text-slate-600">Regular setup</div><div className="text-sm text-slate-600 line-through">₹{RAJA_COMMERCIAL_OFFER.regularSetupINR.toLocaleString('en-IN')}</div></div><div className="text-right"><div className="text-[9px] font-mono uppercase tracking-widest text-amber-300">Pilot setup</div><div className="text-3xl font-black text-white">₹{quoteSetup.toLocaleString('en-IN')}</div></div></div><div className="mt-3 text-xs text-slate-400">Monthly management: <strong className="text-white">₹{RAJA_COMMERCIAL_OFFER.festiveMonthlyINR.toLocaleString('en-IN')}</strong> from Day 30 under the pilot agreement.</div></div>
       <div className="space-y-4">
-        {!auth.currentUser&&<><button type="button" onClick={handleGoogleAutofill} className="w-full flex items-center justify-center gap-3 bg-white text-slate-900 py-4 rounded-2xl font-black text-xs uppercase tracking-widest"><Globe className="w-4 h-4"/> Continue with Google</button><div className="relative py-2"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-800"/></div><div className="relative flex justify-center text-[10px] uppercase font-black text-slate-600"><span className="bg-slate-900 px-4">Or enter manually</span></div></div></>}
+        {isFirebaseConfigured && !auth.currentUser&&<><button type="button" onClick={handleGoogleAutofill} className="w-full flex items-center justify-center gap-3 bg-white text-slate-900 py-4 rounded-2xl font-black text-xs uppercase tracking-widest"><Globe className="w-4 h-4"/> Continue with Google</button><div className="relative py-2"><div className="absolute inset-0 flex items-center"><div className="w-full border-t border-slate-800"/></div><div className="relative flex justify-center text-[10px] uppercase font-black text-slate-600"><span className="bg-slate-900 px-4">Or enter manually</span></div></div></>}
         {[
           ['Full Name',User,'Your Full Name','name','text'],
           ['Work Email',Mail,'email@company.com','email','email'],
