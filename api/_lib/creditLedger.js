@@ -42,6 +42,9 @@ export async function chargeUserCredits(
       const remaining = initialCredits - amount;
       const timestamp = serverTimestamp();
       transaction.set(userRef, {
+        uid: userId,
+        role: "client",
+        plan: "free",
         credits: remaining,
         createdAt: timestamp,
         lastUsed: timestamp,

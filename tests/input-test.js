@@ -1107,10 +1107,13 @@ const newCreditCharge = await chargeUserCredits(newCreditAccount.db, "new-user",
 });
 assert.deepEqual(newCreditCharge, { allowed: true, remaining: 490, created: true });
 assert.deepEqual(newCreditAccount.documents.get("new-user"), {
+  uid: "new-user",
+  role: "client",
+  plan: "free",
   credits: 490,
   createdAt: "test-server-time",
   lastUsed: "test-server-time",
-});
+}, "a credit-first account must receive the same non-privileged profile defaults as signup");
 
 const insufficientCreditAccount = createInMemoryCreditLedgerDb({
   "low-balance-user": { credits: 9 },
