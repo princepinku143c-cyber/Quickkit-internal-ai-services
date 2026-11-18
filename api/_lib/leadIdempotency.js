@@ -82,12 +82,15 @@ export async function getOrCreateWebhookSubmission(db, userId, idempotencyKey, l
         throw new Error("Webhook idempotency project tenant mismatch.");
       }
 
-      const lead = existingLead || { ...leadData, id: leadRef.id, projectId: projectRef.id };
+      const lead = existingLead
+        ? { ...existingLead, projectId: projectRef.id }
+        : { ...leadData, id: leadRef.id, projectId: projectRef.id };
       const project = existingProject
         ? { ...existingProject, leadId: leadRef.id }
         : { ...projectData, leadId: leadRef.id };
 
-      if (!leadSnap.exists) tx.set(leadRef, lead);
+      // Repair stale same-tenant links so a valid owner check also preserves link integrity.
+      if (!leadSnap.exists || existingLead?.projectId !== projectRef.id) tx.set(leadRef, lead);
       if (!projectSnap.exists || existingProject?.leadId !== leadRef.id) tx.set(projectRef, project);
       tx.set(keyRef, {
         userId,

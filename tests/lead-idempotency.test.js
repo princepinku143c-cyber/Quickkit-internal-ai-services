@@ -216,4 +216,38 @@ await assert.rejects(
   "an Alice idempotency record must not return a Bob-owned project",
 );
 
+
+const linkIntegrityKey = "webhook-link-integrity-0001";
+const linkIntegrityHash = hashIdempotencyKey(JSON.stringify(["alice", linkIntegrityKey]));
+webhookDb.seed("leads", "bob-private-lead", { userId: "bob", name: "Bob private lead" });
+webhookDb.seed("projects", "bob-private-project", {
+  userId: "bob",
+  projectName: "Bob private project",
+  leadId: "bob-private-lead",
+});
+webhookDb.seed("leads", "alice-stale-link-lead", {
+  userId: "alice",
+  name: "Alice lead",
+  projectId: "bob-private-project",
+});
+webhookDb.seed("projects", "alice-stale-link-project", {
+  userId: "alice",
+  projectName: "Alice project",
+  leadId: "bob-private-lead",
+});
+webhookDb.seed("webhook_idempotency", linkIntegrityHash, {
+  userId: "alice",
+  leadId: "alice-stale-link-lead",
+  projectId: "alice-stale-link-project",
+});
+const repairedLinks = await getOrCreateWebhookSubmission(
+  webhookDb, "alice", linkIntegrityKey, aliceLead, aliceProject
+);
+assert.equal(repairedLinks.lead.projectId, "alice-stale-link-project");
+assert.equal(webhookDb.read("leads", "alice-stale-link-lead").projectId, "alice-stale-link-project");
+assert.equal(repairedLinks.project.leadId, "alice-stale-link-lead");
+assert.equal(webhookDb.read("projects", "alice-stale-link-project").leadId, "alice-stale-link-lead");
+assert.equal(webhookDb.read("leads", "bob-private-lead").userId, "bob");
+assert.equal(webhookDb.read("projects", "bob-private-project").userId, "bob");
+
 console.log("Lead and webhook idempotency regression tests passed (create, replay, tenant isolation, and orphan repair).");
