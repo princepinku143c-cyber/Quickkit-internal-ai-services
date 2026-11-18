@@ -7,6 +7,7 @@ import { escapeHtml, getClientIp, isPlainObject, normalizeCreditAdjustment, norm
 import { getPublicSystemError } from './_lib/systemErrors.js';
 import { getSystemActionMethods } from './_lib/systemActionMethods.js';
 import { generatePaymentToken, verifyAndConsumePaymentToken } from './_lib/paymentToken.js';
+import { createLeadAndProjectAtomically } from './_lib/leadIdempotency.js';
 
 
 const success = (res, data) => res.status(200).json(data);
@@ -93,8 +94,6 @@ async function handleLead(req, res, userId) {
     if (payloadTooLarge(data)) return error(res, 'Lead payload is too large', 413);
     try {
         await checkRateLimit(admin, getClientIp(req), 'system-lead', 5);
-        const leadRef = admin.firestore().collection('leads').doc();
-        const projectRef = admin.firestore().collection('projects').doc();
         const leadData = {
             name: safeText(data.name, 120) || 'Guest',
             email: safeText(data.email, 254),
@@ -112,7 +111,25 @@ async function handleLead(req, res, userId) {
             status: 'NEW',
             createdAt: new Date().toISOString()
         };
-        await leadRef.set(leadData);
+        const projectData = {
+            userId: userId || null,
+            clientEmail: leadData.email,
+            clientName: leadData.name || leadData.businessName || 'Guest',
+            projectName: leadData.projectName,
+            businessName: leadData.businessName,
+            status: 'pending',
+            progress: 0,
+            price: leadData.price,
+            advancePaid: false,
+            createdAt: new Date().toISOString()
+        };
+
+        // Commit both linked records together before starting notifications or AI work.
+        const { leadRef, projectRef } = await createLeadAndProjectAtomically(
+            admin.firestore(),
+            leadData,
+            projectData
+        );
 
         // Asynchronously call the askAI service to draft a welcome email
         const leadId = leadRef.id;
@@ -130,19 +147,6 @@ async function handleLead(req, res, userId) {
                 console.error(`AI draft generation failed for lead ${leadId}.`);
             }
         })();
-
-        await projectRef.set({
-            userId: userId || null,
-            clientEmail: leadData.email,
-            clientName: leadData.name || leadData.businessName || 'Guest',
-            projectName: leadData.projectName,
-            businessName: leadData.businessName,
-            status: 'pending',
-            progress: 0,
-            price: leadData.price,
-            advancePaid: false,
-            createdAt: new Date().toISOString()
-        });
 
         const transporter = nodemailer.createTransport({
             service: 'gmail',
