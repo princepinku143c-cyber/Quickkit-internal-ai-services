@@ -1115,6 +1115,99 @@ assert.deepEqual(newCreditAccount.documents.get("new-user"), {
   lastUsed: "test-server-time",
 }, "a credit-first account must receive the same non-privileged profile defaults as signup");
 
+// Email and Google signup create the profile before the first AI request.
+// A missing credits field must receive the initial grant exactly once.
+const signupProfileAccount = createInMemoryCreditLedgerDb({
+  "signup-user": {
+    uid: "signup-user",
+    email: "signup@example.com",
+    displayName: "Signup User",
+    role: "client",
+    createdAt: "signup-created-time",
+  },
+});
+const signupProfileCharge = await chargeUserCredits(signupProfileAccount.db, "signup-user", {
+  amount: 10,
+  initialCredits: 500,
+  serverTimestamp: () => "test-server-time",
+});
+assert.deepEqual(signupProfileCharge, {
+  allowed: true,
+  remaining: 490,
+  created: false,
+});
+assert.deepEqual(signupProfileAccount.documents.get("signup-user"), {
+  uid: "signup-user",
+  email: "signup@example.com",
+  displayName: "Signup User",
+  role: "client",
+  createdAt: "signup-created-time",
+  plan: "free",
+  credits: 490,
+  lastUsed: "test-server-time",
+}, "a pre-created signup profile without credits must receive the initial grant without losing profile fields");
+
+const legacyProfileAccount = createInMemoryCreditLedgerDb({
+  "legacy-user": { email: "legacy@example.com" },
+});
+const legacyProfileCharge = await chargeUserCredits(legacyProfileAccount.db, "legacy-user", {
+  serverTimestamp: () => "legacy-server-time",
+});
+assert.deepEqual(legacyProfileCharge, {
+  allowed: true,
+  remaining: 490,
+  created: false,
+});
+assert.deepEqual(legacyProfileAccount.documents.get("legacy-user"), {
+  email: "legacy@example.com",
+  uid: "legacy-user",
+  role: "client",
+  plan: "free",
+  createdAt: "legacy-server-time",
+  credits: 490,
+  lastUsed: "legacy-server-time",
+}, "legacy profiles must receive only missing non-privileged defaults");
+
+const concurrentSignupAccount = createInMemoryCreditLedgerDb({
+  "concurrent-signup-user": {
+    uid: "concurrent-signup-user",
+    role: "client",
+  },
+});
+const concurrentSignupCharges = await Promise.all([
+  chargeUserCredits(concurrentSignupAccount.db, "concurrent-signup-user"),
+  chargeUserCredits(concurrentSignupAccount.db, "concurrent-signup-user"),
+]);
+assert.equal(
+  concurrentSignupCharges.filter((result) => result.allowed).length,
+  2,
+  "both concurrent first requests may spend from the one initial 500-credit grant",
+);
+assert.equal(
+  concurrentSignupAccount.documents.get("concurrent-signup-user").credits,
+  480,
+  "concurrent first-use requests must not grant the initial balance twice",
+);
+
+const nullCreditAccount = createInMemoryCreditLedgerDb({
+  "null-balance-user": { credits: null },
+});
+await assert.rejects(
+  chargeUserCredits(nullCreditAccount.db, "null-balance-user"),
+  (error) => error?.status === 503,
+  "an explicit null credit balance must fail closed rather than receive a fresh grant",
+);
+
+const mismatchedUidAccount = createInMemoryCreditLedgerDb({
+  "mismatched-user": { uid: "different-user", credits: 500 },
+});
+await assert.rejects(
+  chargeUserCredits(mismatchedUidAccount.db, "mismatched-user"),
+  (error) => error?.status === 503,
+  "a profile UID that differs from its document owner must fail closed",
+);
+assert.equal(mismatchedUidAccount.documents.get("mismatched-user").credits, 500);
+
 const insufficientCreditAccount = createInMemoryCreditLedgerDb({
   "low-balance-user": { credits: 9 },
 });
