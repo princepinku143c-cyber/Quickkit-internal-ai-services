@@ -311,7 +311,6 @@ assert.ok(
 assert.doesNotMatch(systemRouteSource, /await leadRef\.set\(leadData\)/);
 assert.doesNotMatch(systemRouteSource, /await projectRef\.set\(/);
 
-console.log("Lead and webhook idempotency regression tests passed (create, replay, tenant isolation, and orphan repair).");
 
 
 const successfulJson = await fetchJsonWithTimeout(
@@ -366,3 +365,5 @@ assert.ok(
   !systemRouteSource.includes("await fetch(`${odooUrl}/jsonrpc`,"),
   "Odoo calls must not bypass the timeout helper",
 );
+
+console.log("Lead and webhook idempotency regression tests passed (create, replay, tenant isolation, and orphan repair).");
