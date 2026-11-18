@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createRankTrackerHandler } from "../api/rank-tracker.js";
+import { createRankTrackerHandler, fetchTavilyJsonWithTimeout } from "../api/rank-tracker.js";
 
 function createResponse() {
   return {
@@ -17,17 +17,32 @@ function createResponse() {
 
 const originalKey = process.env.TAVILY_API_KEY;
 const originalFetch = globalThis.fetch;
-const originalSetTimeout = globalThis.setTimeout;
 const adminClient = { testAdminClient: true };
 const createHandler = (rateLimit = async () => true) => createRankTrackerHandler({
   adminClient,
   rateLimit,
   resolveClientIp: (req) => req.clientIp || "203.0.113.10",
+  sleep: async () => {},
 });
 
 try {
   const source = await readFile(new URL("../api/rank-tracker.js", import.meta.url), "utf8");
   assert.doesNotMatch(source, /tvly-[A-Za-z0-9]/, "provider credentials must not be hardcoded");
+
+  const bodyTimeoutError = await fetchTavilyJsonWithTimeout("https://api.tavily.com/search", {}, {
+    timeoutMs: 10,
+    fetchImpl: async (_url, options) => ({
+      ok: true,
+      json: () => new Promise((_resolve, reject) => {
+        options.signal.addEventListener("abort", () => reject(options.signal.reason), { once: true });
+      }),
+    }),
+  }).then(() => null, (error) => error);
+  assert.equal(
+    bodyTimeoutError?.message,
+    "Search provider request timed out.",
+    "the provider deadline must remain active while the JSON response body is being read",
+  );
 
   let fetchCalls = 0;
   let rateLimitCalls = 0;
@@ -49,13 +64,13 @@ try {
   assert.equal(optionsResponse.ended, true);
 
   process.env.TAVILY_API_KEY = "unit-test-only-key";
-  globalThis.setTimeout = (callback) => { callback(); return 0; };
   const limiterArgs = [];
   const successHandler = createHandler(async (...args) => { limiterArgs.push(args); });
   globalThis.fetch = async (url, options) => {
     fetchCalls += 1;
     assert.equal(url, "https://api.tavily.com/search");
     assert.equal(options.method, "POST");
+    assert.ok(options.signal instanceof AbortSignal, "provider requests must carry an abort signal");
     assert.equal(JSON.parse(options.body).api_key, "unit-test-only-key");
     return {
       ok: true,
@@ -116,5 +131,4 @@ try {
   if (originalKey === undefined) delete process.env.TAVILY_API_KEY;
   else process.env.TAVILY_API_KEY = originalKey;
   globalThis.fetch = originalFetch;
-  globalThis.setTimeout = originalSetTimeout;
 }
