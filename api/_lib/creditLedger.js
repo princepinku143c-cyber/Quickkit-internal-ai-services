@@ -52,20 +52,41 @@ export async function chargeUserCredits(
       return { allowed: true, remaining, created: true };
     }
 
-    const storedCredits = userSnapshot.data()?.credits ?? 0;
-    if (!Number.isSafeInteger(storedCredits) || storedCredits < 0) {
+    const userData = userSnapshot.data() ?? {};
+    if (userData.uid !== undefined && userData.uid !== userId) {
+      const error = new Error("Stored user profile identity is invalid.");
+      error.status = 503;
+      throw error;
+    }
+
+    // Signup creates a profile before the first AI request, but does not
+    // create a credit balance. Grant the initial balance exactly once when
+    // the credits field is absent; an explicit zero or malformed value is
+    // never treated as a fresh account.
+    const hasCreditBalance = Object.prototype.hasOwnProperty.call(userData, "credits");
+    const storedCredits = userData.credits;
+    if (hasCreditBalance && (!Number.isSafeInteger(storedCredits) || storedCredits < 0)) {
       const error = new Error("Stored user credit balance is invalid.");
       error.status = 503;
       throw error;
     }
-    if (storedCredits < amount) {
+    if (hasCreditBalance && storedCredits < amount) {
       return { allowed: false, remaining: storedCredits, created: false };
     }
 
-    const remaining = storedCredits - amount;
+    const timestamp = serverTimestamp();
+    const profileDefaults = {
+      ...(userData.uid === undefined ? { uid: userId } : {}),
+      ...(userData.role === undefined ? { role: "client" } : {}),
+      ...(userData.plan === undefined ? { plan: "free" } : {}),
+      ...(userData.createdAt === undefined ? { createdAt: timestamp } : {}),
+    };
+    const remaining = (hasCreditBalance ? storedCredits : initialCredits) - amount;
+
     transaction.update(userRef, {
+      ...profileDefaults,
       credits: remaining,
-      lastUsed: serverTimestamp(),
+      lastUsed: timestamp,
     });
     return { allowed: true, remaining, created: false };
   });
