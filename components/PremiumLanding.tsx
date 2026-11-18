@@ -76,9 +76,11 @@ const workflow = [
 
 export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) => {
   const [showAdDemo, setShowAdDemo] = useState(false);
+  const [pricingTab, setPricingTab] = useState<'aeo' | 'workforce'>('aeo');
 
-  const openWhatsApp = () => {
-    const message = encodeURIComponent('Hi QuickKitAI × Raja AI Systems, I want to see the 5-Agent AI Workforce demo and the pilot offer.');
+  const openWhatsApp = (customMsg?: string) => {
+    const text = customMsg || 'Hi QuickKitAI × Raja AI Systems, I want to discuss your AI services.';
+    const message = encodeURIComponent(text);
     window.open(`${WHATSAPP_DIRECT_URL}?text=${message}`, '_blank', 'noopener,noreferrer');
   };
 
@@ -329,29 +331,226 @@ export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) =>
 
       <section id="offer" className="relative z-10">
         <div className="mx-auto max-w-7xl px-5 py-20 md:px-8 md:py-28">
-          <div className="overflow-hidden rounded-[2.25rem] border border-amber-300/15 bg-gradient-to-br from-amber-300/[0.09] via-white/[0.03] to-rose-400/[0.06] p-6 md:p-10">
-            <div className="grid gap-10 lg:grid-cols-[1fr_.9fr] lg:items-center">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-black/20 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-amber-200"><Sparkles className="h-3.5 w-3.5" /> Pilot offer · up to {RAJA_COMMERCIAL_OFFER.pilotClientSlots} clients</div>
-                <h2 className="mt-5 max-w-3xl text-4xl font-black tracking-[-0.045em] md:text-6xl">Premium execution without the messy agency layer.</h2>
-                <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-400">One managed workforce covering five core jobs. Scope, traffic conditions, integrations and any measurable performance targets are agreed in writing before production; example metrics are not a promise of outcomes.</p>
-                <div className="mt-7 grid gap-3 sm:grid-cols-2">
-                  {['5 specialized AI agents','WhatsApp-first customer journey','Managed deployment + operations','Verification before live'].map(item => <div key={item} className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-black/20 px-4 py-3 text-xs font-bold text-slate-300"><Check className="h-4 w-4 text-emerald-300" />{item}</div>)}
+          <div className="text-center max-w-3xl mx-auto mb-12">
+            <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-black/40 px-3.5 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-amber-200">
+              <Sparkles className="h-3.5 w-3.5" /> Commercial Service Plans
+            </div>
+            <h2 className="mt-4 text-4xl font-black tracking-[-0.045em] md:text-6xl text-white">
+              Transparent Engineering. Zero Glitches.
+            </h2>
+            <p className="mt-4 text-sm leading-7 text-slate-400">
+              Select between our dedicated AEO, SEO & GEO Search Visibility Engine or our full Autonomous AI Workforce.
+            </p>
+
+            {/* Plan Category Switcher */}
+            <div className="mt-8 inline-flex p-1.5 rounded-2xl border border-white/[0.08] bg-black/60 backdrop-blur-xl">
+              <button
+                type="button"
+                onClick={() => setPricingTab('aeo')}
+                className={`flex items-center gap-2.5 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                  pricingTab === 'aeo'
+                    ? 'bg-gradient-to-r from-amber-400 to-amber-500 text-black shadow-[0_4px_25px_rgba(245,158,11,.3)]'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Globe2 className="h-4 w-4" /> AEO, SEO & GEO Engine
+              </button>
+              <button
+                type="button"
+                onClick={() => setPricingTab('workforce')}
+                className={`flex items-center gap-2.5 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                  pricingTab === 'workforce'
+                    ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-[0_4px_25px_rgba(59,130,246,.3)]'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <UsersRound className="h-4 w-4" /> Autonomous AI Workforce
+              </button>
+            </div>
+          </div>
+
+          {pricingTab === 'aeo' ? (
+            /* TAB 1: AEO, SEO & GEO Engine (2 Variants) */
+            <div className="grid gap-8 lg:grid-cols-2 items-stretch max-w-6xl mx-auto">
+              {/* Variant 1: AI Technical Foundation Fix */}
+              <div className="rounded-[2.25rem] border border-white/[0.09] bg-[#090b10]/95 p-7 md:p-10 flex flex-col justify-between shadow-[0_20px_60px_rgba(0,0,0,.4)] hover:border-white/20 transition-all">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-mono font-black uppercase tracking-[0.2em] text-slate-500">Tier 01</span>
+                    <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[9px] font-black uppercase tracking-widest text-slate-300">One-Time Setup</span>
+                  </div>
+                  <h3 className="mt-5 text-2xl md:text-3xl font-black text-white">AI Technical Foundation & Schema Fix</h3>
+                  <p className="mt-3 text-xs leading-6 text-slate-400">
+                    Complete code architecture overhaul to make your website readable, verified, and eligible for Google Rich Snippets and AI Search discovery without recurring fees.
+                  </p>
+
+                  <div className="mt-6 rounded-2xl border border-white/[0.06] bg-black/40 p-5">
+                    <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500">One-Time Investment</div>
+                    <div className="mt-1 flex items-baseline gap-2">
+                      <span className="text-sm text-slate-600 line-through">₹30,000</span>
+                      <span className="text-4xl font-black text-white">₹15,000</span>
+                    </div>
+                    <div className="mt-1 text-[11px] text-emerald-300 font-bold">50% introductory rate · Zero monthly commitment</div>
+                  </div>
+
+                  <div className="mt-7 space-y-3">
+                    {[
+                      'Enterprise JSON-LD Schema Architecture (Organization, LocalBusiness, FAQ)',
+                      'Autonomous AI Crawler Ingestion Protocols (llms.txt, llms-full.txt, robots.txt)',
+                      'Core Web Vitals & Asset Latency Compression (Target <1.5s load speed)',
+                      'Google Rich Results Official Validation Certificate (100% Green Pass)',
+                      'Google Search Console & Canonical Sitemap Indexing Submission',
+                      'Clean Handover & Deployment Verification',
+                    ].map(f => (
+                      <div key={f} className="flex items-start gap-2.5">
+                        <Check className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
+                        <span className="text-xs leading-relaxed text-slate-300">{f}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-8 pt-6 border-t border-white/[0.06]">
+                  <button
+                    type="button"
+                    onClick={() => openWhatsApp('Hi QuickKitAI, I want to book the AI Technical Foundation & Schema Fix (₹15,000 one-time).')}
+                    className="w-full rounded-xl bg-white py-3.5 text-xs font-black uppercase tracking-widest text-black transition hover:bg-amber-100 flex items-center justify-center gap-2"
+                  >
+                    Claim Technical Fix <ArrowRight className="h-4 w-4" />
+                  </button>
+                  <p className="mt-2 text-center text-[10px] text-slate-600">7-Day Deployment Target · Staged & Verified</p>
                 </div>
               </div>
 
-              <div className="rounded-[2rem] border border-white/[0.09] bg-[#090b10]/90 p-6 shadow-[0_30px_80px_rgba(0,0,0,.35)]">
-                <div className="flex items-center justify-between"><span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-600">Pilot pricing</span><span className="rounded-full bg-emerald-400/10 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-emerald-200">50% PILOT DISCOUNT</span></div>
-                <div className="mt-6 grid grid-cols-2 gap-3">
-                  <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4"><div className="text-[9px] font-black uppercase tracking-widest text-slate-600">Regular</div><div className="mt-3 text-2xl font-black line-through decoration-white/25">₹70,000</div><div className="mt-1 text-[10px] text-slate-500">setup</div><div className="mt-4 text-lg font-black">₹2,40,000</div><div className="text-[10px] text-slate-500">per month</div></div>
-                  <div className="rounded-2xl border border-amber-200/20 bg-gradient-to-br from-amber-200/10 to-rose-300/10 p-4"><div className="text-[9px] font-black uppercase tracking-widest text-amber-200">Pilot</div><div className="mt-3 text-2xl font-black text-white">₹35,000</div><div className="mt-1 text-[10px] text-slate-400">setup</div><div className="mt-4 text-lg font-black text-amber-100">₹1,20,000</div><div className="text-[10px] text-slate-400">per month</div></div>
+              {/* Variant 2: AI Search Growth & Autonomous Sentinel */}
+              <div className="rounded-[2.25rem] border border-amber-300/40 bg-gradient-to-b from-amber-400/[0.07] via-[#090b10] to-[#090b10] p-7 md:p-10 flex flex-col justify-between shadow-[0_25px_80px_rgba(245,158,11,.1)] relative overflow-hidden">
+                <div className="absolute top-4 right-4">
+                  <span className="rounded-full border border-amber-300/30 bg-amber-400/15 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-amber-200 shadow-[0_0_20px_rgba(245,158,11,.2)]">
+                    Most Popular
+                  </span>
                 </div>
-                <div className="mt-4 rounded-2xl border border-emerald-300/10 bg-emerald-400/[0.05] p-4"><div className="flex items-center gap-2 text-xs font-black text-emerald-100"><ShieldCheck className="h-4 w-4" /> Performance SLA</div><div className="mt-2 text-sm text-slate-400">Real estate: {RAJA_COMMERCIAL_OFFER.realEstateSlaVisits} qualified physical site visits in {RAJA_COMMERCIAL_OFFER.slaDays} days. Healthcare: {RAJA_COMMERCIAL_OFFER.healthcareSlaConsultations} qualified consultations in {RAJA_COMMERCIAL_OFFER.slaDays} days. The targets are binding only when explicitly included in the signed SLA; availability and eligibility are confirmed in writing.</div></div>
-                <button onClick={onBookDemo} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3.5 text-xs font-black uppercase tracking-widest text-black transition hover:bg-amber-100">Claim the Pilot <ArrowRight className="h-4 w-4" /></button>
-                <button onClick={openWhatsApp} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-5 py-3.5 text-xs font-black uppercase tracking-widest text-white transition hover:bg-white/[0.06]"><MessageCircle className="h-4 w-4 text-emerald-300" /> Chat on WhatsApp</button>
+
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono font-black uppercase tracking-[0.2em] text-amber-300">Tier 02 · Retainer</span>
+                  </div>
+                  <h3 className="mt-5 text-2xl md:text-3xl font-black text-white">AI Search Growth & Autonomous Sentinel</h3>
+                  <p className="mt-3 text-xs leading-6 text-slate-400">
+                    Continuous AI citation visibility and health defense across ChatGPT, Perplexity, Gemini, and Claude with automated daily audit logs and bi-weekly reports.
+                  </p>
+
+                  <div className="mt-6 rounded-2xl border border-amber-300/20 bg-black/50 p-5">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500">Implementation Setup</div>
+                        <div className="mt-1 flex items-baseline gap-1.5">
+                          <span className="text-xs text-slate-600 line-through">₹40,000</span>
+                          <span className="text-2xl font-black text-white">₹20,000</span>
+                        </div>
+                        <div className="text-[10px] text-slate-500">paid upfront</div>
+                      </div>
+                      <div>
+                        <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500">Monthly Management</div>
+                        <div className="mt-1 flex items-baseline gap-1.5">
+                          <span className="text-xs text-slate-600 line-through">₹50,000</span>
+                          <span className="text-2xl font-black text-emerald-300">₹25,000</span>
+                        </div>
+                        <div className="text-[10px] text-slate-500">per month (Day 30+)</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-7 space-y-3">
+                    {[
+                      'Everything included in AI Technical Foundation Fix',
+                      'Automated Daily Health & AI Indexing Sentinel (30-day rolling log)',
+                      'Multi-Engine Citation Tracking (ChatGPT, Perplexity, Gemini, Claude)',
+                      'Continuous Entity Schema Expansions (New inventory, services & FAQs)',
+                      'Bi-Weekly Executive Proof & Verification Audit Reports',
+                      'Ongoing Core Web Vitals, Bot Access & Security Guard',
+                    ].map(f => (
+                      <div key={f} className="flex items-start gap-2.5">
+                        <Check className="h-4 w-4 text-emerald-400 mt-0.5 shrink-0" />
+                        <span className="text-xs leading-relaxed text-slate-200">{f}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="mt-8 pt-6 border-t border-white/[0.06]">
+                  <button
+                    type="button"
+                    onClick={() => openWhatsApp('Hi QuickKitAI, I want to start the AI Search Growth & Autonomous Sentinel Retainer (₹20K setup + ₹25K/mo).')}
+                    className="w-full rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 py-3.5 text-xs font-black uppercase tracking-widest text-black transition hover:opacity-95 shadow-[0_10px_30px_rgba(245,158,11,.2)] flex items-center justify-center gap-2"
+                  >
+                    Start AI Growth Plan <ArrowRight className="h-4 w-4" />
+                  </button>
+                  <p className="mt-2 text-center text-[10px] text-slate-600">Daily Automated Monitoring · Fortnightly Reports</p>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            /* TAB 2: Autonomous AI Workforce (WhatsApp + CRM) */
+            <div className="overflow-hidden rounded-[2.25rem] border border-amber-300/15 bg-gradient-to-br from-amber-300/[0.09] via-white/[0.03] to-rose-400/[0.06] p-6 md:p-10">
+              <div className="grid gap-10 lg:grid-cols-[1fr_.9fr] lg:items-center">
+                <div>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-black/20 px-3 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-amber-200">
+                    <Sparkles className="h-3.5 w-3.5" /> Pilot offer · up to {RAJA_COMMERCIAL_OFFER.pilotClientSlots} clients
+                  </div>
+                  <h2 className="mt-5 max-w-3xl text-4xl font-black tracking-[-0.045em] md:text-6xl text-white">
+                    Premium execution without the messy agency layer.
+                  </h2>
+                  <p className="mt-5 max-w-2xl text-sm leading-7 text-slate-400">
+                    One managed workforce covering five core jobs. Scope, traffic conditions, integrations and any measurable performance targets are agreed in writing before production; example metrics are not a promise of outcomes.
+                  </p>
+                  <div className="mt-7 grid gap-3 sm:grid-cols-2">
+                    {['5 specialized AI agents','WhatsApp-first customer journey','Managed deployment + operations','Verification before live'].map(item => (
+                      <div key={item} className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-black/20 px-4 py-3 text-xs font-bold text-slate-300">
+                        <Check className="h-4 w-4 text-emerald-300" />{item}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="rounded-[2rem] border border-white/[0.09] bg-[#090b10]/90 p-6 shadow-[0_30px_80px_rgba(0,0,0,.35)]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[9px] font-black uppercase tracking-[0.2em] text-slate-600">Pilot pricing</span>
+                    <span className="rounded-full bg-emerald-400/10 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-emerald-200">50% PILOT DISCOUNT</span>
+                  </div>
+                  <div className="mt-6 grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.025] p-4">
+                      <div className="text-[9px] font-black uppercase tracking-widest text-slate-600">Regular</div>
+                      <div className="mt-3 text-2xl font-black line-through decoration-white/25">₹70,000</div>
+                      <div className="mt-1 text-[10px] text-slate-500">setup</div>
+                      <div className="mt-4 text-lg font-black">₹2,40,000</div>
+                      <div className="text-[10px] text-slate-500">per month</div>
+                    </div>
+                    <div className="rounded-2xl border border-amber-200/20 bg-gradient-to-br from-amber-200/10 to-rose-300/10 p-4">
+                      <div className="text-[9px] font-black uppercase tracking-widest text-amber-200">Pilot</div>
+                      <div className="mt-3 text-2xl font-black text-white">₹35,000</div>
+                      <div className="mt-1 text-[10px] text-slate-400">setup</div>
+                      <div className="mt-4 text-lg font-black text-amber-100">₹1,20,000</div>
+                      <div className="text-[10px] text-slate-400">per month</div>
+                    </div>
+                  </div>
+                  <div className="mt-4 rounded-2xl border border-emerald-300/10 bg-emerald-400/[0.05] p-4">
+                    <div className="flex items-center gap-2 text-xs font-black text-emerald-100">
+                      <ShieldCheck className="h-4 w-4" /> Performance SLA
+                    </div>
+                    <div className="mt-2 text-sm text-slate-400">
+                      Real estate: {RAJA_COMMERCIAL_OFFER.realEstateSlaVisits} qualified physical site visits in {RAJA_COMMERCIAL_OFFER.slaDays} days. Healthcare: {RAJA_COMMERCIAL_OFFER.healthcareSlaConsultations} qualified consultations in {RAJA_COMMERCIAL_OFFER.slaDays} days. The targets are binding only when explicitly included in the signed SLA; availability and eligibility are confirmed in writing.
+                    </div>
+                  </div>
+                  <button onClick={onBookDemo} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-white px-5 py-3.5 text-xs font-black uppercase tracking-widest text-black transition hover:bg-amber-100">
+                    Claim the Pilot <ArrowRight className="h-4 w-4" />
+                  </button>
+                  <button onClick={() => openWhatsApp()} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-5 py-3.5 text-xs font-black uppercase tracking-widest text-white transition hover:bg-white/[0.06]">
+                    <MessageCircle className="h-4 w-4 text-emerald-300" /> Chat on WhatsApp
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </section>
 
