@@ -70,6 +70,14 @@ export function safeMetadata(value, maxEntries = 30) {
   }
   return result;
 }
+/** Remove reserved idempotency-key aliases before persisting webhook metadata. */
+export function stripWebhookIdempotencyMetadata(value) {
+  if (!isPlainObject(value)) return {};
+  return Object.fromEntries(
+    Object.entries(value).filter(([rawKey]) => !/^idempotency[-_]?key$/i.test(rawKey)),
+  );
+}
+
 export function payloadTooLarge(value, maxBytes = 32 * 1024) {
   try { return Buffer.byteLength(JSON.stringify(value), "utf8") > maxBytes; }
   catch { return true; }

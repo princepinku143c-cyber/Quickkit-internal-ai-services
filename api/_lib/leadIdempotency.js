@@ -71,16 +71,24 @@ export async function getOrCreateWebhookSubmission(db, userId, idempotencyKey, l
         ? db.collection("projects").doc(existing.projectId)
         : db.collection("projects").doc();
       const [leadSnap, projectSnap] = await Promise.all([tx.get(leadRef), tx.get(projectRef)]);
+      const existingLead = leadSnap.exists ? leadSnap.data() : null;
+      const existingProject = projectSnap.exists ? projectSnap.data() : null;
 
-      const lead = leadSnap.exists
-        ? leadSnap.data()
-        : { ...leadData, id: leadRef.id, projectId: projectRef.id };
-      const project = projectSnap.exists
-        ? { ...projectSnap.data(), leadId: leadRef.id }
+      // A corrupted/stale idempotency mapping must never return another tenant's documents.
+      if (existingLead && existingLead.userId !== userId) {
+        throw new Error("Webhook idempotency lead tenant mismatch.");
+      }
+      if (existingProject && existingProject.userId !== userId) {
+        throw new Error("Webhook idempotency project tenant mismatch.");
+      }
+
+      const lead = existingLead || { ...leadData, id: leadRef.id, projectId: projectRef.id };
+      const project = existingProject
+        ? { ...existingProject, leadId: leadRef.id }
         : { ...projectData, leadId: leadRef.id };
 
       if (!leadSnap.exists) tx.set(leadRef, lead);
-      if (!projectSnap.exists || projectSnap.data()?.leadId !== leadRef.id) tx.set(projectRef, project);
+      if (!projectSnap.exists || existingProject?.leadId !== leadRef.id) tx.set(projectRef, project);
       tx.set(keyRef, {
         userId,
         leadId: leadRef.id,

@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { getOrCreateLead, getOrCreateWebhookSubmission, hashIdempotencyKey } from "../api/_lib/leadIdempotency.js";
+import { stripWebhookIdempotencyMetadata } from "../api/_lib/input.js";
 
 class FakeDocumentReference {
   constructor(db, collectionName, id) {
@@ -160,6 +162,58 @@ await assert.rejects(
   ),
   /ownership must match/,
   "webhook lead ownership must match the authenticated tenant UID"
+);
+
+const webhookRouteSource = readFileSync(new URL("../api/webhook.js", import.meta.url), "utf8");
+assert.ok(
+  webhookRouteSource.includes("stripWebhookIdempotencyMetadata"),
+  "webhook route must remove reserved idempotency-key aliases before persisting custom metadata",
+);
+assert.deepEqual(
+  stripWebhookIdempotencyMetadata({
+    source: "website",
+    campaign: "spring",
+    idempotencyKey: "raw-key-value",
+    "idempotency-key": "raw-header-value",
+    idempotency_key: "raw-underscore-value",
+    IdempotencyKey: "raw-case-variant",
+  }),
+  { source: "website", campaign: "spring" },
+  "raw idempotency-key aliases must never be copied into webhook metadata",
+);
+
+const crossTenantLeadKey = "webhook-cross-tenant-lead-0001";
+const crossTenantLeadHash = hashIdempotencyKey(JSON.stringify(["alice", crossTenantLeadKey]));
+webhookDb.seed("leads", "bob-private-lead", { userId: "bob", name: "Bob private lead" });
+webhookDb.seed("projects", "alice-project-for-bob-lead", {
+  userId: "alice",
+  projectName: "Alice project",
+  leadId: "bob-private-lead",
+});
+webhookDb.seed("webhook_idempotency", crossTenantLeadHash, {
+  userId: "alice",
+  leadId: "bob-private-lead",
+  projectId: "alice-project-for-bob-lead",
+});
+await assert.rejects(
+  () => getOrCreateWebhookSubmission(webhookDb, "alice", crossTenantLeadKey, aliceLead, aliceProject),
+  /lead tenant mismatch/,
+  "an Alice idempotency record must not return a Bob-owned lead",
+);
+
+const crossTenantProjectKey = "webhook-cross-tenant-project-0001";
+const crossTenantProjectHash = hashIdempotencyKey(JSON.stringify(["alice", crossTenantProjectKey]));
+webhookDb.seed("leads", "alice-owned-lead", { userId: "alice", name: "Alice lead" });
+webhookDb.seed("projects", "bob-private-project", { userId: "bob", projectName: "Bob private project" });
+webhookDb.seed("webhook_idempotency", crossTenantProjectHash, {
+  userId: "alice",
+  leadId: "alice-owned-lead",
+  projectId: "bob-private-project",
+});
+await assert.rejects(
+  () => getOrCreateWebhookSubmission(webhookDb, "alice", crossTenantProjectKey, aliceLead, aliceProject),
+  /project tenant mismatch/,
+  "an Alice idempotency record must not return a Bob-owned project",
 );
 
 console.log("Lead and webhook idempotency regression tests passed (create, replay, tenant isolation, and orphan repair).");

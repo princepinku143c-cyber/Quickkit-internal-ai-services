@@ -3,7 +3,7 @@ import { logSafeError } from "./_lib/safeErrorLog.js";
 import { constantTimeSecretEqual } from "./_lib/constantTimeSecret.js";
 import { checkRateLimit } from "./_lib/security.js";
 import { getOrCreateWebhookSubmission } from "./_lib/leadIdempotency.js";
-import { getClientIp, isPlainObject, normalizeFirestoreDocumentId, payloadTooLarge, safeMetadata, safeNumber, safeText } from "./_lib/input.js";
+import { getClientIp, isPlainObject, normalizeFirestoreDocumentId, payloadTooLarge, safeMetadata, safeNumber, safeText, stripWebhookIdempotencyMetadata } from "./_lib/input.js";
 import { success, error } from "./_lib/response.js";
 import { askAI } from "./_lib/services/aiService.js";
 
@@ -59,10 +59,10 @@ export default async function handler(req, res) {
     for (const [key, value] of Object.entries(data)) {
       if (!standardKeys.includes(key) && ['string', 'number', 'boolean'].includes(typeof value)) extraMetadata[key] = value;
     }
-    const custom_metadata = safeMetadata({
+    const custom_metadata = safeMetadata(stripWebhookIdempotencyMetadata({
       ...(isPlainObject(data.custom_metadata) ? data.custom_metadata : {}),
       ...extraMetadata
-    });
+    }));
     const leadData = {
       name: safeText(data.name, 120) || 'Webhook Inbound Lead',
       email: safeText(data.email, 254),
