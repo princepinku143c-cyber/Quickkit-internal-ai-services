@@ -1010,9 +1010,10 @@ assert.ok(
     && aiResponseTimeoutClearIndex > aiResponseBodyIndex,
   "AI provider timeout must remain active until the response body has been parsed",
 );
-assert.ok(
-  aiServiceSource.includes("const data = await res.json();\\n    clearTimeout(timeoutId);"),
-  "successful AI responses must clear the deadline only after JSON parsing completes",
+assert.equal(
+  aiResponseTimeoutClearIndex,
+  aiResponseBodyIndex + "const data = await res.json();".length + 5,
+  "successful AI responses must clear the deadline immediately after JSON parsing completes",
 );
 
 
