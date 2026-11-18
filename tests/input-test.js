@@ -8,6 +8,7 @@ import { normalizeProjectCreateInput } from "../api/_lib/projectInput.js";
 import { getPublicSystemError } from "../api/_lib/systemErrors.js";
 import { logSafeError, safeErrorType } from "../api/_lib/safeErrorLog.js";
 import { checkRateLimit } from "../api/_lib/security.js";
+import { chargeUserCredits } from "../api/_lib/creditLedger.js";
 import { fetchPublicWebsite, isPublicIpAddress, resolvePublicWebsiteTarget } from "../api/_lib/safeWebsiteFetch.js";
 import { SYSTEM_ACTION_METHODS, getSystemActionMethods } from "../api/_lib/systemActionMethods.js";
 import { constantTimeSecretEqual } from "../api/_lib/constantTimeSecret.js";
@@ -1018,3 +1019,124 @@ assert.match(
   /\{isFirebaseConfigured\s*&&\s*!auth\.currentUser\s*&&\s*<>/,
   "Google sign-in UI must be hidden when Firebase client configuration is incomplete",
 );
+
+
+// AI credit charging must be transactional so concurrent requests cannot
+// both spend the same final balance.
+function createInMemoryCreditLedgerDb(initialUsers = {}) {
+  const documents = new Map(
+    Object.entries(initialUsers).map(([userId, data]) => [userId, { ...data }]),
+  );
+  let transactionQueue = Promise.resolve();
+
+  const db = {
+    collection(name) {
+      assert.equal(name, "users");
+      return {
+        doc(id) {
+          return { id };
+        },
+      };
+    },
+    runTransaction(callback) {
+      const run = transactionQueue.then(async () => {
+        const writes = [];
+        const transaction = {
+          async get(reference) {
+            const stored = documents.get(reference.id);
+            return {
+              exists: stored !== undefined,
+              data: () => stored ? { ...stored } : undefined,
+            };
+          },
+          set(reference, value) {
+            writes.push(() => documents.set(reference.id, { ...value }));
+          },
+          update(reference, value) {
+            writes.push(() => {
+              const stored = documents.get(reference.id);
+              if (!stored) throw new Error("Cannot update a missing user.");
+              documents.set(reference.id, { ...stored, ...value });
+            });
+          },
+        };
+
+        const result = await callback(transaction);
+        for (const applyWrite of writes) applyWrite();
+        return result;
+      });
+      transactionQueue = run.then(() => undefined, () => undefined);
+      return run;
+    },
+  };
+
+  return { db, documents };
+}
+
+assert.ok(
+  aiApiSource.includes('import { chargeUserCredits } from "./_lib/creditLedger.js";')
+    && aiApiSource.includes("chargeUserCredits(admin.firestore(), userId"),
+  "authenticated Kelly requests must use the transactional credit ledger",
+);
+assert.doesNotMatch(
+  aiApiSource,
+  /const userSnap = await userRef\.get\(\)[\s\S]*?userRef\.update\(/,
+  "Kelly must not read and decrement a credit balance in separate operations",
+);
+
+const newCreditAccount = createInMemoryCreditLedgerDb();
+const newCreditCharge = await chargeUserCredits(newCreditAccount.db, "new-user", {
+  amount: 10,
+  initialCredits: 500,
+  serverTimestamp: () => "test-server-time",
+});
+assert.deepEqual(newCreditCharge, { allowed: true, remaining: 490, created: true });
+assert.deepEqual(newCreditAccount.documents.get("new-user"), {
+  credits: 490,
+  createdAt: "test-server-time",
+  lastUsed: "test-server-time",
+});
+
+const insufficientCreditAccount = createInMemoryCreditLedgerDb({
+  "low-balance-user": { credits: 9 },
+});
+const insufficientCreditCharge = await chargeUserCredits(
+  insufficientCreditAccount.db,
+  "low-balance-user",
+  { amount: 10, serverTimestamp: () => "test-server-time" },
+);
+assert.deepEqual(insufficientCreditCharge, {
+  allowed: false,
+  remaining: 9,
+  created: false,
+});
+assert.equal(insufficientCreditAccount.documents.get("low-balance-user").credits, 9);
+
+const invalidCreditAccount = createInMemoryCreditLedgerDb({
+  "invalid-balance-user": { credits: "500" },
+});
+await assert.rejects(
+  chargeUserCredits(invalidCreditAccount.db, "invalid-balance-user"),
+  (error) => error?.status === 503,
+  "a malformed stored credit balance must fail closed",
+);
+assert.equal(invalidCreditAccount.documents.get("invalid-balance-user").credits, "500");
+
+const concurrentCreditAccount = createInMemoryCreditLedgerDb({
+  "last-credit-user": { credits: 10 },
+});
+const concurrentCharges = await Promise.all([
+  chargeUserCredits(concurrentCreditAccount.db, "last-credit-user"),
+  chargeUserCredits(concurrentCreditAccount.db, "last-credit-user"),
+]);
+assert.equal(
+  concurrentCharges.filter((result) => result.allowed).length,
+  1,
+  "only one concurrent request may spend the final 10 credits",
+);
+assert.equal(
+  concurrentCreditAccount.documents.get("last-credit-user").credits,
+  0,
+  "concurrent credit charging must never produce a negative balance",
+);
+console.log("Transactional AI credit ledger regression tests passed.");
