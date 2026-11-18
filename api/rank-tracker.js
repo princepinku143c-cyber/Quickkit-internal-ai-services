@@ -85,7 +85,7 @@ export function createRankTrackerHandler({
     }
 
     const results = [];
-    for (const keyword of KEYWORDS) {
+    for (const [index, keyword] of KEYWORDS.entries()) {
       try {
         const providerResponse = await fetchJson(TAVILY_ENDPOINT, {
           method: "POST",
@@ -113,7 +113,7 @@ export function createRankTrackerHandler({
         results.push({ keyword, rank: null, found: false, error: "Search request failed" });
       }
 
-      await sleep(1500);
+      if (index < KEYWORDS.length - 1) await sleep(1500);
     }
 
     return res.json({

@@ -18,11 +18,11 @@ function createResponse() {
 const originalKey = process.env.TAVILY_API_KEY;
 const originalFetch = globalThis.fetch;
 const adminClient = { testAdminClient: true };
-const createHandler = (rateLimit = async () => true) => createRankTrackerHandler({
+const createHandler = (rateLimit = async () => true, sleep = async () => {}) => createRankTrackerHandler({
   adminClient,
   rateLimit,
   resolveClientIp: (req) => req.clientIp || "203.0.113.10",
-  sleep: async () => {},
+  sleep,
 });
 
 try {
@@ -65,7 +65,11 @@ try {
 
   process.env.TAVILY_API_KEY = "unit-test-only-key";
   const limiterArgs = [];
-  const successHandler = createHandler(async (...args) => { limiterArgs.push(args); });
+  const sleepCalls = [];
+  const successHandler = createHandler(
+    async (...args) => { limiterArgs.push(args); },
+    async (ms) => { sleepCalls.push(ms); },
+  );
   globalThis.fetch = async (url, options) => {
     fetchCalls += 1;
     assert.equal(url, "https://api.tavily.com/search");
@@ -93,6 +97,8 @@ try {
   assert.equal(limiterArgs[0][1], "203.0.113.25");
   assert.equal(limiterArgs[0][2], "rank-tracker");
   assert.equal(limiterArgs[0][3], 2, "allow at most two full scans per IP per minute");
+  assert.equal(sleepCalls.length, 9, "provider pacing should occur only between keywords, not after the final request");
+  assert.ok(sleepCalls.every((ms) => ms === 1500), "inter-keyword pacing must remain 1.5 seconds");
 
   fetchCalls = 0;
   const deniedError = Object.assign(new Error("internal limiter details"), { status: 429, retryAfter: 37 });
