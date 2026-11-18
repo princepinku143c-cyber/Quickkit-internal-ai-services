@@ -8,6 +8,7 @@ import { getPublicSystemError } from './_lib/systemErrors.js';
 import { getSystemActionMethods } from './_lib/systemActionMethods.js';
 import { generatePaymentToken, verifyAndConsumePaymentToken } from './_lib/paymentToken.js';
 import { createLeadAndProjectAtomically } from './_lib/leadIdempotency.js';
+import { sendLeadNotification } from './_lib/leadNotifications.js';
 
 
 const success = (res, data) => res.status(200).json(data);
@@ -148,24 +149,28 @@ async function handleLead(req, res, userId) {
             }
         })();
 
-        const transporter = nodemailer.createTransport({
-            service: 'gmail',
-            auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
-        });
+        // Persistence has already succeeded. A notification failure must not
+        // turn this into an apparent lead-creation failure and trigger duplicate retries.
+        await sendLeadNotification(async () => {
+            const transporter = nodemailer.createTransport({
+                service: 'gmail',
+                auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS }
+            });
 
-        await transporter.sendMail({
-            from: `"QuickKit System" <${process.env.EMAIL_USER}>`,
-            to: process.env.EMAIL_USER,
-            subject: `🚀 New Lead/Project: ${data.projectName || 'Custom Build'}`,
-            html: `
-                <h3>New Lead Submission</h3>
-                <p><strong>Name:</strong> ${escapeHtml(leadData.name)}</p>
-                <p><strong>Email:</strong> ${escapeHtml(leadData.email)}</p>
-                <p><strong>Phone:</strong> ${escapeHtml(leadData.phone)}</p>
-                <p><strong>Project:</strong> ${escapeHtml(leadData.projectName)}</p>
-                <p><strong>Requirements:</strong> ${escapeHtml(leadData.requirement || 'N/A')}</p>
-                <p><strong>Price:</strong> ${leadData.price}</p>
-            `
+            await transporter.sendMail({
+                from: `"QuickKit System" <${process.env.EMAIL_USER}>`,
+                to: process.env.EMAIL_USER,
+                subject: `🚀 New Lead/Project: ${leadData.projectName || 'Custom Build'}`,
+                html: `
+                    <h3>New Lead Submission</h3>
+                    <p><strong>Name:</strong> ${escapeHtml(leadData.name)}</p>
+                    <p><strong>Email:</strong> ${escapeHtml(leadData.email)}</p>
+                    <p><strong>Phone:</strong> ${escapeHtml(leadData.phone)}</p>
+                    <p><strong>Project:</strong> ${escapeHtml(leadData.projectName)}</p>
+                    <p><strong>Requirements:</strong> ${escapeHtml(leadData.requirement || 'N/A')}</p>
+                    <p><strong>Price:</strong> ${leadData.price}</p>
+                `
+            });
         });
 
         // Odoo CRM Integration (Wrapped in try-catch to keep it fault-tolerant)

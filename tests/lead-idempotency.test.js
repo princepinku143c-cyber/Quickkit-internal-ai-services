@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { createLeadAndProjectAtomically, getOrCreateLead, getOrCreateWebhookSubmission, hashIdempotencyKey } from "../api/_lib/leadIdempotency.js";
 import { stripWebhookIdempotencyMetadata } from "../api/_lib/input.js";
+import { sendLeadNotification } from "../api/_lib/leadNotifications.js";
 
 class FakeDocumentReference {
   constructor(db, collectionName, id) {
@@ -274,10 +275,37 @@ await assert.rejects(
 assert.equal(atomicDb.count("leads"), 1, "mismatched ownership must not create a lead");
 assert.equal(atomicDb.count("projects"), 1, "mismatched ownership must not create a project");
 
+
+const notificationLogMessages = [];
+const notificationSent = await sendLeadNotification(
+  async () => {},
+  { error: (message) => notificationLogMessages.push(message) },
+);
+assert.equal(notificationSent, true, "successful notification should be reported as sent");
+
+const notificationFailed = await sendLeadNotification(
+  async () => { throw new Error("private SMTP transport detail"); },
+  { error: (message) => notificationLogMessages.push(message) },
+);
+assert.equal(notificationFailed, false, "notification failures must be contained after persistence");
+assert.deepEqual(
+  notificationLogMessages,
+  ["Lead notification email failed after lead persistence."],
+  "notification logging must not expose transport details",
+);
+
 const systemRouteSource = readFileSync(new URL("../api/system.js", import.meta.url), "utf8");
 assert.ok(
   systemRouteSource.includes("createLeadAndProjectAtomically"),
   "the public system lead route must use the atomic lead/project helper",
+);
+assert.ok(
+  systemRouteSource.includes("await sendLeadNotification(async () => {"),
+  "post-persistence email notification must be best-effort",
+);
+assert.ok(
+  systemRouteSource.includes("subject: `🚀 New Lead/Project: ${leadData.projectName || 'Custom Build'}`"),
+  "email subject must use the normalized project name",
 );
 assert.doesNotMatch(systemRouteSource, /await leadRef\.set\(leadData\)/);
 assert.doesNotMatch(systemRouteSource, /await projectRef\.set\(/);
