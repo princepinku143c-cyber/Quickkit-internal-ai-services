@@ -350,7 +350,7 @@ assert.ok(
   "the system route must use the bounded upstream fetch helper",
 );
 assert.equal(
-  (systemRouteSource.match(/fetchWithTimeout\(\x60\$\{odooUrl\}\/jsonrpc\x60/g) || []).length,
+  systemRouteSource.split("fetchWithTimeout(`${odooUrl}/jsonrpc`,").length - 1,
   2,
   "both Odoo JSON-RPC requests must be bounded",
 );
@@ -358,8 +358,7 @@ assert.ok(systemRouteSource.includes("timeoutMs: 7000"), "Odoo requests must use
 assert.ok(systemRouteSource.includes("connectionTimeout: 7000"), "SMTP connection timeout must be bounded");
 assert.ok(systemRouteSource.includes("greetingTimeout: 7000"), "SMTP greeting timeout must be bounded");
 assert.ok(systemRouteSource.includes("socketTimeout: 7000"), "SMTP socket timeout must be bounded");
-assert.doesNotMatch(
-  systemRouteSource,
-  /await fetch\(\x60\$\{odooUrl\}\/jsonrpc\x60/,
+assert.ok(
+  !systemRouteSource.includes("await fetch(`${odooUrl}/jsonrpc`,"),
   "Odoo calls must not bypass the timeout helper",
 );
