@@ -296,7 +296,6 @@ assert.deepEqual(
 );
 
 
-const webhookRouteSource = readFileSync(new URL("../api/webhook.js", import.meta.url), "utf8");
 assert.ok(
   webhookRouteSource.includes("fetchJsonWithTimeout"),
   "the webhook route must use the bounded JSON fetch helper for Odoo",
