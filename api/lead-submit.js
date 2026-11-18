@@ -102,6 +102,9 @@ export default async function handler(req, res) {
       const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: { user: fromEmail, pass: process.env.EMAIL_PASS },
+        connectionTimeout: 7000,
+        greetingTimeout: 7000,
+        socketTimeout: 7000,
       });
       const setup = lead.price ? `₹${lead.price.toLocaleString('en-IN')}` : 'Custom quote';
       const maintenance = lead.maintenance ? `₹${lead.maintenance.toLocaleString('en-IN')}/month from month 2` : 'Custom';
