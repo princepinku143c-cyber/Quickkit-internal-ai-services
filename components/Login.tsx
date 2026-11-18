@@ -137,6 +137,15 @@ export const Login: React.FC = () => {
                 ⚠️ {error}
               </div>
             )}
+            {!isFirebaseConfigured && (
+              <div
+                role="status"
+                aria-live="polite"
+                className="mb-4 rounded-lg border border-amber-500/20 bg-amber-500/10 p-3 text-sm text-amber-300"
+              >
+                Authentication is temporarily unavailable because Firebase client configuration is incomplete.
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-5">
                 {!isLogin && (
                     <div className="animate-fade-in-up">
@@ -177,7 +186,7 @@ export const Login: React.FC = () => {
 
                 <button 
                     type="submit" 
-                    disabled={loading}
+                    disabled={loading || !isFirebaseConfigured}
                     className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/20 group"
                 >
                     {loading ? <><Loader2 className="w-4 h-4 animate-spin"/> Authenticating...</> : (
@@ -190,6 +199,7 @@ export const Login: React.FC = () => {
                         <button 
                             type="button"
                             onClick={() => setIsForgotPassword(true)}
+                            disabled={loading || !isFirebaseConfigured}
                             className="text-xs text-blue-400 font-bold hover:underline"
                         >
                             Forgot Password?
@@ -197,21 +207,25 @@ export const Login: React.FC = () => {
                     </div>
                 )}
                 
-                <div className="flex items-center gap-4 py-2">
-                   <div className="flex-1 h-px bg-slate-800"></div>
-                   <span className="text-xs text-slate-500 font-bold uppercase tracking-widest">or</span>
-                   <div className="flex-1 h-px bg-slate-800"></div>
-                </div>
+                {isFirebaseConfigured && (
+                  <>
+                    <div className="flex items-center gap-4 py-2">
+                       <div className="flex-1 h-px bg-slate-800"></div>
+                       <span className="text-xs text-slate-500 font-bold uppercase tracking-widest">or</span>
+                       <div className="flex-1 h-px bg-slate-800"></div>
+                    </div>
 
-                <button 
-                    type="button" 
-                    onClick={handleGoogleSignIn}
-                    disabled={loading}
-                    className="w-full py-3 bg-white hover:bg-slate-100 text-slate-900 font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg"
-                >
-                   <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
-                   Continue with Google
-                </button>
+                    <button 
+                        type="button" 
+                        onClick={handleGoogleSignIn}
+                        disabled={loading || !isFirebaseConfigured}
+                        className="w-full py-3 bg-white hover:bg-slate-100 text-slate-900 font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg"
+                    >
+                       <img src="https://www.google.com/favicon.ico" alt="Google" className="w-4 h-4" />
+                       Continue with Google
+                    </button>
+                  </>
+                )}
 
                 {/* Bypass removed for production */}
             </form>
