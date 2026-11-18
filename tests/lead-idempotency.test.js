@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { createLeadAndProjectAtomically, getOrCreateLead, getOrCreateWebhookSubmission, hashIdempotencyKey } from "../api/_lib/leadIdempotency.js";
 import { stripWebhookIdempotencyMetadata } from "../api/_lib/input.js";
 import { sendLeadNotification } from "../api/_lib/leadNotifications.js";
-import { fetchWithTimeout } from "../api/_lib/fetchWithTimeout.js";
+import { fetchJsonWithTimeout } from "../api/_lib/fetchWithTimeout.js";
 
 class FakeDocumentReference {
   constructor(db, collectionName, id) {
@@ -314,43 +314,47 @@ assert.doesNotMatch(systemRouteSource, /await projectRef\.set\(/);
 console.log("Lead and webhook idempotency regression tests passed (create, replay, tenant isolation, and orphan repair).");
 
 
-const successfulFetch = await fetchWithTimeout(
+const successfulJson = await fetchJsonWithTimeout(
   "https://odoo.example.invalid/jsonrpc",
   { method: "POST" },
   {
     timeoutMs: 100,
-    fetchImpl: async (_input, options) => ({ ok: true, signal: options.signal }),
+    fetchImpl: async (_input, options) => ({
+      json: async () => ({ ok: true, signalPassed: options.signal instanceof AbortSignal }),
+    }),
   },
 );
-assert.equal(successfulFetch.ok, true, "bounded fetch should return a successful upstream response");
-assert.ok(successfulFetch.signal instanceof AbortSignal, "bounded fetch must pass an abort signal");
+assert.equal(successfulJson.ok, true, "bounded JSON fetch should return parsed upstream data");
+assert.equal(successfulJson.signalPassed, true, "bounded JSON fetch must pass an abort signal");
 
 let timeoutAbortObserved = false;
 await assert.rejects(
-  () => fetchWithTimeout(
+  () => fetchJsonWithTimeout(
     "https://odoo.example.invalid/jsonrpc",
     {},
     {
       timeoutMs: 5,
-      fetchImpl: (_input, options) => new Promise((_resolve, reject) => {
-        options.signal.addEventListener("abort", () => {
-          timeoutAbortObserved = true;
-          reject(options.signal.reason);
-        }, { once: true });
+      fetchImpl: async (_input, options) => ({
+        json: () => new Promise((_resolve, reject) => {
+          options.signal.addEventListener("abort", () => {
+            timeoutAbortObserved = true;
+            reject(options.signal.reason);
+          }, { once: true });
+        }),
       }),
     },
   ),
   /Upstream request timed out/,
-  "slow upstream requests must be aborted at the configured deadline",
+  "slow response bodies must be aborted at the configured deadline",
 );
-assert.equal(timeoutAbortObserved, true, "timeout must abort the in-flight upstream request");
+assert.equal(timeoutAbortObserved, true, "timeout must remain active while the response body is parsed");
 
 assert.ok(
-  systemRouteSource.includes("fetchWithTimeout"),
-  "the system route must use the bounded upstream fetch helper",
+  systemRouteSource.includes("fetchJsonWithTimeout"),
+  "the system route must use the bounded JSON fetch helper",
 );
 assert.equal(
-  systemRouteSource.split("fetchWithTimeout(`${odooUrl}/jsonrpc`,").length - 1,
+  systemRouteSource.split("fetchJsonWithTimeout(`${odooUrl}/jsonrpc`,").length - 1,
   2,
   "both Odoo JSON-RPC requests must be bounded",
 );
