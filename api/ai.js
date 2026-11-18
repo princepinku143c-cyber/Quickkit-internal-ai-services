@@ -3,6 +3,7 @@ import { success, error } from "./_lib/response.js";
 import { checkRateLimit } from "./_lib/security.js";
 import { getClientIp, isPlainObject, safeText } from "./_lib/input.js";
 import { askAI } from "./_lib/services/aiService.js";
+import { chargeUserCredits } from "./_lib/creditLedger.js";
 
 /**
  * Unified AI Intelligence & Execution Cluster.
@@ -75,25 +76,14 @@ async function handleKelly(req, res, userId) {
     await checkRateLimit(admin, rateKey, "kelly", userId ? 30 : 5);
 
     if (userId) {
-      const userRef = admin.firestore().collection('users').doc(userId);
-      const userSnap = await userRef.get();
-
-      let credits = 0;
-      if (!userSnap.exists) {
-        credits = 500;
-        await userRef.set({ credits, createdAt: admin.firestore.FieldValue.serverTimestamp() });
-      } else {
-        credits = userSnap.data().credits || 0;
-      }
-
-      if (credits < 10) {
+      const creditCharge = await chargeUserCredits(admin.firestore(), userId, {
+        amount: 10,
+        initialCredits: 500,
+        serverTimestamp: () => admin.firestore.FieldValue.serverTimestamp(),
+      });
+      if (!creditCharge.allowed) {
         return error(res, "INSUFFICIENT_CREDITS: Neural power depleted. Please upgrade your node.", 403);
       }
-
-      await userRef.update({
-        credits: admin.firestore.FieldValue.increment(-10),
-        lastUsed: admin.firestore.FieldValue.serverTimestamp()
-      });
     }
 
     const messages = [
