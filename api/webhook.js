@@ -50,6 +50,19 @@ export default async function handler(req, res) {
       return error(res, "Unauthorized: a valid X-Webhook-Secret is required.", 401);
     }
     await checkRateLimit(admin, String(targetUid) + ":" + getClientIp(req), "webhook", 10);
+
+    const budgetVal = safeNumber(data.budget) || safeNumber(data.price) || 0;
+
+    // Keep only bounded scalar metadata; the idempotency key is stored only as a hash.
+    const standardKeys = ['name', 'email', 'phone', 'businessName', 'company', 'projectName', 'price', 'budget', 'requirement', 'notes', 'custom_metadata', 'idempotencyKey'];
+    const extraMetadata = {};
+    for (const [key, value] of Object.entries(data)) {
+      if (!standardKeys.includes(key) && ['string', 'number', 'boolean'].includes(typeof value)) extraMetadata[key] = value;
+    }
+    const custom_metadata = safeMetadata({
+      ...(isPlainObject(data.custom_metadata) ? data.custom_metadata : {}),
+      ...extraMetadata
+    });
     const leadData = {
       name: safeText(data.name, 120) || 'Webhook Inbound Lead',
       email: safeText(data.email, 254),
