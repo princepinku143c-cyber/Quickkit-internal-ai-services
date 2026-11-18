@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """AEO (Answer Engine Optimization) Agent.
 
-Configure OPENCODE_API_KEY in the server environment. Never commit provider
-credentials to source control.
+OPENCODE_API_KEY is optional. When it is absent, the agent returns an empty
+result without making a provider request. Never commit provider credentials
+to source control.
 """
 import json
 import os
