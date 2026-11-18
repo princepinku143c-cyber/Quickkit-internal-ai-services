@@ -664,6 +664,26 @@ assert.doesNotMatch(
   /role\s*:\s*["']admin["']/,
   "client authentication must never assign an admin role",
 );
+assert.match(
+  loginSource,
+  /disabled=\{loading \|\| !isFirebaseConfigured\}/,
+  "email authentication must be disabled when Firebase client configuration is incomplete",
+);
+assert.match(
+  loginSource,
+  /\{!isFirebaseConfigured && \(\s*<div\s+role="status"/,
+  "Login must explain why authentication is unavailable in Firebase limited mode",
+);
+assert.match(
+  loginSource,
+  /\{isFirebaseConfigured && \(\s*<>[\s\S]*?onClick=\{handleGoogleSignIn\}/,
+  "Google sign-in controls must be hidden when Firebase client configuration is incomplete",
+);
+assert.match(
+  loginSource,
+  /onClick=\{\(\) => setIsForgotPassword\(true\)\}\s+disabled=\{loading \|\| !isFirebaseConfigured\}/,
+  "password reset must be disabled when Firebase client configuration is incomplete",
+);
 
 const publicLookup = async (hostname, options) => {
   assert.equal(hostname, "example.com");
