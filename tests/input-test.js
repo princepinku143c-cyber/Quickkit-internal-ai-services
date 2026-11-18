@@ -966,3 +966,16 @@ for (const routeCase of firebaseReadinessRouteCases) {
     routeCase.label + " API must return a safe HTTP 503 when Firebase Admin is unavailable",
   );
 }
+
+
+// AI provider failures must log only the HTTP status, never the raw provider response body.
+const aiServiceSource = readFileSync(new URL("../api/_lib/services/aiService.js", import.meta.url), "utf8");
+assert.ok(
+  aiServiceSource.includes('console.error("[NEURAL_NODE_ERROR] HTTP status:", res.status)'),
+  "AI provider errors must log only a bounded HTTP status",
+);
+assert.equal(
+  aiServiceSource.includes("errData"),
+  false,
+  "AI provider response bodies must not be logged or retained in the error path",
+);
