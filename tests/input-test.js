@@ -187,6 +187,20 @@ assert.ok(
   webhookApiSource.includes("normalizeFirestoreDocumentId(req.query.client_id || req.query.uid, 128)"),
   "webhook tenant lookup must reject invalid or overlong Firestore document IDs",
 );
+assert.ok(webhookApiSource.includes("getOrCreateWebhookSubmission"),
+  "webhook must use the tenant-scoped atomic lead/project idempotency helper");
+assert.ok(webhookApiSource.includes('req.headers?.["idempotency-key"] ?? data.idempotencyKey'),
+  "webhook must accept an optional Idempotency-Key header or body field");
+assert.ok(webhookApiSource.includes("Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Webhook-Secret, Idempotency-Key'"),
+  "webhook CORS must allow the optional Idempotency-Key header");
+assert.ok(webhookApiSource.includes("const budgetVal = safeNumber(data.budget)"),
+  "webhook must calculate the bounded lead budget before constructing the lead");
+assert.ok(webhookApiSource.includes("const custom_metadata = safeMetadata("),
+  "webhook must sanitize custom metadata before writing");
+assert.ok(webhookApiSource.includes("'idempotencyKey'"),
+  "webhook idempotency keys must not be copied into custom metadata");
+assert.ok(webhookApiSource.includes('status: created ? "LEAD_INGESTED" : "LEAD_ALREADY_RECEIVED"'),
+  "webhook replays must return the existing lead/project status");
 
 const systemApiSource = readFileSync(new URL("../api/system.js", import.meta.url), "utf8");
 const addCreditsHandlerStart = systemApiSource.indexOf("async function handleAddCredits");
