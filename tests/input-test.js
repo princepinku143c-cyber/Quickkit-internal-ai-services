@@ -979,3 +979,22 @@ assert.equal(
   false,
   "AI provider response bodies must not be logged or retained in the error path",
 );
+
+
+// Google autofill must be unavailable when the browser Firebase client is incomplete.
+const leadFormSource = readFileSync(new URL("../components/LeadForm.tsx", import.meta.url), "utf8");
+assert.match(
+  leadFormSource,
+  /import\s*\{\s*db,\s*auth,\s*googleProvider,\s*isFirebaseConfigured\s*\}/,
+  "LeadForm must import the shared Firebase readiness flag",
+);
+assert.match(
+  leadFormSource,
+  /const handleGoogleAutofill = async \(\) => \{\s*if \(!isFirebaseConfigured\) return;/,
+  "Google autofill must fail closed when Firebase client configuration is incomplete",
+);
+assert.match(
+  leadFormSource,
+  /\{isFirebaseConfigured\s*&&\s*!auth\.currentUser\s*&&\s*<>/,
+  "Google sign-in UI must be hidden when Firebase client configuration is incomplete",
+);
