@@ -198,8 +198,8 @@ async function handleLead(req, res, userId) {
                             args: [odooDb, odooUsername, odooApiKey]
                         },
                         id: Date.now()
-                    }, { timeoutMs: 7000 })
-                });
+                    })
+                }, { timeoutMs: 7000 });
                 
                 const authData = await authResponse.json();
                 const uid = authData.result;
@@ -246,8 +246,8 @@ async function handleLead(req, res, userId) {
                                 ]
                             },
                             id: Date.now() + 1
-                    }, { timeoutMs: 7000 })
-                    });
+                        })
+                    }, { timeoutMs: 7000 });
                     console.log("✅ Lead successfully synced to Odoo CRM.");
                 } else {
                     console.error("❌ Odoo Authentication failed (invalid UID returned).");
