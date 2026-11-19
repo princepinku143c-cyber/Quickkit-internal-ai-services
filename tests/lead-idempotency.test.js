@@ -437,7 +437,7 @@ assert.equal(
 );
 assert.doesNotMatch(
   outreachRouteSource,
-  /\\bfetch\\s*\\(/,
+  /\bfetch\s*\(/,
   "outreach must not leave unbounded direct HTTP fetch calls",
 );
 assert.equal(
