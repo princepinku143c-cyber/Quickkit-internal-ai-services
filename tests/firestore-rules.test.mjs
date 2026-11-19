@@ -543,20 +543,59 @@ try {
     onboardingDone: false,
   }));
 
-  // Automation projects remain bound to their creator. An owner may edit
-  // ordinary project fields, but cannot transfer the document to another user.
+  // Automation projects are tenant-owned. Clients may create the schema
+  // emitted by services/projectService.ts and update workflow/settings data,
+  // but may not write server-managed project or payment state.
   const automationProjectRef = doc(automationUser, 'projects', 'automation-owned-project');
-  await assertFails(setDoc(doc(automationUser, 'projects', 'forged-project'), {
-    userId: 'automation-other',
-    projectName: 'Forged ownership',
-  }));
-  await assertSucceeds(setDoc(automationProjectRef, {
+  const validAutomationProject = {
     userId: 'automation-user',
-    projectName: 'Automation project',
+    title: 'Automation project',
+    description: 'Private workflow',
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    nexuses: [],
+    synapses: [],
+    settings: { clientVariables: {} },
+  };
+
+  await assertFails(setDoc(doc(automationUser, 'projects', 'forged-project'), {
+    ...validAutomationProject,
+    userId: 'automation-other',
+  }));
+  for (const [field, value] of [
+    ['status', 'COMPLETED'],
+    ['paymentStatus', 'PAID'],
+    ['advancePaid', true],
+    ['price', 0],
+    ['tier', 'BUSINESS'],
+    ['tenantId', 'victim-tenant'],
+  ]) {
+    await assertFails(setDoc(doc(automationUser, 'projects', 'forged-' + field), {
+      ...validAutomationProject,
+      [field]: value,
+    }));
+  }
+
+  await assertSucceeds(setDoc(automationProjectRef, validAutomationProject));
+  await assertSucceeds(updateDoc(automationProjectRef, {
+    nexuses: [{ id: 'node-1', type: 'ACTION' }],
+    synapses: [],
+    updatedAt: Date.now(),
   }));
   await assertSucceeds(updateDoc(automationProjectRef, {
-    projectName: 'Updated automation project',
+    settings: { clientVariables: { CRM_URL: 'https://example.invalid' } },
   }));
+
+  for (const [field, value] of [
+    ['status', 'COMPLETED'],
+    ['paymentStatus', 'PAID'],
+    ['advancePaid', true],
+    ['price', 0],
+    ['tier', 'BUSINESS'],
+    ['tenantId', 'victim-tenant'],
+  ]) {
+    await assertFails(updateDoc(automationProjectRef, { [field]: value }));
+  }
   await assertFails(updateDoc(automationProjectRef, {
     userId: 'automation-other',
   }));
