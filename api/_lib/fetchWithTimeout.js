@@ -2,7 +2,7 @@
  * Fetch and parse an upstream JSON response within a bounded deadline.
  * The timeout remains active while the response body is being read.
  */
-export async function fetchJsonWithTimeout(
+export async function fetchJsonResponseWithTimeout(
   input,
   init = {},
   { timeoutMs = 7000, fetchImpl = globalThis.fetch } = {},
@@ -25,8 +25,18 @@ export async function fetchJsonWithTimeout(
     if (!response || typeof response.json !== "function") {
       throw new TypeError("Upstream response must provide JSON.");
     }
-    return await response.json();
+    const data = await response.json();
+    return {
+      ok: response.ok !== false,
+      status: Number.isInteger(response.status) ? response.status : null,
+      data,
+    };
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function fetchJsonWithTimeout(input, init = {}, options = {}) {
+  const response = await fetchJsonResponseWithTimeout(input, init, options);
+  return response.data;
 }
