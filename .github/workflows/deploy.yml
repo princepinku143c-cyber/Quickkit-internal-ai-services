@@ -46,6 +46,8 @@ jobs:
         run: npm run test:cron-auth
       - name: AEO provider credential regression tests
         run: python -m unittest discover -s tests -p 'test_aeo_agent.py' -v
+      - name: AEO API authentication and disabled-by-default regression tests
+        run: npm run test:aeo-api
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
