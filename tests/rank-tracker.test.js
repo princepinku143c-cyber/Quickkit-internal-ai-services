@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createRankTrackerHandler, fetchTavilyJsonWithTimeout } from "../api/rank-tracker.js";
+import { createRankTrackerHandler, fetchTavilyJsonWithTimeout, isQuickKitResultUrl } from "../api/rank-tracker.js";
 
 function createResponse() {
   return {
@@ -28,6 +28,18 @@ const createHandler = (rateLimit = async () => true, sleep = async () => {}) => 
 try {
   const source = await readFile(new URL("../api/rank-tracker.js", import.meta.url), "utf8");
   assert.doesNotMatch(source, /tvly-[A-Za-z0-9]/, "provider credentials must not be hardcoded");
+
+  assert.equal(isQuickKitResultUrl("https://quickkitai.com/visibility"), true);
+  assert.equal(isQuickKitResultUrl("https://www.quickkitai.com/visibility"), true);
+  assert.equal(isQuickKitResultUrl("https://agents.quickkitai.com/visibility"), true);
+  assert.equal(isQuickKitResultUrl("http://quickkitai.com/visibility"), true);
+  assert.equal(isQuickKitResultUrl("https://quickkitai.com.evil.example/"), false);
+  assert.equal(isQuickKitResultUrl("https://evil.example/?next=https://quickkitai.com"), false);
+  assert.equal(isQuickKitResultUrl("https://quickkitai.com@evil.example/"), false);
+  assert.equal(isQuickKitResultUrl("https://notquickkitai.com/"), false);
+  assert.equal(isQuickKitResultUrl("javascript://quickkitai.com/"), false);
+  assert.equal(isQuickKitResultUrl("not-a-url"), false);
+  assert.equal(isQuickKitResultUrl({ url: "https://quickkitai.com/" }), false);
 
   const bodyTimeoutError = await fetchTavilyJsonWithTimeout("https://api.tavily.com/search", {}, {
     timeoutMs: 10,
@@ -79,7 +91,8 @@ try {
     return {
       ok: true,
       json: async () => ({ results: [
-        { url: "https://example.com/" },
+        { url: "https://quickkitai.com.evil.example/visibility" },
+        { url: "https://evil.example/?next=https://quickkitai.com" },
         { url: "https://quickkitai.com/visibility" },
       ] }),
     };
@@ -91,7 +104,7 @@ try {
   assert.equal(fetchCalls, 10);
   assert.equal(successResponse.body.summary.total, 10);
   assert.equal(successResponse.body.summary.found, 10);
-  assert.equal(successResponse.body.results[0].rank, 2);
+  assert.equal(successResponse.body.results[0].rank, 3, "lookalike hosts and URL text must not count as QuickKitAI results");
   assert.equal(limiterArgs.length, 1, "each full scan must be rate-limited once");
   assert.equal(limiterArgs[0][0], adminClient);
   assert.equal(limiterArgs[0][1], "203.0.113.25");
