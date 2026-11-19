@@ -1270,3 +1270,53 @@ assert.equal(
   "concurrent credit charging must never produce a negative balance",
 );
 console.log("Transactional AI credit ledger regression tests passed.");
+
+
+// Kelly conversation history must preserve assistant turns as assistant messages.
+// The legacy "model" role is also accepted for older callers.
+{
+  const aiEnvKeys = ["NEURAL_NODE_KEY", "NEURAL_NODE_ENDPOINT", "NEURAL_NODE_ENGINE"];
+  const originalAiEnv = Object.fromEntries(aiEnvKeys.map((key) => [key, process.env[key]]));
+  const originalFetch = globalThis.fetch;
+  let capturedProviderRequest;
+  try {
+    process.env.NEURAL_NODE_KEY = "unit-test-only-key";
+    process.env.NEURAL_NODE_ENDPOINT = "https://provider.example.invalid/chat";
+    process.env.NEURAL_NODE_ENGINE = "unit-test-model";
+    globalThis.fetch = async (_url, options) => {
+      capturedProviderRequest = JSON.parse(options.body);
+      return {
+        ok: true,
+        status: 200,
+        async json() {
+          return { choices: [{ message: { content: "stubbed reply" } }] };
+        },
+      };
+    };
+
+    const { askAI } = await import("../api/_lib/services/aiService.js");
+    const reply = await askAI([
+      { role: "user", content: "What did we discuss?" },
+      { role: "assistant", content: "We discussed the release." },
+      { role: "model", content: "The preview is ready." },
+    ]);
+
+    assert.equal(reply, "stubbed reply");
+    assert.deepEqual(
+      capturedProviderRequest.messages.slice(-3),
+      [
+        { role: "user", content: "What did we discuss?" },
+        { role: "assistant", content: "We discussed the release." },
+        { role: "assistant", content: "The preview is ready." },
+      ],
+      "assistant and legacy model history turns must not be sent to the provider as user messages",
+    );
+  } finally {
+    globalThis.fetch = originalFetch;
+    for (const key of aiEnvKeys) {
+      if (originalAiEnv[key] === undefined) delete process.env[key];
+      else process.env[key] = originalAiEnv[key];
+    }
+  }
+}
+console.log("Kelly conversation history role regression test passed.");
