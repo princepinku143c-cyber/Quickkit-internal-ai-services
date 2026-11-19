@@ -20,6 +20,15 @@ import {
 } from 'firebase/firestore';
 
 const rules = await readFile(new URL('../firestore.rules', import.meta.url), 'utf8');
+const rootFirebaseConfig = JSON.parse(await readFile(
+  new URL('../firebase.json', import.meta.url),
+  'utf8',
+));
+assert.equal(
+  rootFirebaseConfig.firestore?.rules,
+  'firestore.rules',
+  'root Firebase CLI config must reference the root Firestore security rules',
+);
 const automationFirebaseConfig = JSON.parse(await readFile(
   new URL('../quickkit-automation-agent-main/firebase.json', import.meta.url),
   'utf8',
