@@ -500,11 +500,47 @@ try {
   }));
   await assertFails(setDoc(profileRef, { ...validProfile, tenantId: 'victim-tenant' }));
   await assertSucceeds(setDoc(profileRef, validProfile));
-  await assertFails(updateDoc(profileRef, { tier: 'PRO' }));
-  await assertFails(updateDoc(profileRef, { 'plan.tier': 'ELITE' }));
-  await assertFails(updateDoc(profileRef, { role: 'ADMIN' }));
-  await assertFails(updateDoc(profileRef, { uid: 'another-user' }));
+
+  // Existing users may update only the three fields written by the client
+  // profile service. All entitlement, billing, identity and tenant fields are
+  // server-managed even when the caller owns the profile.
+  for (const [field, value] of [
+    ['tier', 'PRO'],
+    ['plan', { tier: 'ELITE', status: 'active' }],
+    ['role', 'ADMIN'],
+    ['uid', 'another-user'],
+    ['status', 'expired'],
+    ['provider', 'RAZORPAY'],
+    ['credits', 5000],
+    ['aiUsed', 1],
+    ['monthlyLimit', 20000],
+    ['expiresAt', 9999999999999],
+    ['autoRenew', true],
+    ['usage', { workflows: 99, runs: 0, apiCalls: 0 }],
+    ['warningSent', true],
+    ['lastPaymentId', 'forged-payment'],
+    ['subscriptionId', 'forged-subscription'],
+    ['appliedCoupon', 'FORGED'],
+    ['finalPrice', 0],
+    ['lastUsageReset', Date.now()],
+    ['referralCode', 'FORGED'],
+    ['tenantId', 'victim-tenant'],
+    ['isAdmin', true],
+  ]) {
+    await assertFails(updateDoc(profileRef, { [field]: value }));
+  }
+
   await assertSucceeds(updateDoc(profileRef, { lastLoginAt: Date.now() }));
+  await assertSucceeds(updateDoc(profileRef, {
+    onboardingDone: true,
+    updatedAt: Date.now(),
+  }));
+  await assertFails(updateDoc(profileRef, { lastLoginAt: 'now' }));
+  await assertFails(updateDoc(profileRef, { onboardingDone: 'true' }));
+  await assertFails(updateDoc(profileRef, { updatedAt: 'now' }));
+  await assertFails(updateDoc(doc(automationOtherUser, 'users', 'automation-user'), {
+    onboardingDone: false,
+  }));
 
   // Automation projects remain bound to their creator. An owner may edit
   // ordinary project fields, but cannot transfer the document to another user.
