@@ -108,8 +108,28 @@ const App: React.FC = () => {
       <link rel="canonical" href="https://quickkitai.com"/>
     </Helmet>
 
-    <section className="relative z-10 border-b border-amber-300/15 bg-amber-300/[.06] px-5 py-3 text-center text-sm text-amber-100 md:px-8">
-      <span className="font-black">New: AI Visibility and AEO Services</span><span className="mx-2 text-amber-200/60">·</span><span className="text-amber-100/80">Measured audit, monitoring and approved growth plans</span>{' '}<Link to="/ai-visibility" className="ml-2 inline-flex items-center font-black text-white underline underline-offset-4 hover:text-amber-200">View plans →</Link>
+    <section className="relative z-20 border-b border-amber-400/30 bg-gradient-to-r from-amber-500/20 via-[#07090e] to-emerald-500/20 px-4 py-3 text-center text-xs sm:text-sm text-slate-100 shadow-[0_4px_30px_rgba(0,0,0,0.6)] backdrop-blur-xl">
+      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-2 sm:gap-3">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-gradient-to-r from-amber-400 to-amber-500 px-3 py-0.5 text-[10px] font-black uppercase tracking-widest text-black shadow-[0_0_15px_rgba(245,158,11,0.5)]">
+          ⚡ November Pilot Offer
+        </span>
+        <span className="font-bold text-white">
+          Zero Upfront Risk: Pay After Live Verified Result
+        </span>
+        <span className="hidden lg:inline text-amber-200/60">·</span>
+        <span className="hidden lg:inline text-amber-100 font-medium">
+          AEO, SEO &amp; GEO Engine (ChatGPT, Perplexity &amp; Google AI Visibility) + Autonomous AI Workforce
+        </span>
+        <span className="hidden sm:inline text-emerald-300 font-bold">
+          (Valid through Nov 30)
+        </span>
+        <a
+          href="#offer"
+          className="ml-2 inline-flex items-center gap-1 font-black text-amber-300 underline underline-offset-4 transition hover:text-white"
+        >
+          View Visual Offers &amp; Tiers →
+        </a>
+      </div>
     </section>
     <PremiumLanding onBookDemo={() => handleOpenLeadForm(PlanTier.BUSINESS, 'I want to book the Raja AI Systems 5-Agent Workforce demo and discuss the current pilot offer.')} />
     <AEOAnswerSection />

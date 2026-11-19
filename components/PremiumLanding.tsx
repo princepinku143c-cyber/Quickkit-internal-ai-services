@@ -108,11 +108,14 @@ export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) =>
           <div className="hidden items-center gap-7 text-[11px] font-bold uppercase tracking-[0.16em] text-slate-400 lg:flex">
             <a href="#agents" className="transition hover:text-white">AI Team</a>
             <a href="#workflow" className="transition hover:text-white">Workflow</a>
-            <a href="#ad-demo" className="transition hover:text-white">Ad Demo</a>
-            <a href="#offer" className="transition hover:text-white">Offer</a>
+            <a href="#visual-offer-spotlight" className="transition hover:text-white">AEO &amp; GEO Engine</a>
+            <a href="#offer" className="inline-flex items-center gap-1.5 rounded-full border border-amber-400/40 bg-amber-400/10 px-3 py-1 text-amber-300 shadow-[0_0_15px_rgba(245,158,11,0.2)] transition hover:border-amber-300 hover:bg-amber-400/20 hover:text-white">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Pilot Offer
+            </a>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={openWhatsApp} className="hidden items-center gap-2 rounded-xl border border-emerald-300/20 bg-emerald-400/[0.07] px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-emerald-100 transition hover:border-emerald-300/40 hover:bg-emerald-400/[0.13] sm:inline-flex">
+            <button onClick={() => openWhatsApp()} className="hidden items-center gap-2 rounded-xl border border-emerald-300/20 bg-emerald-400/[0.07] px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-emerald-100 transition hover:border-emerald-300/40 hover:bg-emerald-400/[0.13] sm:inline-flex">
               <MessageCircle className="h-4 w-4" /> WhatsApp
             </button>
             <button onClick={onBookDemo} className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-black shadow-[0_10px_40px_rgba(255,255,255,.10)] transition hover:-translate-y-0.5 hover:bg-amber-200">
@@ -125,24 +128,32 @@ export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) =>
       <section id="hero" className="relative z-10">
         <div className="mx-auto grid max-w-7xl items-center gap-12 px-5 pb-20 pt-16 md:px-8 md:pb-28 md:pt-24 lg:grid-cols-[1.08fr_.92fr]">
           <div>
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-300/20 bg-amber-200/[0.06] px-4 py-2 text-[10px] font-black uppercase tracking-[0.18em] text-amber-200">
-              <Sparkles className="h-3.5 w-3.5" /> 5-agent managed AI workforce
+            <div className="mb-6 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-amber-300/30 bg-amber-200/[0.08] px-3.5 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-amber-200 shadow-[0_0_20px_rgba(245,158,11,0.15)]">
+                <Globe2 className="h-3.5 w-3.5 text-amber-300" /> Primary: AEO, SEO &amp; GEO Engine
+              </span>
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-300/30 bg-cyan-400/[0.08] px-3.5 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-cyan-200">
+                <UsersRound className="h-3.5 w-3.5 text-cyan-300" /> 5-Agent Managed Workforce
+              </span>
             </div>
             <p className="mb-4 text-[11px] font-black uppercase tracking-[0.20em] text-slate-400">QUICKKITAI.COM <span className="text-amber-300">×</span> RAJA AI SYSTEMS · INDIA</p>
-            <h1 className="max-w-4xl text-[3.35rem] font-black leading-[0.95] tracking-[-0.055em] sm:text-6xl lg:text-7xl xl:text-[5.35rem]">
-              Your business,
-              <span className="block bg-gradient-to-r from-white via-amber-100 to-amber-300 bg-clip-text text-transparent">with an AI team behind it.</span>
+            <h1 className="max-w-4xl text-[3.15rem] font-black leading-[0.95] tracking-[-0.055em] sm:text-6xl lg:text-7xl xl:text-[5.15rem]">
+              Get Suggested by ChatGPT, Perplexity &amp; Google.
+              <span className="block bg-gradient-to-r from-white via-amber-100 to-amber-300 bg-clip-text text-transparent">Backed by an Autonomous AI Workforce.</span>
             </h1>
-            <p className="mt-7 max-w-2xl text-base leading-8 text-slate-400 md:text-lg">
-              Five specialized AI teammates working around the clock across speed-to-lead, qualification, follow-up, appointments, dormant leads and reputation workflows.
+            <p className="mt-7 max-w-2xl text-base leading-8 text-slate-300 md:text-lg">
+              Engineered so all major LLMs and search engines accurately discover, cite, and recommend your business. Pair precision AEO &amp; GEO visibility with five specialized AI teammates handling speed-to-lead, qualification, and WhatsApp conversion 24/7.
             </p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
               <button onClick={onBookDemo} className="group inline-flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-amber-200 via-amber-300 to-yellow-400 px-6 py-4 text-xs font-black uppercase tracking-[0.16em] text-[#111] shadow-[0_18px_50px_rgba(245,158,11,.18)] transition hover:-translate-y-1">
-                Book Free Demo <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+                Book Strategy Call <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
               </button>
-              <button onClick={() => setShowAdDemo(true)} className="inline-flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.045] px-6 py-4 text-xs font-black uppercase tracking-[0.16em] text-white backdrop-blur transition hover:border-white/20 hover:bg-white/[0.08]">
-                <Play className="h-4 w-4 text-amber-300" /> Watch 60-sec Demo
+              <a href="#visual-offer-spotlight" className="inline-flex items-center justify-center gap-3 rounded-2xl border-2 border-amber-400/40 bg-amber-400/[0.08] px-6 py-4 text-xs font-black uppercase tracking-[0.16em] text-amber-200 backdrop-blur transition hover:border-amber-300 hover:bg-amber-400/15 hover:text-white shadow-[0_0_25px_rgba(245,158,11,0.2)]">
+                <Sparkles className="h-4 w-4 text-amber-300" /> View Pilot Offer
+              </a>
+              <button onClick={() => setShowAdDemo(true)} className="inline-flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.045] px-6 py-4 text-xs font-black uppercase tracking-[0.16em] text-slate-300 backdrop-blur transition hover:border-white/20 hover:text-white">
+                <Play className="h-4 w-4 text-cyan-300" /> 60-sec Video
               </button>
             </div>
 
@@ -209,9 +220,170 @@ export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) =>
                   </div>
                 ))}
               </div>
-              <div className="mt-4 flex items-center justify-between rounded-2xl border border-amber-300/10 bg-amber-300/[0.045] px-4 py-3">
-                <span className="text-[10px] font-bold text-amber-100">5 agents → 1 revenue workflow</span>
-                <BarChart3 className="h-4 w-4 text-amber-200" />
+              <div className="mt-4 flex items-center justify-between rounded-2xl border border-emerald-400/20 bg-emerald-400/[0.06] px-4 py-3">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-[10px] font-black uppercase tracking-wider text-emerald-200">AEO Engine</span>
+                </div>
+                <span className="text-[10px] font-bold text-slate-300">ChatGPT · Perplexity · Gemini · Claude Ready</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* High-Impact Visual Offer Showcase for Desktop & Large Screens */}
+      <section id="visual-offer-spotlight" className="relative z-20 mx-auto max-w-7xl px-5 -mt-6 mb-16 md:px-8">
+        <div className="relative overflow-hidden rounded-[2.5rem] border-2 border-amber-400/30 bg-gradient-to-br from-[#0c0f17] via-[#08090d] to-[#040507] p-6 shadow-[0_30px_90px_rgba(245,158,11,0.15)] backdrop-blur-2xl md:p-8 lg:p-10">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 border-b border-white/[0.08] pb-6">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-amber-300/30 bg-amber-400/10 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-amber-200 shadow-[0_0_15px_rgba(245,158,11,0.2)]">
+                <Sparkles className="h-3 w-3 text-amber-300" /> Visual Offer Spotlight · Desktop &amp; Large Screen
+              </div>
+              <h2 className="mt-3 text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight">
+                Complete Project Architecture: AI Visibility + Autonomous Workforce
+              </h2>
+            </div>
+            <div className="inline-flex items-center gap-2 rounded-2xl border border-emerald-400/30 bg-emerald-400/[0.08] px-4 py-2.5 text-xs font-bold text-emerald-200">
+              <ShieldCheck className="h-4 w-4 text-emerald-300 shrink-0" />
+              <span>Zero Upfront Risk: Pay After Live Result (Valid through Nov 30)</span>
+            </div>
+          </div>
+
+          <div className="mt-8 grid gap-6 lg:grid-cols-2">
+            {/* Left Card: AEO Engine (Main Priority) */}
+            <div className="relative rounded-[2rem] border-2 border-amber-400/40 bg-gradient-to-b from-amber-400/[0.08] via-[#0a0d14] to-[#07090e] p-6 md:p-8 flex flex-col justify-between shadow-[0_20px_50px_rgba(245,158,11,0.1)]">
+              <div className="absolute top-4 right-4">
+                <span className="rounded-full bg-amber-400 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-black shadow-[0_0_15px_rgba(245,158,11,0.5)]">
+                  Main Priority
+                </span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 text-amber-300 text-xs font-black uppercase tracking-wider">
+                  <Globe2 className="h-4 w-4" /> Pillar 01 · AEO, SEO &amp; GEO Engine
+                </div>
+                <h3 className="mt-3 text-xl md:text-2xl font-black text-white">Get Recommended by All LLMs &amp; Google</h3>
+                <p className="mt-2 text-xs leading-6 text-slate-400">
+                  Engineered so ChatGPT, Perplexity, Claude &amp; Google AI Overviews cite and recommend your business with 100% precision. Enterprise JSON-LD Schema (<code className="text-amber-200">@graph</code>), <code className="text-amber-200">llms.txt</code> ingestion protocols, and verified Google Rich Results pass.
+                </p>
+
+                <div className="mt-5 grid grid-cols-2 gap-3 rounded-2xl border border-white/[0.08] bg-black/50 p-4">
+                  <div>
+                    <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500">Tier 01 · One-Time Fix</div>
+                    <div className="mt-1 flex items-baseline gap-1.5">
+                      <span className="text-xs text-slate-600 line-through">₹30,000</span>
+                      <span className="text-2xl font-black text-white">₹15,000</span>
+                    </div>
+                    <div className="text-[10px] text-emerald-300 font-bold">Zero monthly commitment</div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] font-mono uppercase tracking-widest text-amber-300">Tier 02 · AI Sentinel</div>
+                    <div className="mt-1 flex items-baseline gap-1.5">
+                      <span className="text-xs text-slate-600 line-through">₹50,000</span>
+                      <span className="text-2xl font-black text-amber-300">₹25,000</span>
+                      <span className="text-[10px] text-slate-500">/mo</span>
+                    </div>
+                    <div className="text-[10px] text-slate-400">₹20,000 setup · Daily logs</div>
+                  </div>
+                </div>
+
+                <div className="mt-5 space-y-2">
+                  {[
+                    '100% Google Rich Results Green Pass Guaranteed',
+                    'Autonomous LLM Ingestion (llms.txt, llms-full.txt)',
+                    'Core Web Vitals & Latency Compression (<1.5s load speed)',
+                    'Multi-Engine Citation Tracking (ChatGPT, Perplexity, Gemini, Claude)',
+                  ].map(feat => (
+                    <div key={feat} className="flex items-center gap-2 text-xs text-slate-300">
+                      <Check className="h-3.5 w-3.5 text-emerald-400 shrink-0" />
+                      <span>{feat}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6 pt-5 border-t border-white/[0.08] flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => openWhatsApp('Hi QuickKitAI, I want to claim the AEO & GEO Engine offer (₹15,000 one-time fix / ₹25,000 retainer).')}
+                  className="flex-1 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 py-3 text-center text-xs font-black uppercase tracking-wider text-black shadow-[0_8px_25px_rgba(245,158,11,0.25)] hover:opacity-95"
+                >
+                  Claim AEO Engine →
+                </button>
+                <a
+                  href="#offer"
+                  className="rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-xs font-bold text-slate-300 hover:bg-white/[0.08] hover:text-white"
+                >
+                  Full Specs
+                </a>
+              </div>
+            </div>
+
+            {/* Right Card: Autonomous AI Workforce */}
+            <div className="relative rounded-[2rem] border border-cyan-400/30 bg-gradient-to-b from-cyan-400/[0.06] via-[#0a0d14] to-[#07090e] p-6 md:p-8 flex flex-col justify-between shadow-[0_20px_50px_rgba(6,182,212,0.1)]">
+              <div className="absolute top-4 right-4">
+                <span className="rounded-full bg-cyan-400/20 border border-cyan-400/40 px-3 py-1 text-[9px] font-black uppercase tracking-widest text-cyan-200">
+                  Pilot Slots: {RAJA_COMMERCIAL_OFFER.pilotClientSlots} Left
+                </span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 text-cyan-300 text-xs font-black uppercase tracking-wider">
+                  <UsersRound className="h-4 w-4" /> Pillar 02 · Autonomous AI Workforce
+                </div>
+                <h3 className="mt-3 text-xl md:text-2xl font-black text-white">Five Specialists. Zero Agency Chaos.</h3>
+                <p className="mt-2 text-xs leading-6 text-slate-400">
+                  Full 24/7 AI workforce handling inbound enquiry speed-to-lead, WhatsApp voice note + text qualification, site-visit calendar locking, dead lead reactivation, and reputation guard with complete CRM sync.
+                </p>
+
+                <div className="mt-5 grid grid-cols-2 gap-3 rounded-2xl border border-white/[0.08] bg-black/50 p-4">
+                  <div>
+                    <div className="text-[9px] font-mono uppercase tracking-widest text-slate-500">Regular Agency Rate</div>
+                    <div className="mt-1 flex items-baseline gap-1.5">
+                      <span className="text-lg font-black text-slate-600 line-through">₹2,40,000</span>
+                      <span className="text-[10px] text-slate-600">/mo</span>
+                    </div>
+                    <div className="text-[10px] text-slate-600">₹70,000 setup</div>
+                  </div>
+                  <div>
+                    <div className="text-[9px] font-mono uppercase tracking-widest text-cyan-300">50% Pilot Offer</div>
+                    <div className="mt-1 flex items-baseline gap-1.5">
+                      <span className="text-2xl font-black text-white">₹1,20,000</span>
+                      <span className="text-[10px] text-slate-400">/mo</span>
+                    </div>
+                    <div className="text-[10px] text-cyan-300 font-bold">₹35,000 setup · 30-day SLA</div>
+                  </div>
+                </div>
+
+                <div className="mt-5 space-y-2">
+                  {[
+                    '5 Coordinated AI Specialists on Autopilot',
+                    'WhatsApp Voice Note + Text Conversation Handling',
+                    'Instant Speed-to-Lead Response Target',
+                    'Full CRM State Sync & Calendar Appointment Locking',
+                  ].map(feat => (
+                    <div key={feat} className="flex items-center gap-2 text-xs text-slate-300">
+                      <Check className="h-3.5 w-3.5 text-cyan-400 shrink-0" />
+                      <span>{feat}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6 pt-5 border-t border-white/[0.08] flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={onBookDemo}
+                  className="flex-1 rounded-xl bg-white py-3 text-center text-xs font-black uppercase tracking-wider text-black shadow-[0_8px_25px_rgba(255,255,255,0.15)] hover:bg-slate-200"
+                >
+                  Book Demo Call →
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openWhatsApp('Hi QuickKitAI, I want to discuss deploying the 5-Agent Workforce for my business.')}
+                  className="rounded-xl border border-emerald-400/30 bg-emerald-400/[0.08] px-4 py-3 text-xs font-bold text-emerald-200 hover:bg-emerald-400/[0.15]"
+                >
+                  WhatsApp
+                </button>
               </div>
             </div>
           </div>
