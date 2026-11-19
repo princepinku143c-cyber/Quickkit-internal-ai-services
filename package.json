@@ -11,7 +11,11 @@
     "validate:seo": "node scripts/validate-seo-assets.mjs",
     "validate:prerender": "node scripts/validate-prerendered-pages.mjs",
     "test:seo": "npm run validate:seo && npm run validate:prerender",
-    "test:security": "node tests/input-test.js"
+    "test:security": "node tests/input-test.js",
+    "audit:geo": "node scripts/geo-seo-audit.mjs",
+    "design:check": "node scripts/design-intelligence.mjs",
+    "superpowers:verify": "node scripts/zero-glitch-verifier.mjs",
+    "verify:all": "node scripts/zero-glitch-verifier.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.38.0",
