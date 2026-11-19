@@ -15,7 +15,36 @@ service cloud.firestore {
     function validUserProfileCreate(userId) {
       return isOwner(userId)
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.role == 'USER';
+        && request.resource.data.role == 'USER'
+        // Signup may create only the exact default FREE profile produced by
+        // services/userService.ts. Entitlements and payment metadata are server-managed.
+        && request.resource.data.keys().hasOnly([
+          'uid', 'email', 'tier', 'region', 'role', 'status', 'expiresAt',
+          'updatedAt', 'autoRenew', 'credits', 'aiUsed', 'monthlyLimit',
+          'usage', 'warningSent', 'createdAt', 'onboardingDone'
+        ])
+        && request.resource.data.email is string
+        && (
+          request.resource.data.email == ''
+          || request.resource.data.email == request.auth.token.email
+        )
+        && request.resource.data.tier == 'FREE'
+        && request.resource.data.region in ['IN', 'GLOBAL']
+        && request.resource.data.status == 'active'
+        && request.resource.data.expiresAt == 0
+        && request.resource.data.autoRenew == false
+        && request.resource.data.credits == 5
+        && request.resource.data.aiUsed == 0
+        && request.resource.data.monthlyLimit == 5
+        && request.resource.data.usage is map
+        && request.resource.data.usage.keys().hasOnly(['workflows', 'runs', 'apiCalls'])
+        && request.resource.data.usage.workflows == 0
+        && request.resource.data.usage.runs == 0
+        && request.resource.data.usage.apiCalls == 0
+        && request.resource.data.warningSent == false
+        && request.resource.data.createdAt is int
+        && request.resource.data.updatedAt is int
+        && request.resource.data.onboardingDone == false;
     }
 
     match /users/{userId} {
