@@ -3,6 +3,7 @@ import { EventEmitter } from "node:events";
 import http from "node:http";
 import { existsSync, readFileSync } from "node:fs";
 import { escapeHtml, getClientIp, isPlainObject, normalizeCreditAdjustment, normalizeCreditPackage, normalizeFirestoreDocumentId, payloadTooLarge, safeMetadata, safeNumber, safeText } from "../api/_lib/input.js";
+import { normalizeProposalInput } from "../api/_lib/proposalInput.js";
 import { getMissingFirebaseClientConfig, isFirebaseClientConfigComplete } from "../lib/firebaseConfig.js";
 import { normalizeProjectCreateInput } from "../api/_lib/projectInput.js";
 import { getPublicSystemError } from "../api/_lib/systemErrors.js";
@@ -69,6 +70,19 @@ assert.equal(
   "non-string proxy headers must be ignored",
 );
 assert.equal(escapeHtml("<img src=\"x\" onerror='x'>"), "&lt;img src=&quot;x&quot; onerror=&#39;x&#39;&gt;");
+
+const validProposal = { email: "client@example.com", name: "Client", price: "0", features: ["CRM setup", "AI integration"] };
+assert.deepEqual(normalizeProposalInput(validProposal), validProposal);
+assert.equal(normalizeProposalInput(null), null);
+assert.equal(normalizeProposalInput({ ...validProposal, email: "not-an-email" }), null);
+assert.equal(normalizeProposalInput({ ...validProposal, email: "x".repeat(250) + "@example.com" }), null);
+assert.equal(normalizeProposalInput({ ...validProposal, name: "N".repeat(121) }), null);
+assert.equal(normalizeProposalInput({ ...validProposal, price: "P".repeat(81) }), null);
+assert.equal(normalizeProposalInput({ ...validProposal, price: 0 }), null, "numeric zero remains rejected as in the existing proposal endpoint");
+assert.equal(normalizeProposalInput({ ...validProposal, features: ["F".repeat(301)] }), null);
+assert.equal(normalizeProposalInput({ ...validProposal, features: Array(31).fill("Feature") }), null);
+assert.equal(normalizeProposalInput({ ...validProposal, features: [{ html: "<b>unsafe</b>" }] }), null);
+assert.equal(normalizeProposalInput({ ...validProposal, extra: "x".repeat(17 * 1024) }), null);
 const completeFirebaseClientConfig = {
   apiKey: "public-key",
   authDomain: "quickkit-preview.firebaseapp.com",
@@ -454,6 +468,11 @@ assert.ok(!errorLogSources[4][1].includes("lastError: String(error?.message"),
 
 const proposalApiSource = readFileSync(new URL("../api/send-proposal.js", import.meta.url), "utf8");
 assert.ok(proposalApiSource.includes('import { escapeHtml } from "./_lib/input.js";'));
+assert.ok(proposalApiSource.includes('import { normalizeProposalInput } from "./_lib/proposalInput.js";'));
+assert.ok(proposalApiSource.includes("const proposal = normalizeProposalInput(req.body);"));
+assert.ok(proposalApiSource.includes("connectionTimeout: 7000"));
+assert.ok(proposalApiSource.includes("greetingTimeout: 7000"));
+assert.ok(proposalApiSource.includes("socketTimeout: 7000"));
 assert.ok(proposalApiSource.includes("const safeName = escapeHtml(name);"));
 assert.ok(proposalApiSource.includes("const safePrice = escapeHtml(price);"));
 assert.ok(proposalApiSource.includes("const safeFeatures = features.map((feature) => escapeHtml(feature));"));

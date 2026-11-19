@@ -3,6 +3,7 @@ import { success, error } from "./_lib/response.js";
 import admin from "./_lib/firebaseAdmin.js";
 import { logSafeError } from "./_lib/safeErrorLog.js";
 import { escapeHtml } from "./_lib/input.js";
+import { normalizeProposalInput } from "./_lib/proposalInput.js";
 
 /**
  * Administrative Proposal Transmission Endpoint.
@@ -34,11 +35,11 @@ export default async function handler(req, res) {
     return error(res, "Forbidden: Admin access required", 403);
   }
 
-  const { email, name, price, features } = req.body;
-
-  if (!email || !name || !price || !Array.isArray(features)) {
-      return error(res, "Incomplete Proposal Payload: Email, name, price, and features array required.", 400);
+  const proposal = normalizeProposalInput(req.body);
+  if (!proposal) {
+      return error(res, "Invalid proposal payload.", 400);
   }
+  const { email, name, price, features } = proposal;
 
   const safeName = escapeHtml(name);
   const safePrice = escapeHtml(price);
@@ -50,7 +51,10 @@ export default async function handler(req, res) {
       auth: {
         user: process.env.EMAIL_USER || "support@quickkitai.com",
         pass: process.env.EMAIL_PASS
-      }
+      },
+      connectionTimeout: 7000,
+      greetingTimeout: 7000,
+      socketTimeout: 7000,
     });
 
     const html = `
