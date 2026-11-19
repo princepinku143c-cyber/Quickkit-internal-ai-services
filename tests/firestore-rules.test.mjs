@@ -38,6 +38,16 @@ assert.equal(
   'firestore.rules',
   'Nested automation Firebase config must deploy the rules covered by its emulator tests.',
 );
+const automationUserService = await readFile(
+  new URL('../quickkit-automation-agent-main/services/userService.ts', import.meta.url),
+  'utf8',
+);
+assert.doesNotMatch(
+  automationUserService,
+  /debugPromoteUser|nexusPromote|role:\s*['"]ADMIN['"]/,
+  'automation user service must not expose a browser-console admin promotion helper',
+);
+
 const testEnv = await initializeTestEnvironment({
   projectId: 'demo-quickkitai-rules',
   firestore: { rules },
