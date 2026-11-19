@@ -47,13 +47,22 @@ service cloud.firestore {
         && request.resource.data.onboardingDone == false;
     }
 
+    function validUserProfileUpdate(userId) {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      // The client profile service only writes lastLoginAt, onboardingDone and
+      // updatedAt. Credits, usage, quotas, plans, payment and identity fields
+      // are server-managed and must never be writable from a client SDK.
+      return isOwner(userId)
+        && changedKeys.hasOnly(['lastLoginAt', 'onboardingDone', 'updatedAt'])
+        && (!changedKeys.hasAny(['lastLoginAt']) || request.resource.data.lastLoginAt is int)
+        && (!changedKeys.hasAny(['onboardingDone']) || request.resource.data.onboardingDone is bool)
+        && (!changedKeys.hasAny(['updatedAt']) || request.resource.data.updatedAt is int);
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId);
       allow create: if validUserProfileCreate(userId);
-      allow update: if isOwner(userId)
-        && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-          'uid', 'role', 'tier', 'status', 'provider', 'plan'
-        ]);
+      allow update: if validUserProfileUpdate(userId);
       allow delete: if false;
     }
 
