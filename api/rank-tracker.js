@@ -16,6 +16,18 @@ const KEYWORDS = [
   "best AI platform for business",
 ];
 
+export function isQuickKitResultUrl(value) {
+  if (typeof value !== "string") return false;
+  try {
+    const url = new URL(value);
+    const hostname = url.hostname.toLowerCase().replace(/\\.$/, "");
+    return (url.protocol === "https:" || url.protocol === "http:")
+      && (hostname === "quickkitai.com" || hostname.endsWith(".quickkitai.com"));
+  } catch {
+    return false;
+  }
+}
+
 export async function fetchTavilyJsonWithTimeout(input, init = {}, {
   timeoutMs = 3000,
   fetchImpl = globalThis.fetch,
@@ -103,9 +115,7 @@ export function createRankTrackerHandler({
         } else {
           const data = providerResponse.data;
           const items = Array.isArray(data?.results) ? data.results : [];
-          const index = items.findIndex((item) => (
-            typeof item?.url === "string" && item.url.includes("quickkitai.com")
-          ));
+          const index = items.findIndex((item) => isQuickKitResultUrl(item?.url));
           results.push({ keyword, rank: index >= 0 ? index + 1 : null, found: index >= 0 });
         }
       } catch {
