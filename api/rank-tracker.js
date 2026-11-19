@@ -20,7 +20,7 @@ export function isQuickKitResultUrl(value) {
   if (typeof value !== "string") return false;
   try {
     const url = new URL(value);
-    const hostname = url.hostname.toLowerCase().replace(/\\.$/, "");
+    const hostname = url.hostname.toLowerCase().replace(/\.$/, "");
     return (url.protocol === "https:" || url.protocol === "http:")
       && (hostname === "quickkitai.com" || hostname.endsWith(".quickkitai.com"));
   } catch {
