@@ -20,6 +20,15 @@ import {
 } from 'firebase/firestore';
 
 const rules = await readFile(new URL('../firestore.rules', import.meta.url), 'utf8');
+const automationFirebaseConfig = JSON.parse(await readFile(
+  new URL('../quickkit-automation-agent-main/firebase.json', import.meta.url),
+  'utf8',
+));
+assert.equal(
+  automationFirebaseConfig.firestore?.rules,
+  'firestore.rules',
+  'Nested automation Firebase config must deploy the rules covered by its emulator tests.',
+);
 const testEnv = await initializeTestEnvironment({
   projectId: 'demo-quickkitai-rules',
   firestore: { rules },
