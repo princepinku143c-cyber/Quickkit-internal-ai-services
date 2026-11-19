@@ -279,8 +279,8 @@ for (const page of pages) {
 
   const links = page.links.map(([href, label]) => `<li><a href=\"${href}\">${htmlEscape(label)}</a></li>`).join('');
   const richContent = page.bodyHtml ? page.bodyHtml : '';
-  const readableSummary = `<main id=\"seo-prerendered-summary\" aria-label=\"Page summary\"><h1>${htmlEscape(page.heading)}</h1><p class=\"summary-lead\">${htmlEscape(page.summary)}</p>${richContent}<nav aria-label=\"Related pages\"><ul>${links}</ul></nav><p>Interactive controls and complete page features load with JavaScript. Offer availability, integration status and measurable outcomes are confirmed for each written scope.</p></main>`;
-  html = html.replace(/<div id="root">[\s\S]*?<\/div>/, `<div id="root">${readableSummary}</div>`);
+  const readableSummary = `<main id=\"seo-prerendered-summary\" class=\"seo-crawler-content\" aria-label=\"Page summary\"><h1>${htmlEscape(page.heading)}</h1><p class=\"summary-lead\">${htmlEscape(page.summary)}</p>${richContent}<nav aria-label=\"Related pages\"><ul>${links}</ul></nav><p>Interactive controls and complete page features load with JavaScript. Offer availability, integration status and measurable outcomes are confirmed for each written scope.</p></main>`;
+  html = html.replace(/<div id="root">[\s\S]*?<\/div>/, `<div id="root"><div class=\"initial-preloader\"><div class=\"preloader-glow\"><svg width=\"26\" height=\"26\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"#0b0d11\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14\"/></svg></div><div class=\"preloader-text\">QUICKKITAI <span style=\"color:#f59e0b\">×</span> RAJA AI SYSTEMS</div></div>${readableSummary}</div>`);
 
   const webpageSchema = {
     '@context': 'https://schema.org',

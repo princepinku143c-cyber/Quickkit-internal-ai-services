@@ -126,7 +126,16 @@ const App: React.FC = () => {
     )}
   </div>;
 
-  return <ErrorBoundary><IndustryProvider><Suspense fallback={<div className="min-h-screen bg-[#030712] text-slate-300 flex items-center justify-center">Loading page…</div>}><Routes><Route path="/" element={renderLandingView()}/><Route path="/real-estate-ai-questions" element={<RealEstateAIQuestions/>}/><Route path="/guides/real-estate-ai-lead-qualification" element={<RealEstateLeadQualificationGuide/>}/><Route path="/ai-visibility" element={<AIVisibility/>}/><Route path="/proof-of-value" element={<ProofOfValue/>}/><Route path="/live-demo" element={<LiveDemo/>}/><Route path="/about" element={<LegalPages/>}/><Route path="/contact" element={<LegalPages/>}/><Route path="/privacy" element={<LegalPages/>}/><Route path="/terms" element={<LegalPages/>}/><Route path="/login" element={<Login/>}/><Route path="/client" element={isAuthenticated?<ClientPortal user={user} onLogout={handleLogout}/>:<Navigate to="/login" replace/>}/><Route path="/admin" element={isAuthenticated&&user?.role==='admin'?<AdminPortal user={user} onLogout={handleLogout}/>:<Navigate to="/login" replace/>}/><Route path="/blog" element={<Blog/>}/><Route path="/services/:niche" element={<PublicNichePage/>}/><Route path="/seo-audit" element={<SEOAudit/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes></Suspense></IndustryProvider></ErrorBoundary>;
+  return <ErrorBoundary><IndustryProvider><Suspense fallback={
+    <div className="min-h-screen bg-[#050608] flex flex-col items-center justify-center gap-4">
+      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-200 via-amber-400 to-amber-600 grid place-items-center shadow-[0_0_40px_rgba(245,158,11,.35)] animate-pulse">
+        <svg className="w-7 h-7 text-black" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/></svg>
+      </div>
+      <div className="font-mono text-[10px] font-black uppercase tracking-[0.24em] text-slate-500">
+        QUICKKITAI <span className="text-amber-400">×</span> RAJA AI SYSTEMS
+      </div>
+    </div>
+  }><Routes><Route path="/" element={renderLandingView()}/><Route path="/real-estate-ai-questions" element={<RealEstateAIQuestions/>}/><Route path="/guides/real-estate-ai-lead-qualification" element={<RealEstateLeadQualificationGuide/>}/><Route path="/ai-visibility" element={<AIVisibility/>}/><Route path="/proof-of-value" element={<ProofOfValue/>}/><Route path="/live-demo" element={<LiveDemo/>}/><Route path="/about" element={<LegalPages/>}/><Route path="/contact" element={<LegalPages/>}/><Route path="/privacy" element={<LegalPages/>}/><Route path="/terms" element={<LegalPages/>}/><Route path="/login" element={<Login/>}/><Route path="/client" element={isAuthenticated?<ClientPortal user={user} onLogout={handleLogout}/>:<Navigate to="/login" replace/>}/><Route path="/admin" element={isAuthenticated&&user?.role==='admin'?<AdminPortal user={user} onLogout={handleLogout}/>:<Navigate to="/login" replace/>}/><Route path="/blog" element={<Blog/>}/><Route path="/services/:niche" element={<PublicNichePage/>}/><Route path="/seo-audit" element={<SEOAudit/>}/><Route path="*" element={<Navigate to="/" replace/>}/></Routes></Suspense></IndustryProvider></ErrorBoundary>;
 };
 
 export default App;
