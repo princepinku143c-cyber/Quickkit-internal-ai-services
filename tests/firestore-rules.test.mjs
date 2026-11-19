@@ -487,7 +487,21 @@ try {
 
   await assertFails(setDoc(profileRef, { ...validProfile, role: 'ADMIN' }));
   await assertFails(setDoc(profileRef, { ...validProfile, role: 'OWNER' }));
+  // Client signup must not mint paid entitlements or inject server-managed billing metadata.
+  await assertFails(setDoc(profileRef, { ...validProfile, tier: 'PRO' }));
+  await assertFails(setDoc(profileRef, { ...validProfile, plan: { tier: 'ELITE', status: 'active' } }));
+  await assertFails(setDoc(profileRef, { ...validProfile, credits: 5000 }));
+  await assertFails(setDoc(profileRef, { ...validProfile, monthlyLimit: 20000 }));
+  await assertFails(setDoc(profileRef, { ...validProfile, provider: 'RAZORPAY' }));
+  await assertFails(setDoc(profileRef, { ...validProfile, lastPaymentId: 'forged-payment' }));
+  await assertFails(setDoc(profileRef, {
+    ...validProfile,
+    usage: { workflows: 1, runs: 0, apiCalls: 0 },
+  }));
+  await assertFails(setDoc(profileRef, { ...validProfile, tenantId: 'victim-tenant' }));
   await assertSucceeds(setDoc(profileRef, validProfile));
+  await assertFails(updateDoc(profileRef, { tier: 'PRO' }));
+  await assertFails(updateDoc(profileRef, { 'plan.tier': 'ELITE' }));
   await assertFails(updateDoc(profileRef, { role: 'ADMIN' }));
   await assertFails(updateDoc(profileRef, { uid: 'another-user' }));
   await assertSucceeds(updateDoc(profileRef, { lastLoginAt: Date.now() }));
