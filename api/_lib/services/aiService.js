@@ -31,7 +31,7 @@ export const askAI = async (messages) => {
 
   try {
     const formattedMessages = safeHistory.map(m => ({
-        role: m.role === 'model' ? 'assistant' : 'user',
+        role: m.role === 'assistant' || m.role === 'model' ? 'assistant' : 'user',
         content: m.content
     }));
 
