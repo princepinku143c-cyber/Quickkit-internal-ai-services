@@ -35,6 +35,16 @@ export const Pricing: React.FC<PricingProps> = ({ onSelectPlan }) => {
           <h2 className="mt-7 text-4xl md:text-6xl font-black text-white tracking-[-.05em]">Transparent Plans. Guaranteed Engineering.</h2>
           <p className="mt-5 text-lg leading-relaxed text-slate-400 max-w-3xl mx-auto">Select between our dedicated AEO, SEO & GEO Search Visibility Engine or our full Autonomous AI Workforce.</p>
 
+          {/* Trust Guarantee Banner: Pay After Live Verification */}
+          <div className="mt-6 mx-auto max-w-2xl rounded-2xl border border-emerald-400/25 bg-emerald-400/[0.05] p-3.5 backdrop-blur-md flex items-center justify-center gap-3 text-center">
+            <ShieldCheck className="h-5 w-5 text-emerald-400 shrink-0" />
+            <div className="text-xs text-slate-300">
+              <span className="font-black text-emerald-300 uppercase tracking-wider">Zero Upfront Risk: Pay After Live Result</span>
+              <span className="mx-2 text-slate-600">·</span>
+              <span>We verify 100% Google Rich Results & AI crawler pass before payment release. Valid through November 30.</span>
+            </div>
+          </div>
+
           {/* Plan Category Switcher */}
           <div className="mt-8 inline-flex p-1.5 rounded-2xl border border-white/[0.08] bg-black/60 backdrop-blur-xl">
             <button
