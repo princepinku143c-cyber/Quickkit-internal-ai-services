@@ -465,6 +465,7 @@ try {
   const automationUser = automationEnv.authenticatedContext('automation-user', {
     email: 'automation@example.com',
   }).firestore();
+  const automationOtherUser = automationEnv.authenticatedContext('automation-other').firestore();
   const profileRef = doc(automationUser, 'users', 'automation-user');
   const validProfile = {
     uid: 'automation-user',
@@ -544,7 +545,6 @@ try {
 
   // Automation projects remain bound to their creator. An owner may edit
   // ordinary project fields, but cannot transfer the document to another user.
-  const automationOtherUser = automationEnv.authenticatedContext('automation-other').firestore();
   const automationProjectRef = doc(automationUser, 'projects', 'automation-owned-project');
   await assertFails(setDoc(doc(automationUser, 'projects', 'forged-project'), {
     userId: 'automation-other',
