@@ -492,7 +492,27 @@ try {
   await assertFails(updateDoc(profileRef, { uid: 'another-user' }));
   await assertSucceeds(updateDoc(profileRef, { lastLoginAt: Date.now() }));
 
-  console.log('Automation app Firestore profile identity and role tests passed.');
+  // Automation projects remain bound to their creator. An owner may edit
+  // ordinary project fields, but cannot transfer the document to another user.
+  const automationOtherUser = automationEnv.authenticatedContext('automation-other').firestore();
+  const automationProjectRef = doc(automationUser, 'projects', 'automation-owned-project');
+  await assertFails(setDoc(doc(automationUser, 'projects', 'forged-project'), {
+    userId: 'automation-other',
+    projectName: 'Forged ownership',
+  }));
+  await assertSucceeds(setDoc(automationProjectRef, {
+    userId: 'automation-user',
+    projectName: 'Automation project',
+  }));
+  await assertSucceeds(updateDoc(automationProjectRef, {
+    projectName: 'Updated automation project',
+  }));
+  await assertFails(updateDoc(automationProjectRef, {
+    userId: 'automation-other',
+  }));
+  await assertFails(getDoc(doc(automationOtherUser, 'projects', 'automation-owned-project')));
+
+  console.log('Automation app Firestore profile identity, role, and project ownership tests passed.');
 } finally {
   await automationEnv.cleanup();
 }
