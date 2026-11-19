@@ -112,24 +112,3 @@ export const updateUserProfile = async (uid: string, updates: Partial<UserPlan>)
         console.error("Error updating profile:", error);
     }
 };
-
-/**
- * ⚡ ADMIN TOOL: Promotes a user to ADMIN by email.
- * Run this from the browser console during development:
- * window.nexusPromote('your@email.com')
- */
-export const debugPromoteUser = async (email: string) => {
-    if (!db) return;
-    console.log(`Searching for ${email}...`);
-    const snapshot = await db.collection(USERS_COLLECTION).where('email', '==', email).limit(1).get();
-    
-    if (snapshot.empty) {
-        console.error("User not found!");
-        return;
-    }
-
-    const userDoc = snapshot.docs[0];
-    await userDoc.ref.update({ role: 'ADMIN' });
-    console.log(`✅ SUCCESS: ${email} is now an ADMIN.`);
-    window.location.reload();
-};
