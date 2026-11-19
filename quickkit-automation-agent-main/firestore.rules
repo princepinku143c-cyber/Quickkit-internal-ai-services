@@ -66,12 +66,42 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    function validProjectCreate() {
+      return isOwner(request.resource.data.userId)
+        && request.resource.data.keys().hasOnly([
+          'userId', 'title', 'description', 'createdAt', 'updatedAt',
+          'nexuses', 'synapses', 'settings'
+        ])
+        && request.resource.data.keys().hasAll([
+          'userId', 'title', 'description', 'createdAt', 'updatedAt',
+          'nexuses', 'synapses', 'settings'
+        ])
+        && request.resource.data.title is string
+        && request.resource.data.description is string
+        && request.resource.data.createdAt is int
+        && request.resource.data.updatedAt is int
+        && request.resource.data.nexuses is list
+        && request.resource.data.synapses is list
+        && request.resource.data.settings is map;
+    }
+
+    function validProjectUpdate() {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return isOwner(resource.data.userId)
+        && request.resource.data.userId == resource.data.userId
+        // Clients may save workflow graphs and client-owned settings only.
+        // Project status, payment state, price and ownership remain server-managed.
+        && changedKeys.hasOnly(['nexuses', 'synapses', 'settings', 'updatedAt'])
+        && (!changedKeys.hasAny(['nexuses']) || request.resource.data.nexuses is list)
+        && (!changedKeys.hasAny(['synapses']) || request.resource.data.synapses is list)
+        && (!changedKeys.hasAny(['settings']) || request.resource.data.settings is map)
+        && (!changedKeys.hasAny(['updatedAt']) || request.resource.data.updatedAt is int);
+    }
+
     match /projects/{projectId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-      // The current owner may edit a project, but cannot transfer it to another user.
-      allow update: if isOwner(resource.data.userId)
-        && request.resource.data.userId == resource.data.userId;
+      allow create: if validProjectCreate();
+      allow update: if validProjectUpdate();
       allow delete: if isOwner(resource.data.userId);
     }
 
