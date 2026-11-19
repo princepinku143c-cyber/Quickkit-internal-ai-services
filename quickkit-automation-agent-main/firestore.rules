@@ -10,10 +10,21 @@ service cloud.firestore {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
+    // Profile identity and authorization role are server-managed. New users
+    // may create only their own ordinary USER profile; clients cannot self-promote.
+    function validUserProfileCreate(userId) {
+      return isOwner(userId)
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.role == 'USER';
+    }
+
     match /users/{userId} {
       allow read: if isOwner(userId);
-      allow create: if isOwner(userId);
-      allow update: if isOwner(userId) && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['tier', 'status', 'provider', 'plan']);
+      allow create: if validUserProfileCreate(userId);
+      allow update: if isOwner(userId)
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
+          'uid', 'role', 'tier', 'status', 'provider', 'plan'
+        ]);
       allow delete: if false;
     }
 
