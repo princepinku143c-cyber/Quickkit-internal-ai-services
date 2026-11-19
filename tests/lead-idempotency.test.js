@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { createLeadAndProjectAtomically, getOrCreateLead, getOrCreateWebhookSubmission, hashIdempotencyKey } from "../api/_lib/leadIdempotency.js";
 import { stripWebhookIdempotencyMetadata } from "../api/_lib/input.js";
 import { sendLeadNotification } from "../api/_lib/leadNotifications.js";
-import { fetchJsonWithTimeout } from "../api/_lib/fetchWithTimeout.js";
+import { fetchJsonResponseWithTimeout, fetchJsonWithTimeout } from "../api/_lib/fetchWithTimeout.js";
 
 class FakeDocumentReference {
   constructor(db, collectionName, id) {
@@ -386,5 +386,72 @@ assert.ok(
   !systemRouteSource.includes("await fetch(`${odooUrl}/jsonrpc`,"),
   "Odoo calls must not bypass the timeout helper",
 );
+
+
+const boundedHttpError = await fetchJsonResponseWithTimeout(
+  "https://provider.example.invalid/api",
+  { method: "POST" },
+  {
+    timeoutMs: 100,
+    fetchImpl: async (_input, options) => ({
+      ok: false,
+      status: 429,
+      json: async () => ({ error: "rate limited", signalPassed: options.signal instanceof AbortSignal }),
+    }),
+  },
+);
+assert.equal(boundedHttpError.ok, false, "bounded response helper must preserve non-2xx status");
+assert.equal(boundedHttpError.status, 429, "bounded response helper must preserve the HTTP status");
+assert.equal(boundedHttpError.data.error, "rate limited");
+assert.equal(boundedHttpError.data.signalPassed, true);
+
+let outreachBodyTimeoutObserved = false;
+await assert.rejects(
+  () => fetchJsonResponseWithTimeout(
+    "https://provider.example.invalid/api",
+    {},
+    {
+      timeoutMs: 5,
+      fetchImpl: async (_input, options) => ({
+        ok: true,
+        status: 200,
+        json: () => new Promise((_resolve, reject) => {
+          options.signal.addEventListener("abort", () => {
+            outreachBodyTimeoutObserved = true;
+            reject(options.signal.reason);
+          }, { once: true });
+        }),
+      }),
+    },
+  ),
+  /Upstream request timed out/,
+  "outreach provider response-body parsing must remain inside the timeout",
+);
+assert.equal(outreachBodyTimeoutObserved, true);
+
+const outreachRouteSource = readFileSync(new URL("../api/outreach.js", import.meta.url), "utf8");
+assert.equal(
+  outreachRouteSource.match(/fetchJsonResponseWithTimeout\(/g)?.length,
+  8,
+  "all eight outreach Telegram, AI and email API calls must use the bounded helper",
+);
+assert.doesNotMatch(
+  outreachRouteSource,
+  /\\bfetch\\s*\\(/,
+  "outreach must not leave unbounded direct HTTP fetch calls",
+);
+assert.equal(
+  outreachRouteSource.match(/timeoutMs: 20000/g)?.length,
+  2,
+  "both outreach AI-provider calls must use a 20-second deadline",
+);
+assert.equal(
+  outreachRouteSource.match(/timeoutMs: 7000/g)?.length,
+  6,
+  "Telegram and email-provider calls must use a 7-second deadline",
+);
+assert.ok(outreachRouteSource.includes("connectionTimeout: 7000"), "outreach Gmail fallback connection timeout must be bounded");
+assert.ok(outreachRouteSource.includes("greetingTimeout: 7000"), "outreach Gmail fallback greeting timeout must be bounded");
+assert.ok(outreachRouteSource.includes("socketTimeout: 7000"), "outreach Gmail fallback socket timeout must be bounded");
 
 console.log("Lead and webhook idempotency regression tests passed (create, replay, tenant isolation, and orphan repair).");
