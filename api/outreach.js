@@ -4,6 +4,7 @@ import dns from "dns";
 import { hasValidCronAuthorization } from "./_lib/cronAuth.js";
 import { logSafeError } from "./_lib/safeErrorLog.js";
 import { fetchPublicWebsite } from "./_lib/safeWebsiteFetch.js";
+import { fetchJsonResponseWithTimeout } from "./_lib/fetchWithTimeout.js";
 import { constantTimeSecretEqual } from "./_lib/constantTimeSecret.js";
 import { checkRateLimit } from "./_lib/security.js";
 import { getClientIp } from "./_lib/input.js";
@@ -145,7 +146,7 @@ function mergePricing(current, updates) {
 // Helper: Send message to Telegram chat
 async function sendTelegramMessage(token, chatId, text) {
   if (!token) return;
-  await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+  await fetchJsonResponseWithTimeout(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -153,7 +154,7 @@ async function sendTelegramMessage(token, chatId, text) {
       text: text,
       parse_mode: "Markdown",
     }),
-  });
+  }, { timeoutMs: 7000 });
 }
 
 // 1. Analyze Prospect, generate pain points and email draft, push to Telegram
@@ -293,7 +294,7 @@ Website Scraped Context:
 - Description: ${scrapeResult.description || "N/A"}
 - Tech Stack Tags: ${scrapeResult.techTags.length > 0 ? scrapeResult.techTags.join(", ") : "None detected"}`;
 
-  const aiRes = await fetch(deepseekEndpoint, {
+  const aiRes = await fetchJsonResponseWithTimeout(deepseekEndpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -308,13 +309,13 @@ Website Scraped Context:
       temperature: 0.3,
       response_format: { type: "json_object" },
     }),
-  });
+  }, { timeoutMs: 20000 });
 
   if (!aiRes.ok) {
     throw new Error(`DeepSeek API connection failure: ${aiRes.status}`);
   }
 
-  const aiData = await aiRes.json();
+  const aiData = aiRes.data;
   const parsedAI = JSON.parse(aiData.choices[0].message.content);
 
   const painPoints = [
@@ -373,7 +374,7 @@ Website Scraped Context:
       ],
     };
 
-    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+    await fetchJsonResponseWithTimeout(`https://api.telegram.org/bot${botToken}/sendMessage`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -382,7 +383,7 @@ Website Scraped Context:
         parse_mode: "Markdown",
         reply_markup: telegramButtons,
       }),
-    });
+    }, { timeoutMs: 7000 });
   }
 
   return { ...leadData, ...updateData };
@@ -825,7 +826,7 @@ You MUST return a JSON object (and nothing else) with these keys:
         { role: "user", content: text }
       ];
 
-      const aiRes = await fetch(deepseekEndpoint, {
+      const aiRes = await fetchJsonResponseWithTimeout(deepseekEndpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -837,13 +838,13 @@ You MUST return a JSON object (and nothing else) with these keys:
           temperature: 0.5,
           response_format: { type: "json_object" },
         }),
-      });
+      }, { timeoutMs: 20000 });
 
       if (!aiRes.ok) {
         throw new Error(`DeepSeek AI connection error: ${aiRes.status}`);
       }
 
-      const aiData = await aiRes.json();
+      const aiData = aiRes.data;
       const rawContent = aiData.choices[0].message.content.trim();
       
       let parsedResponse;
@@ -997,20 +998,20 @@ You MUST return a JSON object (and nothing else) with these keys:
 // Telegram API Helpers
 async function answerCallbackQuery(token, queryId, text) {
   if (!token) return;
-  await fetch(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
+  await fetchJsonResponseWithTimeout(`https://api.telegram.org/bot${token}/answerCallbackQuery`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ callback_query_id: queryId, text }),
-  });
+  }, { timeoutMs: 7000 });
 }
 
 async function editTelegramMessage(token, chatId, messageId, text) {
   if (!token) return;
-  await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
+  await fetchJsonResponseWithTimeout(`https://api.telegram.org/bot${token}/editMessageText`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ chat_id: chatId, message_id: messageId, text, parse_mode: "Markdown" }),
-  });
+  }, { timeoutMs: 7000 });
 }
 
 // Utility: Pricing detail configurations
@@ -1262,7 +1263,7 @@ async function sendOutreachEmail(leadData, emailHtml) {
   if (brevoApiKey) {
     try {
       console.log("Attempting to send email via Brevo Web API...");
-      const apiRes = await fetch("https://api.brevo.com/v3/smtp/email", {
+      const apiRes = await fetchJsonResponseWithTimeout("https://api.brevo.com/v3/smtp/email", {
         method: "POST",
         headers: {
           "accept": "application/json",
@@ -1275,7 +1276,7 @@ async function sendOutreachEmail(leadData, emailHtml) {
           subject: `Exclusive Growth Offer: QuickKit AI Partnership for ${leadData.businessName}`,
           htmlContent: emailHtml,
         }),
-      });
+      }, { timeoutMs: 7000 });
 
       if (apiRes.ok) {
         return { success: true, sentVia: "Brevo Web API" };
@@ -1291,7 +1292,7 @@ async function sendOutreachEmail(leadData, emailHtml) {
   if (resendApiKey) {
     try {
       console.log("Attempting to send email via Resend Web API...");
-      const apiRes = await fetch("https://api.resend.com/emails", {
+      const apiRes = await fetchJsonResponseWithTimeout("https://api.resend.com/emails", {
         method: "POST",
         headers: {
           "Accept": "application/json",
@@ -1304,7 +1305,7 @@ async function sendOutreachEmail(leadData, emailHtml) {
           subject: `Exclusive Growth Offer: QuickKit AI Partnership for ${leadData.businessName}`,
           html: emailHtml,
         }),
-      });
+      }, { timeoutMs: 7000 });
 
       if (apiRes.ok) {
         return { success: true, sentVia: "Resend Web API" };
@@ -1325,6 +1326,9 @@ async function sendOutreachEmail(leadData, emailHtml) {
       user: gmailUser,
       pass: process.env.EMAIL_PASS,
     },
+    connectionTimeout: 7000,
+    greetingTimeout: 7000,
+    socketTimeout: 7000,
   });
 
   await transporter.sendMail({
