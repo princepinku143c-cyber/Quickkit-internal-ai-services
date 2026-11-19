@@ -30,6 +30,7 @@ try {
   assert.doesNotMatch(source, /tvly-[A-Za-z0-9]/, "provider credentials must not be hardcoded");
 
   assert.equal(isQuickKitResultUrl("https://quickkitai.com/visibility"), true);
+  assert.equal(isQuickKitResultUrl("https://quickkitai.com./visibility"), true);
   assert.equal(isQuickKitResultUrl("https://www.quickkitai.com/visibility"), true);
   assert.equal(isQuickKitResultUrl("https://agents.quickkitai.com/visibility"), true);
   assert.equal(isQuickKitResultUrl("http://quickkitai.com/visibility"), true);
