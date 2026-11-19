@@ -449,3 +449,50 @@ try {
 } finally {
   await testEnv.cleanup();
 }
+
+// The nested automation app has its own rules file. Keep its profile identity
+// and role immutable from client SDKs as well as the root QuickKit rules.
+const automationRules = await readFile(
+  new URL('../quickkit-automation-agent-main/firestore.rules', import.meta.url),
+  'utf8',
+);
+const automationEnv = await initializeTestEnvironment({
+  projectId: 'demo-quickkit-automation-rules',
+  firestore: { rules: automationRules },
+});
+
+try {
+  const automationUser = automationEnv.authenticatedContext('automation-user', {
+    email: 'automation@example.com',
+  }).firestore();
+  const profileRef = doc(automationUser, 'users', 'automation-user');
+  const validProfile = {
+    uid: 'automation-user',
+    email: 'automation@example.com',
+    tier: 'FREE',
+    region: 'GLOBAL',
+    role: 'USER',
+    status: 'active',
+    expiresAt: 0,
+    updatedAt: Date.now(),
+    autoRenew: false,
+    credits: 5,
+    aiUsed: 0,
+    monthlyLimit: 5,
+    usage: { workflows: 0, runs: 0, apiCalls: 0 },
+    warningSent: false,
+    createdAt: Date.now(),
+    onboardingDone: false,
+  };
+
+  await assertFails(setDoc(profileRef, { ...validProfile, role: 'ADMIN' }));
+  await assertFails(setDoc(profileRef, { ...validProfile, role: 'OWNER' }));
+  await assertSucceeds(setDoc(profileRef, validProfile));
+  await assertFails(updateDoc(profileRef, { role: 'ADMIN' }));
+  await assertFails(updateDoc(profileRef, { uid: 'another-user' }));
+  await assertSucceeds(updateDoc(profileRef, { lastLoginAt: Date.now() }));
+
+  console.log('Automation app Firestore profile identity and role tests passed.');
+} finally {
+  await automationEnv.cleanup();
+}
