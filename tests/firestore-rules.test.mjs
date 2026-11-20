@@ -494,6 +494,26 @@ try {
     email: 'automation@example.com',
   }).firestore();
   const automationOtherUser = automationEnv.authenticatedContext('automation-other').firestore();
+
+  // These collections are currently referenced by the nested client service but
+  // have no tenant-safe owner model in its Firestore rules. Keep them fail-closed
+  // until writes and queries carry a verified owner and dedicated rules are added.
+  for (const collectionName of [
+    'architect_memory',
+    'usage_quotas',
+    'active_runs',
+    'execution_logs',
+    'blueprints',
+  ]) {
+    await assertFails(getDocs(collection(automationUser, collectionName)));
+    await assertFails(setDoc(doc(automationUser, collectionName, 'unscoped-client-write'), {
+      userId: 'automation-user',
+      ownerUid: 'automation-user',
+      value: 'must remain inaccessible',
+    }));
+    await assertFails(getDoc(doc(automationOtherUser, collectionName, 'unscoped-client-write')));
+  }
+
   const profileRef = doc(automationUser, 'users', 'automation-user');
   const validProfile = {
     uid: 'automation-user',
