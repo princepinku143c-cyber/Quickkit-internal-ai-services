@@ -299,6 +299,23 @@ const validContent = JSON.stringify([
   assert.equal(invalid.statusCode, 502);
   assertNoStore(invalid);
 
+  // A provider response-body parsing failure must not expose upstream details.
+  const unreadableBody = createResponse();
+  await createAeoHandler({
+    adminClient: createAdmin(),
+    envProvider: () => enabledEnv(),
+    rateLimit: async () => {},
+    fetchImpl: async () => ({
+      ok: true,
+      async json() {
+        throw new Error("provider-secret-response-body");
+      },
+    }),
+  })(createRequest(), unreadableBody);
+  assert.equal(unreadableBody.statusCode, 502);
+  assertNoStore(unreadableBody);
+  assert.equal(JSON.stringify(unreadableBody.body).includes("provider-secret-response-body"), false);
+
   const timeout = createResponse();
   let abortTimer;
   let timeoutCleared = false;
