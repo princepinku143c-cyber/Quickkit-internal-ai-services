@@ -26,6 +26,10 @@ function createResponse() {
   };
 }
 
+function assertNoStore(response) {
+  assert.equal(response.headers["cache-control"], "no-store");
+}
+
 function createAdmin({ validToken = "valid-test-token", uid = "tenant-user", configured = true } = {}) {
   return {
     apps: configured ? [{}] : [],
@@ -72,14 +76,14 @@ const validContent = JSON.stringify([
   const options = createResponse();
   await handler(createRequest({ method: "OPTIONS", authorization: null, body: undefined }), options);
   assert.equal(options.statusCode, 204);
-  assert.equal(options.headers["cache-control"], "no-store");
+  assertNoStore(options);
   assert.equal(options.ended, true);
   assert.equal(options.headers.allow, "POST, OPTIONS");
 
   const get = createResponse();
   await handler(createRequest({ method: "GET" }), get);
   assert.equal(get.statusCode, 405);
-  assert.equal(get.headers["cache-control"], "no-store");
+  assertNoStore(get);
   assert.equal(get.headers.allow, "POST, OPTIONS");
 }
 
@@ -98,12 +102,14 @@ const validContent = JSON.stringify([
     createRequest({ authorization: null }), missingAuth,
   );
   assert.equal(missingAuth.statusCode, 401);
+  assertNoStore(missingAuth);
 
   const invalidAuth = createResponse();
   await createAeoHandler({ ...common, envProvider: () => enabledEnv() })(
     createRequest({ authorization: "Bearer invalid-token" }), invalidAuth,
   );
   assert.equal(invalidAuth.statusCode, 401);
+  assertNoStore(invalidAuth);
 
   const invalidUid = createResponse();
   await createAeoHandler({
@@ -112,6 +118,7 @@ const validContent = JSON.stringify([
     envProvider: () => enabledEnv(),
   })(createRequest(), invalidUid);
   assert.equal(invalidUid.statusCode, 401);
+  assertNoStore(invalidUid);
 
   const unavailableFirebase = createResponse();
   await createAeoHandler({
@@ -120,12 +127,14 @@ const validContent = JSON.stringify([
     envProvider: () => enabledEnv(),
   })(createRequest(), unavailableFirebase);
   assert.equal(unavailableFirebase.statusCode, 503);
+  assertNoStore(unavailableFirebase);
 
   const defaultDisabled = createResponse();
   await createAeoHandler({ ...common, envProvider: () => ({ OPENCODE_API_KEY: "unit-test-provider-key" }) })(
     createRequest(), defaultDisabled,
   );
   assert.equal(defaultDisabled.statusCode, 503);
+  assertNoStore(defaultDisabled);
   assert.equal(fetchCalls, 0);
 
   const disabled = createResponse();
@@ -133,6 +142,7 @@ const validContent = JSON.stringify([
     createRequest(), disabled,
   );
   assert.equal(disabled.statusCode, 503);
+  assertNoStore(disabled);
   assert.equal(fetchCalls, 0);
   assert.equal(rateCalls, 0);
 
@@ -141,6 +151,7 @@ const validContent = JSON.stringify([
     createRequest(), missingProviderKey,
   );
   assert.equal(missingProviderKey.statusCode, 503);
+  assertNoStore(missingProviderKey);
   assert.equal(fetchCalls, 0);
 }
 
@@ -166,11 +177,13 @@ const validContent = JSON.stringify([
     const response = createResponse();
     await handler(createRequest({ body }), response);
     assert.equal(response.statusCode, 400);
+    assertNoStore(response);
   }
 
   const oversized = createResponse();
   await handler(createRequest({ body: { keyword: "x".repeat(9000) } }), oversized);
   assert.equal(oversized.statusCode, 413);
+  assertNoStore(oversized);
 }
 
 // Rate limiting is per verified Firebase UID and fails closed.
@@ -192,6 +205,7 @@ const validContent = JSON.stringify([
   })(createRequest(), response);
 
   assert.equal(response.statusCode, 429);
+  assertNoStore(response);
   assert.equal(response.headers["retry-after"], "45");
   assert.deepEqual(observed, ["uid:tenant-user", "aeo-generation", 3]);
   assert.equal(fetchCalls, 0);
@@ -213,6 +227,7 @@ const validContent = JSON.stringify([
   })(createRequest({ body: { keyword: "real estate lead qualification", count: 2 } }), response);
 
   assert.equal(response.statusCode, 200);
+  assertNoStore(response);
   assert.equal(response.body.success, true);
   assert.equal(response.body.data.qaPairs.length, 2);
   assert.deepEqual(rateArgs, ["uid:tenant-user", "aeo-generation", 3]);
@@ -234,6 +249,7 @@ const validContent = JSON.stringify([
     fetchImpl: async () => ({ ok: false, async text() { return "provider-secret-response"; } }),
   })(createRequest(), failure);
   assert.equal(failure.statusCode, 502);
+  assertNoStore(failure);
   assert.equal(JSON.stringify(failure.body).includes("provider-secret-response"), false);
 
   const invalid = createResponse();
@@ -244,6 +260,7 @@ const validContent = JSON.stringify([
     fetchImpl: async () => providerResponse("not-json"),
   })(createRequest(), invalid);
   assert.equal(invalid.statusCode, 502);
+  assertNoStore(invalid);
 
   const timeout = createResponse();
   let abortTimer;
@@ -263,6 +280,7 @@ const validContent = JSON.stringify([
     },
   })(createRequest(), timeout);
   assert.equal(timeout.statusCode, 504);
+  assertNoStore(timeout);
   assert.equal(timeoutCleared, true);
 }
 
