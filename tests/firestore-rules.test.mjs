@@ -408,6 +408,27 @@ try {
     status: 'approved',
   }));
 
+  // AEO rate-limit counters are server-owned: clients must not read or alter
+  // the counters that protect authenticated generation requests. The API uses
+  // the Admin SDK; these checks intentionally exercise only client SDK rules.
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), 'rate_limits', 'uid_alice_aeo-generation'), {
+      count: 1,
+      firstCall: Date.now(),
+    });
+  });
+  for (const clientDb of [anonymous, alice, bob, admin]) {
+    const protectedRateLimit = doc(clientDb, 'rate_limits', 'uid_alice_aeo-generation');
+    await assertFails(getDoc(protectedRateLimit));
+    await assertFails(getDocs(collection(clientDb, 'rate_limits')));
+    await assertFails(setDoc(doc(clientDb, 'rate_limits', 'client-forged-rate-limit'), {
+      count: 0,
+      firstCall: Date.now(),
+    }));
+    await assertFails(updateDoc(protectedRateLimit, { count: 0 }));
+    await assertFails(deleteDoc(protectedRateLimit));
+  }
+
   // Admin-only collections and server-only payment writes.
   await assertFails(getDoc(doc(alice, 'promo_codes', 'LAUNCH')));
   await assertSucceeds(setDoc(doc(admin, 'promo_codes', 'LAUNCH'), {
