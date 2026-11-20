@@ -34,6 +34,12 @@ jobs:
         run: npm run test:seo
       - name: TypeScript validation
         run: npx tsc --noEmit
+      - name: Install nested automation dependencies
+        run: npm ci --prefix quickkit-automation-agent-main --ignore-scripts --no-audit --no-fund
+      - name: Nested automation TypeScript validation
+        run: npm run --prefix quickkit-automation-agent-main lint
+      - name: Nested automation production build
+        run: npm run --prefix quickkit-automation-agent-main build
       - name: Security input regression tests
         run: npm run test:security
       - name: API integration safety guard regression tests
