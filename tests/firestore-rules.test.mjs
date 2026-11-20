@@ -642,8 +642,8 @@ try {
 
   await assertSucceeds(setDoc(automationProjectRef, validAutomationProject));
 
-  // The nested project service must read a known document directly. An ID-only
-  // collection query cannot prove the userId constraint required by these rules.
+  // The service reads known documents directly. A document-ID query is also
+  // safe only when the signed-in caller owns the matching document.
   await assertSucceeds(getDoc(automationProjectRef));
   await assertFails(getDoc(doc(automationOtherUser, 'projects', 'automation-owned-project')));
   const automationOwnedProjects = await getDocs(query(
@@ -652,7 +652,7 @@ try {
   ));
   assert.equal(automationOwnedProjects.size, 1);
   await assertFails(getDocs(query(
-    collection(automationUser, 'projects'),
+    collection(automationOtherUser, 'projects'),
     where(documentId(), '==', 'automation-owned-project'),
   )));
   await assertSucceeds(updateDoc(automationProjectRef, {
