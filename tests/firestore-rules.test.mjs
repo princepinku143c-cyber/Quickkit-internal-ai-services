@@ -554,13 +554,9 @@ try {
   }).firestore();
   const automationOtherUser = automationEnv.authenticatedContext('automation-other').firestore();
 
-  // These collections remain fail-closed until their data model and client
-  // queries carry an explicit, verified owner.
-  for (const collectionName of [
-    'usage_quotas',
-    'active_runs',
-    'blueprints',
-  ]) {
+  // Quotas and blueprints remain fail-closed until their server/client data
+  // models are reviewed. Active runs have a separate owner-scoped contract below.
+  for (const collectionName of ['usage_quotas', 'blueprints']) {
     await assertFails(getDocs(collection(automationUser, collectionName)));
     await assertFails(setDoc(doc(automationUser, collectionName, 'unscoped-client-write'), {
       userId: 'automation-user',
@@ -569,6 +565,59 @@ try {
     }));
     await assertFails(getDoc(doc(automationOtherUser, collectionName, 'unscoped-client-write')));
   }
+
+  // Cloud Pulse stores one run document per runId. Only the authenticated owner
+  // may create/read/update/delete that document; collection enumeration and
+  // ownership/project reassignment are denied.
+  const ownerRunRef = doc(automationUser, 'active_runs', 'owner-run');
+  const validActiveRun = {
+    runId: 'owner-run',
+    userId: 'automation-user',
+    projectId: 'test-project',
+    status: 'QUEUED',
+    currentQueue: ['trigger'],
+    completedNodeIds: [],
+    context: { trigger: { data: { event: 'test' } } },
+    startTime: Date.now(),
+    lastUpdateTime: Date.now(),
+    nodeLimitCount: 0,
+    createdAt: serverTimestamp(),
+  };
+
+  await assertSucceeds(setDoc(ownerRunRef, validActiveRun));
+  await assertSucceeds(getDoc(ownerRunRef));
+  await assertFails(getDoc(doc(automationOtherUser, 'active_runs', 'owner-run')));
+  await assertFails(getDocs(collection(automationUser, 'active_runs')));
+  await assertSucceeds(updateDoc(ownerRunRef, {
+    status: 'RUNNING',
+    currentQueue: ['next-node'],
+    lastUpdateTime: Date.now(),
+  }));
+  await assertFails(updateDoc(ownerRunRef, { userId: 'automation-other' }));
+  await assertFails(updateDoc(ownerRunRef, { projectId: 'other-project' }));
+  await assertFails(updateDoc(ownerRunRef, { status: 'ADMIN' }));
+  await assertFails(updateDoc(ownerRunRef, { unexpected: true }));
+  await assertFails(updateDoc(ownerRunRef, { createdAt: serverTimestamp() }));
+  await assertFails(setDoc(doc(automationOtherUser, 'active_runs', 'forged-run'), {
+    ...validActiveRun,
+    runId: 'forged-run',
+  }));
+  await assertFails(setDoc(doc(automationUser, 'active_runs', 'wrong-path'), {
+    ...validActiveRun,
+    runId: 'owner-run',
+  }));
+
+  // The local checkpoint path uses set(..., { merge: true }) and may create
+  // an initial state without the optional cloud-createdAt timestamp.
+  const checkpointRun = { ...validActiveRun, runId: 'checkpoint-run' };
+  delete checkpointRun.createdAt;
+  await assertSucceeds(setDoc(
+    doc(automationUser, 'active_runs', 'checkpoint-run'),
+    checkpointRun,
+    { merge: true },
+  ));
+  await assertFails(deleteDoc(doc(automationOtherUser, 'active_runs', 'owner-run')));
+  await assertSucceeds(deleteDoc(ownerRunRef));
 
   // Architect memory is writable/readable only by its authenticated owner.
   const ownerMemoryRef = doc(automationUser, 'architect_memory', 'owner-memory');
