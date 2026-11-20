@@ -105,6 +105,35 @@ service cloud.firestore {
       allow delete: if isOwner(resource.data.userId);
     }
 
+    // Architect memory is private to its creator. Legacy unowned records are not exposed.
+    function validArchitectMemoryCreate() {
+      return isAuthenticated()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'userId', 'userPrompt', 'blueprintSummary', 'fullBlueprint', 'createdAt', 'likes'
+        ])
+        && request.resource.data.keys().hasAll([
+          'userId', 'userPrompt', 'blueprintSummary', 'fullBlueprint', 'createdAt', 'likes'
+        ])
+        && request.resource.data.userPrompt is string
+        && request.resource.data.userPrompt.size() <= 8000
+        && request.resource.data.blueprintSummary is string
+        && request.resource.data.blueprintSummary.size() <= 500
+        && request.resource.data.fullBlueprint is map
+        && request.resource.data.fullBlueprint.keys().hasOnly(['nexuses', 'synapses'])
+        && request.resource.data.fullBlueprint.keys().hasAll(['nexuses', 'synapses'])
+        && request.resource.data.fullBlueprint.nexuses is list
+        && request.resource.data.fullBlueprint.synapses is list
+        && request.resource.data.createdAt is int
+        && request.resource.data.likes == 1;
+    }
+
+    match /architect_memory/{memoryId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if validArchitectMemoryCreate();
+      allow update, delete: if false;
+    }
+
     // Execution logs are client-created, but every record is permanently scoped to its verified owner.
     // Clients may read their own logs and create new ones; existing logs cannot be altered or deleted.
     function validExecutionLogCreate() {
