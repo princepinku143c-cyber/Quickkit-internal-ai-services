@@ -48,6 +48,22 @@ assert.doesNotMatch(
   'automation user service must not expose a browser-console admin promotion helper',
 );
 
+const automationProjectService = await readFile(
+  new URL('../quickkit-automation-agent-main/services/projectService.ts', import.meta.url),
+  'utf8',
+);
+const dbConnectionCheck = automationProjectService.match(/export const checkDbConnection[\s\S]*?\n};/)?.[0] || '';
+assert.match(dbConnectionCheck, /checkDbConnection = async \(userId: string\)/);
+assert.match(dbConnectionCheck, /if \(!userId\) return false/);
+assert.match(dbConnectionCheck, /where\('userId', '==', userId\)/);
+
+const automationProjectList = await readFile(
+  new URL('../quickkit-automation-agent-main/components/ProjectList.tsx', import.meta.url),
+  'utf8',
+);
+assert.match(automationProjectList, /checkDbConnection\(user\.uid\)/);
+assert.match(automationProjectList, /\[user\?\.uid\]/);
+
 const testEnv = await initializeTestEnvironment({
   projectId: 'demo-quickkitai-rules',
   firestore: { rules },
