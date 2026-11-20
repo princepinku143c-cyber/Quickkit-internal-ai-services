@@ -67,6 +67,25 @@ const automationProjectList = await readFile(
 assert.match(automationProjectList, /checkDbConnection\(user\.uid\)/);
 assert.match(automationProjectList, /\[user\?\.uid\]/);
 
+const automationCloudStore = await readFile(
+  new URL('../quickkit-automation-agent-main/services/cloudStore.ts', import.meta.url),
+  'utf8',
+);
+const dailyUsageGuard = automationCloudStore.match(
+  /export const updateDailyUsage = async \([\s\S]*?\n};/,
+)?.[0] || '';
+assert.match(dailyUsageGuard, /if \(!userId \|\| !db\) return \{ allowed: false, count: 0, reason: 'unavailable' \}/);
+assert.match(dailyUsageGuard, /userId === 'guest' \|\| userId === 'dev-bypass-user-999'/);
+assert.match(dailyUsageGuard, /return \{ allowed: false, count: 0, reason: 'unavailable' \}/);
+assert.doesNotMatch(dailyUsageGuard, /catch \(e\) \{ return \{ allowed: true/);
+
+const automationExecutionEngine = await readFile(
+  new URL('../quickkit-automation-agent-main/services/executionEngine.ts', import.meta.url),
+  'utf8',
+);
+assert.match(automationExecutionEngine, /'QUOTA_UNAVAILABLE'/);
+assert.match(automationExecutionEngine, /quota\.reason === 'unavailable'/);
+
 const testEnv = await initializeTestEnvironment({
   projectId: 'demo-quickkitai-rules',
   firestore: { rules },
