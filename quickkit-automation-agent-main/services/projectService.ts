@@ -1,5 +1,5 @@
 import { db } from './firebase';
-import { collection, query, where, getDocs, addDoc, updateDoc, doc, deleteDoc, orderBy, limit, Timestamp, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, getDocs, getDoc, addDoc, updateDoc, doc, deleteDoc, orderBy, limit, Timestamp, onSnapshot } from 'firebase/firestore';
 import { Project, NexusType, NexusSubtype } from '../types';
 
 const PROJECTS_COLLECTION = 'projects';
@@ -46,9 +46,11 @@ export const deleteProject = async (projectId: string): Promise<void> => {
 
 export const getProjectById = async (projectId: string): Promise<Project | null> => {
   const docRef = doc(db, PROJECTS_COLLECTION, projectId);
-  const docSnap = await getDocs(query(collection(db, PROJECTS_COLLECTION), where('__name__', '==', projectId)));
-  if (docSnap.empty) return null;
-  return { id: docSnap.docs[0].id, ...docSnap.docs[0].data() } as Project;
+  // A direct document read lets Firestore evaluate the document's ownerUid
+  // rule. A document-ID-only collection query cannot prove tenant ownership.
+  const docSnap = await getDoc(docRef);
+  if (!docSnap.exists()) return null;
+  return { id: docSnap.id, ...docSnap.data() } as Project;
 };
 
 export const subscribeToProjects = (userId: string, callback: (projects: Project[]) => void) => {
