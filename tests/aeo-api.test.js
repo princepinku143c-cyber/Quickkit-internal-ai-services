@@ -256,6 +256,26 @@ const validContent = JSON.stringify([
   assert.equal(JSON.stringify(response.body).includes("unit-test-provider-key"), false);
 }
 
+// A provider response shorter than the requested count must not be reported as a successful partial result.
+{
+  const response = createResponse();
+  await createAeoHandler({
+    adminClient: createAdmin(),
+    envProvider: () => enabledEnv(),
+    rateLimit: async () => {},
+    fetchImpl: async () => providerResponse(JSON.stringify([
+      { question: "Only one question", answer: "Only one answer." },
+    ])),
+  })(createRequest({ body: { keyword: "topic", count: 2 } }), response);
+
+  assert.equal(response.statusCode, 502);
+  assertNoStore(response);
+  assert.deepEqual(response.body, {
+    success: false,
+    message: "AEO provider returned an invalid response.",
+  });
+}
+
 // Provider failures, malformed JSON and timeouts return sanitized errors only.
 {
   const failure = createResponse();
@@ -309,5 +329,9 @@ assert.deepEqual(parseAeoPairs("```json\n" + validContent + "\n```", 1), [
 ]);
 assert.throws(() => parseAeoPairs("not-json", 2), SyntaxError);
 assert.throws(() => parseAeoPairs(JSON.stringify([{ question: "Missing answer" }]), 1), TypeError);
+assert.throws(
+  () => parseAeoPairs(JSON.stringify([{ question: "Only one question", answer: "Only one answer." }]), 2),
+  TypeError,
+);
 
 console.log("AEO API authentication, feature flag, rate limit, provider safety and response validation tests passed.");
