@@ -211,6 +211,23 @@ const validContent = JSON.stringify([
   assert.equal(fetchCalls, 0);
 }
 
+// A failed rate-limit backend must fail closed and never call the provider.
+{
+  let fetchCalls = 0;
+  const response = createResponse();
+  await createAeoHandler({
+    adminClient: createAdmin(),
+    envProvider: () => enabledEnv(),
+    rateLimit: async () => { throw new Error("Firestore unavailable"); },
+    fetchImpl: async () => { fetchCalls += 1; return providerResponse(validContent); },
+  })(createRequest(), response);
+
+  assert.equal(response.statusCode, 503);
+  assertNoStore(response);
+  assert.equal(response.body.success, false);
+  assert.equal(fetchCalls, 0);
+}
+
 // Successful requests send only the provider key upstream and return validated plain-text pairs.
 {
   let captured;
