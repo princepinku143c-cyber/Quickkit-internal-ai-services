@@ -25,6 +25,9 @@ export function parseAeoPairs(content, requestedCount) {
   if (!Array.isArray(parsed) || parsed.length === 0) {
     throw new TypeError("AEO provider response must be a non-empty JSON array.");
   }
+  if (parsed.length < requestedCount) {
+    throw new TypeError("AEO provider returned fewer Q&A pairs than requested.");
+  }
 
   const pairs = parsed.slice(0, requestedCount).map((item) => {
     if (!isPlainObject(item)) throw new TypeError("AEO provider returned an invalid item.");
