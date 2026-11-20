@@ -1320,3 +1320,20 @@ console.log("Transactional AI credit ledger regression tests passed.");
   }
 }
 console.log("Kelly conversation history role regression test passed.");
+
+const automationRunModalSource = readFileSync(
+  new URL("../quickkit-automation-agent-main/components/RunModal.tsx", import.meta.url),
+  "utf8",
+);
+assert.match(automationRunModalSource, /finalResult\\.status\\.replace\\(\\/_\\/g, ' ' \\)/);
+assert.match(automationRunModalSource, /getExecutionResultMessage\\(finalResult\\.status\\)/);
+assert.match(
+  automationRunModalSource,
+  /case 'QUOTA_UNAVAILABLE':[\\s\\S]*?No workflow nodes were started/,
+  "quota-store outages must be shown as blocked, not successful or exhausted",
+);
+assert.match(
+  automationRunModalSource,
+  /finalResult\\.status === 'SUCCESS' && \\(/
+);
+console.log("Automation execution-result UI regression tests passed.");
