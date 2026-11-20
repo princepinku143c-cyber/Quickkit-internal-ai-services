@@ -13,7 +13,10 @@ import {
   documentId,
   getDoc,
   getDocs,
+  limit,
+  orderBy,
   query,
+  serverTimestamp,
   setDoc,
   updateDoc,
   where,
@@ -511,14 +514,12 @@ try {
   }).firestore();
   const automationOtherUser = automationEnv.authenticatedContext('automation-other').firestore();
 
-  // These collections are currently referenced by the nested client service but
-  // have no tenant-safe owner model in its Firestore rules. Keep them fail-closed
-  // until writes and queries carry a verified owner and dedicated rules are added.
+  // These collections remain fail-closed until their data model and client
+  // queries carry an explicit, verified owner.
   for (const collectionName of [
     'architect_memory',
     'usage_quotas',
     'active_runs',
-    'execution_logs',
     'blueprints',
   ]) {
     await assertFails(getDocs(collection(automationUser, collectionName)));
@@ -529,6 +530,48 @@ try {
     }));
     await assertFails(getDoc(doc(automationOtherUser, collectionName, 'unscoped-client-write')));
   }
+
+  // Execution logs have a canonical userId and the service's list query is owner-filtered.
+  // Owners can create/read their logs; other users cannot, and logs are immutable.
+  const ownerLogRef = doc(automationUser, 'execution_logs', 'owner-log');
+  const validExecutionLog = {
+    id: 'PORTAL_REQ_123',
+    timestamp: Date.now(),
+    nexusId: 'entry_point',
+    status: 'success',
+    message: 'Portal request completed',
+    duration: 2100,
+    inputData: '{}',
+    outputData: '{}',
+    usage: { tokens: 150, creditsCost: 2 },
+    userId: 'automation-user',
+    createdAt: serverTimestamp(),
+  };
+
+  await assertSucceeds(setDoc(ownerLogRef, validExecutionLog));
+  await assertSucceeds(getDoc(ownerLogRef));
+  await assertFails(getDoc(doc(automationOtherUser, 'execution_logs', 'owner-log')));
+  await assertSucceeds(getDocs(query(
+    collection(automationUser, 'execution_logs'),
+    where('userId', '==', 'automation-user'),
+    orderBy('timestamp', 'desc'),
+    limit(20),
+  )));
+  await assertFails(getDocs(collection(automationUser, 'execution_logs')));
+  await assertFails(setDoc(doc(automationOtherUser, 'execution_logs', 'forged-owner-log'), {
+    ...validExecutionLog,
+    id: 'FORGED',
+    userId: 'automation-user',
+    createdAt: serverTimestamp(),
+  }));
+  await assertFails(setDoc(doc(automationUser, 'execution_logs', 'extra-field'), {
+    ...validExecutionLog,
+    id: 'EXTRA',
+    extra: 'not-allowed',
+    createdAt: serverTimestamp(),
+  }));
+  await assertFails(updateDoc(ownerLogRef, { message: 'tampered' }));
+  await assertFails(deleteDoc(ownerLogRef));
 
   const profileRef = doc(automationUser, 'users', 'automation-user');
   const validProfile = {

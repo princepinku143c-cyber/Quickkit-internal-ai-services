@@ -105,6 +105,47 @@ service cloud.firestore {
       allow delete: if isOwner(resource.data.userId);
     }
 
+    // Execution logs are client-created, but every record is permanently scoped to its verified owner.
+    // Clients may read their own logs and create new ones; existing logs cannot be altered or deleted.
+    function validExecutionLogCreate() {
+      return isAuthenticated()
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.keys().hasOnly([
+          'id', 'timestamp', 'nexusId', 'status', 'message', 'duration',
+          'inputData', 'outputData', 'usage', 'userId', 'createdAt'
+        ])
+        && request.resource.data.id is string
+        && request.resource.data.id.size() <= 128
+        && request.resource.data.timestamp is int
+        && request.resource.data.nexusId is string
+        && request.resource.data.nexusId.size() <= 128
+        && request.resource.data.status in ['success', 'error', 'retrying']
+        && request.resource.data.message is string
+        && request.resource.data.message.size() <= 1000
+        && request.resource.data.duration is int
+        && request.resource.data.duration >= 0
+        && request.resource.data.createdAt == request.time
+        && (!('inputData' in request.resource.data)
+          || (request.resource.data.inputData is string && request.resource.data.inputData.size() <= 100000))
+        && (!('outputData' in request.resource.data)
+          || (request.resource.data.outputData is string && request.resource.data.outputData.size() <= 100000))
+        && (!('usage' in request.resource.data)
+          || (
+            request.resource.data.usage is map
+            && request.resource.data.usage.keys().hasOnly(['tokens', 'creditsCost'])
+            && (!('tokens' in request.resource.data.usage)
+              || (request.resource.data.usage.tokens is int && request.resource.data.usage.tokens >= 0))
+            && (!('creditsCost' in request.resource.data.usage)
+              || (request.resource.data.usage.creditsCost is int && request.resource.data.usage.creditsCost >= 0))
+          ));
+    }
+
+    match /execution_logs/{logId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if validExecutionLogCreate();
+      allow update, delete: if false;
+    }
+
     match /payments/{paymentId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
       allow create, update, delete: if false;
