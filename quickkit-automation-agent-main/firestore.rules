@@ -105,6 +105,64 @@ service cloud.firestore {
       allow delete: if isOwner(resource.data.userId);
     }
 
+    // Active run checkpoints are private to the signed-in owner.
+    // Clients may create/read/update their own run state, but cannot enumerate runs,
+    // change ownership/project identity, or write arbitrary fields.
+    function validActiveRunShape(runId) {
+      return request.resource.data.keys().hasOnly([
+        'runId', 'userId', 'projectId', 'status', 'currentQueue',
+        'completedNodeIds', 'context', 'startTime', 'lastUpdateTime',
+        'nodeLimitCount', 'createdAt'
+      ])
+        && request.resource.data.keys().hasAll([
+          'runId', 'userId', 'projectId', 'status', 'currentQueue',
+          'completedNodeIds', 'context', 'startTime', 'lastUpdateTime',
+          'nodeLimitCount'
+        ])
+        && request.resource.data.runId == runId
+        && request.resource.data.userId is string
+        && request.resource.data.projectId is string
+        && request.resource.data.status in ['QUEUED', 'RUNNING', 'PAUSED', 'COMPLETED', 'FAILED']
+        && request.resource.data.currentQueue is list
+        && request.resource.data.completedNodeIds is list
+        && request.resource.data.context is map
+        && request.resource.data.startTime is int
+        && request.resource.data.lastUpdateTime is int
+        && request.resource.data.nodeLimitCount is int
+        && request.resource.data.nodeLimitCount >= 0
+        && (!('createdAt' in request.resource.data)
+          || request.resource.data.createdAt is timestamp);
+    }
+
+    function validActiveRunCreate(runId) {
+      return isOwner(request.resource.data.userId)
+        && validActiveRunShape(runId)
+        // createCloudRun uses a Firestore server timestamp; local checkpoints
+        // may create the same shape without the optional createdAt field.
+        && (!('createdAt' in request.resource.data)
+          || request.resource.data.createdAt == request.time);
+    }
+
+    function validActiveRunUpdate(runId) {
+      let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
+      return isOwner(resource.data.userId)
+        && request.resource.data.userId == resource.data.userId
+        && request.resource.data.projectId == resource.data.projectId
+        && validActiveRunShape(runId)
+        && changedKeys.hasOnly([
+          'status', 'currentQueue', 'completedNodeIds', 'context',
+          'lastUpdateTime', 'nodeLimitCount'
+        ]);
+    }
+
+    match /active_runs/{runId} {
+      allow get: if isOwner(resource.data.userId);
+      allow list: if false;
+      allow create: if validActiveRunCreate(runId);
+      allow update: if validActiveRunUpdate(runId);
+      allow delete: if isOwner(resource.data.userId);
+    }
+
     // Architect memory is private to its creator. Legacy unowned records are not exposed.
     function validArchitectMemoryCreate() {
       return isAuthenticated()
