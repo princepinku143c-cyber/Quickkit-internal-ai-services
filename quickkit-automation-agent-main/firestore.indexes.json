@@ -1,6 +1,14 @@
 {
   "indexes": [
     {
+      "collectionGroup": "architect_memory",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "execution_logs",
       "queryScope": "COLLECTION",
       "fields": [
