@@ -27,8 +27,18 @@ const ProjectList: React.FC<ProjectListProps> = ({ projects, onCreateProject, on
   const [dbStatus, setDbStatus] = useState<'CONNECTED' | 'LOCKED' | 'OFFLINE'>('CONNECTED');
 
   useEffect(() => {
-      checkDbConnection().then(res => setDbStatus(res ? 'CONNECTED' : 'OFFLINE'));
-  }, []);
+    let active = true;
+    if (!user?.uid) {
+      setDbStatus('OFFLINE');
+      return () => { active = false; };
+    }
+
+    checkDbConnection(user.uid).then((connected) => {
+      if (active) setDbStatus(connected ? 'CONNECTED' : 'OFFLINE');
+    });
+
+    return () => { active = false; };
+  }, [user?.uid]);
 
   const filteredProjects = projects.filter(p => {
     const matchesTab = activeTab === 'ALL' || p.status === activeTab;
