@@ -152,9 +152,6 @@ export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) =>
               <a href="#visual-offer-spotlight" className="inline-flex items-center justify-center gap-3 rounded-2xl border-2 border-amber-400/40 bg-amber-400/[0.08] px-6 py-4 text-xs font-black uppercase tracking-[0.16em] text-amber-200 backdrop-blur transition hover:border-amber-300 hover:bg-amber-400/15 hover:text-white shadow-[0_0_25px_rgba(245,158,11,0.2)]">
                 <Sparkles className="h-4 w-4 text-amber-300" /> View Pilot Offer
               </a>
-              <button onClick={() => setShowAdDemo(true)} className="inline-flex items-center justify-center gap-3 rounded-2xl border border-white/10 bg-white/[0.045] px-6 py-4 text-xs font-black uppercase tracking-[0.16em] text-slate-300 backdrop-blur transition hover:border-white/20 hover:text-white">
-                <Play className="h-4 w-4 text-cyan-300" /> 60-sec Video
-              </button>
             </div>
 
             <div className="mt-9 grid max-w-2xl grid-cols-2 gap-3 sm:grid-cols-4">
