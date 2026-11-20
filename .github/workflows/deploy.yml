@@ -20,9 +20,11 @@ jobs:
           node-version: 24
           cache: npm
       - uses: actions/setup-python@v7
+        id: setup_python
         with:
           python-version: '3.12'
       - name: Install locked dependencies
+        id: root_install
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Dependency security audit
         id: dependency_audit
@@ -35,33 +37,47 @@ jobs:
       - name: TypeScript validation
         run: npx tsc --noEmit
       - name: Install nested automation dependencies
+        id: nested_install
         run: npm ci --prefix quickkit-automation-agent-main --ignore-scripts --no-audit --no-fund
       - name: Nested automation TypeScript validation
         run: npm run --prefix quickkit-automation-agent-main lint
       - name: Nested automation production build
+        if: ${{ !cancelled() && steps.nested_install.outcome == 'success' }}
         run: npm run --prefix quickkit-automation-agent-main build
       - name: Security input regression tests
+        if: ${{ !cancelled() && steps.root_install.outcome == 'success' }}
         run: npm run test:security
       - name: API integration safety guard regression tests
+        if: ${{ !cancelled() && steps.root_install.outcome == 'success' }}
         run: npm run test:api-guard
       - name: Lead submission idempotency regression tests
+        if: ${{ !cancelled() && steps.root_install.outcome == 'success' }}
         run: npm run test:lead-idempotency
       - name: Rank tracker credential and provider-error regression tests
+        if: ${{ !cancelled() && steps.root_install.outcome == 'success' }}
         run: npm run test:rank-tracker
       - name: Cron bearer authorization regression tests
+        if: ${{ !cancelled() && steps.root_install.outcome == 'success' }}
         run: npm run test:cron-auth
       - name: AEO provider credential regression tests
+        if: ${{ !cancelled() && steps.root_install.outcome == 'success' && steps.setup_python.outcome == 'success' }}
         run: python -m unittest discover -s tests -p 'test_aeo_agent.py' -v
       - name: AEO API authentication and disabled-by-default regression tests
+        if: ${{ !cancelled() && steps.root_install.outcome == 'success' }}
         run: npm run test:aeo-api
       - uses: actions/setup-java@v6
+        id: setup_java
+        if: ${{ !cancelled() }}
         with:
           distribution: temurin
           java-version: '21'
           problem-matcher: true
       - name: Install Firestore emulator test tooling
+        id: firestore_tooling
+        if: ${{ !cancelled() && steps.root_install.outcome == 'success' && steps.setup_java.outcome == 'success' }}
         run: npm install --ignore-scripts --no-save --no-package-lock --legacy-peer-deps @firebase/rules-unit-testing@5.0.2 firebase-tools@15.36.0
       - name: Firestore authorization regression tests
+        if: ${{ !cancelled() && steps.firestore_tooling.outcome == 'success' }}
         run: npm run test:firestore-rules
       - name: Enforce dependency security gate
         if: always()
