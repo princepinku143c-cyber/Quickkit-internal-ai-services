@@ -33,8 +33,11 @@ export const getArchitectMemories = async (limit: number = 5): Promise<string> =
 };
 
 // --- QUOTA & LOGS ---
-export const updateDailyUsage = async (userId: string): Promise<{ allowed: boolean, count: number }> => {
-    if (!db || userId === 'guest' || userId === 'dev-bypass-user-999') return { allowed: true, count: 0 };
+export const updateDailyUsage = async (userId: string): Promise<{ allowed: boolean, count: number, reason?: 'unavailable' }> => {
+    // Preserve the existing guest and local development bypasses. All other
+    // executions must have a verifiable quota store before they can proceed.
+    if (userId === 'guest' || userId === 'dev-bypass-user-999') return { allowed: true, count: 0 };
+    if (!userId || !db) return { allowed: false, count: 0, reason: 'unavailable' };
     const today = new Date().toISOString().split('T')[0];
     const quotaRef = db.collection('usage_quotas').doc(`${userId}_${today}`);
     try {
@@ -50,7 +53,10 @@ export const updateDailyUsage = async (userId: string): Promise<{ allowed: boole
             t.update(quotaRef, { count: newCount, lastUpdate: Date.now() });
             return { allowed: true, count: newCount };
         });
-    } catch (e) { return { allowed: true, count: 0 }; }
+    } catch (e) {
+        // Firestore rules/storage failures must never grant an unmetered run.
+        return { allowed: false, count: 0, reason: 'unavailable' };
+    }
 };
 
 export const checkRateLimit = async (userId: string, limit: number, windowSec: number): Promise<{ allowed: boolean }> => {
