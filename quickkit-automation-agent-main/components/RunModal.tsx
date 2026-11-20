@@ -16,6 +16,25 @@ interface RunModalProps {
   onHeal?: (patch: any) => void;
 }
 
+const getExecutionResultMessage = (status: ExecutionResult['status']): string => {
+  switch (status) {
+    case 'SUCCESS':
+      return 'Execution completed successfully.';
+    case 'RESUMED':
+      return 'Execution resumed.';
+    case 'QUOTA_UNAVAILABLE':
+      return 'Execution was blocked because the quota could not be verified. No workflow nodes were started. Retry when the quota service is restored.';
+    case 'QUOTA_EXCEEDED':
+      return 'The daily execution limit has been reached. No workflow nodes were started.';
+    case 'LOOP_DETECTED':
+      return 'A possible workflow loop was detected. Review the workflow before retrying.';
+    case 'ABORTED':
+      return 'Execution stopped before completion.';
+    default:
+      return 'Execution failed. Review the runtime logs for details.';
+  }
+};
+
 const RunModal: React.FC<RunModalProps> = ({ isOpen, onClose, nexuses, synapses, resumeState, onHeal }) => {
   const { user } = useAuth();
   const [activeRunning, setActiveRunning] = useState(false);
@@ -340,24 +359,27 @@ const RunModal: React.FC<RunModalProps> = ({ isOpen, onClose, nexuses, synapses,
 
                 {finalResult ? (
                     <div className="space-y-6 animate-in slide-in-from-left-4">
-                        <div className="p-6 bg-blue-600/5 border border-blue-600/20 rounded-[30px]">
-                            <div className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                                <TrendingUp size={14}/> Performance Vitals
+                        <div className={`p-6 border rounded-[30px] ${finalResult.status === 'SUCCESS' ? 'bg-blue-600/5 border-blue-600/20' : 'bg-red-500/5 border-red-500/20'}`}>
+                            <div className={`text-[10px] font-black uppercase tracking-widest mb-4 flex items-center gap-2 ${finalResult.status === 'SUCCESS' ? 'text-blue-400' : 'text-red-400'}`}>
+                                <TrendingUp size={14}/> Execution Result
                             </div>
                             <div className="space-y-4">
                                 <div className="flex justify-between text-[11px] font-mono"><span className="text-gray-500">Duration</span><span className="text-white">{finalResult.duration}ms</span></div>
-                                <div className="flex justify-between text-[11px] font-mono"><span className="text-gray-500">Status</span><span className="text-nexus-success font-bold">SUCCESS</span></div>
+                                <div className="flex justify-between text-[11px] font-mono"><span className="text-gray-500">Status</span><span className={`font-bold ${finalResult.status === 'SUCCESS' ? 'text-nexus-success' : 'text-red-400'}`}>{finalResult.status.replace(/_/g, ' ')}</span></div>
+                                <p className="text-xs leading-relaxed text-gray-300">{getExecutionResultMessage(finalResult.status)}</p>
                             </div>
                         </div>
 
-                        <button 
-                            onClick={handleSelfHeal}
-                            disabled={isHealing}
-                            className="w-full py-4 bg-nexus-accent text-black font-black rounded-2xl text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-nexus-success transition-all shadow-xl"
-                        >
-                            {isHealing ? <Loader2 size={14} className="animate-spin"/> : <RotateCcw size={14}/>}
-                            {isHealing ? 'Synthesizing...' : 'Re-Run Clean'}
-                        </button>
+                        {finalResult.status === 'SUCCESS' && (
+                            <button 
+                                onClick={handleSelfHeal}
+                                disabled={isHealing}
+                                className="w-full py-4 bg-nexus-accent text-black font-black rounded-2xl text-[10px] uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-nexus-success transition-all shadow-xl"
+                            >
+                                {isHealing ? <Loader2 size={14} className="animate-spin"/> : <RotateCcw size={14}/>}
+                                {isHealing ? 'Synthesizing...' : 'Re-Run Clean'}
+                            </button>
+                        )}
                     </div>
                 ) : (
                     <>
