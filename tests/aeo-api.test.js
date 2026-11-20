@@ -211,6 +211,50 @@ const validContent = JSON.stringify([
   assert.equal(fetchCalls, 0);
 }
 
+// Rate-limit buckets are derived from the verified Firebase UID, not request-supplied identity.
+{
+  const observedUserKeys = [];
+  const tokenToUid = new Map([
+    ["tenant-a-token", "tenant-a"],
+    ["tenant-b-token", "tenant-b"],
+  ]);
+  const isolatedAdmin = {
+    apps: [{}],
+    auth() {
+      return {
+        async verifyIdToken(token) {
+          const uid = tokenToUid.get(token);
+          if (!uid) throw new Error("invalid test token");
+          return { uid };
+        },
+      };
+    },
+  };
+  const handler = createAeoHandler({
+    adminClient: isolatedAdmin,
+    envProvider: () => enabledEnv(),
+    rateLimit: async (_admin, userKey, action, limit) => {
+      observedUserKeys.push(userKey);
+      assert.equal(action, "aeo-generation");
+      assert.equal(limit, 3);
+    },
+    fetchImpl: async () => providerResponse(validContent),
+  });
+
+  for (const token of ["tenant-a-token", "tenant-b-token"]) {
+    const response = createResponse();
+    await handler(createRequest({
+      authorization: "Bearer " + token,
+      body: { keyword: "topic", count: 2 },
+    }), response);
+    assert.equal(response.statusCode, 200);
+    assertNoStore(response);
+  }
+
+  assert.deepEqual(observedUserKeys, ["uid:tenant-a", "uid:tenant-b"]);
+  assert.equal(new Set(observedUserKeys).size, 2);
+}
+
 // A failed rate-limit backend must fail closed and never call the provider.
 {
   let fetchCalls = 0;
