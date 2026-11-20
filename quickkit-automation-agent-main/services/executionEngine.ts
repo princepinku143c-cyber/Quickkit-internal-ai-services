@@ -6,7 +6,7 @@ import { GoogleGenAI } from "@google/genai";
 export type LogCallback = (log: string, type: 'INFO' | 'ERROR' | 'WARN' | 'SUCCESS', nodeId?: string, data?: any) => void;
 
 export interface ExecutionResult {
-    status: 'SUCCESS' | 'FAILED' | 'ABORTED' | 'RESUMED' | 'LOOP_DETECTED' | 'QUOTA_EXCEEDED';
+    status: 'SUCCESS' | 'FAILED' | 'ABORTED' | 'RESUMED' | 'LOOP_DETECTED' | 'QUOTA_EXCEEDED' | 'QUOTA_UNAVAILABLE';
     executionId: string;
     duration: number;
     output: any;
@@ -146,6 +146,10 @@ export class WorkflowOrchestrator {
         
         const quota = await updateDailyUsage(this.state.userId);
         if (!quota.allowed) {
+            if (quota.reason === 'unavailable') {
+                this.logger("CRITICAL: Daily execution quota could not be verified. Retry when the quota service is available.", "ERROR");
+                return { status: 'QUOTA_UNAVAILABLE', executionId: this.state.runId, duration: 0, output: null, logs: [], telemetry: [] };
+            }
             this.logger("CRITICAL: Daily Execution Quota Exceeded. Upgrade to Business Plan.", "ERROR");
             return { status: 'QUOTA_EXCEEDED', executionId: this.state.runId, duration: 0, output: null, logs: [], telemetry: [] };
         }
