@@ -69,9 +69,16 @@ export const subscribeToProjects = (userId: string, callback: (projects: Project
   });
 };
 
-export const checkDbConnection = async (): Promise<boolean> => {
+export const checkDbConnection = async (userId: string): Promise<boolean> => {
+    if (!userId) return false;
+
     try {
-        await getDocs(query(collection(db, PROJECTS_COLLECTION), limit(1)));
+        // Firestore rules require every project query to prove ownership.
+        await getDocs(query(
+            collection(db, PROJECTS_COLLECTION),
+            where('userId', '==', userId),
+            limit(1)
+        ));
         return true;
     } catch (e) {
         console.error("DB Connection Check Failed:", e);
