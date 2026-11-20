@@ -557,7 +557,6 @@ try {
   // These collections remain fail-closed until their data model and client
   // queries carry an explicit, verified owner.
   for (const collectionName of [
-    'architect_memory',
     'usage_quotas',
     'active_runs',
     'blueprints',
@@ -570,6 +569,40 @@ try {
     }));
     await assertFails(getDoc(doc(automationOtherUser, collectionName, 'unscoped-client-write')));
   }
+
+  // Architect memory is writable/readable only by its authenticated owner.
+  const ownerMemoryRef = doc(automationUser, 'architect_memory', 'owner-memory');
+  const validArchitectMemory = {
+    userId: 'automation-user',
+    userPrompt: 'Build a lead qualification workflow',
+    blueprintSummary: 'Workflow with 3 nodes',
+    fullBlueprint: {
+      nexuses: [{ id: 'trigger' }, { id: 'qualify' }, { id: 'notify' }],
+      synapses: [{ sourceId: 'trigger', targetId: 'qualify' }],
+    },
+    createdAt: Date.now(),
+    likes: 1,
+  };
+  await assertSucceeds(setDoc(ownerMemoryRef, validArchitectMemory));
+  await assertSucceeds(getDoc(ownerMemoryRef));
+  await assertFails(getDoc(doc(automationOtherUser, 'architect_memory', 'owner-memory')));
+  const ownerMemories = await getDocs(query(
+    collection(automationUser, 'architect_memory'),
+    where('userId', '==', 'automation-user'),
+    orderBy('createdAt', 'desc'),
+    limit(5),
+  ));
+  assert.equal(ownerMemories.size, 1);
+  await assertFails(getDocs(collection(automationUser, 'architect_memory')));
+  await assertFails(setDoc(doc(automationOtherUser, 'architect_memory', 'forged-memory'), {
+    ...validArchitectMemory,
+  }));
+  await assertFails(setDoc(doc(automationUser, 'architect_memory', 'extra-field'), {
+    ...validArchitectMemory,
+    unexpected: true,
+  }));
+  await assertFails(updateDoc(ownerMemoryRef, { likes: 2 }));
+  await assertFails(deleteDoc(ownerMemoryRef));
 
   // Execution logs have a canonical userId and the service's list query is owner-filtered.
   // Owners can create/read their logs; other users cannot, and logs are immutable.
