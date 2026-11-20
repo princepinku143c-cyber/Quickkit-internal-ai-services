@@ -5,11 +5,13 @@ import firebase from 'firebase/compat/app';
 
 // --- ARCHITECT MEMORY SYSTEM ---
 export const saveArchitectMemory = async (prompt: string, nexuses: Nexus[], synapses: Synapse[]) => {
-    if (!db) return;
+    const userId = auth?.currentUser?.uid;
+    if (!db || !userId) return;
     if (nexuses.length < 3) return;
     try {
         await db.collection('architect_memory').add({
-            userPrompt: prompt,
+            userId,
+            userPrompt: prompt.slice(0, 8000),
             blueprintSummary: `Workflow with ${nexuses.length} nodes`,
             fullBlueprint: { nexuses, synapses },
             createdAt: Date.now(),
@@ -19,9 +21,14 @@ export const saveArchitectMemory = async (prompt: string, nexuses: Nexus[], syna
 };
 
 export const getArchitectMemories = async (limit: number = 5): Promise<string> => {
-    if (!db) return "";
+    const userId = auth?.currentUser?.uid;
+    if (!db || !userId) return "";
     try {
-        const snapshot = await db.collection('architect_memory').orderBy('createdAt', 'desc').limit(limit).get();
+        const snapshot = await db.collection('architect_memory')
+            .where('userId', '==', userId)
+            .orderBy('createdAt', 'desc')
+            .limit(limit)
+            .get();
         if (snapshot.empty) return "";
         let contextString = "\n### LEARNED PATTERNS:\n";
         snapshot.forEach(doc => {
