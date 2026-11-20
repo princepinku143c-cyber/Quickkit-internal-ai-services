@@ -72,12 +72,14 @@ const validContent = JSON.stringify([
   const options = createResponse();
   await handler(createRequest({ method: "OPTIONS", authorization: null, body: undefined }), options);
   assert.equal(options.statusCode, 204);
+  assert.equal(options.headers["cache-control"], "no-store");
   assert.equal(options.ended, true);
   assert.equal(options.headers.allow, "POST, OPTIONS");
 
   const get = createResponse();
   await handler(createRequest({ method: "GET" }), get);
   assert.equal(get.statusCode, 405);
+  assert.equal(get.headers["cache-control"], "no-store");
   assert.equal(get.headers.allow, "POST, OPTIONS");
 }
 
