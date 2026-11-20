@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const pages = [
-  ['services/real-estate', 'Raja AI Systems — Autonomous AI Workforce for Luxury Real Estate in India'],
+  ['services/real-estate', 'AI Automation for Real Estate Teams in India | Raja AI Systems'],
   ['services/healthcare', 'AI Agents for Healthcare Clinics in India | Raja AI Systems'],
   ['guides/real-estate-ai-lead-qualification', 'AI Lead Qualification for Real Estate in India: A Practical Workflow | Raja AI Systems'],
   ['real-estate-ai-questions', 'Real Estate AI Agent Questions & Answers India | Raja AI Systems'],
