@@ -1325,15 +1325,21 @@ const automationRunModalSource = readFileSync(
   new URL("../quickkit-automation-agent-main/components/RunModal.tsx", import.meta.url),
   "utf8",
 );
-assert.match(automationRunModalSource, /finalResult\\.status\\.replace\\(\\/_\\/g, ' ' \\)/);
-assert.match(automationRunModalSource, /getExecutionResultMessage\\(finalResult\\.status\\)/);
-assert.match(
-  automationRunModalSource,
-  /case 'QUOTA_UNAVAILABLE':[\\s\\S]*?No workflow nodes were started/,
+assert.ok(
+  automationRunModalSource.includes("finalResult.status.replace(/_/g, ' ')"),
+  "the result panel must display the actual execution status",
+);
+assert.ok(
+  automationRunModalSource.includes("getExecutionResultMessage(finalResult.status)"),
+  "the result panel must show status-specific guidance",
+);
+assert.ok(
+  automationRunModalSource.includes("case 'QUOTA_UNAVAILABLE':")
+    && automationRunModalSource.includes("No workflow nodes were started."),
   "quota-store outages must be shown as blocked, not successful or exhausted",
 );
-assert.match(
-  automationRunModalSource,
-  /finalResult\\.status === 'SUCCESS' && \\(/
+assert.ok(
+  automationRunModalSource.includes("finalResult.status === 'SUCCESS' && ("),
+  "the success-only action must not appear for failed or blocked runs",
 );
 console.log("Automation execution-result UI regression tests passed.");
