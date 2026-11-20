@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { createAeoHandler, parseAeoPairs } from "../api/aeo.js";
+import { checkRateLimit } from "../api/_lib/security.js";
 
 function createResponse() {
   return {
@@ -395,4 +396,62 @@ assert.throws(
   TypeError,
 );
 
-console.log("AEO API authentication, feature flag, rate limit, provider safety and response validation tests passed.");
+// Exercise the real Firestore-backed limiter, not only the AEO handler's injected stub.
+{
+  const records = new Map();
+  const database = {
+    collection(name) {
+      return {
+        doc(id) {
+          return { path: name + "/" + id };
+        },
+      };
+    },
+    async runTransaction(callback) {
+      return callback({
+        async get(ref) {
+          const data = records.get(ref.path);
+          return { exists: data !== undefined, data: () => data };
+        },
+        set(ref, value) {
+          records.set(ref.path, { ...value });
+        },
+      });
+    },
+  };
+  const fakeAdmin = { firestore: () => database };
+
+  assert.equal(await checkRateLimit(fakeAdmin, "uid:tenant-a", "aeo-generation", 3), true);
+  assert.equal(await checkRateLimit(fakeAdmin, "uid:tenant-a", "aeo-generation", 3), true);
+  assert.equal(await checkRateLimit(fakeAdmin, "uid:tenant-a", "aeo-generation", 3), true);
+  await assert.rejects(
+    () => checkRateLimit(fakeAdmin, "uid:tenant-a", "aeo-generation", 3),
+    (error) => error.status === 429 && error.retryAfter >= 1 && error.retryAfter <= 60,
+  );
+
+  // A different verified UID receives an independent counter.
+  assert.equal(await checkRateLimit(fakeAdmin, "uid:tenant-b", "aeo-generation", 3), true);
+  assert.equal(records.get("rate_limits/uid:tenant-a_aeo-generation").count, 3);
+  assert.equal(records.get("rate_limits/uid:tenant-b_aeo-generation").count, 1);
+}
+
+// If the Firestore limiter is unavailable, the real helper must return 503 rather than allow.
+{
+  const unavailableAdmin = {
+    firestore() {
+      throw new Error("test-only Firestore unavailable");
+    },
+  };
+  const originalConsoleError = console.error;
+  console.error = () => {};
+  try {
+    await assert.rejects(
+      () => checkRateLimit(unavailableAdmin, "uid:tenant-a", "aeo-generation", 3),
+      (error) => error.status === 503,
+    );
+  } finally {
+    console.error = originalConsoleError;
+  }
+}
+
+console.log("AEO API and real Firestore rate-limit regression tests passed.");
