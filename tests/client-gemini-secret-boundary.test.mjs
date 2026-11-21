@@ -16,12 +16,12 @@ for (const name of forbiddenNames) {
   assert.ok(viteConfig.includes(name), `Vite build guard must reject ${name}.`);
 }
 assert.match(viteConfig, /Refusing to build a browser bundle with Gemini credential/);
-assert.doesNotMatch(viteConfig, /define\\s*:/);
-assert.doesNotMatch(viteConfig, /process\\.env\\.(?:GEMINI_API_KEY|API_KEY)/);
+assert.doesNotMatch(viteConfig, /define\s*:/);
+assert.doesNotMatch(viteConfig, /process\.env\.(?:GEMINI_API_KEY|API_KEY)/);
 
 // The client may use a user-owned Credential Vault key, never a platform env key.
 assert.match(geminiService, /nexus_credentials/);
-assert.doesNotMatch(geminiService, /process\\.env\\.(?:GEMINI_API_KEY|API_KEY)/);
+assert.doesNotMatch(geminiService, /process\.env\.(?:GEMINI_API_KEY|API_KEY)/);
 assert.match(geminiService, /return "";/);
 assert.doesNotMatch(envExample, /^VITE_GEMINI_API_KEY=/m);
 assert.match(envExample, /in-app Credential Vault/);
