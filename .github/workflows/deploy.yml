@@ -36,6 +36,9 @@ jobs:
         run: npm run test:seo
       - name: TypeScript validation
         run: npx tsc --noEmit
+      - name: Browser Gemini credential boundary regression tests
+        if: ${{ !cancelled() && steps.root_install.outcome == 'success' }}
+        run: npm run test:client-gemini-secret-boundary
       - name: Install nested automation dependencies
         id: nested_install
         run: npm ci --prefix quickkit-automation-agent-main --ignore-scripts --no-audit --no-fund
