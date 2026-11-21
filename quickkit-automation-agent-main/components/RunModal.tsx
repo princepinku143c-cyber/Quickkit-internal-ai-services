@@ -11,7 +11,8 @@ interface RunModalProps {
   isOpen: boolean;
   onClose: () => void;
   nexuses: Nexus[];
-  synapses: Synapse[]; 
+  synapses: Synapse[];
+  projectId?: string;
   resumeState?: ExecutionState | null;
   onHeal?: (patch: any) => void;
 }
@@ -35,8 +36,9 @@ const getExecutionResultMessage = (status: ExecutionResult['status']): string =>
   }
 };
 
-const RunModal: React.FC<RunModalProps> = ({ isOpen, onClose, nexuses, synapses, resumeState, onHeal }) => {
+const RunModal: React.FC<RunModalProps> = ({ isOpen, onClose, nexuses, synapses, projectId, resumeState, onHeal }) => {
   const { user } = useAuth();
+  const resolvedProjectId = resumeState?.projectId || projectId?.trim() || 'test-project';
   const [activeRunning, setActiveRunning] = useState(false);
   const [isCloudRun, setIsCloudRun] = useState(false);
   const [jsonInput, setJsonInput] = useState('{\n  "event": "production_handshake",\n  "metadata": { "env": "cloud-v2" }\n}');
@@ -164,7 +166,7 @@ const RunModal: React.FC<RunModalProps> = ({ isOpen, onClose, nexuses, synapses,
           (msg, type, nodeId) => appendLog({ msg, type, nodeId }), 
           undefined, 
           user?.uid || 'guest',
-          'test-project',
+          resolvedProjectId,
           stateToResume || undefined
       );
       
@@ -213,7 +215,7 @@ const RunModal: React.FC<RunModalProps> = ({ isOpen, onClose, nexuses, synapses,
       const initialState: ExecutionState = {
           runId,
           userId: user?.uid || 'guest',
-          projectId: 'test-project',
+          projectId: resolvedProjectId,
           status: 'QUEUED',
           currentQueue: triggerNode ? [triggerNode.id] : [],
           completedNodeIds: [],
