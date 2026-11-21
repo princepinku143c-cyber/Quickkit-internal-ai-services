@@ -392,6 +392,14 @@ assert.deepEqual(parseAeoPairs("```json\n" + validContent + "\n```", 1), [
 assert.throws(() => parseAeoPairs("not-json", 2), SyntaxError);
 assert.throws(() => parseAeoPairs(JSON.stringify([{ question: "Missing answer" }]), 1), TypeError);
 assert.throws(
+  () => parseAeoPairs(JSON.stringify([{ question: 42, answer: "Numeric question must be rejected." }]), 1),
+  TypeError,
+);
+assert.throws(
+  () => parseAeoPairs(JSON.stringify([{ question: "Boolean answer must be rejected.", answer: true }]), 1),
+  TypeError,
+);
+assert.throws(
   () => parseAeoPairs(JSON.stringify([{ question: "Only one question", answer: "Only one answer." }]), 2),
   TypeError,
 );
