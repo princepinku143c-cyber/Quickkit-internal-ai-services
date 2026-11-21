@@ -611,7 +611,7 @@ const DevOpsConfig: React.FC<DevOpsConfigProps> = ({ subtype, config, onChange }
                     
                     {config.authMethod === 'key' && (
                         <div className="mt-3">
-                            <TextAreaField label="Private Key" value={config.privateKey} onChange={(v: string) => onChange('privateKey', v)} rows={4} placeholder="-----BEGIN OPENSSH PRIVATE KEY-----" />
+                            <TextAreaField label="Private Key" value={config.privateKey} onChange={(v: string) => onChange('privateKey', v)} rows={4} placeholder="Paste the full SSH private key here" />
                             <InputField label="Passphrase" type="password" value={config.passphrase} onChange={(v: string) => onChange('passphrase', v)} className="mt-2" />
                         </div>
                     )}
