@@ -17,7 +17,8 @@
     "test:rank-tracker": "node tests/rank-tracker.test.js",
     "test:cron-auth": "node tests/cron-auth.test.js",
     "test:aeo-api": "node tests/aeo-api.test.js",
-    "test:firestore-rules": "firebase emulators:exec --only firestore --project demo-quickkitai-rules \"node tests/firestore-rules.test.mjs\""
+    "test:firestore-rules": "firebase emulators:exec --only firestore --project demo-quickkitai-rules \"node tests/firestore-rules.test.mjs\"",
+    "test:automation-run-context": "node tests/automation-run-context.test.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.38.0",
