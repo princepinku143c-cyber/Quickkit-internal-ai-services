@@ -31,6 +31,9 @@ export function parseAeoPairs(content, requestedCount) {
 
   const pairs = parsed.slice(0, requestedCount).map((item) => {
     if (!isPlainObject(item)) throw new TypeError("AEO provider returned an invalid item.");
+    if (typeof item.question !== "string" || typeof item.answer !== "string") {
+      throw new TypeError("AEO provider returned an invalid item.");
+    }
     const question = safeText(item.question, 300);
     const answer = safeText(item.answer, 1800);
     if (!question || !answer) throw new TypeError("AEO provider returned an incomplete item.");
