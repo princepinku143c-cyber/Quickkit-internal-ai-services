@@ -48,7 +48,10 @@ if (findings.length > 0) {
   }
   process.exitCode = 1;
 } else {
+  console.warn(
+    "[private-key-material] Scope limitation: scans the current checkout's tracked text files only; Git history and other refs are not scanned.",
+  );
   console.log(
-    `[private-key-material] PASS: scanned ${scannedTextFiles} tracked text files; no private-key PEM markers found.`,
+    `[private-key-material] PASS: scanned ${scannedTextFiles} tracked text files; no private-key PEM markers found in the current checkout.`,
   );
 }
