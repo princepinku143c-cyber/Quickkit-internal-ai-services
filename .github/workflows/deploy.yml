@@ -65,6 +65,9 @@ jobs:
       - name: AEO API authentication and disabled-by-default regression tests
         if: ${{ !cancelled() && steps.root_install.outcome == 'success' }}
         run: npm run test:aeo-api
+      - name: Automation run project-context regression tests
+        if: ${{ !cancelled() && steps.root_install.outcome == 'success' }}
+        run: npm run test:automation-run-context
       - uses: actions/setup-java@v6
         id: setup_java
         if: ${{ !cancelled() }}
