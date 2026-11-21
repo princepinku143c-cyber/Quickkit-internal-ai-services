@@ -42,8 +42,10 @@ export const getActiveGeminiKey = (): string => {
         }
     } catch (e) {}
     
-    // 2. Fallback to Env
-    return process.env.GEMINI_API_KEY || process.env.API_KEY || "";
+    // Platform credentials must never be compiled into browser JavaScript.
+    // Until an authenticated server-side Gemini proxy exists, use BYO keys
+    // stored in the in-app Credential Vault only.
+    return "";
 };
 
 export const validateCredential = async (type: string, apiKey: string): Promise<ValidationResult> => {
