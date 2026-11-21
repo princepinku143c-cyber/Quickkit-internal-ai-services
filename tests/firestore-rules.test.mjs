@@ -553,6 +553,23 @@ try {
     email: 'automation@example.com',
   }).firestore();
   const automationOtherUser = automationEnv.authenticatedContext('automation-other').firestore();
+  const anonymousAutomationUser = automationEnv.unauthenticatedContext().firestore();
+
+  // Coupon documents are a shared, read-only catalogue for signed-in users.
+  // This is an explicit exception to per-user isolation, not a tenant-owned collection.
+  const sharedCouponRef = doc(automationUser, 'coupons', 'shared-coupon');
+  await automationEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), 'coupons', 'shared-coupon'), {
+      code: 'WELCOME',
+      discountPercent: 10,
+    });
+  });
+  await assertSucceeds(getDoc(sharedCouponRef));
+  await assertSucceeds(getDoc(doc(automationOtherUser, 'coupons', 'shared-coupon')));
+  await assertFails(getDoc(doc(anonymousAutomationUser, 'coupons', 'shared-coupon')));
+  await assertFails(setDoc(doc(automationUser, 'coupons', 'client-write'), { code: 'FORGED' }));
+  await assertFails(updateDoc(sharedCouponRef, { discountPercent: 100 }));
+  await assertFails(deleteDoc(sharedCouponRef));
 
   // Quotas and blueprints remain fail-closed until their server/client data
   // models are reviewed. Active runs have a separate owner-scoped contract below.
