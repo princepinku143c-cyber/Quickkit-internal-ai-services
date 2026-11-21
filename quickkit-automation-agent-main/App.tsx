@@ -486,6 +486,7 @@ const AppContent: React.FC = () => {
                 onClose={() => setIsRunModalOpen(false)}
                 nexuses={nexuses}
                 synapses={synapses}
+                projectId={currentProject?.id}
                 resumeState={interruptedState}
             />
           )}
