@@ -18,7 +18,8 @@
     "test:cron-auth": "node tests/cron-auth.test.js",
     "test:aeo-api": "node tests/aeo-api.test.js",
     "test:firestore-rules": "firebase emulators:exec --only firestore --project demo-quickkitai-rules \"node tests/firestore-rules.test.mjs\"",
-    "test:automation-run-context": "node tests/automation-run-context.test.mjs"
+    "test:automation-run-context": "node tests/automation-run-context.test.mjs",
+    "test:client-gemini-secret-boundary": "node tests/client-gemini-secret-boundary.test.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.38.0",
