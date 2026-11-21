@@ -462,4 +462,48 @@ assert.throws(
   }
 }
 
+// The provider timeout must remain active while the response body is parsed.
+{
+  const response = createResponse();
+  let abortTimer;
+  let timeoutCleared = false;
+  let bodyParseStarted = false;
+  let providerSignal;
+
+  await createAeoHandler({
+    adminClient: createAdmin(),
+    envProvider: () => enabledEnv(),
+    rateLimit: async () => {},
+    setTimeoutImpl: (callback) => {
+      abortTimer = callback;
+      return "body-parse-timer";
+    },
+    clearTimeoutImpl: (timer) => {
+      assert.equal(timer, "body-parse-timer");
+      timeoutCleared = true;
+    },
+    fetchImpl: async (_url, options) => {
+      providerSignal = options.signal;
+      return {
+        ok: true,
+        async json() {
+          bodyParseStarted = true;
+          assert.equal(timeoutCleared, false, "timeout must remain armed during response-body parsing");
+          abortTimer();
+          assert.equal(providerSignal.aborted, true);
+          const error = new Error("timeout while parsing provider body");
+          error.name = "AbortError";
+          throw error;
+        },
+      };
+    },
+  })(createRequest(), response);
+
+  assert.equal(response.statusCode, 504);
+  assertNoStore(response);
+  assert.equal(bodyParseStarted, true);
+  assert.equal(providerSignal.aborted, true);
+  assert.equal(timeoutCleared, true);
+}
+
 console.log("AEO API and real Firestore rate-limit regression tests passed.");
