@@ -36,6 +36,9 @@ jobs:
         run: npm run test:seo
       - name: TypeScript validation
         run: npx tsc --noEmit
+      - name: Firebase configuration boundary regression tests
+        if: ${{ !cancelled() && steps.root_install.outcome == 'success' }}
+        run: node tests/firebase-config-contract.test.mjs
       - name: Browser Gemini credential boundary regression tests
         if: ${{ !cancelled() && steps.root_install.outcome == 'success' }}
         run: npm run test:client-gemini-secret-boundary
