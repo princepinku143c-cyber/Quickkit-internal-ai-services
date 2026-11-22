@@ -632,6 +632,16 @@ try {
   await assertFails(updateDoc(ownerRunRef, { status: 'ADMIN' }));
   await assertFails(updateDoc(ownerRunRef, { unexpected: true }));
   await assertFails(updateDoc(ownerRunRef, { createdAt: serverTimestamp() }));
+  // Every reserved tenant/workspace alias is excluded from active-run create/update.
+  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId']) {
+    const forgedRunId = 'tenant-' + field;
+    await assertFails(setDoc(doc(automationUser, 'active_runs', forgedRunId), {
+      ...validActiveRun,
+      runId: forgedRunId,
+      [field]: 'victim-tenant',
+    }));
+    await assertFails(updateDoc(ownerRunRef, { [field]: 'victim-tenant' }));
+  }
   await assertFails(setDoc(doc(automationOtherUser, 'active_runs', 'forged-run'), {
     ...validActiveRun,
     runId: 'forged-run',
@@ -684,6 +694,12 @@ try {
     ...validArchitectMemory,
     unexpected: true,
   }));
+  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId']) {
+    await assertFails(setDoc(doc(automationUser, 'architect_memory', 'tenant-' + field), {
+      ...validArchitectMemory,
+      [field]: 'victim-tenant',
+    }));
+  }
   await assertFails(updateDoc(ownerMemoryRef, { likes: 2 }));
   await assertFails(deleteDoc(ownerMemoryRef));
 
@@ -726,6 +742,14 @@ try {
     extra: 'not-allowed',
     createdAt: serverTimestamp(),
   }));
+  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId']) {
+    await assertFails(setDoc(doc(automationUser, 'execution_logs', 'tenant-' + field), {
+      ...validExecutionLog,
+      id: 'TENANT_' + field,
+      [field]: 'victim-tenant',
+      createdAt: serverTimestamp(),
+    }));
+  }
   await assertFails(updateDoc(ownerLogRef, { message: 'tampered' }));
   await assertFails(deleteDoc(ownerLogRef));
 
@@ -832,6 +856,9 @@ try {
     ['price', 0],
     ['tier', 'BUSINESS'],
     ['tenantId', 'victim-tenant'],
+    ['workspaceId', 'victim-workspace'],
+    ['companyId', 'victim-company'],
+    ['organizationId', 'victim-organization'],
   ]) {
     await assertFails(setDoc(doc(automationUser, 'projects', 'forged-' + field), {
       ...validAutomationProject,
@@ -870,6 +897,9 @@ try {
     ['price', 0],
     ['tier', 'BUSINESS'],
     ['tenantId', 'victim-tenant'],
+    ['workspaceId', 'victim-workspace'],
+    ['companyId', 'victim-company'],
+    ['organizationId', 'victim-organization'],
   ]) {
     await assertFails(updateDoc(automationProjectRef, { [field]: value }));
   }
