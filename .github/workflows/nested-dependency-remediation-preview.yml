@@ -6,6 +6,7 @@ on:
       - security/remove-hardcoded-opencode-key-20261111
     paths:
       - .github/workflows/nested-dependency-remediation-preview.yml
+  # Push updates to this workflow are the safe non-interactive trigger; the lockfile-only remediation commit does not retrigger this job.
   workflow_dispatch:
 
 permissions:
