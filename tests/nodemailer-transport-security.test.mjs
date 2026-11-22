@@ -8,12 +8,12 @@ const mailers = [
 
 for (const relativePath of mailers) {
   const source = await readFile(new URL(relativePath, import.meta.url), "utf8");
-  const transport = source.match(/createTransport\\s*\\(\\s*\\{([\\s\\S]*?)\\}\\s*\\)/);
+  const transport = source.match(/createTransport\s*\(\s*\{([\s\S]*?)\}\s*\)/);
 
   assert.ok(transport, `Expected a Nodemailer transport in ${relativePath}`);
-  assert.match(transport[1], /\\bdisableFileAccess\\s*:\\s*true\\b/);
-  assert.match(transport[1], /\\bdisableUrlAccess\\s*:\\s*true\\b/);
-  assert.doesNotMatch(source, /\\braw\\s*:/, "Do not pass Nodemailer raw-message options");
+  assert.match(transport[1], /\bdisableFileAccess\s*:\s*true\b/);
+  assert.match(transport[1], /\bdisableUrlAccess\s*:\s*true\b/);
+  assert.doesNotMatch(source, /\braw\s*:/, "Do not pass Nodemailer raw-message options");
 }
 
 console.log("Nodemailer transport file/URL access hardening tests passed.");
