@@ -32,7 +32,7 @@ try {
 
   // Scan every tracked API source file, not only the rank-tracker handler, so
   // provider credentials cannot be reintroduced in a different route/helper.
-  const isApiSourceFile = (path) => /^api\\/.*\\.(?:[cm]?[jt]sx?)$/i.test(path);
+  const isApiSourceFile = (path) => /^api\/.*\.(?:[cm]?[jt]sx?)$/i.test(path);
   assert.ok(
     ["api/example.jsx", "api/example.cts", "api/example.mts"].every(isApiSourceFile),
     "the API credential scan must include JSX and Node/TypeScript module extensions",
