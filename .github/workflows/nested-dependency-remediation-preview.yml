@@ -82,7 +82,11 @@ jobs:
           AUDIT_AFTER_OUTCOME: ${{ steps.audit_after.outcome }}
         run: |
           set -euo pipefail
-          for item in AUDIT_FIX_OUTCOME MANIFEST_GUARD_OUTCOME NESTED_INSTALL_OUTCOME LINT_OUTCOME BUILD_OUTCOME AUDIT_AFTER_OUTCOME; do
+          if [ "$AUDIT_FIX_OUTCOME" = "skipped" ]; then
+            echo "::error::The non-force audit fix step was skipped; refusing to commit."
+            exit 1
+          fi
+          for item in MANIFEST_GUARD_OUTCOME NESTED_INSTALL_OUTCOME LINT_OUTCOME BUILD_OUTCOME AUDIT_AFTER_OUTCOME; do
             value="${!item}"
             if [ "$value" != "success" ]; then
               echo "::error::$item was $value; refusing to commit the proposed lockfile."
