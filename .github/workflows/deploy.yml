@@ -45,6 +45,10 @@ jobs:
       - name: Install nested automation dependencies
         id: nested_install
         run: npm ci --prefix quickkit-automation-agent-main --ignore-scripts --no-audit --no-fund
+      - name: Firebase Admin modular API and runtime regression tests
+        if: ${{ !cancelled() && steps.nested_install.outcome == 'success' }}
+        run: node tests/firebase-admin-modular-boundary.test.mjs
+
       - name: Nested automation dependency security audit
         id: nested_dependency_audit
         if: ${{ !cancelled() && steps.nested_install.outcome == 'success' }}
