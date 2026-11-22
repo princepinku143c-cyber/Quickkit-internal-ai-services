@@ -27,4 +27,19 @@ const nestedIndexes = JSON.parse(await readFile(nestedIndexesPath, "utf8"));
 assert.ok(Array.isArray(nestedIndexes.indexes), "Nested Firestore indexes must contain an indexes array.");
 assert.ok(Array.isArray(nestedIndexes.fieldOverrides), "Nested Firestore indexes must contain a fieldOverrides array.");
 
-console.log("PASS: root and nested Firebase configs resolve to separate existing Firestore rules; nested indexes and CI emulator port are valid.");
+// Neither Firebase project commits a default CLI alias. This keeps clean checkouts
+// from silently targeting a remembered project: deployment commands must pass
+// an explicit --project value for the intended environment.
+const projectAliasPaths = [
+  resolve(dirname(rootConfigPath), ".firebaserc"),
+  resolve(dirname(nestedConfigPath), ".firebaserc"),
+];
+for (const aliasPath of projectAliasPaths) {
+  await assert.rejects(
+    access(aliasPath),
+    (error) => error?.code === "ENOENT",
+    `Firebase project aliases must remain uncommitted; use an explicit --project target (${aliasPath}).`,
+  );
+}
+
+console.log("PASS: root and nested Firebase configs resolve to separate existing rules; no default project aliases are committed; nested indexes and CI emulator port are valid.");
