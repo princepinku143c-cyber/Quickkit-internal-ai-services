@@ -139,6 +139,15 @@ try {
       user_id: 'alice',
       action: 'test',
     });
+    await setDoc(doc(db, 'logs', 'conflicting-owner-log'), {
+      user_id: 'alice',
+      userId: 'bob',
+      action: 'Conflicting owner aliases must not transfer access',
+    });
+    await setDoc(doc(db, 'logs', 'legacy-bob-log'), {
+      userId: 'bob',
+      action: 'Legacy camelCase owner fallback',
+    });
     await setDoc(doc(db, 'payment_requests', 'alice-request'), {
       userId: 'alice',
       userEmail: 'alice@example.com',
@@ -460,6 +469,12 @@ try {
   }));
   await assertSucceeds(getDoc(doc(alice, 'logs', 'admin-log')));
   await assertFails(getDoc(doc(bob, 'logs', 'admin-log')));
+  // The canonical snake_case owner wins when legacy aliases conflict.
+  await assertSucceeds(getDoc(doc(alice, 'logs', 'conflicting-owner-log')));
+  await assertFails(getDoc(doc(bob, 'logs', 'conflicting-owner-log')));
+  // Legacy camelCase-only records remain readable by their actual owner.
+  await assertSucceeds(getDoc(doc(bob, 'logs', 'legacy-bob-log')));
+  await assertFails(getDoc(doc(alice, 'logs', 'legacy-bob-log')));
   await assertSucceeds(getDoc(doc(alice, 'payments', 'alice-payment')));
   await assertFails(getDoc(doc(bob, 'payments', 'alice-payment')));
   await assertFails(deleteDoc(doc(admin, 'payments', 'alice-payment')));
@@ -489,8 +504,11 @@ try {
   await assertSucceeds(getDocs(collection(admin, 'agents')));
 
   const aliceLogs = await getDocs(query(collection(alice, 'logs'), where('user_id', '==', 'alice')));
-  assert.equal(aliceLogs.size, 2);
-  await assertSucceeds(getDocs(query(collection(bob, 'logs'), where('user_id', '==', 'bob'))));
+  assert.equal(aliceLogs.size, 3);
+  const bobLogs = await getDocs(query(collection(bob, 'logs'), where('user_id', '==', 'bob')));
+  assert.equal(bobLogs.size, 1);
+  // A legacy alias query cannot bypass a conflicting canonical owner field.
+  await assertFails(getDocs(query(collection(bob, 'logs'), where('userId', '==', 'bob'))));
   await assertFails(getDocs(collection(alice, 'logs')));
   await assertFails(getDocs(query(collection(alice, 'logs'), where('user_id', '==', 'bob'))));
   await assertSucceeds(getDocs(collection(admin, 'logs')));
