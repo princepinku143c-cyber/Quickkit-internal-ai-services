@@ -11,6 +11,7 @@ const lock = JSON.parse(await readFile(
 ));
 
 assert.equal(lock.lockfileVersion, 3);
+assert.equal(manifest.overrides?.["@grpc/grpc-js"], "^1.14.6");
 assert.deepEqual(lock.packages?.[""]?.dependencies, manifest.dependencies);
 assert.deepEqual(lock.packages?.[""]?.devDependencies, manifest.devDependencies);
 
@@ -26,6 +27,7 @@ function compareVersions(actual, minimum) {
 }
 
 const patchedMinimums = {
+  "@grpc/grpc-js": "1.14.6",
   axios: "1.19.1",
   protobufjs: "7.6.5",
   "proxy-addr": "2.0.8",
