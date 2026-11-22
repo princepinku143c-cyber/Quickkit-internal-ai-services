@@ -14,6 +14,7 @@ const spaFallback = vercelConfig.rewrites?.find((rule) =>
 assert.ok(spaFallback, "Vercel SPA fallback rewrite must remain explicitly configured.");
 const spaFallbackPattern = new RegExp("^" + spaFallback.source + "$");
 assert.equal(spaFallbackPattern.test("/api/aeo"), false, "AEO API requests must never fall through to the SPA index.");
+assert.equal(spaFallbackPattern.test("/api"), false, "The bare API root must never fall through to the SPA index.");
 assert.equal(spaFallbackPattern.test("/api/unknown"), false, "Unknown API paths must not return the SPA index as HTML.");
 assert.equal(spaFallbackPattern.test("/a-client-side-route"), true, "Client-side application routes must continue to use the SPA fallback.");
 const isolatedCwd = await mkdtemp(join(tmpdir(), "quickkit-api-guard-"));
