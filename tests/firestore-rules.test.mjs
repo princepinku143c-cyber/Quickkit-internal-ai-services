@@ -482,7 +482,7 @@ try {
   await assertSucceeds(getDocs(collection(admin, 'projects')));
 
   const aliceAgents = await getDocs(query(collection(alice, 'agents'), where('userId', '==', 'alice')));
-  assert.equal(aliceAgents.size, 1);
+  assert.equal(aliceAgents.size, 2); // seeded owner record plus the new client-created record
   await assertSucceeds(getDocs(query(collection(bob, 'agents'), where('userId', '==', 'bob'))));
   await assertFails(getDocs(collection(alice, 'agents')));
   await assertFails(getDocs(query(collection(alice, 'agents'), where('userId', '==', 'bob'))));
