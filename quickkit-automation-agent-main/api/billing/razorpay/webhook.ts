@@ -1,24 +1,24 @@
 import crypto from "crypto";
-import admin from "firebase-admin";
+import { cert, getApps, initializeApp } from "firebase-admin/app";
+import { FieldValue, getFirestore } from "firebase-admin/firestore";
 import { Buffer } from "buffer";
 
 // --- 1. SAFE FIREBASE INIT (Vercel Compatible) ---
-// Checks if admin.apps exists AND has length to prevent undefined crashes
-if (!admin.apps || !admin.apps.length) {
-  try {
+function getAdminDb() {
+  let app = getApps()[0];
+  if (!app) {
     const privateKey = process.env.FIREBASE_PRIVATE_KEY;
-    if (privateKey) {
-        admin.initializeApp({
-            credential: admin.credential.cert({
-              projectId: process.env.FIREBASE_PROJECT_ID,
-              clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-              privateKey: privateKey.replace(/\\n/g, "\n"),
-            }),
-        });
-    }
-  } catch (e) {
-      console.error("Firebase Admin Init Error:", e);
+    if (!privateKey) throw new Error("Firebase Admin credentials are not configured.");
+    app = initializeApp({
+      credential: cert({
+        projectId: process.env.FIREBASE_PROJECT_ID,
+        clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+        privateKey: privateKey.replace(/\\n/g, "\n"),
+      }),
+      projectId: process.env.FIREBASE_PROJECT_ID,
+    });
   }
+  return getFirestore(app);
 }
 
 // --- 2. CONFIG: DISABLE BODY PARSER ---
@@ -83,7 +83,8 @@ export default async function handler(req: any, res: any) {
       console.log(`✅ Upgrade User: ${userId}`);
 
       // Safe Atomic Update
-      await admin.firestore().collection("users").doc(userId).set(
+      const db = getAdminDb();
+      await db.collection("users").doc(userId).set(
         {
           plan: {
             tier: "PRO",
@@ -93,7 +94,7 @@ export default async function handler(req: any, res: any) {
             monthlyLimit: 5000,
             lastPaymentId: payment.id,
             expiresAt: Date.now() + 30 * 24 * 60 * 60 * 1000, // 30 Days
-            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: FieldValue.serverTimestamp(),
             autoRenew: true
           },
           // Sync root fields for legacy components
@@ -104,14 +105,14 @@ export default async function handler(req: any, res: any) {
       );
       
       // Log Payment
-      await admin.firestore().collection("payments").doc(payment.id).set({
+      await db.collection("payments").doc(payment.id).set({
           id: payment.id,
           userId: userId,
           amount: payment.amount / 100,
           currency: payment.currency,
           status: 'success',
           gateway: 'RAZORPAY',
-          createdAt: admin.firestore.FieldValue.serverTimestamp()
+          createdAt: FieldValue.serverTimestamp()
       }, { merge: true });
     }
 

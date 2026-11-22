@@ -1,26 +1,30 @@
-import * as admin from 'firebase-admin';
+import { cert, getApps, initializeApp } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 
-// Initialize Admin SDK (Shared Singleton)
-if (!admin.apps.length) {
+// Initialize Admin SDK (Shared Singleton) using the modular Admin SDK API.
+let app = getApps()[0];
+if (!app) {
     try {
         const privateKey = process.env.FIREBASE_PRIVATE_KEY;
         if (privateKey) {
-            admin.initializeApp({
-                credential: admin.credential.cert({
+            app = initializeApp({
+                credential: cert({
                     projectId: process.env.FIREBASE_PROJECT_ID,
                     clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
                     privateKey: privateKey.replace(/\\n/g, '\n'),
-                })
+                }),
+                projectId: process.env.FIREBASE_PROJECT_ID,
             });
         } else {
-            admin.initializeApp();
+            app = initializeApp();
         }
     } catch (e) {
         console.error("Firebase Admin Init Error:", e);
+        throw e;
     }
 }
 
-const db = admin.firestore();
+const db = getFirestore(app);
 
 /**
  * Checks if a user's plan has expired and downgrades them if necessary.

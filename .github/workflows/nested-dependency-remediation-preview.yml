@@ -7,6 +7,9 @@ on:
     paths:
       - .github/workflows/nested-dependency-remediation-preview.yml
       - quickkit-automation-agent-main/package.json
+      - quickkit-automation-agent-main/api/**
+      - quickkit-automation-agent-main/lib/**
+      - quickkit-automation-agent-main/functions/**
   # Push updates to this workflow are the safe non-interactive trigger; the lockfile-only remediation commit does not retrigger this job.
   workflow_dispatch:
 
