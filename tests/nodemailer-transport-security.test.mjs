@@ -16,4 +16,23 @@ for (const relativePath of mailers) {
   assert.doesNotMatch(source, /\braw\s*:/, "Do not pass Nodemailer raw-message options");
 }
 
+
+const nestedPackage = JSON.parse(await readFile(
+  new URL("../quickkit-automation-agent-main/package.json", import.meta.url),
+  "utf8",
+));
+const nestedLock = JSON.parse(await readFile(
+  new URL("../quickkit-automation-agent-main/package-lock.json", import.meta.url),
+  "utf8",
+));
+assert.equal(nestedPackage.dependencies.nodemailer, "^10.6.1");
+assert.equal(nestedPackage.engines?.node, ">=20");
+const lockedNodemailer = nestedLock.packages?.["node_modules/nodemailer"]?.version;
+assert.ok(lockedNodemailer, "Expected Nodemailer to be present in the nested lockfile");
+const [lockedMajor, lockedMinor, lockedPatch] = lockedNodemailer.split(".").map(Number);
+assert.ok(
+  lockedMajor > 10 || (lockedMajor === 10 && (lockedMinor > 6 || (lockedMinor === 6 && lockedPatch >= 1))),
+  `Expected patched Nodemailer >=10.6.1, received ${lockedNodemailer}`,
+);
+
 console.log("Nodemailer transport file/URL access hardening tests passed.");
