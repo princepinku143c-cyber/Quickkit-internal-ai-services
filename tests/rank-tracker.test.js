@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { execFileSync } from "node:child_process";
 import { createRankTrackerHandler, fetchTavilyJsonWithTimeout, isQuickKitResultUrl } from "../api/rank-tracker.js";
 
 function createResponse() {
@@ -28,6 +29,24 @@ const createHandler = (rateLimit = async () => true, sleep = async () => {}) => 
 try {
   const source = await readFile(new URL("../api/rank-tracker.js", import.meta.url), "utf8");
   assert.doesNotMatch(source, /tvly-[A-Za-z0-9]/, "provider credentials must not be hardcoded");
+
+  // Scan every tracked API source file, not only the rank-tracker handler, so
+  // provider credentials cannot be reintroduced in a different route/helper.
+  const apiSourcePaths = execFileSync("git", ["ls-files", "-z", "--", "api"], {
+    encoding: "utf8",
+  })
+    .split("\0")
+    .filter((path) => /^api\/.*\.(?:c?js|mjs|ts|tsx)$/.test(path));
+  assert.ok(apiSourcePaths.includes("api/rank-tracker.js"), "rank tracker source must be included in the API credential scan");
+  for (const path of apiSourcePaths) {
+    const apiSource = await readFile(path, "utf8");
+    assert.doesNotMatch(
+      apiSource,
+      /\btvly-[A-Za-z0-9_-]{16,}/i,
+      `Tavily credentials must not be hardcoded in API source (${path})`,
+    );
+  }
+  assert.match(source, /process\.env\.TAVILY_API_KEY/, "rank tracker must read its provider key from the server environment");
 
   assert.equal(isQuickKitResultUrl("https://quickkitai.com/visibility"), true);
   assert.equal(isQuickKitResultUrl("https://quickkitai.com./visibility"), true);
