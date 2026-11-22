@@ -1,11 +1,21 @@
 import assert from "node:assert/strict";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, readFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 
 const projectRoot = resolve(new URL("..", import.meta.url).pathname);
 const integrationScript = join(projectRoot, "tests", "api-test.js");
+
+const vercelConfig = JSON.parse(await readFile(join(projectRoot, "vercel.json"), "utf8"));
+const spaFallback = vercelConfig.rewrites?.find((rule) =>
+  rule.destination === "/index.html" && typeof rule.source === "string" && rule.source.includes("(?!")
+);
+assert.ok(spaFallback, "Vercel SPA fallback rewrite must remain explicitly configured.");
+const spaFallbackPattern = new RegExp(spaFallback.source);
+assert.equal(spaFallbackPattern.test("/api/aeo"), false, "AEO API requests must never fall through to the SPA index.");
+assert.equal(spaFallbackPattern.test("/api/unknown"), false, "Unknown API paths must not return the SPA index as HTML.");
+assert.equal(spaFallbackPattern.test("/a-client-side-route"), true, "Client-side application routes must continue to use the SPA fallback.");
 const isolatedCwd = await mkdtemp(join(tmpdir(), "quickkit-api-guard-"));
 
 function runGuard(overrides = {}) {
