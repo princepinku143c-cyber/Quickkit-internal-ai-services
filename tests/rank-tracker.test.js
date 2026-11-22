@@ -28,21 +28,26 @@ const createHandler = (rateLimit = async () => true, sleep = async () => {}) => 
 
 try {
   const source = await readFile(new URL("../api/rank-tracker.js", import.meta.url), "utf8");
-  assert.doesNotMatch(source, /tvly-[A-Za-z0-9]/, "provider credentials must not be hardcoded");
+  assert.doesNotMatch(source, /\\btvly-[A-Za-z0-9_-]+/i, "provider credentials must not be hardcoded");
 
   // Scan every tracked API source file, not only the rank-tracker handler, so
   // provider credentials cannot be reintroduced in a different route/helper.
+  const isApiSourceFile = (path) => /^api\\/.*\\.(?:[cm]?[jt]sx?)$/i.test(path);
+  assert.ok(
+    ["api/example.jsx", "api/example.cts", "api/example.mts"].every(isApiSourceFile),
+    "the API credential scan must include JSX and Node/TypeScript module extensions",
+  );
   const apiSourcePaths = execFileSync("git", ["ls-files", "-z", "--", "api"], {
     encoding: "utf8",
   })
     .split("\0")
-    .filter((path) => /^api\/.*\.(?:c?js|mjs|ts|tsx)$/.test(path));
+.filter(isApiSourceFile);
   assert.ok(apiSourcePaths.includes("api/rank-tracker.js"), "rank tracker source must be included in the API credential scan");
   for (const path of apiSourcePaths) {
     const apiSource = await readFile(path, "utf8");
     assert.doesNotMatch(
       apiSource,
-      /\btvly-[A-Za-z0-9_-]{16,}/i,
+      /\btvly-[A-Za-z0-9_-]+/i,
       `Tavily credentials must not be hardcoded in API source (${path})`,
     );
   }
