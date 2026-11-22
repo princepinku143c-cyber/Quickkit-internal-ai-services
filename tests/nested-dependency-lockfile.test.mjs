@@ -32,6 +32,7 @@ const patchedMinimums = {
   "websocket-driver": "0.7.5",
   "react-router": "7.14.2",
   vite: "6.4.4",
+  qs: "6.17.1",
 };
 
 for (const [name, minimum] of Object.entries(patchedMinimums)) {
