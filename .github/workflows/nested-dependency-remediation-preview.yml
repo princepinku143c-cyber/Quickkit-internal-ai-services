@@ -9,10 +9,11 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   preview:
+    if: ${{ github.ref == 'refs/heads/security/remove-hardcoded-opencode-key-20261111' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -23,27 +24,33 @@ jobs:
           cache-dependency-path: quickkit-automation-agent-main/package-lock.json
 
       - name: Apply only semver-compatible lockfile fixes (no force, no scripts)
+        id: audit_fix
         continue-on-error: true
         run: npm audit fix --prefix quickkit-automation-agent-main --package-lock-only --ignore-scripts --no-fund --no-progress
 
       - name: Verify dependency manifests were not changed
+        id: manifest_guard
         run: git diff --exit-code -- quickkit-automation-agent-main/package.json
 
       - name: Install the proposed lockfile without install scripts
+        id: nested_install
         continue-on-error: true
         run: npm ci --prefix quickkit-automation-agent-main --ignore-scripts --no-audit --no-fund
 
       - name: Validate nested TypeScript
+        id: lint
         if: ${{ !cancelled() }}
         continue-on-error: true
         run: npm run --prefix quickkit-automation-agent-main lint
 
       - name: Validate nested production build
+        id: build
         if: ${{ !cancelled() }}
         continue-on-error: true
         run: npm run --prefix quickkit-automation-agent-main build
 
       - name: Capture post-remediation audit JSON
+        id: audit_after
         if: always()
         continue-on-error: true
         run: |
@@ -55,6 +62,7 @@ jobs:
           cp quickkit-automation-agent-main/package.json nested-audit-remediation/package-manifest.json
 
       - name: Upload reviewable lockfile and audit evidence
+        id: artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
@@ -62,3 +70,33 @@ jobs:
           path: nested-audit-remediation/
           if-no-files-found: warn
           retention-days: 7
+
+      - name: Commit tested patch-level lockfile remediation to this feature branch
+        if: always()
+        env:
+          AUDIT_FIX_OUTCOME: ${{ steps.audit_fix.outcome }}
+          MANIFEST_GUARD_OUTCOME: ${{ steps.manifest_guard.outcome }}
+          NESTED_INSTALL_OUTCOME: ${{ steps.nested_install.outcome }}
+          LINT_OUTCOME: ${{ steps.lint.outcome }}
+          BUILD_OUTCOME: ${{ steps.build.outcome }}
+          AUDIT_AFTER_OUTCOME: ${{ steps.audit_after.outcome }}
+        run: |
+          set -euo pipefail
+          for item in AUDIT_FIX_OUTCOME MANIFEST_GUARD_OUTCOME NESTED_INSTALL_OUTCOME LINT_OUTCOME BUILD_OUTCOME AUDIT_AFTER_OUTCOME; do
+            value="${!item}"
+            if [ "$value" != "success" ]; then
+              echo "::error::$item was $value; refusing to commit the proposed lockfile."
+              exit 1
+            fi
+          done
+          node -e "const a=require('./nested-audit-remediation/audit-after.json'); const v=a.metadata?.vulnerabilities || {}; console.log('Post-fix audit:', JSON.stringify(v)); if ((v.critical || 0) !== 0) process.exit(1)"
+          git diff --exit-code -- quickkit-automation-agent-main/package.json
+          if git diff --quiet -- quickkit-automation-agent-main/package-lock.json; then
+            echo "No lockfile changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add quickkit-automation-agent-main/package-lock.json
+          git commit -m "fix(deps): patch nested dependency vulnerabilities"
+          git push origin HEAD:refs/heads/security/remove-hardcoded-opencode-key-20261111
