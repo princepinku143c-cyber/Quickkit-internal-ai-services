@@ -1,11 +1,12 @@
 
-import * as admin from 'firebase-admin';
+import { getApps, initializeApp } from 'firebase-admin/app';
+import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import * as functions from 'firebase-functions/v1';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 
-if (!admin.apps.length) admin.initializeApp();
-const db = admin.firestore();
+if (!getApps().length) initializeApp();
+const db = getFirestore();
 
 // --- SECRETS ---
 const RAZORPAY_KEY_ID = process.env.RZP_KEY_ID || '';
@@ -41,7 +42,7 @@ async function processSuccessfulPayment(userId: string, provider: string, refId:
         if (notes.type === 'ADDON') {
             const addCredits = parseInt(notes.credits || '0');
             t.update(userRef, {
-                'plan.credits': admin.firestore.FieldValue.increment(addCredits)
+                'plan.credits': FieldValue.increment(addCredits)
             });
             return;
         }
@@ -54,7 +55,7 @@ async function processSuccessfulPayment(userId: string, provider: string, refId:
                 status: 'active',
                 provider: provider,
                 lastPaymentId: refId,
-                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                updatedAt: FieldValue.serverTimestamp(),
                 autoRenew: true,
                 expiresAt: newExpiry, 
                 credits: tierConfig.credits,
@@ -102,7 +103,7 @@ export const verifyPayment = functions.https.onCall(async (data, context) => {
         await orderDoc.ref.update({
             status: 'success',
             paymentId: paymentId,
-            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+            updatedAt: FieldValue.serverTimestamp()
         });
 
         return { success: true };
@@ -134,7 +135,7 @@ export const createOrder = functions.https.onCall(async (data, context) => {
             amount: amount,
             currency: currency,
             status: 'created',
-            createdAt: admin.firestore.FieldValue.serverTimestamp()
+            createdAt: FieldValue.serverTimestamp()
         });
 
         return { id: order.id, amount: order.amount, currency: order.currency };

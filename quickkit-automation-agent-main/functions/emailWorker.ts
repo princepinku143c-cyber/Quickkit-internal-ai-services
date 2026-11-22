@@ -1,10 +1,11 @@
 
 import * as functions from 'firebase-functions/v1';
-import * as admin from 'firebase-admin';
+import { getApps, initializeApp } from 'firebase-admin/app';
+import { getFirestore } from 'firebase-admin/firestore';
 import nodemailer from 'nodemailer';
 
-if (!admin.apps.length) admin.initializeApp();
-const db = admin.firestore();
+if (!getApps().length) initializeApp();
+const db = getFirestore();
 
 // SMTP TRANSPORT
 const transporter = nodemailer.createTransport({
