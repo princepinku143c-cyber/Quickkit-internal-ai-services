@@ -45,6 +45,11 @@ jobs:
       - name: Install nested automation dependencies
         id: nested_install
         run: npm ci --prefix quickkit-automation-agent-main --ignore-scripts --no-audit --no-fund
+      - name: Nested automation dependency security audit
+        id: nested_dependency_audit
+        if: ${{ !cancelled() && steps.nested_install.outcome == 'success' }}
+        continue-on-error: true
+        run: npm audit --prefix quickkit-automation-agent-main --audit-level=low
       - name: Nested automation TypeScript validation
         run: npm run --prefix quickkit-automation-agent-main lint
       - name: Nested automation production build
@@ -91,9 +96,18 @@ jobs:
       - name: Enforce dependency security gate
         if: always()
         env:
-          DEPENDENCY_AUDIT_OUTCOME: ${{ steps.dependency_audit.outcome }}
+          ROOT_DEPENDENCY_AUDIT_OUTCOME: ${{ steps.dependency_audit.outcome }}
+          NESTED_DEPENDENCY_AUDIT_OUTCOME: ${{ steps.nested_dependency_audit.outcome }}
         run: |
-          if [ "$DEPENDENCY_AUDIT_OUTCOME" != "success" ]; then
-            echo "::error::Dependency audit reported advisories. Review the audit output above; release remains blocked."
+          failed=0
+          if [ "$ROOT_DEPENDENCY_AUDIT_OUTCOME" != "success" ]; then
+            echo "::error::Root dependency audit failed or was skipped; release remains blocked."
+            failed=1
+          fi
+          if [ "$NESTED_DEPENDENCY_AUDIT_OUTCOME" != "success" ]; then
+            echo "::error::Nested automation dependency audit failed or was skipped; release remains blocked."
+            failed=1
+          fi
+          if [ "$failed" -ne 0 ]; then
             exit 1
           fi
