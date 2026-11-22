@@ -26,7 +26,7 @@ const nestedLock = JSON.parse(await readFile(
   "utf8",
 ));
 assert.equal(nestedPackage.dependencies.nodemailer, "^10.6.1");
-assert.equal(nestedPackage.engines?.node, ">=20");
+assert.equal(nestedPackage.engines?.node, ">=22");
 const lockedNodemailer = nestedLock.packages?.["node_modules/nodemailer"]?.version;
 assert.ok(lockedNodemailer, "Expected Nodemailer to be present in the nested lockfile");
 const [lockedMajor, lockedMinor, lockedPatch] = lockedNodemailer.split(".").map(Number);
