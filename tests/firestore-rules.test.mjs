@@ -319,9 +319,26 @@ try {
   await assertSucceeds(getDoc(doc(alice, 'projects', 'alice-project')));
   await assertFails(getDoc(doc(bob, 'projects', 'alice-project')));
 
-  // Agent owners cannot transfer a record to another tenant or user.
+  // Client agent creation is owner-bound and cannot attach tenant metadata.
+  await assertSucceeds(setDoc(doc(alice, 'agents', 'alice-client-created-agent'), {
+    userId: 'alice',
+    name: 'Alice client-created agent',
+  }));
+  await assertFails(getDoc(doc(bob, 'agents', 'alice-client-created-agent')));
+  await assertFails(setDoc(doc(alice, 'agents', 'forged-owner-agent'), {
+    userId: 'bob',
+    name: 'Forged owner agent',
+  }));
+  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId']) {
+    await assertFails(setDoc(doc(alice, 'agents', `forged-${field}-agent`), {
+      userId: 'alice',
+      name: 'Forged tenant metadata',
+      [field]: 'victim-tenant',
+    }));
+  }
+
+  // Existing agent owners cannot transfer ownership or attach tenant metadata.
   await assertFails(updateDoc(doc(alice, 'agents', 'alice-agent'), { userId: 'bob' }));
-  // An agent owner cannot attach or mutate any reserved tenant/workspace identifier.
   for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId']) {
     await assertFails(updateDoc(doc(alice, 'agents', 'alice-agent'), { [field]: 'victim-tenant' }));
   }
