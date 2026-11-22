@@ -97,16 +97,24 @@ service cloud.firestore {
     // Prefer the canonical snake_case owner field. The camelCase fallback
     // preserves legacy records, but a conflicting alias can never grant a
     // second tenant access to the same log document.
+    // Legacy camelCase ownership is retained for point reads only.
+    // Collection queries must prove ownership through the canonical snake_case field.
     function isLogOwner() {
       return ('user_id' in resource.data)
         ? isOwner(resource.data.user_id)
         : ('userId' in resource.data && isOwner(resource.data.userId));
     }
 
+    function isCanonicalLogOwner() {
+      return 'user_id' in resource.data
+        && isOwner(resource.data.user_id);
+    }
+
     // Admins publish client-facing workflow logs; each client can read only
     // records assigned to one unambiguous owner.
     match /logs/{logId} {
-      allow read: if isAdmin() || isLogOwner();
+      allow get: if isAdmin() || isLogOwner();
+      allow list: if isAdmin() || isCanonicalLogOwner();
       allow create, update, delete: if isAdmin();
     }
 
