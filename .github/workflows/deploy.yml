@@ -59,6 +59,9 @@ jobs:
       - name: Nested automation production build
         if: ${{ !cancelled() && steps.nested_install.outcome == 'success' }}
         run: npm run --prefix quickkit-automation-agent-main build
+      - name: Nodemailer transport file and URL access hardening tests
+        run: node tests/nodemailer-transport-security.test.mjs
+
       - name: Security input regression tests
         if: ${{ !cancelled() && steps.root_install.outcome == 'success' }}
         run: npm run test:security
