@@ -167,7 +167,7 @@ export const IntegrationsView: React.FC<IntegrationsProps> = ({ user }) => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (loading) {
+  if (loading || loadedUserId !== user.uid) {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-slate-500 text-sm font-mono animate-pulse">Initializing Integrations Hub...</div>
