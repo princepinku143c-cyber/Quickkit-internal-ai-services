@@ -18,6 +18,11 @@ const MAX_STEPS_PER_RUN = 50;
 const MAX_REPEATS_PER_NODE = 3; 
 const EXECUTION_TIMEOUT_MS = 60000; 
 
+const isPersistableProjectId = (projectId: string | undefined) => {
+    const normalized = typeof projectId === 'string' ? projectId.trim() : '';
+    return Boolean(normalized) && normalized !== 'test-project' && normalized !== 'unknown';
+};
+
 // NON-BLOCKING YIELD: Prevents the UI from freezing during execution loops
 const yieldToMain = () => new Promise(resolve => setTimeout(resolve, 0));
 
@@ -129,6 +134,7 @@ export class WorkflowOrchestrator {
 
     private async saveCheckpoint() {
         this.state.lastUpdateTime = Date.now();
+        if (!isPersistableProjectId(this.state.projectId)) return;
         try {
             await saveRunState(this.state);
         } catch (e) {
@@ -228,7 +234,13 @@ export class WorkflowOrchestrator {
         }
 
         this.state.status = 'COMPLETED';
-        await clearRunState(this.state.runId);
+        if (isPersistableProjectId(this.state.projectId)) {
+            try {
+                await clearRunState(this.state.runId);
+            } catch {
+                console.warn("Cloud checkpoint cleanup unavailable.");
+            }
+        }
 
         return {
             status: 'SUCCESS',
