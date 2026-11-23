@@ -1343,3 +1343,57 @@ assert.ok(
   "the success-only action must not appear for failed or blocked runs",
 );
 console.log("Automation execution-result UI regression tests passed.");
+
+
+// The integrations screen must not expose a previous account's webhook secret
+// while a new profile is loading, or overwrite a valid secret after a read failure.
+const integrationsViewSource = readFileSync(
+  new URL("../components/IntegrationsView.tsx", import.meta.url),
+  "utf8",
+);
+assert.match(
+  integrationsViewSource,
+  /import \{ doc, getDoc, runTransaction \} from 'firebase\\/firestore';/,
+  "webhook secret creation must use a Firestore transaction",
+);
+assert.match(
+  integrationsViewSource,
+  /let active = true;[\\s\\S]*?return \\(\\) => \\{\\s*active = false;\\s*\\};\\s*\\}, \\[user\\.uid\\]\\);/,
+  "profile loading must ignore stale requests after the signed-in user changes",
+);
+assert.match(
+  integrationsViewSource,
+  /if \\(loading \\|\\| loadedUserId !== user\\.uid\\)/,
+  "the previous account's integrations state must remain hidden until the new profile loads",
+);
+assert.match(
+  integrationsViewSource,
+  /runTransaction\\(db as any, async \\(transaction\\) => \\{[\\s\\S]*?transaction\\.get\\(profileRef\\)/,
+  "webhook secret creation must re-read the profile inside a transaction",
+);
+assert.match(
+  integrationsViewSource,
+  /if \\(storedSecret === undefined\\) \\{\\s*transaction\\.set\\(profileRef, \\{ webhookSecret: candidate \\}, \\{ merge: true \\}\\);\\s*return candidate;/,
+  "a new webhook secret may be written only when the profile has no existing secret",
+);
+assert.match(
+  integrationsViewSource,
+  /if \\(typeof storedSecret === 'string' && \\/\\^\\[a-f0-9\\]\\{64\\}\\$\\/\\.test\\(storedSecret\\)\\) \\{\\s*return storedSecret;/,
+  "a valid existing webhook secret must be preserved instead of rotated",
+);
+assert.doesNotMatch(
+  integrationsViewSource,
+  /setDoc\\(/,
+  "webhook secret creation must not overwrite the profile outside a transaction",
+);
+assert.match(
+  integrationsViewSource,
+  /disabled=\\{profileLoadFailed\\}/,
+  "webhook setup must be disabled when the profile could not be verified",
+);
+assert.match(
+  integrationsViewSource,
+  /disabled=\\{testingHook \\|\\| !webhookSecret \\|\\| profileLoadFailed\\}/,
+  "test payload buttons must stay disabled until a valid webhook secret is loaded",
+);
+console.log("Integrations webhook secret lifecycle regression tests passed.");
