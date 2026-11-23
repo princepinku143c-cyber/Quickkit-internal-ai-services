@@ -193,6 +193,14 @@ const RunModal: React.FC<RunModalProps> = ({ isOpen, onClose, nexuses, synapses,
           appendLog({ msg: 'Cloud run blocked: resolve workflow validation errors first.', type: 'ERROR' });
           return;
       }
+      if (!user?.uid) {
+          appendLog({ msg: 'Cloud runs require an authenticated account.', type: 'ERROR' });
+          return;
+      }
+      if (resolvedProjectId === 'test-project' || resolvedProjectId === 'unknown') {
+          appendLog({ msg: 'Cloud runs require a saved project. Save or select a project first.', type: 'ERROR' });
+          return;
+      }
 
       let payload = {};
       try {
