@@ -138,8 +138,7 @@ service cloud.firestore {
     function validActiveRunProjectReference(projectId) {
       let projectPath = /databases/$(database)/documents/projects/$(projectId);
       return exists(projectPath)
-        ? get(projectPath).data.userId == request.auth.uid
-        : projectId == 'test-project';
+        && get(projectPath).data.userId == request.auth.uid;
     }
 
     function validActiveRunCreate(runId) {
