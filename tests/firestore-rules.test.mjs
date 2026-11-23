@@ -618,6 +618,14 @@ try {
     await assertFails(getDoc(doc(automationOtherUser, collectionName, 'unscoped-client-write')));
   }
 
+  // Seed a project owned by another account to prove active-run references
+  // cannot point into another tenant's project namespace.
+  await automationEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), 'projects', 'other-project'), {
+      userId: 'automation-other',
+    });
+  });
+
   // Cloud Pulse stores one run document per runId. Only the authenticated owner
   // may create/read/update/delete that document; collection enumeration and
   // ownership/project reassignment are denied.
@@ -638,6 +646,22 @@ try {
 
   await assertSucceeds(setDoc(ownerRunRef, validActiveRun));
   await assertSucceeds(getDoc(ownerRunRef));
+  await assertFails(setDoc(doc(automationUser, 'active_runs', 'cross-tenant-project-run'), {
+    ...validActiveRun,
+    runId: 'cross-tenant-project-run',
+    projectId: 'other-project',
+  }));
+  await assertFails(setDoc(doc(automationUser, 'active_runs', 'missing-project-run'), {
+    ...validActiveRun,
+    runId: 'missing-project-run',
+    projectId: 'not-a-saved-project',
+  }));
+  await assertSucceeds(setDoc(doc(automationOtherUser, 'active_runs', 'other-owner-project-run'), {
+    ...validActiveRun,
+    runId: 'other-owner-project-run',
+    userId: 'automation-other',
+    projectId: 'other-project',
+  }));
   await assertFails(getDoc(doc(automationOtherUser, 'active_runs', 'owner-run')));
   await assertFails(getDocs(collection(automationUser, 'active_runs')));
   await assertSucceeds(updateDoc(ownerRunRef, {
@@ -884,7 +908,22 @@ try {
     }));
   }
 
+  await assertFails(setDoc(doc(automationUser, 'projects', 'test-project'), validAutomationProject));
   await assertSucceeds(setDoc(automationProjectRef, validAutomationProject));
+
+  // Existing saved projects may be referenced by their owner, but never by
+  // another account's active-run document.
+  await assertSucceeds(setDoc(doc(automationUser, 'active_runs', 'owned-project-run'), {
+    ...validActiveRun,
+    runId: 'owned-project-run',
+    projectId: 'automation-owned-project',
+  }));
+  await assertFails(setDoc(doc(automationOtherUser, 'active_runs', 'forged-owned-project-run'), {
+    ...validActiveRun,
+    runId: 'forged-owned-project-run',
+    userId: 'automation-other',
+    projectId: 'automation-owned-project',
+  }));
 
   // The service reads known documents directly. A document-ID query is also
   // safe only when the signed-in caller owns the matching document.

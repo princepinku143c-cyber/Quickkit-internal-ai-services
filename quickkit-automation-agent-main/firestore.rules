@@ -66,8 +66,9 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    function validProjectCreate() {
-      return isOwner(request.resource.data.userId)
+    function validProjectCreate(projectId) {
+      return projectId != 'test-project'
+        && isOwner(request.resource.data.userId)
         && request.resource.data.keys().hasOnly([
           'userId', 'title', 'description', 'createdAt', 'updatedAt',
           'nexuses', 'synapses', 'settings'
@@ -100,7 +101,7 @@ service cloud.firestore {
 
     match /projects/{projectId} {
       allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
-      allow create: if validProjectCreate();
+      allow create: if validProjectCreate(projectId);
       allow update: if validProjectUpdate();
       allow delete: if isOwner(resource.data.userId);
     }
@@ -134,9 +135,17 @@ service cloud.firestore {
           || request.resource.data.createdAt is timestamp);
     }
 
+    function validActiveRunProjectReference(projectId) {
+      let projectPath = /databases/$(database)/documents/projects/$(projectId);
+      return exists(projectPath)
+        ? get(projectPath).data.userId == request.auth.uid
+        : projectId == 'test-project';
+    }
+
     function validActiveRunCreate(runId) {
       return isOwner(request.resource.data.userId)
         && validActiveRunShape(runId)
+        && validActiveRunProjectReference(request.resource.data.projectId)
         // createCloudRun uses a Firestore server timestamp; local checkpoints
         // may create the same shape without the optional createdAt field.
         && (!('createdAt' in request.resource.data)
