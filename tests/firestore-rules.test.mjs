@@ -941,7 +941,7 @@ try {
     collection(automationUser, 'projects'),
     where('userId', '==', 'automation-user'),
   ));
-  assert.equal(automationOwnedProjects.size, 1);
+  assert.equal(automationOwnedProjects.size, 2); // saved project plus the active-run fixture project
   await assertFails(getDocs(query(
     collection(automationOtherUser, 'projects'),
     where(documentId(), '==', 'automation-owned-project'),
