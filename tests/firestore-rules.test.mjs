@@ -234,7 +234,7 @@ try {
     plan: 'free',
   }));
   // Every reserved tenant/workspace identifier is server-managed on profile creation.
-  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId']) {
+  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId', 'tenant_id', 'workspace_id', 'company_id', 'organization_id', 'orgId', 'org_id']) {
     await assertFails(setDoc(doc(freshUser, 'users', 'fresh-user'), {
       uid: 'fresh-user',
       email: 'fresh@example.com',
@@ -280,7 +280,7 @@ try {
   await assertFails(updateDoc(doc(alice, 'users', 'alice'), { credits: 999999 }));
   await assertFails(updateDoc(doc(alice, 'users', 'alice'), { monthlyLimit: 999999 }));
   // Existing users cannot add or change any server-owned tenant identifier.
-  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId']) {
+  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId', 'tenant_id', 'workspace_id', 'company_id', 'organization_id', 'orgId', 'org_id']) {
     await assertFails(updateDoc(doc(alice, 'users', 'alice'), { [field]: 'victim-tenant' }));
   }
   await assertFails(updateDoc(doc(alice, 'users', 'alice'), { email: 'bob@example.com' }));
@@ -338,7 +338,7 @@ try {
     userId: 'bob',
     name: 'Forged owner agent',
   }));
-  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId']) {
+  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId', 'tenant_id', 'workspace_id', 'company_id', 'organization_id', 'orgId', 'org_id']) {
     await assertFails(setDoc(doc(alice, 'agents', `forged-${field}-agent`), {
       userId: 'alice',
       name: 'Forged tenant metadata',
@@ -348,7 +348,7 @@ try {
 
   // Existing agent owners cannot transfer ownership or attach tenant metadata.
   await assertFails(updateDoc(doc(alice, 'agents', 'alice-agent'), { userId: 'bob' }));
-  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId']) {
+  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId', 'tenant_id', 'workspace_id', 'company_id', 'organization_id', 'orgId', 'org_id']) {
     await assertFails(updateDoc(doc(alice, 'agents', 'alice-agent'), { [field]: 'victim-tenant' }));
   }
   await assertSucceeds(updateDoc(doc(alice, 'agents', 'alice-agent'), { name: 'Updated agent' }));
@@ -540,7 +540,7 @@ try {
     userId: 'alice',
     name: 'Alice new agent',
   }));
-  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId']) {
+  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId', 'tenant_id', 'workspace_id', 'company_id', 'organization_id', 'orgId', 'org_id']) {
     await assertFails(setDoc(doc(alice, 'agents', 'spoofed-' + field), {
       userId: 'alice',
       name: 'Spoofed agent',
@@ -675,7 +675,7 @@ try {
   await assertFails(updateDoc(ownerRunRef, { unexpected: true }));
   await assertFails(updateDoc(ownerRunRef, { createdAt: serverTimestamp() }));
   // Every reserved tenant/workspace alias is excluded from active-run create/update.
-  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId']) {
+  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId', 'tenant_id', 'workspace_id', 'company_id', 'organization_id', 'orgId', 'org_id']) {
     const forgedRunId = 'tenant-' + field;
     await assertFails(setDoc(doc(automationUser, 'active_runs', forgedRunId), {
       ...validActiveRun,
@@ -736,7 +736,7 @@ try {
     ...validArchitectMemory,
     unexpected: true,
   }));
-  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId']) {
+  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId', 'tenant_id', 'workspace_id', 'company_id', 'organization_id', 'orgId', 'org_id']) {
     await assertFails(setDoc(doc(automationUser, 'architect_memory', 'tenant-' + field), {
       ...validArchitectMemory,
       [field]: 'victim-tenant',
@@ -784,7 +784,7 @@ try {
     extra: 'not-allowed',
     createdAt: serverTimestamp(),
   }));
-  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId']) {
+  for (const field of ['tenantId', 'workspaceId', 'companyId', 'organizationId', 'tenant_id', 'workspace_id', 'company_id', 'organization_id', 'orgId', 'org_id']) {
     await assertFails(setDoc(doc(automationUser, 'execution_logs', 'tenant-' + field), {
       ...validExecutionLog,
       id: 'TENANT_' + field,
