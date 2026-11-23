@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { UserProfile } from '../types';
 import {
   Loader2, Link, Copy, Check, Mail, Phone, CreditCard, Sparkles, AlertCircle,
 } from 'lucide-react';
@@ -112,15 +113,11 @@ export const IntegrationsView: React.FC<IntegrationsProps> = ({ user }) => {
     loadIntegrations();
   }, [user.uid]);
 
-
-
   const handleCopy = () => {
     navigator.clipboard.writeText(webhookUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
-
-  // Helper to determine if an app has credentials stored
 
   if (loading) {
     return (
