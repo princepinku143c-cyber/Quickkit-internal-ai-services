@@ -3,7 +3,7 @@ import { UserProfile } from '../types';
 import {
   Loader2, Link, Copy, Check, Mail, Phone, CreditCard, Sparkles, AlertCircle,
 } from 'lucide-react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, runTransaction } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 
 interface IntegrationsProps {
@@ -32,16 +32,39 @@ export const IntegrationsView: React.FC<IntegrationsProps> = ({ user }) => {
   const [testingHook, setTestingHook] = useState(false);
   const [webhookSecret, setWebhookSecret] = useState('');
   const [copiedSecret, setCopiedSecret] = useState(false);
+  const [profileLoadFailed, setProfileLoadFailed] = useState(false);
+  const [loadedUserId, setLoadedUserId] = useState('');
 
   // Generate unique Webhook URL
   const webhookUrl = `${window.location.protocol}//${window.location.host}/api/webhook?client_id=${user.uid}`;
   const ensureWebhookSecret = async () => {
     if (webhookSecret) return webhookSecret;
     if (!db || !user.uid) throw new Error('Connect your account database before creating a webhook secret.');
+    if (profileLoadFailed) {
+      throw new Error('Your existing webhook secret could not be verified. Refresh the page before trying again.');
+    }
+
     const bytes = new Uint8Array(32);
     window.crypto.getRandomValues(bytes);
-    const secret = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
-    await setDoc(doc(db as any, 'users', user.uid), { webhookSecret: secret }, { merge: true });
+    const candidate = Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+    const profileRef = doc(db as any, 'users', user.uid);
+    const secret = await runTransaction(db as any, async (transaction) => {
+      const profileSnap = await transaction.get(profileRef);
+      if (!profileSnap.exists()) {
+        throw new Error('Your account profile could not be found. Refresh the page or contact your administrator.');
+      }
+
+      const storedSecret = profileSnap.data()?.webhookSecret;
+      if (storedSecret === undefined) {
+        transaction.set(profileRef, { webhookSecret: candidate }, { merge: true });
+        return candidate;
+      }
+      if (typeof storedSecret === 'string' && /^[a-f0-9]{64}$/.test(storedSecret)) {
+        return storedSecret;
+      }
+      throw new Error('The stored webhook secret is invalid. It was not replaced; contact your administrator.');
+    });
+
     setWebhookSecret(secret);
     return secret;
   };
@@ -57,6 +80,7 @@ export const IntegrationsView: React.FC<IntegrationsProps> = ({ user }) => {
   };
 
   const handleTriggerTestPayload = async () => {
+    if (!/^[a-f0-9]{64}$/.test(webhookSecret) || profileLoadFailed) return;
     setTestingHook(true);
     try {
       const response = await fetch(`/api/webhook?uid=${user.uid}`, {
@@ -93,24 +117,48 @@ export const IntegrationsView: React.FC<IntegrationsProps> = ({ user }) => {
   };
 
   useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setLoadedUserId('');
+    setWebhookSecret('');
+    setProfileLoadFailed(false);
+
     const loadIntegrations = async () => {
-      if (!db || Object.keys(db).length === 0 || !user.uid) {
-        setLoading(false);
-        return;
-      }
       try {
+        if (!db || Object.keys(db).length === 0 || !user.uid) {
+          throw new Error('Account database is not configured.');
+        }
         const docRef = doc(db as any, 'users', user.uid);
         const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          if (typeof data.webhookSecret === 'string') setWebhookSecret(data.webhookSecret);
+        if (!active) return;
+        if (!docSnap.exists()) {
+          setProfileLoadFailed(true);
+          return;
         }
-      } catch (e) {
-        console.error("Failed to load integrations:", e);
+
+        const storedSecret = docSnap.data()?.webhookSecret;
+        if (storedSecret === undefined) return;
+        if (typeof storedSecret === 'string' && /^[a-f0-9]{64}$/.test(storedSecret)) {
+          setWebhookSecret(storedSecret);
+        } else {
+          setProfileLoadFailed(true);
+        }
+      } catch {
+        if (!active) return;
+        setProfileLoadFailed(true);
+        console.error("Failed to load integrations profile.");
+      } finally {
+        if (active) {
+          setLoadedUserId(user.uid);
+          setLoading(false);
+        }
       }
-      setLoading(false);
     };
-    loadIntegrations();
+
+    void loadIntegrations();
+    return () => {
+      active = false;
+    };
   }, [user.uid]);
 
   const handleCopy = () => {
@@ -137,6 +185,11 @@ export const IntegrationsView: React.FC<IntegrationsProps> = ({ user }) => {
       <div role="status" aria-live="polite" className="rounded-2xl border border-amber-500/20 bg-amber-500/10 p-4 text-sm leading-6 text-amber-100">
         Third-party credentials must be configured server-side. This portal does not yet provide a tenant-isolated credential vault. Do not paste API keys here; ask an administrator to configure an approved server-side integration.
       </div>
+      {profileLoadFailed && (
+        <div role="alert" aria-live="assertive" className="rounded-2xl border border-red-500/20 bg-red-500/10 p-4 text-sm leading-6 text-red-100">
+          We could not verify this account's existing webhook secret. Webhook setup is paused to avoid replacing a working secret after a read failure. Refresh the page and try again; contact your administrator if the problem continues.
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {/* Marketplace cards */}
@@ -193,13 +246,15 @@ export const IntegrationsView: React.FC<IntegrationsProps> = ({ user }) => {
           <div className="pt-6 border-t border-[#1e293b]/40 mt-6 space-y-2.5">
             <button
               onClick={handleOpenWebhook}
-              className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-600/15 flex items-center justify-center gap-1.5"
+              disabled={profileLoadFailed}
+              title={profileLoadFailed ? "Refresh the page to verify the existing webhook secret before continuing." : undefined}
+              className="w-full py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-600/15 flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Link className="w-4 h-4" /> Get Webhook URL
             </button>
             <button
               onClick={handleTriggerTestPayload}
-              disabled={testingHook}
+              disabled={testingHook || !webhookSecret || profileLoadFailed}
               className="w-full py-3 bg-[#0B1120] hover:bg-slate-900 border border-[#1e293b] hover:border-slate-700 text-slate-300 hover:text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
             >
               {testingHook ? (
@@ -274,7 +329,7 @@ export const IntegrationsView: React.FC<IntegrationsProps> = ({ user }) => {
                 <button
                   type="button"
                   onClick={handleTriggerTestPayload}
-                  disabled={testingHook}
+                  disabled={testingHook || !webhookSecret || profileLoadFailed}
                   className="w-full py-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-blue-600/15 flex items-center justify-center gap-1.5 disabled:opacity-50"
                 >
                   {testingHook ? (
