@@ -41,27 +41,40 @@ export const getArchitectMemories = async (limit: number = 5): Promise<string> =
 
 // --- QUOTA & LOGS ---
 export const updateDailyUsage = async (userId: string): Promise<{ allowed: boolean, count: number, reason?: 'unavailable' }> => {
-    // Preserve the existing guest and local development bypasses. All other
-    // executions must have a verifiable quota store before they can proceed.
+    // Preserve the existing guest and local development bypasses.
     if (userId === 'guest' || userId === 'dev-bypass-user-999') return { allowed: true, count: 0 };
-    if (!userId || !db) return { allowed: false, count: 0, reason: 'unavailable' };
-    const today = new Date().toISOString().split('T')[0];
-    const quotaRef = db.collection('usage_quotas').doc(`${userId}_${today}`);
+
+    const currentUser = auth?.currentUser;
+    if (!currentUser || currentUser.uid !== userId) {
+        return { allowed: false, count: 0, reason: 'unavailable' };
+    }
+
     try {
-        return await db.runTransaction(async (t) => {
-            const doc = await t.get(quotaRef);
-            const dailyLimit = 500;
-            if (!doc.exists) {
-                t.set(quotaRef, { count: 1, lastUpdate: Date.now() });
-                return { allowed: true, count: 1 };
-            }
-            const newCount = (doc.data()?.count || 0) + 1;
-            if (newCount > dailyLimit) return { allowed: false, count: doc.data()?.count };
-            t.update(quotaRef, { count: newCount, lastUpdate: Date.now() });
-            return { allowed: true, count: newCount };
+        const idToken = await currentUser.getIdToken();
+        const response = await fetch('/api/usage/daily', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({}),
         });
-    } catch (e) {
-        // Firestore rules/storage failures must never grant an unmetered run.
+        if (!response.ok) return { allowed: false, count: 0, reason: 'unavailable' };
+
+        const payload = await response.json();
+        const quota = payload?.data;
+        if (
+            payload?.success !== true
+            || !quota
+            || typeof quota.allowed !== 'boolean'
+            || !Number.isSafeInteger(quota.count)
+            || quota.count < 0
+        ) {
+            return { allowed: false, count: 0, reason: 'unavailable' };
+        }
+        return { allowed: quota.allowed, count: quota.count };
+    } catch {
+        // Missing API access, invalid responses, and network failures all fail closed.
         return { allowed: false, count: 0, reason: 'unavailable' };
     }
 };
