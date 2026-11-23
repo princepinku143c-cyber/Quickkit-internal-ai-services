@@ -179,7 +179,7 @@ function createFakeQuotaDb(initialRecords = {}) {
       const writes = [];
       const transaction = {
         async get(ref) {
-          const key = \`\${ref.collectionName}/\${ref.id}\`;
+          const key = `${ref.collectionName}/${ref.id}`;
           const exists = records.has(key);
           const value = records.get(key);
           return { exists, data: () => value };
@@ -190,7 +190,7 @@ function createFakeQuotaDb(initialRecords = {}) {
       };
       const result = await callback(transaction);
       for (const write of writes) {
-        const key = \`\${write.ref.collectionName}/\${write.ref.id}\`;
+        const key = `${write.ref.collectionName}/${write.ref.id}`;
         const previous = records.get(key) || {};
         records.set(key, write.options?.merge ? { ...previous, ...write.value } : write.value);
       }
