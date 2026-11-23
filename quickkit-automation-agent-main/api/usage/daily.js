@@ -101,7 +101,7 @@ export async function consumeDailyQuota(db, userId, now = Date.now()) {
   }
 
   const day = new Date(timestamp).toISOString().slice(0, 10);
-  const quotaRef = db.collection("usage_quotas").doc(\`\${userId}_\${day}\`);
+  const quotaRef = db.collection("usage_quotas").doc(`${userId}_${day}`);
 
   return db.runTransaction(async (transaction) => {
     const snapshot = await transaction.get(quotaRef);
