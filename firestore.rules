@@ -122,7 +122,7 @@ service cloud.firestore {
     function validClientAgentCreate() {
       return isOwner(request.resource.data.userId)
         && !request.resource.data.keys().hasAny([
-          'tenantId', 'workspaceId', 'companyId', 'organizationId'
+          'tenantId', 'workspaceId', 'companyId', 'organizationId', 'tenant_id', 'workspace_id', 'company_id', 'organization_id', 'orgId', 'org_id'
         ]);
     }
 
@@ -135,7 +135,7 @@ service cloud.firestore {
           isOwner(resource.data.userId)
           && request.resource.data.userId == resource.data.userId
           && !request.resource.data.diff(resource.data).affectedKeys().hasAny([
-            'tenantId', 'workspaceId', 'companyId', 'organizationId'
+            'tenantId', 'workspaceId', 'companyId', 'organizationId', 'tenant_id', 'workspace_id', 'company_id', 'organization_id', 'orgId', 'org_id'
           ])
         );
       allow delete: if isAdmin() || isOwner(resource.data.userId);
