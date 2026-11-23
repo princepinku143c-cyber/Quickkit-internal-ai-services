@@ -3,10 +3,11 @@ import { spawnSync } from "node:child_process";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 
-const [viteConfig, geminiService, envExample] = await Promise.all([
+const [viteConfig, geminiService, envExample, integrationsView] = await Promise.all([
   readFile(new URL("../quickkit-automation-agent-main/vite.config.ts", import.meta.url), "utf8"),
   readFile(new URL("../quickkit-automation-agent-main/services/geminiService.ts", import.meta.url), "utf8"),
   readFile(new URL("../quickkit-automation-agent-main/.env.example", import.meta.url), "utf8"),
+  readFile(new URL("../components/IntegrationsView.tsx", import.meta.url), "utf8"),
 ]);
 
 // The browser build must fail closed if a provider key is supplied as a build
@@ -52,4 +53,15 @@ for (const name of forbiddenNames) {
 }
 assert.ok(!buildOutput.includes(sentinel), "The dummy credential value must not appear in build output.");
 
-console.log("PASS: Gemini provider credentials cannot be injected into the browser bundle; Vite's real config guard rejects all four environment names, and BYO Credential Vault remains supported.");
+
+ // Root CRM provider credentials must not be collected or persisted in a
+ // browser-readable Firestore profile until a tenant-isolated server vault exists.
+ assert.doesNotMatch(integrationsView, /data\.integrations|setDoc\(docRef,\s*\{\s*integrations:/);
+ assert.doesNotMatch(integrationsView, /Secure Credentials Vault|API keys are stored directly in your Firebase sandbox|Save Keys/);
+ assert.doesNotMatch(integrationsView, /type:\s*['"]password['"]/);
+ assert.match(integrationsView, /tenant-isolated credential vault/);
+ assert.match(integrationsView, /Do not paste API keys here/);
+ assert.match(integrationsView, /Server setup required/);
+ assert.match(integrationsView, /webhookSecret/, "per-user webhook secret flow remains available");
+
+console.log("PASS: Gemini provider credentials cannot enter the browser bundle; root CRM provider credentials are not collected or stored in client Firestore; per-user webhook secret flow remains available.");
