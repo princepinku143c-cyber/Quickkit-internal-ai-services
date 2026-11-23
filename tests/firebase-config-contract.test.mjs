@@ -3,6 +3,40 @@ import { access, readFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { getMissingFirebaseClientConfig, isFirebaseClientConfigComplete } from "../lib/firebaseConfig.js";
+
+const completeClientConfig = {
+  apiKey: "test-api-key",
+  authDomain: "quickkitai-test.firebaseapp.com",
+  projectId: "demo-quickkitai",
+  appId: "1:1234567890:web:test",
+};
+
+// Auth/Firestore startup requires all four identity fields; optional telemetry
+// and storage fields must not accidentally disable an otherwise valid client.
+assert.deepEqual(getMissingFirebaseClientConfig(completeClientConfig), []);
+assert.equal(isFirebaseClientConfigComplete(completeClientConfig), true);
+assert.equal(
+  isFirebaseClientConfigComplete({
+    ...completeClientConfig,
+    storageBucket: undefined,
+    messagingSenderId: undefined,
+    measurementId: undefined,
+  }),
+  true,
+);
+
+for (const requiredKey of ["apiKey", "authDomain", "projectId", "appId"]) {
+  const incompleteConfig = { ...completeClientConfig, [requiredKey]: "   " };
+  assert.ok(getMissingFirebaseClientConfig(incompleteConfig).includes(requiredKey));
+  assert.equal(isFirebaseClientConfigComplete(incompleteConfig), false);
+}
+
+assert.deepEqual(
+  getMissingFirebaseClientConfig(null),
+  ["apiKey", "authDomain", "projectId", "appId"],
+);
+
 const rootConfigPath = fileURLToPath(new URL("../firebase.json", import.meta.url));
 const nestedConfigPath = fileURLToPath(new URL("../quickkit-automation-agent-main/firebase.json", import.meta.url));
 
