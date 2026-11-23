@@ -621,6 +621,9 @@ try {
   // Seed a project owned by another account to prove active-run references
   // cannot point into another tenant's project namespace.
   await automationEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), 'projects', 'active-run-owner-project'), {
+      userId: 'automation-user',
+    });
     await setDoc(doc(context.firestore(), 'projects', 'other-project'), {
       userId: 'automation-other',
     });
@@ -633,7 +636,7 @@ try {
   const validActiveRun = {
     runId: 'owner-run',
     userId: 'automation-user',
-    projectId: 'test-project',
+    projectId: 'active-run-owner-project',
     status: 'QUEUED',
     currentQueue: ['trigger'],
     completedNodeIds: [],
@@ -655,6 +658,11 @@ try {
     ...validActiveRun,
     runId: 'missing-project-run',
     projectId: 'not-a-saved-project',
+  }));
+  await assertFails(setDoc(doc(automationUser, 'active_runs', 'placeholder-project-run'), {
+    ...validActiveRun,
+    runId: 'placeholder-project-run',
+    projectId: 'test-project',
   }));
   await assertSucceeds(setDoc(doc(automationOtherUser, 'active_runs', 'other-owner-project-run'), {
     ...validActiveRun,
