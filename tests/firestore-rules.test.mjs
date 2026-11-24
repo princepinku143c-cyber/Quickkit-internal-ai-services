@@ -641,6 +641,7 @@ try {
     runId: 'owner-run',
     userId: 'automation-user',
     projectId: 'active-run-owner-project',
+    mode: 'local',
     status: 'QUEUED',
     currentQueue: ['trigger'],
     completedNodeIds: [],
@@ -684,6 +685,28 @@ try {
     currentQueue: ['next-node'],
     lastUpdateTime: Date.now(),
   }));
+  await assertFails(updateDoc(ownerRunRef, { mode: 'cloud' }));
+
+  // Cloud-run state is worker/Admin-owned. A client may read its own cloud run,
+  // but cannot forge worker progress or switch it into local mode.
+  const cloudRunRef = doc(automationUser, 'active_runs', 'cloud-owner-run');
+  const validCloudRun = { ...validActiveRun, runId: 'cloud-owner-run', mode: 'cloud' };
+  await automationEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), 'active_runs', 'cloud-owner-run'), validCloudRun);
+  });
+  await assertSucceeds(getDoc(cloudRunRef));
+  await assertFails(updateDoc(cloudRunRef, { status: 'COMPLETED' }));
+  await assertFails(updateDoc(cloudRunRef, { currentQueue: [] }));
+  await assertFails(updateDoc(cloudRunRef, { mode: 'local' }));
+
+  // Legacy runs without an explicit execution mode fail closed for client updates.
+  const legacyRunRef = doc(automationUser, 'active_runs', 'legacy-run');
+  const legacyRun = { ...validActiveRun, runId: 'legacy-run' };
+  delete legacyRun.mode;
+  await automationEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), 'active_runs', 'legacy-run'), legacyRun);
+  });
+  await assertFails(updateDoc(legacyRunRef, { status: 'RUNNING' }));
   await assertFails(updateDoc(ownerRunRef, { userId: 'automation-other' }));
   await assertFails(updateDoc(ownerRunRef, { projectId: 'other-project' }));
   await assertFails(updateDoc(ownerRunRef, { status: 'ADMIN' }));

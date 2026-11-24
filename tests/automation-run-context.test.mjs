@@ -8,6 +8,7 @@ const modal = await readFile(new URL("../quickkit-automation-agent-main/componen
 const engine = await readFile(new URL("../quickkit-automation-agent-main/services/executionEngine.ts", import.meta.url), "utf8");
 const cloudStore = await readFile(new URL("../quickkit-automation-agent-main/services/cloudStore.ts", import.meta.url), "utf8");
 const automationRules = await readFile(new URL("../quickkit-automation-agent-main/firestore.rules", import.meta.url), "utf8");
+const runCreationApi = await readFile(new URL("../quickkit-automation-agent-main/api/runs/create.js", import.meta.url), "utf8");
 
 assert.ok(app.includes("projectId={currentProject?.id}"), "App must pass the active project ID to RunModal.");
 assert.ok(modal.includes("projectId?: string;"), "RunModal must accept an optional project ID.");
@@ -47,6 +48,9 @@ assert.doesNotMatch(cloudStore, /collection\('active_runs'\)\.doc\(state\.runId\
 assert.ok(engine.includes("createCloudRun(this.state, 'local')"), "Signed-in saved-project local runs must use the atomic server run/quota transaction.");
 assert.ok(modal.includes("createCloudRun(initialState, 'cloud')"), "Cloud runs must use the atomic server run/quota transaction.");
 assert.match(automationRules, /match \/active_runs\/\{runId\}[\s\S]*allow create: if false;/, "Clients must not create active-run documents directly.");
+assert.ok(runCreationApi.includes("mode: input.mode"), "Trusted run creation must persist the local/cloud execution mode.");
+assert.ok(automationRules.includes("resource.data.mode == 'local'"), "Only browser-local runs may accept client checkpoint updates.");
+assert.ok(automationRules.includes("request.resource.data.mode == resource.data.mode"), "Clients must not change a run's execution mode.");
 
 function makeQuotaResponse() {
   return {
@@ -431,12 +435,22 @@ const atomicCreated = await createRunWithQuota(atomicRunDb, "tenant-a", validRun
 assert.deepEqual(atomicCreated, { allowed: true, count: 500, created: true, status: "QUEUED" });
 assert.equal(atomicRunDb.records.get("active_runs/run-cloud-a").userId, "tenant-a");
 assert.equal(atomicRunDb.records.get("active_runs/run-cloud-a").status, "QUEUED");
+assert.equal(atomicRunDb.records.get("active_runs/run-cloud-a").mode, "cloud", "The server must persist cloud mode for worker-owned runs.");
 assert.equal(atomicRunDb.records.get("active_runs/run-cloud-a").createdAt, "SERVER_TIMESTAMP");
 assert.equal(atomicRunDb.records.get("usage_quotas/tenant-a_2026-11-24").count, 500);
 
 const idempotentRun = await createRunWithQuota(atomicRunDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP");
 assert.deepEqual(idempotentRun, { allowed: true, count: 0, created: false, status: "QUEUED" });
 assert.equal(atomicRunDb.records.get("usage_quotas/tenant-a_2026-11-24").count, 500, "A retry of the same run ID must not consume quota twice.");
+const mismatchedModeRetry = await createRunWithQuota(
+  atomicRunDb,
+  "tenant-a",
+  { ...validRunInput, mode: "local" },
+  quotaNow,
+  "SERVER_TIMESTAMP",
+);
+assert.deepEqual(mismatchedModeRetry, { allowed: false, reason: "conflict" }, "An idempotent retry must not reuse a run ID across execution modes.");
+assert.equal(atomicRunDb.records.get("usage_quotas/tenant-a_2026-11-24").count, 500, "A mode-conflict retry must not consume quota.");
 
 const overLimitRun = await createRunWithQuota(
   atomicRunDb,
@@ -456,6 +470,7 @@ const localRun = await createRunWithQuota(
   "SERVER_TIMESTAMP",
 );
 assert.deepEqual(localRun, { allowed: true, count: 1, created: true, status: "RUNNING" });
+assert.equal(localRunDb.records.get("active_runs/run-local-a").mode, "local", "The server must persist local mode for browser checkpoint updates.");
 
 const wrongOwnerRunDb = createFakeRunDb({ "projects/project-a": { userId: "tenant-b" } });
 const wrongOwnerRun = await createRunWithQuota(wrongOwnerRunDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP");

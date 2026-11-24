@@ -108,21 +108,22 @@ service cloud.firestore {
 
     // Active runs are created only by the trusted server API after Firebase
     // identity, project ownership, and daily quota are verified. Clients may
-    // read/update/delete only their own server-created run documents.
+    // read their own runs; only local runs accept client checkpoint updates.
     function validActiveRunShape(runId) {
       return request.resource.data.keys().hasOnly([
-        'runId', 'userId', 'projectId', 'status', 'currentQueue',
+        'runId', 'userId', 'projectId', 'mode', 'status', 'currentQueue',
         'completedNodeIds', 'context', 'startTime', 'lastUpdateTime',
         'nodeLimitCount', 'createdAt'
       ])
         && request.resource.data.keys().hasAll([
-          'runId', 'userId', 'projectId', 'status', 'currentQueue',
+          'runId', 'userId', 'projectId', 'mode', 'status', 'currentQueue',
           'completedNodeIds', 'context', 'startTime', 'lastUpdateTime',
           'nodeLimitCount'
         ])
         && request.resource.data.runId == runId
         && request.resource.data.userId is string
         && request.resource.data.projectId is string
+        && request.resource.data.mode in ['local', 'cloud']
         && request.resource.data.status in ['QUEUED', 'RUNNING', 'PAUSED', 'COMPLETED', 'FAILED']
         && request.resource.data.currentQueue is list
         && request.resource.data.completedNodeIds is list
@@ -138,6 +139,10 @@ service cloud.firestore {
     function validActiveRunUpdate(runId) {
       let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
       return isOwner(resource.data.userId)
+        // Only browser-local runs accept client checkpoint updates. Cloud-run
+        // state is reserved for the trusted worker/Admin SDK.
+        && resource.data.mode == 'local'
+        && request.resource.data.mode == resource.data.mode
         && request.resource.data.userId == resource.data.userId
         && request.resource.data.projectId == resource.data.projectId
         && validActiveRunShape(runId)

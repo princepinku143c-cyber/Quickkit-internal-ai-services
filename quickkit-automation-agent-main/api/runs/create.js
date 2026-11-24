@@ -137,7 +137,7 @@ export async function createRunWithQuota(db, userId, input, now = Date.now(), se
 
     if (runSnapshot.exists) {
       const existing = runSnapshot.data();
-      if (existing?.userId === userId && existing?.projectId === input.projectId) {
+      if (existing?.userId === userId && existing?.projectId === input.projectId && existing?.mode === input.mode) {
         if (!VALID_RUN_STATUSES.has(existing.status)) {
           throw new Error("Existing active-run record is invalid.");
         }
@@ -159,6 +159,7 @@ export async function createRunWithQuota(db, userId, input, now = Date.now(), se
       runId: input.runId,
       userId,
       projectId: input.projectId,
+      mode: input.mode,
       status,
       currentQueue: input.currentQueue,
       completedNodeIds: input.completedNodeIds,
