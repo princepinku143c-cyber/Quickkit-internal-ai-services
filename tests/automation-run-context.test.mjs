@@ -1,8 +1,19 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
-import { createDailyQuotaHandler, consumeDailyQuota, DAILY_EXECUTION_LIMIT } from "../quickkit-automation-agent-main/api/usage/daily.js";
+import { createDailyQuotaHandler, consumeDailyQuota, DAILY_EXECUTION_LIMIT, isAdminAppBoundToProject } from "../quickkit-automation-agent-main/api/usage/daily.js";
 import { createRunCreationHandler, createRunWithQuota } from "../quickkit-automation-agent-main/api/runs/create.js";
 import { isPaymentOrderOwnedBy } from "../quickkit-automation-agent-main/functions/paymentOrderOwnership.js";
+
+const dailyQuotaApi = await readFile(new URL("../quickkit-automation-agent-main/api/usage/daily.js", import.meta.url), "utf8");
+assert.equal(isAdminAppBoundToProject("quickkit-staging", "quickkit-staging"), true);
+assert.equal(isAdminAppBoundToProject("quickkit-production", "quickkit-staging"), false);
+assert.equal(isAdminAppBoundToProject(undefined, "quickkit-staging"), false, "An explicit target must not reuse an Admin app with unknown project binding.");
+assert.equal(isAdminAppBoundToProject("quickkit-staging", undefined), true, "No explicit project target preserves ADC discovery.");
+assert.equal(isAdminAppBoundToProject(" quickkit-staging ", "quickkit-staging "), true);
+assert.ok(
+  dailyQuotaApi.includes("if (!isAdminAppBoundToProject(existingProjectId, projectId))"),
+  "getAdminApp must reject an existing Admin app whose configured project cannot be verified.",
+);
 
 const app = await readFile(new URL("../quickkit-automation-agent-main/App.tsx", import.meta.url), "utf8");
 const modal = await readFile(new URL("../quickkit-automation-agent-main/components/RunModal.tsx", import.meta.url), "utf8");
