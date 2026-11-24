@@ -355,6 +355,18 @@ assert.deepEqual(runCreated.body, {
 assert.equal(runApiCalls[0].uid, "tenant-a", "Run ownership must come from Firebase token verification.");
 assert.equal("userId" in runApiCalls[0].input, false, "Client-supplied identity must never reach run storage.");
 
+const cloudUnavailableHandler = createRunCreationHandler({
+  verifyIdToken: async () => ({ uid: "tenant-a" }),
+  createRun: async () => ({ allowed: false, reason: "cloud_execution_unavailable" }),
+});
+const cloudUnavailableResponse = await invokeQuotaHandler(cloudUnavailableHandler, {
+  method: "POST",
+  headers: { authorization: "Bearer valid-token" },
+  body: validRunInput,
+});
+assert.equal(cloudUnavailableResponse.statusCode, 503, "Cloud runs must return 503 while the real worker is not deployed.");
+assert.equal(cloudUnavailableResponse.body.success, false);
+
 const invalidRunTokenHandler = createRunCreationHandler({
   verifyIdToken: async () => {
     const error = new Error("invalid token");
@@ -446,11 +458,31 @@ function createFakeRunDb(initialRecords = {}) {
   };
 }
 
+const disabledCloudRunDb = createFakeRunDb({
+  "projects/project-a": { userId: "tenant-a" },
+});
+const previousCloudExecutionEnabled = process.env.CLOUD_EXECUTION_ENABLED;
+delete process.env.CLOUD_EXECUTION_ENABLED;
+const disabledCloudRun = await createRunWithQuotaWorkerEnabled(
+  disabledCloudRunDb,
+  "tenant-a",
+  { ...validRunInput, runId: "run-cloud-disabled" },
+  quotaNow,
+  "SERVER_TIMESTAMP",
+);
+if (previousCloudExecutionEnabled === undefined) delete process.env.CLOUD_EXECUTION_ENABLED;
+else process.env.CLOUD_EXECUTION_ENABLED = previousCloudExecutionEnabled;
+assert.deepEqual(disabledCloudRun, { allowed: false, reason: "cloud_execution_unavailable" });
+assert.equal(disabledCloudRunDb.records.has("active_runs/run-cloud-disabled"), false, "Disabled cloud runs must not create stranded QUEUED records.");
+assert.equal(disabledCloudRunDb.records.has("usage_quotas/tenant-a_2026-11-24"), false, "Disabled cloud runs must not consume quota.");
+
+const createRunWithQuotaWorkerEnabled = (...args) => createRunWithQuota(...args, true);
+
 const atomicRunDb = createFakeRunDb({
   "projects/project-a": { userId: "tenant-a" },
   "usage_quotas/tenant-a_2026-11-24": { count: 499, lastUpdate: quotaNow - 1 },
 });
-const atomicCreated = await createRunWithQuota(atomicRunDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP");
+const atomicCreated = await createRunWithQuotaWorkerEnabled(atomicRunDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP");
 assert.deepEqual(atomicCreated, { allowed: true, count: 500, created: true, status: "QUEUED" });
 assert.equal(atomicRunDb.records.get("active_runs/run-cloud-a").userId, "tenant-a");
 assert.equal(atomicRunDb.records.get("active_runs/run-cloud-a").status, "QUEUED");
@@ -458,10 +490,10 @@ assert.equal(atomicRunDb.records.get("active_runs/run-cloud-a").mode, "cloud", "
 assert.equal(atomicRunDb.records.get("active_runs/run-cloud-a").createdAt, "SERVER_TIMESTAMP");
 assert.equal(atomicRunDb.records.get("usage_quotas/tenant-a_2026-11-24").count, 500);
 
-const idempotentRun = await createRunWithQuota(atomicRunDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP");
+const idempotentRun = await createRunWithQuotaWorkerEnabled(atomicRunDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP");
 assert.deepEqual(idempotentRun, { allowed: true, count: 500, created: false, status: "QUEUED" }, "An idempotent retry must report the existing daily count without charging quota again.");
 assert.equal(atomicRunDb.records.get("usage_quotas/tenant-a_2026-11-24").count, 500, "A retry of the same run ID must not consume quota twice.");
-const mismatchedModeRetry = await createRunWithQuota(
+const mismatchedModeRetry = await createRunWithQuotaWorkerEnabled(
   atomicRunDb,
   "tenant-a",
   { ...validRunInput, mode: "local" },
@@ -471,7 +503,7 @@ const mismatchedModeRetry = await createRunWithQuota(
 assert.deepEqual(mismatchedModeRetry, { allowed: false, reason: "conflict" }, "An idempotent retry must not reuse a run ID across execution modes.");
 assert.equal(atomicRunDb.records.get("usage_quotas/tenant-a_2026-11-24").count, 500, "A mode-conflict retry must not consume quota.");
 
-const overLimitRun = await createRunWithQuota(
+const overLimitRun = await createRunWithQuotaWorkerEnabled(
   atomicRunDb,
   "tenant-a",
   { ...validRunInput, runId: "run-cloud-b" },
@@ -481,7 +513,7 @@ const overLimitRun = await createRunWithQuota(
 assert.deepEqual(overLimitRun, { allowed: false, count: 500, reason: "exceeded" });
 
 const localRunDb = createFakeRunDb({ "projects/project-a": { userId: "tenant-a" } });
-const localRun = await createRunWithQuota(
+const localRun = await createRunWithQuotaWorkerEnabled(
   localRunDb,
   "tenant-a",
   { ...validRunInput, runId: "run-local-a", mode: "local" },
@@ -492,14 +524,14 @@ assert.deepEqual(localRun, { allowed: true, count: 1, created: true, status: "RU
 assert.equal(localRunDb.records.get("active_runs/run-local-a").mode, "local", "The server must persist local mode for browser checkpoint updates.");
 
 const wrongOwnerRunDb = createFakeRunDb({ "projects/project-a": { userId: "tenant-b" } });
-const wrongOwnerRun = await createRunWithQuota(wrongOwnerRunDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP");
+const wrongOwnerRun = await createRunWithQuotaWorkerEnabled(wrongOwnerRunDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP");
 assert.deepEqual(wrongOwnerRun, { allowed: false, reason: "project_not_found" });
 
 const conflictingRunDb = createFakeRunDb({
   "projects/project-a": { userId: "tenant-a" },
   "active_runs/run-cloud-a": { userId: "tenant-b", projectId: "project-a", status: "QUEUED" },
 });
-const conflictingRun = await createRunWithQuota(conflictingRunDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP");
+const conflictingRun = await createRunWithQuotaWorkerEnabled(conflictingRunDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP");
 assert.deepEqual(conflictingRun, { allowed: false, reason: "conflict" });
 
 const corruptRunQuotaDb = createFakeRunDb({
@@ -507,7 +539,7 @@ const corruptRunQuotaDb = createFakeRunDb({
   "usage_quotas/tenant-a_2026-11-24": { count: "499" },
 });
 await assert.rejects(
-  () => createRunWithQuota(corruptRunQuotaDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP"),
+  () => createRunWithQuotaWorkerEnabled(corruptRunQuotaDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP"),
   /Daily quota record is invalid/,
 );
 
@@ -523,12 +555,12 @@ const corruptIdempotentRunQuotaDb = createFakeRunDb({
   "usage_quotas/tenant-a_2026-11-24": { count: "499" },
 });
 await assert.rejects(
-  () => createRunWithQuota(corruptIdempotentRunQuotaDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP"),
+  () => createRunWithQuotaWorkerEnabled(corruptIdempotentRunQuotaDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP"),
   /Daily quota record is invalid/,
   "An idempotent retry must not hide a corrupt quota record.",
 );
 await assert.rejects(
-  () => createRunWithQuota(createFakeRunDb(), "tenant-a/other", validRunInput, quotaNow, "SERVER_TIMESTAMP"),
+  () => createRunWithQuotaWorkerEnabled(createFakeRunDb(), "tenant-a/other", validRunInput, quotaNow, "SERVER_TIMESTAMP"),
   /valid authenticated user ID/,
 );
 
