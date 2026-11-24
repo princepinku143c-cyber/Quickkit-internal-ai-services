@@ -465,7 +465,7 @@ assert.equal(atomicRunDb.records.get("active_runs/run-cloud-a").createdAt, "SERV
 assert.equal(atomicRunDb.records.get("usage_quotas/tenant-a_2026-11-24").count, 500);
 
 const idempotentRun = await createRunWithQuota(atomicRunDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP");
-assert.deepEqual(idempotentRun, { allowed: true, count: 0, created: false, status: "QUEUED" });
+assert.deepEqual(idempotentRun, { allowed: true, count: 500, created: false, status: "QUEUED" }, "An idempotent retry must report the existing daily count without charging quota again.");
 assert.equal(atomicRunDb.records.get("usage_quotas/tenant-a_2026-11-24").count, 500, "A retry of the same run ID must not consume quota twice.");
 const mismatchedModeRetry = await createRunWithQuota(
   atomicRunDb,
@@ -515,6 +515,23 @@ const corruptRunQuotaDb = createFakeRunDb({
 await assert.rejects(
   () => createRunWithQuota(corruptRunQuotaDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP"),
   /Daily quota record is invalid/,
+);
+
+const corruptIdempotentRunQuotaDb = createFakeRunDb({
+  "projects/project-a": { userId: "tenant-a" },
+  "active_runs/run-cloud-a": {
+    runId: "run-cloud-a",
+    userId: "tenant-a",
+    projectId: "project-a",
+    mode: "cloud",
+    status: "QUEUED",
+  },
+  "usage_quotas/tenant-a_2026-11-24": { count: "499" },
+});
+await assert.rejects(
+  () => createRunWithQuota(corruptIdempotentRunQuotaDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP"),
+  /Daily quota record is invalid/,
+  "An idempotent retry must not hide a corrupt quota record.",
 );
 await assert.rejects(
   () => createRunWithQuota(createFakeRunDb(), "tenant-a/other", validRunInput, quotaNow, "SERVER_TIMESTAMP"),
