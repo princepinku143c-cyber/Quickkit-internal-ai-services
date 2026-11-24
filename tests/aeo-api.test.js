@@ -347,15 +347,31 @@ const validContent = JSON.stringify([
 // Provider failures, malformed JSON and timeouts return sanitized errors only.
 {
   const failure = createResponse();
+  let failureBodyCancelled = false;
+  let failureBodyRead = false;
   await createAeoHandler({
     adminClient: createAdmin(),
     envProvider: () => enabledEnv(),
     rateLimit: async () => {},
-    fetchImpl: async () => ({ ok: false, async text() { return "provider-secret-response"; } }),
+    fetchImpl: async () => ({
+      ok: false,
+      body: {
+        cancel() {
+          failureBodyCancelled = true;
+          return Promise.reject(new Error("provider cancellation failure"));
+        },
+      },
+      async text() {
+        failureBodyRead = true;
+        return "provider-secret-response";
+      },
+    }),
   })(createRequest(), failure);
   assert.equal(failure.statusCode, 502);
   assertNoStore(failure);
   assert.equal(JSON.stringify(failure.body).includes("provider-secret-response"), false);
+  assert.equal(failureBodyCancelled, true, "non-OK provider response bodies must be cancelled");
+  assert.equal(failureBodyRead, false, "non-OK provider response bodies must not be consumed");
 
   const invalid = createResponse();
   await createAeoHandler({
