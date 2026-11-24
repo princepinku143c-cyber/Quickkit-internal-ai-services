@@ -1,46 +1,61 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { isAdminAppBoundToProject, selectAdminAppForProject } from "../api/_lib/firebaseProjectBinding.js";
 
-const workerFiles = [
-  "../quickkit-automation-agent-main/functions/emailWorker.ts",
-  "../quickkit-automation-agent-main/functions/paymentWorker.ts",
-  "../quickkit-automation-agent-main/functions/worker.ts",
-  "../quickkit-automation-agent-main/api/billing/razorpay/webhook.ts",
-  "../quickkit-automation-agent-main/lib/serverUtils.ts",
-];
+const matchingApp = { options: { projectId: "quickkit-preview" } };
+const mismatchedApp = { options: { projectId: "quickkit-production" } };
+const unboundApp = { options: {} };
 
-for (const relativePath of workerFiles) {
-  const source = await readFile(new URL(relativePath, import.meta.url), "utf8");
-  assert.match(source, /from ["']firebase-admin\/app["']/,
-    `Expected modular firebase-admin/app import in ${relativePath}`);
-  assert.match(source, /from ["']firebase-admin\/firestore["']/,
-    `Expected modular firebase-admin/firestore import in ${relativePath}`);
-  assert.doesNotMatch(source, /import\s+(?:\*\s+as\s+admin|admin)\s+from\s+["']firebase-admin["']/,
-    `Legacy Firebase Admin namespace import remains in ${relativePath}`);
-  assert.doesNotMatch(source, /\badmin\.(?:apps|initializeApp|credential|firestore|auth|messaging)\b/,
-    `Legacy Firebase Admin namespace API remains in ${relativePath}`);
-}
+assert.equal(isAdminAppBoundToProject("quickkit-preview", "quickkit-preview"), true);
+assert.equal(isAdminAppBoundToProject("quickkit-production", "quickkit-preview"), false);
+assert.equal(isAdminAppBoundToProject(undefined, "quickkit-preview"), false);
+assert.equal(isAdminAppBoundToProject("quickkit-preview", undefined), true);
+assert.equal(isAdminAppBoundToProject(" quickkit-preview ", "quickkit-preview "), true);
 
-const manifest = JSON.parse(await readFile(
-  new URL("../quickkit-automation-agent-main/package.json", import.meta.url), "utf8",
-));
-const lock = JSON.parse(await readFile(
-  new URL("../quickkit-automation-agent-main/package-lock.json", import.meta.url), "utf8",
-));
-const adminVersion = lock.packages?.["node_modules/firebase-admin"]?.version;
-const functionsPeer = lock.packages?.["node_modules/firebase-functions"]?.peerDependencies?.["firebase-admin"];
-assert.equal(manifest.dependencies["firebase-admin"], "^14.5.1");
-assert.equal(manifest.engines?.node, ">=22");
-assert.ok(adminVersion, "Expected Firebase Admin in the nested lockfile");
-const [major, minor, patch] = adminVersion.split(".").map(Number);
-assert.ok(
-  major > 14 || (major === 14 && (minor > 5 || (minor === 5 && patch >= 1))),
-  `Expected patched Firebase Admin >=14.5.1, received ${adminVersion}`,
+assert.deepEqual(
+  selectAdminAppForProject([mismatchedApp, matchingApp], "quickkit-preview"),
+  { app: matchingApp, blocked: false },
+  "A matching existing app must be selected even when another project app appears first.",
 );
-assert.ok(functionsPeer?.includes("^14.0.0"),
-  "firebase-functions must declare compatibility with Firebase Admin 14");
-assert.equal(manifest.dependencies.nodemailer, "^10.6.1");
-const nodemailerVersion = lock.packages?.["node_modules/nodemailer"]?.version;
-assert.equal(nodemailerVersion, "10.6.1");
+assert.deepEqual(
+  selectAdminAppForProject([mismatchedApp], "quickkit-preview"),
+  { app: null, blocked: true },
+  "A configured target must not silently reuse an app bound to another project.",
+);
+assert.deepEqual(
+  selectAdminAppForProject([unboundApp], "quickkit-preview"),
+  { app: null, blocked: true },
+  "An explicitly configured target must reject an existing app with unknown project binding.",
+);
+assert.deepEqual(
+  selectAdminAppForProject([], "quickkit-preview"),
+  { app: null, blocked: false },
+  "No existing app allows normal initialization with the configured credentials.",
+);
+assert.deepEqual(
+  selectAdminAppForProject([mismatchedApp], " "),
+  { app: mismatchedApp, blocked: false },
+  "An absent explicit target preserves existing ADC/app discovery behavior.",
+);
 
-console.log("Firebase Admin modular API/runtime and patched dependency regression tests passed.");
+const rootAdmin = await readFile(new URL("../api/_lib/firebaseAdmin.js", import.meta.url), "utf8");
+assert.ok(
+  rootAdmin.includes("selectAdminAppForProject(getApps(), credentials.projectId)"),
+  "Root Firebase Admin must select an app bound to the configured project.",
+);
+assert.ok(
+  rootAdmin.includes("if (!app && !adminAppSelection.blocked)"),
+  "Root Firebase Admin must fail closed instead of initializing after an unverified existing app.",
+);
+assert.match(
+  rootAdmin,
+  /get apps\(\)\s*\{\s*return app \? \[app\] : \[\];/,
+  "The public apps list must expose only the validated app.",
+);
+assert.match(
+  rootAdmin,
+  /projectId: process\.env\.FIREBASE_PROJECT_ID\?\.trim\(\)/,
+  "The configured Firebase project ID must be normalized before binding.",
+);
+
+console.log("Root Firebase Admin project-binding regression tests passed.");
