@@ -5,6 +5,7 @@ import { isPlainObject, payloadTooLarge, safeText } from "./_lib/input.js";
 const PROVIDER_ENDPOINT = "https://opencode.ai/zen/v1/chat/completions";
 const PROVIDER_MODEL = "deepseek-v4-flash-free";
 const DEFAULT_TIMEOUT_MS = 15000;
+const MAX_TOKEN_LENGTH = 8192;
 
 function sendError(res, status, message, retryAfter) {
   if (retryAfter) res.setHeader("Retry-After", String(retryAfter));
@@ -91,7 +92,9 @@ export function createAeoHandler({
     const tokenMatch = typeof authHeader === "string"
       ? authHeader.match(/^Bearer\s+(\S+)$/i)
       : null;
-    if (!tokenMatch) return sendError(res, 401, "Authentication required.");
+    if (!tokenMatch || tokenMatch[1].length > MAX_TOKEN_LENGTH) {
+      return sendError(res, 401, "Authentication required.");
+    }
 
     if (!adminClient?.apps?.length) {
       return sendError(res, 503, "AEO authentication is temporarily unavailable.");
