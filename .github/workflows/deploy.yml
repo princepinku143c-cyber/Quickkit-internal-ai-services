@@ -58,6 +58,9 @@ jobs:
       - name: Nested dependency lockfile critical-advisory regression tests
         if: ${{ !cancelled() && steps.nested_install.outcome == 'success' }}
         run: node tests/nested-dependency-lockfile.test.mjs
+      - name: Nested app static asset reference regression tests
+        if: ${{ !cancelled() && steps.nested_install.outcome == 'success' }}
+        run: node tests/nested-static-assets.test.mjs
       - name: Nested automation TypeScript validation
         run: npm run --prefix quickkit-automation-agent-main lint
       - name: Nested automation production build
