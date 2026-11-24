@@ -1,11 +1,13 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createDailyQuotaHandler, consumeDailyQuota, DAILY_EXECUTION_LIMIT } from "../quickkit-automation-agent-main/api/usage/daily.js";
+import { createRunCreationHandler, createRunWithQuota } from "../quickkit-automation-agent-main/api/runs/create.js";
 
 const app = await readFile(new URL("../quickkit-automation-agent-main/App.tsx", import.meta.url), "utf8");
 const modal = await readFile(new URL("../quickkit-automation-agent-main/components/RunModal.tsx", import.meta.url), "utf8");
 const engine = await readFile(new URL("../quickkit-automation-agent-main/services/executionEngine.ts", import.meta.url), "utf8");
 const cloudStore = await readFile(new URL("../quickkit-automation-agent-main/services/cloudStore.ts", import.meta.url), "utf8");
+const automationRules = await readFile(new URL("../quickkit-automation-agent-main/firestore.rules", import.meta.url), "utf8");
 
 assert.ok(app.includes("projectId={currentProject?.id}"), "App must pass the active project ID to RunModal.");
 assert.ok(modal.includes("projectId?: string;"), "RunModal must accept an optional project ID.");
@@ -38,6 +40,13 @@ assert.ok(cloudStore.includes("fetch('/api/usage/daily'"), "Signed-in quota chec
 assert.ok(cloudStore.includes("currentUser.uid !== userId"), "The client must match its current Firebase UID before requesting quota.");
 assert.ok(!/collection\(['"]usage_quotas['"]\)/.test(cloudStore), "Clients must never write daily quota documents directly.");
 assert.equal(DAILY_EXECUTION_LIMIT, 500, "The server-side quota service must preserve the existing 500/day limit.");
+assert.ok(cloudStore.includes("fetch('/api/runs/create'"), "Persistable runs must be created through the authenticated server API.");
+assert.ok(cloudStore.includes("currentUser.uid !== state.userId"), "Run creation must match the verified client Firebase user.");
+assert.match(cloudStore, /collection\('active_runs'\)\.doc\(state\.runId\)\.update/);
+assert.doesNotMatch(cloudStore, /collection\('active_runs'\)\.doc\(state\.runId\)\.set/);
+assert.ok(engine.includes("createCloudRun(this.state, 'local')"), "Signed-in saved-project local runs must use the atomic server run/quota transaction.");
+assert.ok(modal.includes("createCloudRun(initialState, 'cloud')"), "Cloud runs must use the atomic server run/quota transaction.");
+assert.match(automationRules, /match \/active_runs\/\{runId\}[\s\S]*allow create: if false;/, "Clients must not create active-run documents directly.");
 
 function makeQuotaResponse() {
   return {
@@ -232,6 +241,232 @@ await assert.rejects(
   "UIDs must not be allowed to escape their Firestore document path.",
 );
 
+
+const validRunInput = {
+  runId: "run-cloud-a",
+  projectId: "project-a",
+  mode: "cloud",
+  currentQueue: ["trigger"],
+  completedNodeIds: [],
+  context: { trigger: { data: { event: "test" } } },
+  startTime: quotaNow,
+  lastUpdateTime: quotaNow,
+  nodeLimitCount: 0,
+};
+
+const runApiCalls = [];
+const runHandler = createRunCreationHandler({
+  verifyIdToken: async (token) => {
+    assert.equal(token, "valid-token");
+    return { uid: "tenant-a" };
+  },
+  createRun: async (uid, input) => {
+    runApiCalls.push({ uid, input });
+    return { allowed: true, count: 1, created: true, status: input.mode === "cloud" ? "QUEUED" : "RUNNING" };
+  },
+});
+
+const runOptions = await invokeQuotaHandler(runHandler, { method: "OPTIONS" });
+assert.equal(runOptions.statusCode, 204);
+assert.equal(runOptions.headers.allow, "POST, OPTIONS");
+assert.equal(runOptions.headers["cache-control"], "no-store");
+
+const runGet = await invokeQuotaHandler(runHandler, { method: "GET" });
+assert.equal(runGet.statusCode, 405);
+
+const runMissingAuth = await invokeQuotaHandler(runHandler, { method: "POST", body: validRunInput });
+assert.equal(runMissingAuth.statusCode, 401);
+assert.equal(runApiCalls.length, 0);
+
+const runSpoofedIdentity = await invokeQuotaHandler(runHandler, {
+  method: "POST",
+  headers: { authorization: "Bearer valid-token" },
+  body: { ...validRunInput, userId: "victim" },
+});
+assert.equal(runSpoofedIdentity.statusCode, 400, "Client-supplied user IDs must be rejected.");
+assert.equal(runApiCalls.length, 0);
+
+const runInvalidMode = await invokeQuotaHandler(runHandler, {
+  method: "POST",
+  headers: { authorization: "Bearer valid-token" },
+  body: { ...validRunInput, mode: "admin" },
+});
+assert.equal(runInvalidMode.statusCode, 400);
+
+const runOversized = await invokeQuotaHandler(runHandler, {
+  method: "POST",
+  headers: { authorization: "Bearer valid-token", "content-length": "32769" },
+  body: validRunInput,
+});
+assert.equal(runOversized.statusCode, 413);
+
+const runCreated = await invokeQuotaHandler(runHandler, {
+  method: "POST",
+  headers: { authorization: "Bearer valid-token" },
+  body: validRunInput,
+});
+assert.equal(runCreated.statusCode, 201);
+assert.deepEqual(runCreated.body, {
+  success: true,
+  data: { allowed: true, count: 1, created: true, status: "QUEUED" },
+});
+assert.equal(runApiCalls[0].uid, "tenant-a", "Run ownership must come from Firebase token verification.");
+assert.equal("userId" in runApiCalls[0].input, false, "Client-supplied identity must never reach run storage.");
+
+const invalidRunTokenHandler = createRunCreationHandler({
+  verifyIdToken: async () => {
+    const error = new Error("invalid token");
+    error.code = "auth/invalid-id-token";
+    throw error;
+  },
+  createRun: async () => { throw new Error("must not be called"); },
+});
+const invalidRunToken = await invokeQuotaHandler(invalidRunTokenHandler, {
+  method: "POST",
+  headers: { authorization: "Bearer invalid" },
+  body: validRunInput,
+});
+assert.equal(invalidRunToken.statusCode, 401);
+
+const exceededRunHandler = createRunCreationHandler({
+  verifyIdToken: async () => ({ uid: "tenant-a" }),
+  createRun: async () => ({ allowed: false, count: 500, reason: "exceeded" }),
+});
+const exceededRun = await invokeQuotaHandler(exceededRunHandler, {
+  method: "POST",
+  headers: { authorization: "Bearer valid-token" },
+  body: validRunInput,
+});
+assert.equal(exceededRun.statusCode, 429);
+assert.equal(exceededRun.body.data.reason, "exceeded");
+
+const missingProjectHandler = createRunCreationHandler({
+  verifyIdToken: async () => ({ uid: "tenant-a" }),
+  createRun: async () => ({ allowed: false, reason: "project_not_found" }),
+});
+const missingProject = await invokeQuotaHandler(missingProjectHandler, {
+  method: "POST",
+  headers: { authorization: "Bearer valid-token" },
+  body: validRunInput,
+});
+assert.equal(missingProject.statusCode, 404);
+
+const conflictRunHandler = createRunCreationHandler({
+  verifyIdToken: async () => ({ uid: "tenant-a" }),
+  createRun: async () => ({ allowed: false, reason: "conflict" }),
+});
+const conflictRun = await invokeQuotaHandler(conflictRunHandler, {
+  method: "POST",
+  headers: { authorization: "Bearer valid-token" },
+  body: validRunInput,
+});
+assert.equal(conflictRun.statusCode, 409);
+
+const unavailableRunHandler = createRunCreationHandler({
+  verifyIdToken: async () => ({ uid: "tenant-a" }),
+  createRun: async () => { throw new Error("private Firestore diagnostic"); },
+});
+const unavailableRun = await invokeQuotaHandler(unavailableRunHandler, {
+  method: "POST",
+  headers: { authorization: "Bearer valid-token" },
+  body: validRunInput,
+});
+assert.equal(unavailableRun.statusCode, 503);
+assert.equal(JSON.stringify(unavailableRun.body).includes("private Firestore diagnostic"), false);
+
+function createFakeRunDb(initialRecords = {}) {
+  const records = new Map(Object.entries(initialRecords));
+  return {
+    records,
+    collection(name) {
+      return { doc(id) { return { collectionName: name, id }; } };
+    },
+    async runTransaction(callback) {
+      const writes = [];
+      const transaction = {
+        async get(ref) {
+          const key = ref.collectionName + "/" + ref.id;
+          return { exists: records.has(key), data: () => records.get(key) };
+        },
+        create(ref, value) { writes.push({ kind: "create", ref, value }); },
+        set(ref, value, options) { writes.push({ kind: "set", ref, value, options }); },
+      };
+      const result = await callback(transaction);
+      for (const write of writes) {
+        const key = write.ref.collectionName + "/" + write.ref.id;
+        if (write.kind === "create") {
+          if (records.has(key)) throw new Error("Document already exists.");
+          records.set(key, write.value);
+        } else {
+          const previous = records.get(key) || {};
+          records.set(key, write.options?.merge ? { ...previous, ...write.value } : write.value);
+        }
+      }
+      return result;
+    },
+  };
+}
+
+const atomicRunDb = createFakeRunDb({
+  "projects/project-a": { userId: "tenant-a" },
+  "usage_quotas/tenant-a_2026-11-24": { count: 499, lastUpdate: quotaNow - 1 },
+});
+const atomicCreated = await createRunWithQuota(atomicRunDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP");
+assert.deepEqual(atomicCreated, { allowed: true, count: 500, created: true, status: "QUEUED" });
+assert.equal(atomicRunDb.records.get("active_runs/run-cloud-a").userId, "tenant-a");
+assert.equal(atomicRunDb.records.get("active_runs/run-cloud-a").status, "QUEUED");
+assert.equal(atomicRunDb.records.get("active_runs/run-cloud-a").createdAt, "SERVER_TIMESTAMP");
+assert.equal(atomicRunDb.records.get("usage_quotas/tenant-a_2026-11-24").count, 500);
+
+const idempotentRun = await createRunWithQuota(atomicRunDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP");
+assert.deepEqual(idempotentRun, { allowed: true, count: 0, created: false, status: "QUEUED" });
+assert.equal(atomicRunDb.records.get("usage_quotas/tenant-a_2026-11-24").count, 500, "A retry of the same run ID must not consume quota twice.");
+
+const overLimitRun = await createRunWithQuota(
+  atomicRunDb,
+  "tenant-a",
+  { ...validRunInput, runId: "run-cloud-b" },
+  quotaNow,
+  "SERVER_TIMESTAMP",
+);
+assert.deepEqual(overLimitRun, { allowed: false, count: 500, reason: "exceeded" });
+
+const localRunDb = createFakeRunDb({ "projects/project-a": { userId: "tenant-a" } });
+const localRun = await createRunWithQuota(
+  localRunDb,
+  "tenant-a",
+  { ...validRunInput, runId: "run-local-a", mode: "local" },
+  quotaNow,
+  "SERVER_TIMESTAMP",
+);
+assert.deepEqual(localRun, { allowed: true, count: 1, created: true, status: "RUNNING" });
+
+const wrongOwnerRunDb = createFakeRunDb({ "projects/project-a": { userId: "tenant-b" } });
+const wrongOwnerRun = await createRunWithQuota(wrongOwnerRunDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP");
+assert.deepEqual(wrongOwnerRun, { allowed: false, reason: "project_not_found" });
+
+const conflictingRunDb = createFakeRunDb({
+  "projects/project-a": { userId: "tenant-a" },
+  "active_runs/run-cloud-a": { userId: "tenant-b", projectId: "project-a", status: "QUEUED" },
+});
+const conflictingRun = await createRunWithQuota(conflictingRunDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP");
+assert.deepEqual(conflictingRun, { allowed: false, reason: "conflict" });
+
+const corruptRunQuotaDb = createFakeRunDb({
+  "projects/project-a": { userId: "tenant-a" },
+  "usage_quotas/tenant-a_2026-11-24": { count: "499" },
+});
+await assert.rejects(
+  () => createRunWithQuota(corruptRunQuotaDb, "tenant-a", validRunInput, quotaNow, "SERVER_TIMESTAMP"),
+  /Daily quota record is invalid/,
+);
+await assert.rejects(
+  () => createRunWithQuota(createFakeRunDb(), "tenant-a/other", validRunInput, quotaNow, "SERVER_TIMESTAMP"),
+  /valid authenticated user ID/,
+);
+
+console.log("PASS: server-side run creation verifies Firebase identity and project ownership, atomically enforces the 500/day quota, and is idempotent.");
+console.log("PASS: clients cannot create active-run documents; trusted server creation preserves owner-only checkpoints.");
 console.log("PASS: server-side daily quota API authenticates the Firebase UID, preserves the 500/day cap, and fails closed.");
 
 console.log("PASS: local and cloud automation runs retain the active project; cloud runs require authentication and a saved owner project.");

@@ -634,9 +634,8 @@ try {
     });
   });
 
-  // Cloud Pulse stores one run document per runId. Only the authenticated owner
-  // may create/read/update/delete that document; collection enumeration and
-  // ownership/project reassignment are denied.
+  // Active-run documents are server-created after quota and project-owner
+  // checks. Clients may read/update/delete only their own server-created run.
   const ownerRunRef = doc(automationUser, 'active_runs', 'owner-run');
   const validActiveRun = {
     runId: 'owner-run',
@@ -652,7 +651,10 @@ try {
     createdAt: serverTimestamp(),
   };
 
-  await assertSucceeds(setDoc(ownerRunRef, validActiveRun));
+  await assertFails(setDoc(ownerRunRef, validActiveRun));
+  await testEnv.withSecurityRulesDisabled(async (context) => {
+    await setDoc(doc(context.firestore(), 'active_runs', 'owner-run'), validActiveRun);
+  });
   await assertSucceeds(getDoc(ownerRunRef));
   await assertFails(setDoc(doc(automationUser, 'active_runs', 'cross-tenant-project-run'), {
     ...validActiveRun,
@@ -669,7 +671,7 @@ try {
     runId: 'placeholder-project-run',
     projectId: 'test-project',
   }));
-  await assertSucceeds(setDoc(doc(automationOtherUser, 'active_runs', 'other-owner-project-run'), {
+  await assertFails(setDoc(doc(automationOtherUser, 'active_runs', 'other-owner-project-run'), {
     ...validActiveRun,
     runId: 'other-owner-project-run',
     userId: 'automation-other',
@@ -706,11 +708,10 @@ try {
     runId: 'owner-run',
   }));
 
-  // The local checkpoint path uses set(..., { merge: true }) and may create
-  // an initial state without the optional cloud-createdAt timestamp.
+  // A client checkpoint write must never create a missing run document.
   const checkpointRun = { ...validActiveRun, runId: 'checkpoint-run' };
   delete checkpointRun.createdAt;
-  await assertSucceeds(setDoc(
+  await assertFails(setDoc(
     doc(automationUser, 'active_runs', 'checkpoint-run'),
     checkpointRun,
     { merge: true },
@@ -924,9 +925,9 @@ try {
   await assertFails(setDoc(doc(automationUser, 'projects', 'test-project'), validAutomationProject));
   await assertSucceeds(setDoc(automationProjectRef, validAutomationProject));
 
-  // Existing saved projects may be referenced by their owner, but never by
-  // another account's active-run document.
-  await assertSucceeds(setDoc(doc(automationUser, 'active_runs', 'owned-project-run'), {
+  // A saved project can be attached to a run only through the trusted server
+  // API; direct client creation is denied even for the rightful project owner.
+  await assertFails(setDoc(doc(automationUser, 'active_runs', 'owned-project-run'), {
     ...validActiveRun,
     runId: 'owned-project-run',
     projectId: 'automation-owned-project',

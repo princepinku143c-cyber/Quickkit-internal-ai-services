@@ -1,6 +1,6 @@
 
 import { Nexus, Synapse, NexusSubtype, NexusType, ExecutionState, FlowWarning } from '../types';
-import { saveRunState, clearRunState, checkRateLimit, updateDailyUsage } from './cloudStore'; 
+import { saveRunState, clearRunState, checkRateLimit, updateDailyUsage, createCloudRun } from './cloudStore'; 
 import { GoogleGenAI } from "@google/genai";
 
 export type LogCallback = (log: string, type: 'INFO' | 'ERROR' | 'WARN' | 'SUCCESS', nodeId?: string, data?: any) => void;
@@ -150,7 +150,23 @@ export class WorkflowOrchestrator {
     public async start(payload: any): Promise<ExecutionResult> {
         this.logger(`[Shield] Initializing Guarded Runtime ${this.state.runId}...`, "INFO");
         
-        const quota = await updateDailyUsage(this.state.userId);
+        let quota: { allowed: boolean, count: number, reason?: 'unavailable' };
+        try {
+            const needsServerRun = this.state.userId !== 'guest'
+                && this.state.userId !== 'dev-bypass-user-999'
+                && isPersistableProjectId(this.state.projectId);
+            quota = needsServerRun
+                ? await createCloudRun(this.state, 'local')
+                : await updateDailyUsage(this.state.userId);
+        } catch (error) {
+            const code = (error as { code?: string } | null)?.code;
+            const status = code === 'QUOTA_EXCEEDED' ? 'QUOTA_EXCEEDED' : 'QUOTA_UNAVAILABLE';
+            const message = status === 'QUOTA_EXCEEDED'
+                ? "CRITICAL: Daily Execution Quota Exceeded. Upgrade to Business Plan."
+                : "CRITICAL: Daily execution quota could not be verified. Retry when the quota service is available.";
+            this.logger(message, "ERROR");
+            return { status, executionId: this.state.runId, duration: 0, output: null, logs: [], telemetry: [] };
+        }
         if (!quota.allowed) {
             if (quota.reason === 'unavailable') {
                 this.logger("CRITICAL: Daily execution quota could not be verified. Retry when the quota service is available.", "ERROR");

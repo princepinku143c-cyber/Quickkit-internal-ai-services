@@ -83,14 +83,64 @@ export const checkRateLimit = async (userId: string, limit: number, windowSec: n
     return { allowed: true }; // Simplified for now
 };
 
-export const createCloudRun = async (state: ExecutionState) => {
-    if (!db) return;
-    await db.collection('active_runs').doc(state.runId).set({ ...state, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+export const createCloudRun = async (state: ExecutionState, mode: 'local' | 'cloud' = 'cloud') => {
+    const currentUser = auth?.currentUser;
+    const makeQuotaError = (code: 'QUOTA_EXCEEDED' | 'QUOTA_UNAVAILABLE', message: string) =>
+        Object.assign(new Error(message), { code });
+
+    if (!currentUser || currentUser.uid !== state.userId) {
+        throw makeQuotaError('QUOTA_UNAVAILABLE', 'Cloud run authentication is unavailable.');
+    }
+
+    try {
+        const idToken = await currentUser.getIdToken();
+        const response = await fetch('/api/runs/create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${idToken}`,
+            },
+            body: JSON.stringify({
+                runId: state.runId,
+                projectId: state.projectId,
+                currentQueue: state.currentQueue,
+                completedNodeIds: state.completedNodeIds,
+                context: state.context,
+                startTime: state.startTime,
+                lastUpdateTime: state.lastUpdateTime,
+                nodeLimitCount: state.nodeLimitCount,
+                mode,
+            }),
+        });
+        const payload = await response.json().catch(() => null);
+        const result = payload?.data;
+
+        if (response.status === 429 || result?.reason === 'exceeded') {
+            throw makeQuotaError('QUOTA_EXCEEDED', 'Daily execution quota exceeded.');
+        }
+        if (
+            !response.ok
+            || payload?.success !== true
+            || !result
+            || result.allowed !== true
+            || !Number.isSafeInteger(result.count)
+            || result.count < 0
+            || typeof result.created !== 'boolean'
+            || typeof result.status !== 'string'
+        ) {
+            throw makeQuotaError('QUOTA_UNAVAILABLE', 'Cloud run could not be created or verified.');
+        }
+        return result;
+    } catch (error) {
+        const code = (error as { code?: string } | null)?.code;
+        if (code === 'QUOTA_EXCEEDED' || code === 'QUOTA_UNAVAILABLE') throw error;
+        throw makeQuotaError('QUOTA_UNAVAILABLE', 'Cloud run could not be created or verified.');
+    }
 };
 
 export const saveRunState = async (state: ExecutionState) => {
     if (!db) return;
-    await db.collection('active_runs').doc(state.runId).set({ ...state, lastUpdateTime: Date.now() }, { merge: true });
+    await db.collection('active_runs').doc(state.runId).update({ ...state, lastUpdateTime: Date.now() });
 };
 
 export const clearRunState = async (runId: string) => {

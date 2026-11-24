@@ -106,9 +106,9 @@ service cloud.firestore {
       allow delete: if isOwner(resource.data.userId);
     }
 
-    // Active run checkpoints are private to the signed-in owner.
-    // Clients may create/read/update their own run state, but cannot enumerate runs,
-    // change ownership/project identity, or write arbitrary fields.
+    // Active runs are created only by the trusted server API after Firebase
+    // identity, project ownership, and daily quota are verified. Clients may
+    // read/update/delete only their own server-created run documents.
     function validActiveRunShape(runId) {
       return request.resource.data.keys().hasOnly([
         'runId', 'userId', 'projectId', 'status', 'currentQueue',
@@ -135,22 +135,6 @@ service cloud.firestore {
           || request.resource.data.createdAt is timestamp);
     }
 
-    function validActiveRunProjectReference(projectId) {
-      let projectPath = /databases/$(database)/documents/projects/$(projectId);
-      return exists(projectPath)
-        && get(projectPath).data.userId == request.auth.uid;
-    }
-
-    function validActiveRunCreate(runId) {
-      return isOwner(request.resource.data.userId)
-        && validActiveRunShape(runId)
-        && validActiveRunProjectReference(request.resource.data.projectId)
-        // createCloudRun uses a Firestore server timestamp; local checkpoints
-        // may create the same shape without the optional createdAt field.
-        && (!('createdAt' in request.resource.data)
-          || request.resource.data.createdAt == request.time);
-    }
-
     function validActiveRunUpdate(runId) {
       let changedKeys = request.resource.data.diff(resource.data).affectedKeys();
       return isOwner(resource.data.userId)
@@ -166,7 +150,7 @@ service cloud.firestore {
     match /active_runs/{runId} {
       allow get: if isOwner(resource.data.userId);
       allow list: if false;
-      allow create: if validActiveRunCreate(runId);
+      allow create: if false;
       allow update: if validActiveRunUpdate(runId);
       allow delete: if isOwner(resource.data.userId);
     }

@@ -236,7 +236,7 @@ const RunModal: React.FC<RunModalProps> = ({ isOpen, onClose, nexuses, synapses,
       try {
           cleanupCloudRun({ resetRunId: false });
 
-          await createCloudRun(initialState);
+          await createCloudRun(initialState, 'cloud');
           appendLog({ msg: "Waiting for Worker Response...", type: 'INFO' });
 
           let finished = false;

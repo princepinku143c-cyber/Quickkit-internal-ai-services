@@ -22,7 +22,7 @@ function adminUnavailableError() {
   return error;
 }
 
-function getAdminApp() {
+export function getAdminApp() {
   const apps = getApps();
   const existing = apps.find((candidate) => candidate.name === "[DEFAULT]") || apps[0];
   const projectId = process.env.FIREBASE_PROJECT_ID?.trim();
