@@ -441,6 +441,7 @@ const validContent = JSON.stringify([
 {
   const oversizedByHeader = createResponse();
   let bodyRead = false;
+  let bodyCancelled = false;
   await createAeoHandler({
     adminClient: createAdmin(),
     envProvider: () => enabledEnv(),
@@ -449,6 +450,9 @@ const validContent = JSON.stringify([
       ok: true,
       headers: { get: (name) => name === "content-length" ? String(64 * 1024 + 1) : null },
       body: {
+        async cancel() {
+          bodyCancelled = true;
+        },
         getReader() {
           bodyRead = true;
           throw new Error("body must not be read after an oversized Content-Length");
@@ -459,6 +463,7 @@ const validContent = JSON.stringify([
   assert.equal(oversizedByHeader.statusCode, 502);
   assertNoStore(oversizedByHeader);
   assert.equal(bodyRead, false, "an oversized Content-Length must be rejected before reading the body");
+  assert.equal(bodyCancelled, true, "an oversized Content-Length must cancel the unread provider body");
 }
 
 assert.deepEqual(parseAeoPairs(validContent, 1), [
