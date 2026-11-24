@@ -406,6 +406,61 @@ const validContent = JSON.stringify([
   assert.equal(timeoutCleared, true);
 }
 
+// Provider bodies are bounded even when the upstream omits Content-Length.
+{
+  const oversized = createResponse();
+  let readCalls = 0;
+  let readerCancelled = false;
+  await createAeoHandler({
+    adminClient: createAdmin(),
+    envProvider: () => enabledEnv(),
+    rateLimit: async () => {},
+    fetchImpl: async () => ({
+      ok: true,
+      headers: { get: () => null },
+      body: {
+        getReader() {
+          return {
+            async read() {
+              readCalls += 1;
+              return { done: false, value: new Uint8Array(64 * 1024 + 1) };
+            },
+            async cancel() { readerCancelled = true; },
+            releaseLock() {},
+          };
+        },
+      },
+    }),
+  })(createRequest(), oversized);
+  assert.equal(oversized.statusCode, 502);
+  assertNoStore(oversized);
+  assert.equal(readCalls, 1, "the oversized stream must stop at the first over-limit chunk");
+  assert.equal(readerCancelled, true, "the oversized provider stream must be cancelled");
+}
+
+{
+  const oversizedByHeader = createResponse();
+  let bodyRead = false;
+  await createAeoHandler({
+    adminClient: createAdmin(),
+    envProvider: () => enabledEnv(),
+    rateLimit: async () => {},
+    fetchImpl: async () => ({
+      ok: true,
+      headers: { get: (name) => name === "content-length" ? String(64 * 1024 + 1) : null },
+      body: {
+        getReader() {
+          bodyRead = true;
+          throw new Error("body must not be read after an oversized Content-Length");
+        },
+      },
+    }),
+  })(createRequest(), oversizedByHeader);
+  assert.equal(oversizedByHeader.statusCode, 502);
+  assertNoStore(oversizedByHeader);
+  assert.equal(bodyRead, false, "an oversized Content-Length must be rejected before reading the body");
+}
+
 assert.deepEqual(parseAeoPairs(validContent, 1), [
   { question: "How does AI qualify property leads?", answer: "It scores inquiries using agreed fit and intent criteria." },
 ]);
