@@ -17,6 +17,25 @@ assert.equal(spaFallbackPattern.test("/api/aeo"), false, "AEO API requests must 
 assert.equal(spaFallbackPattern.test("/api"), false, "The bare API root must never fall through to the SPA index.");
 assert.equal(spaFallbackPattern.test("/api/unknown"), false, "Unknown API paths must not return the SPA index as HTML.");
 assert.equal(spaFallbackPattern.test("/a-client-side-route"), true, "Client-side application routes must continue to use the SPA fallback.");
+
+const runApiRoute = await readFile(join(projectRoot, "api", "runs", "create.js"), "utf8");
+const dailyUsageApiRoute = await readFile(join(projectRoot, "api", "usage", "daily.js"), "utf8");
+assert.match(
+  runApiRoute,
+  /export\\s*\\{\\s*default\\s*\\}\\s*from\\s*["']\\.\\.\\/\\.\\.\\/quickkit-automation-agent-main\\/api\\/runs\\/create\\.js["']/,
+  "The project-root run API route must re-export the tenant-authenticated automation handler.",
+);
+assert.match(
+  dailyUsageApiRoute,
+  /export\\s*\\{\\s*default\\s*\\}\\s*from\\s*["']\\.\\.\\/\\.\\.\\/quickkit-automation-agent-main\\/api\\/usage\\/daily\\.js["']/,
+  "The project-root daily-usage API route must re-export the authenticated quota handler.",
+);
+const [runApiModule, dailyUsageApiModule] = await Promise.all([
+  import("../api/runs/create.js"),
+  import("../api/usage/daily.js"),
+]);
+assert.equal(typeof runApiModule.default, "function", "Run API route must export a Vercel-compatible handler.");
+assert.equal(typeof dailyUsageApiModule.default, "function", "Daily usage API route must export a Vercel-compatible handler.");
 const isolatedCwd = await mkdtemp(join(tmpdir(), "quickkit-api-guard-"));
 
 function runGuard(overrides = {}) {
