@@ -6,6 +6,7 @@ const PROVIDER_ENDPOINT = "https://opencode.ai/zen/v1/chat/completions";
 const PROVIDER_MODEL = "deepseek-v4-flash-free";
 const DEFAULT_TIMEOUT_MS = 15000;
 const MAX_TOKEN_LENGTH = 8192;
+const MAX_PROVIDER_RESPONSE_BYTES = 64 * 1024;
 
 function sendError(res, status, message, retryAfter) {
   if (retryAfter) res.setHeader("Retry-After", String(retryAfter));
@@ -43,6 +44,67 @@ export function parseAeoPairs(content, requestedCount) {
 
   if (!pairs.length) throw new TypeError("AEO provider returned no usable Q&A pairs.");
   return pairs;
+}
+
+
+async function readProviderJson(response) {
+  const declaredLength = response.headers?.get?.("content-length");
+  if (
+    typeof declaredLength === "string"
+    && /^\\d+$/.test(declaredLength)
+    && Number(declaredLength) > MAX_PROVIDER_RESPONSE_BYTES
+  ) {
+    throw new RangeError("AEO provider response is too large.");
+  }
+
+  const reader = response.body?.getReader?.();
+  if (reader) {
+    const chunks = [];
+    let totalBytes = 0;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        if (!(value instanceof Uint8Array)) {
+          throw new TypeError("AEO provider response stream is invalid.");
+        }
+        totalBytes += value.byteLength;
+        if (totalBytes > MAX_PROVIDER_RESPONSE_BYTES) {
+          try { await reader.cancel(); } catch { /* preserve the size-limit error */ }
+          throw new RangeError("AEO provider response is too large.");
+        }
+        chunks.push(value);
+      }
+    } finally {
+      try { reader.releaseLock?.(); } catch { /* stream may already be released */ }
+    }
+
+    const bytes = new Uint8Array(totalBytes);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+  }
+
+  // Compatibility for test doubles and non-Fetch adapters. Production Fetch
+  // responses use the bounded stream path above.
+  if (typeof response.text === "function") {
+    const text = await response.text();
+    if (Buffer.byteLength(text, "utf8") > MAX_PROVIDER_RESPONSE_BYTES) {
+      throw new RangeError("AEO provider response is too large.");
+    }
+    return JSON.parse(text);
+  }
+  if (typeof response.json === "function") {
+    const data = await response.json();
+    if (Buffer.byteLength(JSON.stringify(data), "utf8") > MAX_PROVIDER_RESPONSE_BYTES) {
+      throw new RangeError("AEO provider response is too large.");
+    }
+    return data;
+  }
+  throw new TypeError("AEO provider response body is unavailable.");
 }
 
 export function createAeoHandler({
@@ -160,7 +222,7 @@ export function createAeoHandler({
         return sendError(res, 502, "AEO provider request failed.");
       }
 
-      const providerData = await providerResponse.json();
+      const providerData = await readProviderJson(providerResponse);
       const content = providerData?.choices?.[0]?.message?.content;
       const qaPairs = parseAeoPairs(content, count);
       return res.status(200).json({
