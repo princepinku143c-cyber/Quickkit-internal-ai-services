@@ -51,7 +51,7 @@ async function readProviderJson(response) {
   const declaredLength = response.headers?.get?.("content-length");
   if (
     typeof declaredLength === "string"
-    && /^\\d+$/.test(declaredLength)
+    && /^\d+$/.test(declaredLength)
     && Number(declaredLength) > MAX_PROVIDER_RESPONSE_BYTES
   ) {
     throw new RangeError("AEO provider response is too large.");
