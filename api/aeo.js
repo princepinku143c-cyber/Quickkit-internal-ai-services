@@ -54,6 +54,13 @@ async function readProviderJson(response) {
     && /^\d+$/.test(declaredLength)
     && Number(declaredLength) > MAX_PROVIDER_RESPONSE_BYTES
   ) {
+    // Reject on the declared size and release the unread upstream body so an
+    // oversized response cannot leave a stream/socket hanging after rejection.
+    try {
+      await response.body?.cancel?.();
+    } catch {
+      // Preserve the size-limit error even if the provider stream cannot cancel.
+    }
     throw new RangeError("AEO provider response is too large.");
   }
 
