@@ -13,6 +13,18 @@ function sendError(res, status, message, retryAfter) {
   return res.status(status).json({ success: false, message });
 }
 
+function cancelProviderBody(response) {
+  // Best-effort cleanup must not delay the sanitized API response.
+  try {
+    const cancellation = response?.body?.cancel?.();
+    if (cancellation && typeof cancellation.catch === "function") {
+      cancellation.catch(() => {});
+    }
+  } catch {
+    // Preserve the primary provider error when cancellation is unavailable.
+  }
+}
+
 export function parseAeoPairs(content, requestedCount) {
   if (typeof content !== "string" || !content.trim()) {
     throw new TypeError("AEO provider response is empty.");
@@ -56,11 +68,7 @@ async function readProviderJson(response) {
   ) {
     // Reject on the declared size and release the unread upstream body so an
     // oversized response cannot leave a stream/socket hanging after rejection.
-    try {
-      await response.body?.cancel?.();
-    } catch {
-      // Preserve the size-limit error even if the provider stream cannot cancel.
-    }
+    cancelProviderBody(response);
     throw new RangeError("AEO provider response is too large.");
   }
 
@@ -226,6 +234,7 @@ export function createAeoHandler({
       });
 
       if (!providerResponse?.ok) {
+        cancelProviderBody(providerResponse);
         return sendError(res, 502, "AEO provider request failed.");
       }
 
