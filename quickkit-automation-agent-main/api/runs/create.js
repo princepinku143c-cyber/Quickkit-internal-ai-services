@@ -98,7 +98,7 @@ async function createRunForUser(userId, input) {
   );
 }
 
-export async function createRunWithQuota(db, userId, input, now = Date.now(), serverTimestamp = FieldValue.serverTimestamp()) {
+export async function createRunWithQuota(db, userId, input, now = Date.now(), serverTimestamp = FieldValue.serverTimestamp(), cloudExecutionEnabled = process.env.CLOUD_EXECUTION_ENABLED === "true") {
   if (!db || typeof db.collection !== "function" || typeof db.runTransaction !== "function") {
     throw new TypeError("A Firestore Admin client is required.");
   }
@@ -112,6 +112,12 @@ export async function createRunWithQuota(db, userId, input, now = Date.now(), se
     || (input.mode !== "local" && input.mode !== "cloud")
   ) {
     throw new TypeError("A valid run payload is required.");
+  }
+
+  // Do not create or charge for cloud runs until a real Firebase worker is deployed.
+  // The feature remains disabled unless the owner explicitly enables it after deployment.
+  if (input.mode === "cloud" && cloudExecutionEnabled !== true) {
+    return { allowed: false, reason: "cloud_execution_unavailable" };
   }
 
   const timestamp = Number(now);
@@ -243,6 +249,9 @@ export function createRunCreationHandler({ verifyIdToken = verifyUserIdToken, cr
 
     try {
       const result = await createRun(uid, input);
+      if (result?.reason === "cloud_execution_unavailable") {
+        return sendError(res, 503, "Cloud execution is not available until the worker is deployed.");
+      }
       if (result?.reason === "project_not_found") {
         return sendError(res, 404, "Saved project was not found.");
       }
