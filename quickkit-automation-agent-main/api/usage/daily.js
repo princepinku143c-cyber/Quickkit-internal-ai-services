@@ -22,6 +22,19 @@ function adminUnavailableError() {
   return error;
 }
 
+/**
+ * An explicit Firebase project target must be verifiable on an already
+ * initialized Admin app. Unknown project binding fails closed.
+ */
+export function isAdminAppBoundToProject(existingProjectId, configuredProjectId) {
+  const expectedProjectId = typeof configuredProjectId === "string"
+    ? configuredProjectId.trim()
+    : "";
+  if (!expectedProjectId) return true;
+  return typeof existingProjectId === "string"
+    && existingProjectId.trim() === expectedProjectId;
+}
+
 export function getAdminApp() {
   const apps = getApps();
   const existing = apps.find((candidate) => candidate.name === "[DEFAULT]") || apps[0];
@@ -29,7 +42,7 @@ export function getAdminApp() {
 
   if (existing) {
     const existingProjectId = existing.options?.projectId;
-    if (projectId && existingProjectId && existingProjectId !== projectId) {
+    if (!isAdminAppBoundToProject(existingProjectId, projectId)) {
       throw adminUnavailableError();
     }
     return existing;
