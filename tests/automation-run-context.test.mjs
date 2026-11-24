@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import { createDailyQuotaHandler, consumeDailyQuota, DAILY_EXECUTION_LIMIT } from "../quickkit-automation-agent-main/api/usage/daily.js";
 import { createRunCreationHandler, createRunWithQuota } from "../quickkit-automation-agent-main/api/runs/create.js";
+import { isPaymentOrderOwnedBy } from "../quickkit-automation-agent-main/functions/paymentOrderOwnership.js";
 
 const app = await readFile(new URL("../quickkit-automation-agent-main/App.tsx", import.meta.url), "utf8");
 const modal = await readFile(new URL("../quickkit-automation-agent-main/components/RunModal.tsx", import.meta.url), "utf8");
@@ -9,6 +10,7 @@ const engine = await readFile(new URL("../quickkit-automation-agent-main/service
 const cloudStore = await readFile(new URL("../quickkit-automation-agent-main/services/cloudStore.ts", import.meta.url), "utf8");
 const automationRules = await readFile(new URL("../quickkit-automation-agent-main/firestore.rules", import.meta.url), "utf8");
 const runCreationApi = await readFile(new URL("../quickkit-automation-agent-main/api/runs/create.js", import.meta.url), "utf8");
+const paymentWorker = await readFile(new URL("../quickkit-automation-agent-main/functions/paymentWorker.ts", import.meta.url), "utf8");
 
 assert.ok(app.includes("projectId={currentProject?.id}"), "App must pass the active project ID to RunModal.");
 assert.ok(modal.includes("projectId?: string;"), "RunModal must accept an optional project ID.");
@@ -49,6 +51,18 @@ assert.ok(engine.includes("createCloudRun(this.state, 'local')"), "Signed-in sav
 assert.ok(modal.includes("createCloudRun(initialState, 'cloud')"), "Cloud runs must use the atomic server run/quota transaction.");
 assert.match(automationRules, /match \/active_runs\/\{runId\}[\s\S]*allow create: if false;/, "Clients must not create active-run documents directly.");
 assert.ok(runCreationApi.includes("mode: input.mode"), "Trusted run creation must persist the local/cloud execution mode.");
+
+// Payment verification must not let one authenticated tenant claim another tenant's order.
+assert.equal(isPaymentOrderOwnedBy({ userId: "tenant-a" }, "tenant-a"), true);
+assert.equal(isPaymentOrderOwnedBy({ userId: "tenant-b" }, "tenant-a"), false);
+assert.equal(isPaymentOrderOwnedBy({ userId: "tenant-a" }, "tenant-b"), false);
+assert.equal(isPaymentOrderOwnedBy({ userId: null }, "tenant-a"), false);
+assert.equal(isPaymentOrderOwnedBy({}, "tenant-a"), false);
+assert.equal(isPaymentOrderOwnedBy(null, "tenant-a"), false);
+const paymentOwnerGuardIndex = paymentWorker.indexOf("if (!isPaymentOrderOwnedBy(orderData, context.auth!.uid))");
+const paymentGrantIndex = paymentWorker.indexOf("await processSuccessfulPayment(context.auth!.uid");
+assert.ok(paymentOwnerGuardIndex >= 0 && paymentOwnerGuardIndex < paymentGrantIndex,
+  "Payment ownership must be checked before any plan or credit mutation.");
 assert.ok(automationRules.includes("resource.data.mode == 'local'"), "Only browser-local runs may accept client checkpoint updates.");
 assert.ok(automationRules.includes("request.resource.data.mode == resource.data.mode"), "Clients must not change a run's execution mode.");
 
