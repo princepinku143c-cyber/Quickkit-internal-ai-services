@@ -5,6 +5,9 @@ import { DAILY_EXECUTION_LIMIT, getAdminApp } from "../usage/daily.js";
 const MAX_REQUEST_BYTES = 32 * 1024;
 const MAX_TOKEN_LENGTH = 8192;
 const MAX_NODES = 50;
+
+// Keep cloud runs disabled until a real Firebase Functions worker is registered and deployed.
+const CLOUD_WORKER_DEPLOYMENT_CONFIGURED = false;
 const INVALID_TOKEN_CODES = new Set([
   "auth/argument-error",
   "auth/invalid-id-token",
@@ -98,7 +101,7 @@ async function createRunForUser(userId, input) {
   );
 }
 
-export async function createRunWithQuota(db, userId, input, now = Date.now(), serverTimestamp = FieldValue.serverTimestamp(), cloudExecutionEnabled = process.env.CLOUD_EXECUTION_ENABLED === "true") {
+export async function createRunWithQuota(db, userId, input, now = Date.now(), serverTimestamp = FieldValue.serverTimestamp(), cloudExecutionEnabled = process.env.CLOUD_EXECUTION_ENABLED === "true" && CLOUD_WORKER_DEPLOYMENT_CONFIGURED) {
   if (!db || typeof db.collection !== "function" || typeof db.runTransaction !== "function") {
     throw new TypeError("A Firestore Admin client is required.");
   }
@@ -114,8 +117,8 @@ export async function createRunWithQuota(db, userId, input, now = Date.now(), se
     throw new TypeError("A valid run payload is required.");
   }
 
-  // Do not create or charge for cloud runs until a real Firebase worker is deployed.
-  // The feature remains disabled unless the owner explicitly enables it after deployment.
+  // Environment flags are not proof that a worker exists. Keep cloud runs disabled in production
+  // until a real Firebase Functions worker is registered, deployed, and covered by integration tests.
   if (input.mode === "cloud" && cloudExecutionEnabled !== true) {
     return { allowed: false, reason: "cloud_execution_unavailable" };
   }
