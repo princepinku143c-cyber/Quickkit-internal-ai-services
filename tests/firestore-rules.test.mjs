@@ -74,7 +74,12 @@ const automationCloudStore = await readFile(
 const dailyUsageGuard = automationCloudStore.match(
   /export const updateDailyUsage = async \([\s\S]*?\n};/,
 )?.[0] || '';
-assert.match(dailyUsageGuard, /if \(!userId \|\| !db\) return \{ allowed: false, count: 0, reason: 'unavailable' \}/);
+assert.match(dailyUsageGuard, /userId === 'guest' \|\| userId === 'dev-bypass-user-999'/);
+assert.match(dailyUsageGuard, /if \(!currentUser \|\| currentUser\.uid !== userId\)/);
+assert.match(dailyUsageGuard, /fetch\('\/api\/usage\/daily'/);
+assert.match(dailyUsageGuard, /Authorization: `Bearer \$\{idToken\}`/);
+assert.doesNotMatch(dailyUsageGuard, /collection\(['"]usage_quotas['"]\)/);
+assert.match(dailyUsageGuard, /reason: 'unavailable'/);
 assert.match(dailyUsageGuard, /userId === 'guest' \|\| userId === 'dev-bypass-user-999'/);
 assert.match(dailyUsageGuard, /return \{ allowed: false, count: 0, reason: 'unavailable' \}/);
 assert.doesNotMatch(dailyUsageGuard, /catch \(e\) \{ return \{ allowed: true/);
