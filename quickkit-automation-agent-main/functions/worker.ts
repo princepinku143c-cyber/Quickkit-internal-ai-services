@@ -17,6 +17,7 @@ import { onSchedule } from 'firebase-functions/v2/scheduler';
 
 interface ExecutionState {
     status?: string;
+    mode?: string;
 }
 
 // Fail closed while the actual graph executor is unavailable. A queued run
@@ -26,7 +27,7 @@ export const onWorkflowTrigger = onDocumentCreated('active_runs/{runId}', async 
     if (!snap) return;
 
     const state = snap.data() as ExecutionState;
-    if (state.status !== 'QUEUED') return;
+    if (state.status !== 'QUEUED' || state.mode !== 'cloud') return;
 
     await snap.ref.update({
         status: 'FAILED',
