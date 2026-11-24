@@ -4,6 +4,7 @@ import { FieldValue, getFirestore } from 'firebase-admin/firestore';
 import * as functions from 'firebase-functions/v1';
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
+import { isPaymentOrderOwnedBy } from './paymentOrderOwnership.js';
 
 if (!getApps().length) initializeApp();
 const db = getFirestore();
@@ -93,6 +94,9 @@ export const verifyPayment = functions.https.onCall(async (data, context) => {
         if (!orderDoc.exists) throw new Error("Order not found.");
         
         const orderData = orderDoc.data();
+        if (!isPaymentOrderOwnedBy(orderData, context.auth!.uid)) {
+            throw new functions.https.HttpsError('not-found', 'Order not found.');
+        }
         
         await processSuccessfulPayment(context.auth!.uid, 'RAZORPAY', paymentId, { 
             tier: orderData?.plan, 
