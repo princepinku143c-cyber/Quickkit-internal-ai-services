@@ -563,7 +563,7 @@ function createInMemoryRateLimitAdmin() {
           const transaction = {
             async get(reference) {
               const stored = documents.get(reference.path);
-              return { data: () => stored ? { ...stored } : undefined };
+              return { exists: stored !== undefined, data: () => stored ? { ...stored } : undefined };
             },
             set(reference, value) {
               documents.set(reference.path, { ...value });
