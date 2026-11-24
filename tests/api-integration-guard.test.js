@@ -20,14 +20,12 @@ assert.equal(spaFallbackPattern.test("/a-client-side-route"), true, "Client-side
 
 const runApiRoute = await readFile(join(projectRoot, "api", "runs", "create.js"), "utf8");
 const dailyUsageApiRoute = await readFile(join(projectRoot, "api", "usage", "daily.js"), "utf8");
-assert.match(
-  runApiRoute,
-  /export\\s*\\{\\s*default\\s*\\}\\s*from\\s*["']\\.\\.\\/\\.\\.\\/quickkit-automation-agent-main\\/api\\/runs\\/create\\.js["']/,
+assert.ok(
+  runApiRoute.includes('export { default } from "../../quickkit-automation-agent-main/api/runs/create.js";'),
   "The project-root run API route must re-export the tenant-authenticated automation handler.",
 );
-assert.match(
-  dailyUsageApiRoute,
-  /export\\s*\\{\\s*default\\s*\\}\\s*from\\s*["']\\.\\.\\/\\.\\.\\/quickkit-automation-agent-main\\/api\\/usage\\/daily\\.js["']/,
+assert.ok(
+  dailyUsageApiRoute.includes('export { default } from "../../quickkit-automation-agent-main/api/usage/daily.js";'),
   "The project-root daily-usage API route must re-export the authenticated quota handler.",
 );
 const [runApiModule, dailyUsageApiModule] = await Promise.all([
