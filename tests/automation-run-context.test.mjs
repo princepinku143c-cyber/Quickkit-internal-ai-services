@@ -463,7 +463,7 @@ const disabledCloudRunDb = createFakeRunDb({
 });
 const previousCloudExecutionEnabled = process.env.CLOUD_EXECUTION_ENABLED;
 delete process.env.CLOUD_EXECUTION_ENABLED;
-const disabledCloudRun = await createRunWithQuotaWorkerEnabled(
+const disabledCloudRun = await createRunWithQuota(
   disabledCloudRunDb,
   "tenant-a",
   { ...validRunInput, runId: "run-cloud-disabled" },
