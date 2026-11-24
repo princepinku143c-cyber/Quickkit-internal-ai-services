@@ -635,7 +635,7 @@ try {
   });
 
   // Active-run documents are server-created after quota and project-owner
-  // checks. Clients may read/update/delete only their own server-created run.
+  // checks. Clients may read their own runs; only local runs allow owner updates/deletion.
   const ownerRunRef = doc(automationUser, 'active_runs', 'owner-run');
   const validActiveRun = {
     runId: 'owner-run',
@@ -698,6 +698,7 @@ try {
   await assertFails(updateDoc(cloudRunRef, { status: 'COMPLETED' }));
   await assertFails(updateDoc(cloudRunRef, { currentQueue: [] }));
   await assertFails(updateDoc(cloudRunRef, { mode: 'local' }));
+  await assertFails(deleteDoc(cloudRunRef), 'Owners must not delete queued or running cloud records.');
 
   // Legacy runs without an explicit execution mode fail closed for client updates.
   const legacyRunRef = doc(automationUser, 'active_runs', 'legacy-run');
@@ -707,6 +708,7 @@ try {
     await setDoc(doc(context.firestore(), 'active_runs', 'legacy-run'), legacyRun);
   });
   await assertFails(updateDoc(legacyRunRef, { status: 'RUNNING' }));
+  await assertFails(deleteDoc(legacyRunRef), 'Legacy runs without an explicit mode must fail closed for client deletion.');
   await assertFails(updateDoc(ownerRunRef, { userId: 'automation-other' }));
   await assertFails(updateDoc(ownerRunRef, { projectId: 'other-project' }));
   await assertFails(updateDoc(ownerRunRef, { status: 'ADMIN' }));
