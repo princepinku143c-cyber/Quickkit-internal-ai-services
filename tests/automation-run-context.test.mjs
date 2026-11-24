@@ -538,6 +538,7 @@ const workerSource = await readFile(
 );
 assert.match(workerSource, /CLOUD_WORKER_NOT_IMPLEMENTED/);
 assert.match(workerSource, /status:\s*'FAILED'/);
+assert.match(workerSource, /state\.status !== 'QUEUED'.*state\.mode !== 'cloud'/, "Only queued cloud-mode runs may be failed by the placeholder worker.");
 assert.doesNotMatch(workerSource, /worker_simulated_|status:\s*'COMPLETED'/);
 assert.doesNotMatch(workerSource, /axios\.get|fetch\(/, "The placeholder poller must not make outbound requests.");
 assert.match(workerSource, /Disabled: secure tenant-scoped polling is not implemented/);
