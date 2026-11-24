@@ -197,8 +197,7 @@ const unavailableQuotaHandler = createDailyQuotaHandler({
   consumeQuota: async () => { throw new Error("private Firestore diagnostic"); },
 });
 const unavailableQuotaResponse = await invokeQuotaHandler(unavailableQuotaHandler, {
-  method: "POST",  headers: { authorization: "Bearer valid-token" },
-  body: {},
+  method: "POST",  headers: { authorization: "Bearer valid-token" },  body: {},
 });
 assert.equal(unavailableQuotaResponse.statusCode, 503);
 assert.equal(JSON.stringify(unavailableQuotaResponse.body).includes("private Firestore diagnostic"), false, "Quota errors must not leak internal diagnostics.");
@@ -397,8 +396,7 @@ assert.equal(missingProject.statusCode, 404);
 
 const conflictRunHandler = createRunCreationHandler({
   verifyIdToken: async () => ({ uid: "tenant-a" }),  createRun: async () => ({ allowed: false, reason: "conflict" }),
-});
-const conflictRun = await invokeQuotaHandler(conflictRunHandler, {
+});const conflictRun = await invokeQuotaHandler(conflictRunHandler, {
   method: "POST",
   headers: { authorization: "Bearer valid-token" },
   body: validRunInput,
@@ -541,9 +539,9 @@ const workerSource = await readFile(
   "utf8",
 );
 assert.match(workerSource, /CLOUD_WORKER_NOT_IMPLEMENTED/);
-assert.match(workerSource, /status:\\s*'FAILED'/);
+assert.match(workerSource, /status:\s*'FAILED'/);
 assert.doesNotMatch(workerSource, /worker_simulated_|status:\\s*'COMPLETED'/);
-assert.doesNotMatch(workerSource, /axios\\.get|fetch\\(/, "The placeholder poller must not make outbound requests.");
+assert.doesNotMatch(workerSource, /axios\.get|fetch\(/, "The placeholder poller must not make outbound requests.");
 assert.match(workerSource, /Disabled: secure tenant-scoped polling is not implemented/);
 
 console.log("PASS: server-side run creation verifies Firebase identity and project ownership, atomically enforces the 500/day quota, and is idempotent.");
