@@ -135,20 +135,20 @@ export async function createRunWithQuota(db, userId, input, now = Date.now(), se
       return { allowed: false, reason: "project_not_found" };
     }
 
+    const count = quotaSnapshot.exists ? quotaSnapshot.data()?.count : 0;
+    if (!Number.isSafeInteger(count) || count < 0) {
+      throw new Error("Daily quota record is invalid.");
+    }
+
     if (runSnapshot.exists) {
       const existing = runSnapshot.data();
       if (existing?.userId === userId && existing?.projectId === input.projectId && existing?.mode === input.mode) {
         if (!VALID_RUN_STATUSES.has(existing.status)) {
           throw new Error("Existing active-run record is invalid.");
         }
-        return { allowed: true, count: 0, created: false, status: existing.status };
+        return { allowed: true, count, created: false, status: existing.status };
       }
       return { allowed: false, reason: "conflict" };
-    }
-
-    const count = quotaSnapshot.exists ? quotaSnapshot.data()?.count : 0;
-    if (!Number.isSafeInteger(count) || count < 0) {
-      throw new Error("Daily quota record is invalid.");
     }
     if (count >= DAILY_EXECUTION_LIMIT) {
       return { allowed: false, count, reason: "exceeded" };
