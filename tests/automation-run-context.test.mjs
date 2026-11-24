@@ -286,6 +286,22 @@ const runSpoofedIdentity = await invokeQuotaHandler(runHandler, {
 assert.equal(runSpoofedIdentity.statusCode, 400, "Client-supplied user IDs must be rejected.");
 assert.equal(runApiCalls.length, 0);
 
+const runSpoofedStatus = await invokeQuotaHandler(runHandler, {
+  method: "POST",
+  headers: { authorization: "Bearer valid-token" },
+  body: { ...validRunInput, status: "COMPLETED" },
+});
+assert.equal(runSpoofedStatus.statusCode, 400, "Clients must not choose the server-owned run status.");
+assert.equal(runApiCalls.length, 0);
+
+const runOversizedBody = await invokeQuotaHandler(runHandler, {
+  method: "POST",
+  headers: { authorization: "Bearer valid-token" },
+  body: { ...validRunInput, context: { trigger: { data: "x".repeat(33 * 1024) } } },
+});
+assert.equal(runOversizedBody.statusCode, 413, "The parsed run payload must be byte-limited even without Content-Length.");
+assert.equal(runApiCalls.length, 0);
+
 const runInvalidMode = await invokeQuotaHandler(runHandler, {
   method: "POST",
   headers: { authorization: "Bearer valid-token" },
