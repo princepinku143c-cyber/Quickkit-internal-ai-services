@@ -112,6 +112,29 @@ const validContent = JSON.stringify([
   assert.equal(invalidAuth.statusCode, 401);
   assertNoStore(invalidAuth);
 
+  // Reject oversized Firebase bearer tokens before invoking Admin verification.
+  let oversizedTokenVerifyCalls = 0;
+  const oversizedToken = createResponse();
+  await createAeoHandler({
+    adminClient: {
+      apps: [{}],
+      auth() {
+        return {
+          async verifyIdToken() {
+            oversizedTokenVerifyCalls += 1;
+            return { uid: "tenant-user" };
+          },
+        };
+      },
+    },
+    envProvider: () => enabledEnv(),
+    rateLimit: async () => { rateCalls += 1; },
+    fetchImpl: async () => { fetchCalls += 1; return providerResponse(validContent); },
+  })(createRequest({ authorization: "Bearer " + "x".repeat(8193) }), oversizedToken);
+  assert.equal(oversizedToken.statusCode, 401);
+  assertNoStore(oversizedToken);
+  assert.equal(oversizedTokenVerifyCalls, 0, "Oversized bearer tokens must be rejected before Firebase Admin verification.");
+
   const invalidUid = createResponse();
   await createAeoHandler({
     ...common,
