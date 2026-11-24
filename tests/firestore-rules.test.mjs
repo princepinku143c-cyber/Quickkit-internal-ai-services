@@ -652,7 +652,7 @@ try {
   };
 
   await assertFails(setDoc(ownerRunRef, validActiveRun));
-  await testEnv.withSecurityRulesDisabled(async (context) => {
+  await automationEnv.withSecurityRulesDisabled(async (context) => {
     await setDoc(doc(context.firestore(), 'active_runs', 'owner-run'), validActiveRun);
   });
   await assertSucceeds(getDoc(ownerRunRef));
