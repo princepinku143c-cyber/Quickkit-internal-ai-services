@@ -476,6 +476,31 @@ assert.deepEqual(disabledCloudRun, { allowed: false, reason: "cloud_execution_un
 assert.equal(disabledCloudRunDb.records.has("active_runs/run-cloud-disabled"), false, "Disabled cloud runs must not create stranded QUEUED records.");
 assert.equal(disabledCloudRunDb.records.has("usage_quotas/tenant-a_2026-11-24"), false, "Disabled cloud runs must not consume quota.");
 
+const enabledFlagCloudRunDb = createFakeRunDb({
+  "projects/project-a": { userId: "tenant-a" },
+});
+const previousEnabledFlag = process.env.CLOUD_EXECUTION_ENABLED;
+try {
+  process.env.CLOUD_EXECUTION_ENABLED = "true";
+  const enabledFlagCloudRun = await createRunWithQuota(
+    enabledFlagCloudRunDb,
+    "tenant-a",
+    { ...validRunInput, runId: "run-cloud-env-flag-only" },
+    quotaNow,
+    "SERVER_TIMESTAMP",
+  );
+  assert.deepEqual(
+    enabledFlagCloudRun,
+    { allowed: false, reason: "cloud_execution_unavailable" },
+    "The environment flag alone must not enable cloud runs while no worker is deployed.",
+  );
+} finally {
+  if (previousEnabledFlag === undefined) delete process.env.CLOUD_EXECUTION_ENABLED;
+  else process.env.CLOUD_EXECUTION_ENABLED = previousEnabledFlag;
+}
+assert.equal(enabledFlagCloudRunDb.records.has("active_runs/run-cloud-env-flag-only"), false, "An environment flag must not create a stranded cloud run.");
+assert.equal(enabledFlagCloudRunDb.records.has("usage_quotas/tenant-a_2026-11-24"), false, "An environment flag must not consume quota before worker deployment.");
+
 const createRunWithQuotaWorkerEnabled = (...args) => createRunWithQuota(...args, true);
 
 const atomicRunDb = createFakeRunDb({
