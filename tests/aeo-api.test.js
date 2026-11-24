@@ -506,4 +506,63 @@ assert.throws(
   assert.equal(timeoutCleared, true);
 }
 
+// Corrupt persisted rate-limit state must fail closed instead of resetting the bucket.
+{
+  const now = Date.now();
+  const corruptCases = [
+    ["negative-count", { count: -1, firstCall: now }],
+    ["fractional-count", { count: 1.5, firstCall: now }],
+    ["string-count", { count: "3", firstCall: now }],
+    ["missing-count", { firstCall: now }],
+    ["missing-first-call", { count: 3 }],
+    ["invalid-first-call", { count: 3, firstCall: "not-a-timestamp" }],
+    ["negative-first-call", { count: 3, firstCall: -1 }],
+  ];
+  const records = new Map(corruptCases.map(([key, value]) => [
+    `rate_limits/uid:corrupt-${key}_aeo-generation`,
+    { ...value },
+  ]));
+  const database = {
+    collection(name) {
+      return {
+        doc(id) {
+          return { path: name + "/" + id };
+        },
+      };
+    },
+    async runTransaction(callback) {
+      return callback({
+        async get(ref) {
+          const data = records.get(ref.path);
+          return { exists: data !== undefined, data: () => data };
+        },
+        set(ref, value) {
+          records.set(ref.path, { ...value });
+        },
+      });
+    },
+  };
+  const corruptAdmin = { firestore: () => database };
+  const originalConsoleError = console.error;
+  console.error = () => {};
+  try {
+    for (const [key, value] of corruptCases) {
+      const path = `rate_limits/uid:corrupt-${key}_aeo-generation`;
+      const before = { ...value };
+      await assert.rejects(
+        () => checkRateLimit(corruptAdmin, `uid:corrupt-${key}`, "aeo-generation", 3),
+        (error) => error.status === 503,
+      );
+      assert.deepEqual(records.get(path), before, `corrupt bucket ${key} must not be reset or overwritten`);
+    }
+
+    await assert.rejects(
+      () => checkRateLimit(corruptAdmin, "uid:invalid-limit", "aeo-generation", 0),
+      (error) => error.status === 503,
+    );
+  } finally {
+    console.error = originalConsoleError;
+  }
+}
+
 console.log("AEO API and real Firestore rate-limit regression tests passed.");
