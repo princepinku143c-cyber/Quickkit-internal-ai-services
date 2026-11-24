@@ -542,6 +542,26 @@ assert.doesNotMatch(workerSource, /worker_simulated_|status:\s*'COMPLETED'/);
 assert.doesNotMatch(workerSource, /axios\.get|fetch\(/, "The placeholder poller must not make outbound requests.");
 assert.match(workerSource, /Disabled: secure tenant-scoped polling is not implemented/);
 
+const startMethodIndex = engine.indexOf("public async start(payload: any)");
+const terminalFailureGuardIndex = engine.indexOf("if (this.state.status === 'FAILED') {", startMethodIndex);
+const quotaCheckIndex = engine.indexOf("let quota:", startMethodIndex);
+assert.ok(
+  terminalFailureGuardIndex > startMethodIndex && terminalFailureGuardIndex < quotaCheckIndex,
+  "A previously failed run must stop before requesting or consuming quota.",
+);
+const completionIndex = engine.indexOf("this.state.status = 'COMPLETED';");
+const postLoopFailureGuardIndex = engine.indexOf(
+  "if (this.state.status === 'FAILED') {",
+  engine.indexOf("while (this.state.currentQueue.length > 0)"),
+);
+assert.ok(
+  postLoopFailureGuardIndex > 0 && postLoopFailureGuardIndex < completionIndex,
+  "A node failure must be returned before the success finalizer.",
+);
+const failedResultBlock = engine.slice(postLoopFailureGuardIndex, completionIndex);
+assert.match(failedResultBlock, /status: 'FAILED'/);
+assert.match(failedResultBlock, /output: this\.state\.context/);
+
 console.log("PASS: server-side run creation verifies Firebase identity and project ownership, atomically enforces the 500/day quota, and is idempotent.");
 console.log("PASS: clients cannot create active-run documents; trusted server creation preserves owner-only checkpoints.");
 console.log("PASS: server-side daily quota API authenticates the Firebase UID, preserves the 500/day cap, and fails closed.");
