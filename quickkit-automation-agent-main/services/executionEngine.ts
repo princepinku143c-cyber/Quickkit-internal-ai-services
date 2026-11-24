@@ -148,6 +148,18 @@ export class WorkflowOrchestrator {
     }
 
     public async start(payload: any): Promise<ExecutionResult> {
+        // A failed run is terminal: do not re-run it or charge quota again.
+        if (this.state.status === 'FAILED') {
+            return {
+                status: 'FAILED',
+                executionId: this.state.runId,
+                duration: 0,
+                output: this.state.context,
+                logs: [],
+                telemetry: []
+            };
+        }
+
         this.logger(`[Shield] Initializing Guarded Runtime ${this.state.runId}...`, "INFO");
         
         let quota: { allowed: boolean, count: number, reason?: 'unavailable' };
@@ -247,6 +259,19 @@ export class WorkflowOrchestrator {
                 await this.saveCheckpoint();
                 break;
             }
+        }
+
+        // A node fault sets FAILED and persists the checkpoint. Preserve that
+        // outcome instead of falling through to the success finalizer.
+        if (this.state.status === 'FAILED') {
+            return {
+                status: 'FAILED',
+                executionId: this.state.runId,
+                duration: Date.now() - startTime,
+                output: this.state.context,
+                logs: [],
+                telemetry: []
+            };
         }
 
         this.state.status = 'COMPLETED';
