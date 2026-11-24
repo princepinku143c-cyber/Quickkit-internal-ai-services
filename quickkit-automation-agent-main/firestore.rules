@@ -157,7 +157,9 @@ service cloud.firestore {
       allow list: if false;
       allow create: if false;
       allow update: if validActiveRunUpdate(runId);
-      allow delete: if isOwner(resource.data.userId);
+      // Local browser runs may be removed by their owner after completion.
+      // Cloud runs and legacy records remain server/Admin-owned.
+      allow delete: if isOwner(resource.data.userId) && resource.data.mode == 'local';
     }
 
     // Architect memory is private to its creator. Legacy unowned records are not exposed.
