@@ -21,7 +21,6 @@ import { useProjectActions } from './hooks/useProjectActions';
 import { PaymentSuccess, PaymentFailure } from './components/PaymentStatus';
 import { AuthGuard } from './components/AuthGuard';
 import { subscribeToProjects, updateProject, createProject, deleteProject } from './services/projectService';
-import { listPromos } from './services/adminService'; 
 import { subscribeToUserProfile, updateUserProfile } from './services/userService'; 
 import { canAddNode } from './services/usageGuard'; 
 import { DEFAULT_NODE_SETTINGS, NEXUS_DEFINITIONS, PLAN_LIMITS, getDefaultNodeSettings } from './constants';
@@ -239,7 +238,6 @@ const AppContent: React.FC = () => {
   useEffect(() => {
       if (user) {
           setAppRoute('app');
-          listPromos(); 
       } else {
           if (appRoute === 'app') setAppRoute('landing');
       }
