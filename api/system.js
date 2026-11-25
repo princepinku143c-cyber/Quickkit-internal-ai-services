@@ -19,7 +19,7 @@ export default async (req, res) => {
     // Enable CORS
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, Idempotency-Key');
 
     if (req.method === 'OPTIONS') return res.status(200).end();
 
@@ -94,6 +94,24 @@ async function handleLead(req, res, userId) {
     const data = req.body;
     if (!isPlainObject(data)) return error(res, 'Invalid lead payload', 400);
     if (payloadTooLarge(data)) return error(res, 'Lead payload is too large', 413);
+    const headerIdempotencyKey = req.headers?.['idempotency-key'];
+    const bodyIdempotencyKey = data.idempotencyKey;
+    if (
+        headerIdempotencyKey !== undefined
+        && bodyIdempotencyKey !== undefined
+        && headerIdempotencyKey !== bodyIdempotencyKey
+    ) {
+        return error(res, 'Conflicting idempotency keys', 400);
+    }
+    const rawIdempotencyKey = headerIdempotencyKey ?? bodyIdempotencyKey;
+    const idempotencyKey = typeof rawIdempotencyKey === 'string' ? rawIdempotencyKey.trim() : '';
+    if (
+        rawIdempotencyKey !== undefined
+        && rawIdempotencyKey !== null
+        && !/^[a-zA-Z0-9_-]{16,128}$/.test(idempotencyKey)
+    ) {
+        return error(res, 'Invalid idempotency key', 400);
+    }
     try {
         await checkRateLimit(admin, getClientIp(req), 'system-lead', 5);
         const leadData = {
@@ -127,12 +145,15 @@ async function handleLead(req, res, userId) {
         };
 
         // Commit both linked records together before starting notifications or AI work.
-        const { leadRef, projectRef } = await createLeadAndProjectAtomically(
+        const { leadRef, projectRef, created } = await createLeadAndProjectAtomically(
             admin.firestore(),
             leadData,
-            projectData
+            projectData,
+            idempotencyKey || undefined
         );
 
+        // A replay returns the original pair and must not repeat external side effects.
+        if (created) {
         // Asynchronously call the askAI service to draft a welcome email
         const leadId = leadRef.id;
         const leadName = leadData.name;
@@ -258,7 +279,12 @@ async function handleLead(req, res, userId) {
             console.error("Odoo CRM sync failed.");
         }
 
-        return success(res, { status: "LEAD_CREATED", projectId: projectRef.id });
+        }
+        return success(res, {
+            status: created ? "LEAD_CREATED" : "LEAD_ALREADY_RECEIVED",
+            projectId: projectRef.id,
+            idempotentReplay: !created
+        });
     } catch (e) {
         const publicError = getPublicSystemError(e, "Unable to submit lead right now.");
         return error(res, publicError.message, publicError.status);
