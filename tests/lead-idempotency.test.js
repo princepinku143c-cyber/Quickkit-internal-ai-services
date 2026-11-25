@@ -386,6 +386,18 @@ assert.ok(floatingChatSource.includes("idempotencyKey"), "chat lead requests mus
 assert.ok(floatingChatSource.includes("leadCaptureStatusRef"), "chat lead capture must track pending and successful submissions");
 assert.ok(floatingChatSource.includes("if (!response.ok)"), "chat lead capture must treat non-2xx responses as failures");
 assert.ok(floatingChatSource.includes("delete leadCaptureStatusRef.current[email]"), "failed chat lead capture must become retryable");
+const chatEmailRegexSource = floatingChatSource.match(/const emailRegex = \/(.+)\/;/)?.[1];
+assert.ok(chatEmailRegexSource, "chat lead capture must define an email detector");
+const chatEmailRegex = new RegExp(chatEmailRegexSource);
+assert.ok(
+  chatEmailRegex.test("buyer+aeo@sub.example.co.in"),
+  "chat lead capture must detect normal dotted email domains",
+);
+assert.equal(
+  chatEmailRegex.test("buyer@example"),
+  false,
+  "chat lead capture must reject email addresses without a top-level domain",
+);
 const chatResponseCheckIndex = floatingChatSource.indexOf("if (!response.ok)");
 const chatSuccessIndex = floatingChatSource.indexOf('leadCaptureStatusRef.current[email] = "captured"');
 assert.ok(chatResponseCheckIndex >= 0 && chatSuccessIndex > chatResponseCheckIndex, "chat capture must only be marked successful after an OK response");
