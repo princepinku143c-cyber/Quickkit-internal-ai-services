@@ -276,6 +276,55 @@ await assert.rejects(
 assert.equal(atomicDb.count("leads"), 1, "mismatched ownership must not create a lead");
 assert.equal(atomicDb.count("projects"), 1, "mismatched ownership must not create a project");
 
+const systemIdempotencyDb = new FakeFirestore();
+const systemSubmissionKey = "system-opportunity-submit-0001";
+const aliceSystemLead = { userId: "alice", name: "Alice system lead" };
+const aliceSystemProject = { userId: "alice", projectName: "Alice system project" };
+const firstSystemSubmission = await createLeadAndProjectAtomically(
+  systemIdempotencyDb, aliceSystemLead, aliceSystemProject, systemSubmissionKey
+);
+assert.equal(firstSystemSubmission.created, true);
+assert.equal(systemIdempotencyDb.count("leads"), 1);
+assert.equal(systemIdempotencyDb.count("projects"), 1);
+assert.equal(systemIdempotencyDb.count("system_lead_idempotency"), 1);
+
+const replayedSystemSubmission = await createLeadAndProjectAtomically(
+  systemIdempotencyDb,
+  { ...aliceSystemLead, name: "Changed retry payload" },
+  { ...aliceSystemProject, projectName: "Changed retry project" },
+  systemSubmissionKey
+);
+assert.equal(replayedSystemSubmission.created, false);
+assert.equal(replayedSystemSubmission.leadRef.id, firstSystemSubmission.leadRef.id);
+assert.equal(replayedSystemSubmission.projectRef.id, firstSystemSubmission.projectRef.id);
+assert.equal(replayedSystemSubmission.lead.name, "Alice system lead", "a replay must preserve the first lead payload");
+assert.equal(replayedSystemSubmission.project.projectName, "Alice system project", "a replay must preserve the first project payload");
+assert.equal(systemIdempotencyDb.count("leads"), 1, "a replay must not create a duplicate lead");
+assert.equal(systemIdempotencyDb.count("projects"), 1, "a replay must not create a duplicate project");
+
+const systemKeyHash = hashIdempotencyKey(JSON.stringify(["user", "alice", systemSubmissionKey]));
+assert.equal(systemIdempotencyDb.read("system_lead_idempotency", systemKeyHash).leadId, firstSystemSubmission.leadRef.id);
+assert.equal(systemIdempotencyDb.read("system_lead_idempotency", systemSubmissionKey), undefined, "raw idempotency keys must not be stored");
+
+const bobSystemSubmission = await createLeadAndProjectAtomically(
+  systemIdempotencyDb,
+  { userId: "bob", name: "Bob system lead" },
+  { userId: "bob", projectName: "Bob system project" },
+  systemSubmissionKey
+);
+assert.equal(bobSystemSubmission.created, true);
+assert.notEqual(bobSystemSubmission.leadRef.id, firstSystemSubmission.leadRef.id);
+assert.notEqual(bobSystemSubmission.projectRef.id, firstSystemSubmission.projectRef.id);
+assert.equal(systemIdempotencyDb.count("leads"), 2, "the same key must be isolated by tenant");
+assert.equal(systemIdempotencyDb.count("projects"), 2, "tenant-scoped retries must not share projects");
+
+await assert.rejects(
+  () => createLeadAndProjectAtomically(
+    systemIdempotencyDb, aliceSystemLead, aliceSystemProject, "invalid-key"
+  ),
+  /valid system lead idempotency key/,
+);
+
 
 const notificationLogMessages = [];
 const notificationSent = await sendLeadNotification(
@@ -321,6 +370,19 @@ assert.ok(
   systemRouteSource.includes("createLeadAndProjectAtomically"),
   "the public system lead route must use the atomic lead/project helper",
 );
+assert.ok(systemRouteSource.includes("Idempotency-Key"), "the system route must allow the idempotency header through CORS");
+assert.ok(systemRouteSource.includes("data.idempotencyKey"), "the system route must accept a body idempotency key");
+assert.ok(systemRouteSource.includes("idempotencyKey || undefined"), "the system route must pass the validated key to atomic persistence");
+assert.ok(systemRouteSource.includes("if (created)"), "system lead retries must not repeat external side effects");
+
+const opportunitiesSource = readFileSync(new URL("../components/OpportunitiesView.tsx", import.meta.url), "utf8");
+assert.ok(opportunitiesSource.includes("submissionKeyRef"), "CRM opportunity submissions must retain a key across retries");
+assert.ok(opportunitiesSource.includes("crypto.randomUUID()"), "CRM opportunity submissions must generate unpredictable keys");
+assert.ok(opportunitiesSource.includes("idempotencyKey"), "CRM opportunity requests must send their idempotency key");
+
+const floatingChatSource = readFileSync(new URL("../components/FloatingChatWidget.tsx", import.meta.url), "utf8");
+assert.ok(floatingChatSource.includes("leadSubmissionKeysRef"), "chat lead captures must reuse a key within the widget session");
+assert.ok(floatingChatSource.includes("idempotencyKey"), "chat lead requests must send their idempotency key");
 assert.ok(
   systemRouteSource.includes("await sendLeadNotification(async () => {"),
   "post-persistence email notification must be best-effort",
