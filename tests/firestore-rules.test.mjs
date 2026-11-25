@@ -57,7 +57,7 @@ const automationApp = await readFile(
 );
 assert.doesNotMatch(
   automationApp,
-  /import\\s*\\{\\s*listPromos\\s*\\}\\s*from\\s*['\"]\\.\\/services\\/adminService['\"]|\\blistPromos\\s*\\(/,
+  /listPromos/,
   'ordinary authenticated app startup must not eagerly enumerate the admin coupon collection',
 );
 
