@@ -13,7 +13,7 @@ export const FloatingChatWidget: React.FC = () => {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [capturedEmails, setCapturedEmails] = useState<string[]>([]);
+  const leadCaptureStatusRef = useRef<Record<string, "pending" | "captured">>({});
   
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const leadSubmissionKeysRef = useRef<Record<string, string>>({});
@@ -31,35 +31,43 @@ export const FloatingChatWidget: React.FC = () => {
 
   // Silent Email & Lead Capture helper
   const detectAndRouteEmail = async (text: string) => {
-    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
+    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/;
     const match = text.match(emailRegex);
-    if (match) {
-      const email = match[0];
-      // Only capture if we haven't already processed it in this session
-      if (!capturedEmails.includes(email)) {
-        setCapturedEmails(prev => [...prev, email]);
-        try {
-          // Reuse the same key if the same email is routed more than once in this widget session.
-          const idempotencyKey = leadSubmissionKeysRef.current[email] || crypto.randomUUID();
-          leadSubmissionKeysRef.current[email] = idempotencyKey;
-          void fetch('/api/system?action=lead', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: 'Global Chat Visitor',
-              email: email,
-              requirement: 'Lead captured via Kelly AI Widget',
-              projectName: 'Chatbot Inquiry',
-              idempotencyKey
-            })
-          }).catch(() => {
-            console.error("Silent Lead Routing failed.");
-          });
-          console.log(`🤖 Silent Lead Routing triggered for: ${email}`);
-        } catch {
-          console.error("Silent Lead Routing failed.");
-        }
+    if (!match) return;
+
+    const email = match[0];
+    const currentStatus = leadCaptureStatusRef.current[email];
+    if (currentStatus === "pending" || currentStatus === "captured") return;
+
+    // Retain the same key after a failed request so a server-side success with a
+    // lost response is safely replayed instead of creating a duplicate lead.
+    const idempotencyKey = leadSubmissionKeysRef.current[email] || crypto.randomUUID();
+    leadSubmissionKeysRef.current[email] = idempotencyKey;
+    leadCaptureStatusRef.current[email] = "pending";
+
+    try {
+      const response = await fetch('/api/system?action=lead', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: 'Global Chat Visitor',
+          email,
+          requirement: 'Lead captured via Kelly AI Widget',
+          projectName: 'Chatbot Inquiry',
+          idempotencyKey
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Lead capture request failed.");
       }
+
+      leadCaptureStatusRef.current[email] = "captured";
+      console.log(`🤖 Silent Lead Routing completed for: ${email}`);
+    } catch {
+      // Allow a later chat message to retry with the same idempotency key.
+      delete leadCaptureStatusRef.current[email];
+      console.error("Silent Lead Routing failed.");
     }
   };
 
