@@ -31,7 +31,7 @@ export const FloatingChatWidget: React.FC = () => {
 
   // Silent Email & Lead Capture helper
   const detectAndRouteEmail = async (text: string) => {
-    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/;
+    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/;
     const match = text.match(emailRegex);
     if (!match) return;
 
