@@ -16,6 +16,7 @@ export const FloatingChatWidget: React.FC = () => {
   const [capturedEmails, setCapturedEmails] = useState<string[]>([]);
   
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const leadSubmissionKeysRef = useRef<Record<string, string>>({});
 
   // Auto-scroll helper
   const scrollToBottom = () => {
@@ -38,20 +39,25 @@ export const FloatingChatWidget: React.FC = () => {
       if (!capturedEmails.includes(email)) {
         setCapturedEmails(prev => [...prev, email]);
         try {
-          // Asynchronous background fire-and-forget call
-          fetch('/api/system?action=lead', {
+          // Reuse the same key if the same email is routed more than once in this widget session.
+          const idempotencyKey = leadSubmissionKeysRef.current[email] || crypto.randomUUID();
+          leadSubmissionKeysRef.current[email] = idempotencyKey;
+          void fetch('/api/system?action=lead', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               name: 'Global Chat Visitor',
               email: email,
               requirement: 'Lead captured via Kelly AI Widget',
-              projectName: 'Chatbot Inquiry'
+              projectName: 'Chatbot Inquiry',
+              idempotencyKey
             })
+          }).catch(() => {
+            console.error("Silent Lead Routing failed.");
           });
           console.log(`🤖 Silent Lead Routing triggered for: ${email}`);
-        } catch (e) {
-          console.error("Silent Lead Routing failed:", e);
+        } catch {
+          console.error("Silent Lead Routing failed.");
         }
       }
     }
