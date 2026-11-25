@@ -48,5 +48,8 @@
   "overrides": {
     "@grpc/grpc-js": "^1.14.6",
     "jwks-rsa": "2.1.5"
+  },
+  "allowScripts": {
+    "@google/genai@1.52.0": true
   }
 }

@@ -26,6 +26,8 @@ jobs:
       - name: Install locked dependencies
         id: root_install
         run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Dependency install-script approval policy regression tests
+        run: node tests/install-script-policy.test.mjs
       - name: Dependency security audit
         id: dependency_audit
         continue-on-error: true
