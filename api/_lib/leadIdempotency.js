@@ -131,12 +131,80 @@ export async function getOrCreateWebhookSubmission(db, userId, idempotencyKey, l
 
 
 /**
- * Atomically persist the public system lead and its linked project.
- * This prevents a failed second write from leaving an orphaned lead.
+ * Atomically persist a system lead and its linked project.
+ * When an idempotency key is supplied, retries return the original pair
+ * instead of creating duplicate records. Keys are hashed and scoped to the
+ * authenticated UID (or the public submission namespace).
  */
-export async function createLeadAndProjectAtomically(db, leadData, projectData) {
+export async function createLeadAndProjectAtomically(db, leadData, projectData, idempotencyKey) {
   if (!db || !leadData || !projectData || leadData.userId !== projectData.userId) {
     throw new Error("Lead and project ownership must match.");
+  }
+
+  if (idempotencyKey !== undefined && idempotencyKey !== null) {
+    if (typeof idempotencyKey !== "string" || !/^[a-zA-Z0-9_-]{16,128}$/.test(idempotencyKey)) {
+      throw new Error("A valid system lead idempotency key is required.");
+    }
+
+    const tenantId = leadData.userId ?? null;
+    const keyId = hashIdempotencyKey(JSON.stringify([
+      tenantId === null ? "public" : "user",
+      tenantId,
+      idempotencyKey,
+    ]));
+    const keyRef = db.collection("system_lead_idempotency").doc(keyId);
+
+    return db.runTransaction(async (tx) => {
+      const keySnap = await tx.get(keyRef);
+      if (keySnap.exists) {
+        const existing = keySnap.data() || {};
+        if (existing.userId !== tenantId) {
+          throw new Error("System lead idempotency tenant mismatch.");
+        }
+
+        const validDocId = (value) => (
+          typeof value === "string" && value.length > 0 && value.length <= 128 && !value.includes("/")
+        );
+        if (!validDocId(existing.leadId) || !validDocId(existing.projectId)) {
+          throw new Error("System lead idempotency record is invalid.");
+        }
+
+        const leadRef = db.collection("leads").doc(existing.leadId);
+        const projectRef = db.collection("projects").doc(existing.projectId);
+        const [leadSnap, projectSnap] = await Promise.all([tx.get(leadRef), tx.get(projectRef)]);
+        if (!leadSnap.exists || !projectSnap.exists) {
+          throw new Error("System lead idempotency record is incomplete.");
+        }
+
+        const lead = leadSnap.data() || {};
+        const project = projectSnap.data() || {};
+        if (lead.userId !== tenantId || project.userId !== tenantId) {
+          throw new Error("System lead idempotency document tenant mismatch.");
+        }
+        if (lead.projectId !== projectRef.id || project.leadId !== leadRef.id) {
+          throw new Error("System lead idempotency link mismatch.");
+        }
+
+        return { leadRef, projectRef, lead, project, created: false, projectCreated: false };
+      }
+
+      const leadRef = db.collection("leads").doc();
+      const projectRef = db.collection("projects").doc();
+      const lead = { ...leadData, userId: tenantId, id: leadRef.id, projectId: projectRef.id };
+      const project = { ...projectData, userId: tenantId, leadId: leadRef.id };
+      const createdAt = new Date().toISOString();
+
+      tx.create(leadRef, lead);
+      tx.create(projectRef, project);
+      tx.create(keyRef, {
+        userId: tenantId,
+        leadId: leadRef.id,
+        projectId: projectRef.id,
+        createdAt,
+      });
+
+      return { leadRef, projectRef, lead, project, created: true, projectCreated: true };
+    });
   }
 
   const leadRef = db.collection("leads").doc();
@@ -149,5 +217,5 @@ export async function createLeadAndProjectAtomically(db, leadData, projectData) 
     tx.create(projectRef, project);
   });
 
-  return { leadRef, projectRef, lead, project };
+  return { leadRef, projectRef, lead, project, created: true, projectCreated: true };
 }
