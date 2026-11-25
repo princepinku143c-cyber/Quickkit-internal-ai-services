@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { UserProfile } from '../types';
 import { useIndustry } from '../lib/IndustryContext';
 import { 
@@ -219,6 +219,7 @@ export const OpportunitiesView: React.FC<OpportunitiesProps> = ({ user }) => {
   const [customValues, setCustomValues] = useState<Record<string, any>>({});
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submissionKeyRef = useRef<{ signature: string; key: string } | null>(null);
   const [statusMsg, setStatusMsg] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   // Sync leads from Firestore in real-time
@@ -330,9 +331,17 @@ export const OpportunitiesView: React.FC<OpportunitiesProps> = ({ user }) => {
       notes: `--- MULTI-TENANT CRM TAGS ---\nClient_ID: ${user.uid}\nNiche: ${industryType || 'Custom'}\n\nRequirements:\n${formRequirements}\n\n--- CUSTOM METADATA ---\n${formattedMetadataStr || 'None'}`
     };
 
+    const payloadSignature = JSON.stringify(payload);
+    const previousSubmission = submissionKeyRef.current;
+    const idempotencyKey = previousSubmission?.signature === payloadSignature
+      ? previousSubmission.key
+      : crypto.randomUUID();
+    submissionKeyRef.current = { signature: payloadSignature, key: idempotencyKey };
+
     try {
-      // 1. Post to Odoo bridge system.js backend
-      const response = await apiCall('/api/system?action=lead', payload);
+      // 1. Post to Odoo bridge system.js backend with a stable retry key.
+      const response = await apiCall('/api/system?action=lead', { ...payload, idempotencyKey });
+      submissionKeyRef.current = null;
 
       // 2. Optimistic local state update
       const newLeadObj = {
