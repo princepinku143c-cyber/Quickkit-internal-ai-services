@@ -51,6 +51,16 @@ assert.doesNotMatch(
   'automation user service must not expose a browser-console admin promotion helper',
 );
 
+const automationApp = await readFile(
+  new URL('../quickkit-automation-agent-main/App.tsx', import.meta.url),
+  'utf8',
+);
+assert.doesNotMatch(
+  automationApp,
+  /import\\s*\\{\\s*listPromos\\s*\\}\\s*from\\s*['\"]\\.\\/services\\/adminService['\"]|\\blistPromos\\s*\\(/,
+  'ordinary authenticated app startup must not eagerly enumerate the admin coupon collection',
+);
+
 const automationProjectService = await readFile(
   new URL('../quickkit-automation-agent-main/services/projectService.ts', import.meta.url),
   'utf8',
