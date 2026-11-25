@@ -383,6 +383,12 @@ assert.ok(opportunitiesSource.includes("idempotencyKey"), "CRM opportunity reque
 const floatingChatSource = readFileSync(new URL("../components/FloatingChatWidget.tsx", import.meta.url), "utf8");
 assert.ok(floatingChatSource.includes("leadSubmissionKeysRef"), "chat lead captures must reuse a key within the widget session");
 assert.ok(floatingChatSource.includes("idempotencyKey"), "chat lead requests must send their idempotency key");
+assert.ok(floatingChatSource.includes("leadCaptureStatusRef"), "chat lead capture must track pending and successful submissions");
+assert.ok(floatingChatSource.includes("if (!response.ok)"), "chat lead capture must treat non-2xx responses as failures");
+assert.ok(floatingChatSource.includes("delete leadCaptureStatusRef.current[email]"), "failed chat lead capture must become retryable");
+const chatResponseCheckIndex = floatingChatSource.indexOf("if (!response.ok)");
+const chatSuccessIndex = floatingChatSource.indexOf('leadCaptureStatusRef.current[email] = "captured"');
+assert.ok(chatResponseCheckIndex >= 0 && chatSuccessIndex > chatResponseCheckIndex, "chat capture must only be marked successful after an OK response");
 assert.ok(
   systemRouteSource.includes("await sendLeadNotification(async () => {"),
   "post-persistence email notification must be best-effort",
