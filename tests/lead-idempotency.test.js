@@ -384,6 +384,8 @@ const floatingChatSource = readFileSync(new URL("../components/FloatingChatWidge
 assert.ok(floatingChatSource.includes("leadSubmissionKeysRef"), "chat lead captures must reuse a key within the widget session");
 assert.ok(floatingChatSource.includes("idempotencyKey"), "chat lead requests must send their idempotency key");
 assert.ok(floatingChatSource.includes("leadCaptureStatusRef"), "chat lead capture must track pending and successful submissions");
+assert.ok(floatingChatSource.includes('console.log("🤖 Silent Lead Routing completed.")'), "chat lead success logs must remain generic");
+assert.doesNotMatch(floatingChatSource, /console\.log\([^\n]*\$\{email\}/, "browser console must not log visitor email addresses");
 assert.ok(floatingChatSource.includes("if (!response.ok)"), "chat lead capture must treat non-2xx responses as failures");
 assert.ok(floatingChatSource.includes("delete leadCaptureStatusRef.current[email]"), "failed chat lead capture must become retryable");
 const chatEmailRegexSource = floatingChatSource.match(/const emailRegex = \/(.+)\/;/)?.[1];
