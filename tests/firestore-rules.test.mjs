@@ -175,6 +175,16 @@ try {
       userId: 'alice',
       amount: 10,
     });
+    await setDoc(doc(db, 'aeo_results', 'alice-result'), {
+      userId: 'alice',
+      keyword: 'real estate lead qualification',
+      requestedCount: 1,
+      qaPairs: [{ question: 'How are leads qualified?', answer: 'By agreed fit and intent criteria.' }],
+      provider: 'opencode',
+      model: 'deepseek-v4-flash-free',
+      schemaVersion: 1,
+      createdAt: stamp,
+    });
     await setDoc(doc(db, 'projects', 'bob-project'), {
       userId: 'bob',
       projectName: 'Bob project',
@@ -202,6 +212,16 @@ try {
     await setDoc(doc(db, 'payments', 'bob-payment'), {
       userId: 'bob',
       amount: 10,
+    });
+    await setDoc(doc(db, 'aeo_results', 'bob-result'), {
+      userId: 'bob',
+      keyword: 'commercial property automation',
+      requestedCount: 1,
+      qaPairs: [{ question: 'How are inquiries handled?', answer: 'Using an owner-scoped workflow.' }],
+      provider: 'opencode',
+      model: 'deepseek-v4-flash-free',
+      schemaVersion: 1,
+      createdAt: stamp,
     });
     // Telegram settings and chat history are server-owned records.
     await setDoc(doc(db, 'settings', 'telegram'), { chatId: 'internal-test-chat' });
@@ -494,6 +514,38 @@ try {
   await assertFails(getDoc(doc(bob, 'payments', 'alice-payment')));
   await assertFails(deleteDoc(doc(admin, 'payments', 'alice-payment')));
   await assertFails(getDoc(doc(alice, 'unknown-private-collection', 'record')));
+
+  // AEO evidence is private to its verified owner and server-created only.
+  const aliceAeoResult = doc(alice, 'aeo_results', 'alice-result');
+  await assertSucceeds(getDoc(aliceAeoResult));
+  await assertFails(getDoc(doc(bob, 'aeo_results', 'alice-result')));
+  await assertFails(getDoc(doc(anonymous, 'aeo_results', 'alice-result')));
+  await assertFails(setDoc(doc(alice, 'aeo_results', 'forged-result'), {
+    userId: 'alice',
+    keyword: 'forged',
+    requestedCount: 1,
+    qaPairs: [],
+    provider: 'opencode',
+    model: 'deepseek-v4-flash-free',
+    schemaVersion: 1,
+    createdAt: stamp,
+  }));
+  await assertFails(updateDoc(aliceAeoResult, { keyword: 'changed by client' }));
+  await assertFails(deleteDoc(aliceAeoResult));
+  const aliceAeoResults = await getDocs(query(
+    collection(alice, 'aeo_results'),
+    where('userId', '==', 'alice'),
+  ));
+  assert.equal(aliceAeoResults.size, 1);
+  await assertSucceeds(getDocs(query(
+    collection(bob, 'aeo_results'),
+    where('userId', '==', 'bob'),
+  )));
+  await assertFails(getDocs(collection(alice, 'aeo_results')));
+  await assertFails(getDocs(query(
+    collection(alice, 'aeo_results'),
+    where('userId', '==', 'bob'),
+  )));
 
   // Collection queries must prove ownership; Firestore rules are not filters.
   // A query that could return another user's records must be denied.
