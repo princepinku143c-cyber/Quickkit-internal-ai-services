@@ -63,7 +63,7 @@ export const FloatingChatWidget: React.FC = () => {
       }
 
       leadCaptureStatusRef.current[email] = "captured";
-      console.log(`🤖 Silent Lead Routing completed for: ${email}`);
+      console.log("🤖 Silent Lead Routing completed.");
     } catch {
       // Allow a later chat message to retry with the same idempotency key.
       delete leadCaptureStatusRef.current[email];
