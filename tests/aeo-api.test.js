@@ -356,7 +356,7 @@ const validContent = JSON.stringify([
     envProvider: () => enabledEnv(),
     rateLimit: async () => {},
     fetchImpl: async () => { fetchCalls += 1; return providerResponse(validContent); },
-  })(createRequest(), response);
+  })(createRequest({ body: { keyword: "real estate lead qualification", count: 2 } }), response);
   assert.equal(response.statusCode, 503);
   assertNoStore(response);
   assert.equal(fetchCalls, 1);
