@@ -31,7 +31,23 @@ function assertNoStore(response) {
   assert.equal(response.headers["cache-control"], "no-store");
 }
 
+function createAeoDatabase(records) {
+  return {
+    collection(name) {
+      return {
+        async add(data) {
+          const id = "aeo-result-" + (records.length + 1);
+          records.push({ collection: name, id, data });
+          return { id };
+        },
+      };
+    },
+  };
+}
+
 function createAdmin({ validToken = "valid-test-token", uid = "tenant-user", configured = true } = {}) {
+  const aeoRecords = [];
+  const database = createAeoDatabase(aeoRecords);
   return {
     apps: configured ? [{}] : [],
     auth() {
@@ -42,6 +58,10 @@ function createAdmin({ validToken = "valid-test-token", uid = "tenant-user", con
         },
       };
     },
+    firestore() {
+      return database;
+    },
+    aeoRecords,
   };
 }
 
@@ -242,6 +262,7 @@ const validContent = JSON.stringify([
     ["tenant-a-token", "tenant-a"],
     ["tenant-b-token", "tenant-b"],
   ]);
+  const isolatedAeoRecords = [];
   const isolatedAdmin = {
     apps: [{}],
     auth() {
@@ -252,6 +273,9 @@ const validContent = JSON.stringify([
           return { uid };
         },
       };
+    },
+    firestore() {
+      return createAeoDatabase(isolatedAeoRecords);
     },
   };
   const handler = createAeoHandler({
@@ -277,6 +301,9 @@ const validContent = JSON.stringify([
 
   assert.deepEqual(observedUserKeys, ["uid:tenant-a", "uid:tenant-b"]);
   assert.equal(new Set(observedUserKeys).size, 2);
+  assert.equal(isolatedAeoRecords.length, 2);
+  assert.deepEqual(isolatedAeoRecords.map((record) => record.data.userId), ["tenant-a", "tenant-b"]);
+  assert.ok(isolatedAeoRecords.every((record) => record.collection === "aeo_results"));
 }
 
 // A failed rate-limit backend must fail closed and never call the provider.
@@ -296,13 +323,57 @@ const validContent = JSON.stringify([
   assert.equal(fetchCalls, 0);
 }
 
-// Successful requests send only the provider key upstream and return validated plain-text pairs.
+// Firestore evidence storage is a required gate and must be available before a provider call.
+{
+  let fetchCalls = 0;
+  const unavailableAdmin = createAdmin();
+  unavailableAdmin.firestore = () => { throw new Error("private Firestore connection details"); };
+  const response = createResponse();
+  await createAeoHandler({
+    adminClient: unavailableAdmin,
+    envProvider: () => enabledEnv(),
+    rateLimit: async () => {},
+    fetchImpl: async () => { fetchCalls += 1; return providerResponse(validContent); },
+  })(createRequest(), response);
+  assert.equal(response.statusCode, 503);
+  assertNoStore(response);
+  assert.equal(fetchCalls, 0, "AEO generation must not call the provider when Firestore is unavailable");
+  assert.equal(JSON.stringify(response.body).includes("private Firestore connection details"), false);
+}
+
+// Generated evidence must be saved before a successful response is returned.
+{
+  let fetchCalls = 0;
+  const failingAdmin = createAdmin();
+  failingAdmin.firestore = () => ({
+    collection: () => ({
+      async add() { throw new Error("private Firestore write details"); },
+    }),
+  });
+  const response = createResponse();
+  await createAeoHandler({
+    adminClient: failingAdmin,
+    envProvider: () => enabledEnv(),
+    rateLimit: async () => {},
+    fetchImpl: async () => { fetchCalls += 1; return providerResponse(validContent); },
+  })(createRequest(), response);
+  assert.equal(response.statusCode, 503);
+  assertNoStore(response);
+  assert.equal(fetchCalls, 1);
+  assert.equal(response.body.success, false);
+  assert.equal(JSON.stringify(response.body).includes("private Firestore write details"), false);
+  assert.equal(JSON.stringify(response.body).includes("qaPairs"), false);
+}
+
+// Successful requests send only the provider key upstream, persist minimal owner-scoped evidence,
+// and return validated plain-text pairs.
 {
   let captured;
   let rateArgs;
+  const adminClient = createAdmin();
   const response = createResponse();
   await createAeoHandler({
-    adminClient: createAdmin(),
+    adminClient,
     envProvider: () => enabledEnv(),
     rateLimit: async (...args) => { rateArgs = args.slice(1); },
     fetchImpl: async (url, options) => {
@@ -315,6 +386,18 @@ const validContent = JSON.stringify([
   assertNoStore(response);
   assert.equal(response.body.success, true);
   assert.equal(response.body.data.qaPairs.length, 2);
+  assert.equal(response.body.data.resultId, "aeo-result-1");
+  assert.equal(adminClient.aeoRecords.length, 1);
+  assert.equal(adminClient.aeoRecords[0].collection, "aeo_results");
+  assert.equal(adminClient.aeoRecords[0].data.userId, "tenant-user");
+  assert.equal(adminClient.aeoRecords[0].data.keyword, "real estate lead qualification");
+  assert.equal(adminClient.aeoRecords[0].data.requestedCount, 2);
+  assert.deepEqual(adminClient.aeoRecords[0].data.qaPairs, response.body.data.qaPairs);
+  assert.equal(adminClient.aeoRecords[0].data.provider, "opencode");
+  assert.equal(adminClient.aeoRecords[0].data.model, "deepseek-v4-flash-free");
+  assert.equal(adminClient.aeoRecords[0].data.schemaVersion, 1);
+  assert.equal(typeof adminClient.aeoRecords[0].data.createdAt, "string");
+  assert.equal(JSON.stringify(adminClient.aeoRecords[0]).includes("unit-test-provider-key"), false);
   assert.deepEqual(rateArgs, ["uid:tenant-user", "aeo-generation", 3]);
   assert.equal(captured.url, "https://opencode.ai/zen/v1/chat/completions");
   assert.equal(captured.options.method, "POST");
