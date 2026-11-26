@@ -202,6 +202,16 @@ export function createAeoHandler({
       return sendError(res, 503, "AEO request protection is temporarily unavailable.");
     }
 
+    let evidenceDb;
+    try {
+      evidenceDb = adminClient.firestore();
+      if (!evidenceDb || typeof evidenceDb.collection !== "function") {
+        throw new TypeError("AEO evidence storage is unavailable.");
+      }
+    } catch {
+      return sendError(res, 503, "AEO evidence storage is temporarily unavailable.");
+    }
+
     if (typeof fetchImpl !== "function") {
       return sendError(res, 503, "AEO provider is unavailable.");
     }
@@ -241,9 +251,32 @@ export function createAeoHandler({
       const providerData = await readProviderJson(providerResponse);
       const content = providerData?.choices?.[0]?.message?.content;
       const qaPairs = parseAeoPairs(content, count);
+      let savedResult;
+      try {
+        const resultsCollection = evidenceDb.collection("aeo_results");
+        if (!resultsCollection || typeof resultsCollection.add !== "function") {
+          throw new TypeError("AEO evidence collection is unavailable.");
+        }
+        savedResult = await resultsCollection.add({
+          userId: uid,
+          keyword,
+          requestedCount: count,
+          qaPairs,
+          provider: "opencode",
+          model: PROVIDER_MODEL,
+          schemaVersion: 1,
+          createdAt: new Date().toISOString(),
+        });
+      } catch {
+        return sendError(res, 503, "AEO evidence could not be saved. Please retry.");
+      }
+      if (typeof savedResult?.id !== "string" || !savedResult.id) {
+        return sendError(res, 503, "AEO evidence could not be saved. Please retry.");
+      }
+
       return res.status(200).json({
         success: true,
-        data: { keyword, qaPairs },
+        data: { resultId: savedResult.id, keyword, qaPairs },
       });
     } catch (error) {
       if (error?.name === "AbortError") {
