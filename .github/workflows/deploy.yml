@@ -105,7 +105,7 @@ jobs:
       - name: Install Firestore emulator test tooling
         id: firestore_tooling
         if: ${{ !cancelled() && steps.root_install.outcome == 'success' && steps.setup_java.outcome == 'success' }}
-        run: npm install --ignore-scripts --no-save --no-package-lock --legacy-peer-deps @firebase/rules-unit-testing@5.0.2 firebase-tools@15.36.0
+        run: npm install --ignore-scripts --no-save --no-package-lock --legacy-peer-deps @firebase/rules-unit-testing@5.0.2 firebase-tools@15.37.0
       - name: Firestore authorization regression tests
         if: ${{ !cancelled() && steps.firestore_tooling.outcome == 'success' }}
         run: npm run test:firestore-rules
