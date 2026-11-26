@@ -176,5 +176,15 @@ service cloud.firestore {
         ]);
       allow update, delete: if isAdmin();
     }
+    // Generated AEO evidence is written only by the trusted Admin API.
+    // Clients can query only their own records; all client mutations are denied.
+    match /aeo_results/{resultId} {
+      allow read: if isOwner(resource.data.userId)
+        && resource.data.keys().hasOnly([
+          'userId', 'keyword', 'requestedCount', 'qaPairs',
+          'provider', 'model', 'schemaVersion', 'createdAt'
+        ]);
+      allow create, update, delete: if false;
+    }
   }
 }
