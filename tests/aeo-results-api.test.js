@@ -137,7 +137,7 @@ function assertNoStore(response) {
   });
 
   for (const query of [
-    undefined,
+    null,
     {},
     { id: ["result-a"] },
     { id: "" },
