@@ -121,7 +121,7 @@ jobs:
             },
             overrides: root.overrides ?? {}
           };
-          fs.writeFileSync(process.argv[2], JSON.stringify(manifest, null, 2) + '\\n');
+          fs.writeFileSync(process.argv[2], JSON.stringify(manifest, null, 2) + '\n');
           NODE
           npm install --prefix "$audit_dir" --package-lock-only --ignore-scripts --no-audit --no-fund --legacy-peer-deps
           npm audit --prefix "$audit_dir" --json > "$audit_dir/audit.json" || true
