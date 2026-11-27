@@ -102,10 +102,54 @@ jobs:
           distribution: temurin
           java-version: '21'
           problem-matcher: true
+      - name: Audit isolated Firestore emulator tooling
+        id: firestore_tooling_audit
+        if: ${{ !cancelled() && steps.root_install.outcome == 'success' && steps.setup_java.outcome == 'success' }}
+        run: |
+          audit_dir="$(mktemp -d)"
+          trap 'rm -rf "$audit_dir"' EXIT
+          node --input-type=commonjs - "$audit_dir/package.json" <<'NODE'
+          const fs = require('node:fs');
+          const root = require('./package.json');
+          const manifest = {
+            name: 'quickkit-firestore-test-tooling-audit',
+            private: true,
+            version: '1.0.0',
+            dependencies: {
+              '@firebase/rules-unit-testing': '5.0.2',
+              'firebase-tools': '15.37.0'
+            },
+            overrides: root.overrides ?? {}
+          };
+          fs.writeFileSync(process.argv[2], JSON.stringify(manifest, null, 2) + '\\n');
+          NODE
+          npm install --prefix "$audit_dir" --package-lock-only --ignore-scripts --no-audit --no-fund --legacy-peer-deps
+          npm audit --prefix "$audit_dir" --json > "$audit_dir/audit.json" || true
+          node --input-type=commonjs - "$audit_dir/audit.json" <<'NODE'
+          const fs = require('node:fs');
+          const report = JSON.parse(fs.readFileSync(process.argv[2], 'utf8'));
+          const summary = report.metadata?.vulnerabilities;
+          if (!summary || typeof summary !== 'object') {
+            console.error('Firestore tooling audit did not return a valid vulnerability summary.');
+            process.exit(1);
+          }
+          const advisories = Object.entries(report.vulnerabilities ?? {}).map(([name, item]) => ({
+            name,
+            severity: item.severity,
+            via: (item.via ?? []).map(entry => typeof entry === 'string' ? entry : entry.title).filter(Boolean),
+            fixAvailable: item.fixAvailable ?? false
+          }));
+          console.log('Firestore tooling advisory summary:', JSON.stringify(summary));
+          console.log(JSON.stringify(advisories, null, 2));
+          if ((summary.high ?? 0) > 0 || (summary.critical ?? 0) > 0) {
+            console.error('High or critical vulnerabilities found in Firestore test tooling.');
+            process.exit(1);
+          }
+          NODE
       - name: Install Firestore emulator test tooling
         id: firestore_tooling
         if: ${{ !cancelled() && steps.root_install.outcome == 'success' && steps.setup_java.outcome == 'success' }}
-        run: npm install --ignore-scripts --no-save --no-package-lock --legacy-peer-deps @firebase/rules-unit-testing@5.0.2 firebase-tools@15.37.0
+        run: npm install --ignore-scripts --no-save --no-package-lock --legacy-peer-deps --no-audit @firebase/rules-unit-testing@5.0.2 firebase-tools@15.37.0
       - name: Firestore authorization regression tests
         if: ${{ !cancelled() && steps.firestore_tooling.outcome == 'success' }}
         run: npm run test:firestore-rules
