@@ -87,11 +87,28 @@ assert.ok(
   firestoreAuditBlock.includes('npm audit fix --prefix "$audit_dir" --package-lock-only --ignore-scripts'),
   "Semver-safe remediation must stay limited to the temporary lockfile and skip install scripts.",
 );
-const hasForceFlag = firestoreAuditBlock.split("\n").some((line) =>
-  !line.trimStart().startsWith("#") && line.trim().split(" ").includes("--force")
-);
+function hasForceUpgradeFlag(block) {
+  return block.split(/\r?\n/).some((line) => {
+    const trimmed = line.trimStart();
+    return !trimmed.startsWith("#")
+      && /(?:^|[\s;&|])--force(?=$|[\s;&|=\\\\])/.test(line);
+  });
+}
+
+for (const [label, command, expected] of [
+  ["bare force flag", "npm audit fix --force", true],
+  ["explicit true force flag", "npm audit fix --force=true", true],
+  ["tab-separated force flag", "npm audit fix\\t--force --audit-level=high", true],
+  ["semicolon-terminated force flag", "npm audit fix --force; then", true],
+  ["commented force example", "# npm audit fix --force", false],
+  ["different git flag", "git push --force-with-lease", false],
+  ["explicit false value (still prohibited by policy)", "npm audit fix --force=false", true],
+]) {
+  assert.equal(hasForceUpgradeFlag(command), expected, label);
+}
+
 assert.ok(
-  !hasForceFlag,
+  !hasForceUpgradeFlag(firestoreAuditBlock),
   "The isolated tooling audit must never pass a force-upgrade flag.",
 );
 assert.ok(
