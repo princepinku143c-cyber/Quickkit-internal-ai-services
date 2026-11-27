@@ -98,7 +98,7 @@ function hasForceUpgradeFlag(block) {
 for (const [label, command, expected] of [
   ["bare force flag", "npm audit fix --force", true],
   ["explicit true force flag", "npm audit fix --force=true", true],
-  ["tab-separated force flag", "npm audit fix\\t--force --audit-level=high", true],
+  ["tab-separated force flag", "npm audit fix\t--force --audit-level=high", true],
   ["semicolon-terminated force flag", "npm audit fix --force; then", true],
   ["commented force example", "# npm audit fix --force", false],
   ["different git flag", "git push --force-with-lease", false],
