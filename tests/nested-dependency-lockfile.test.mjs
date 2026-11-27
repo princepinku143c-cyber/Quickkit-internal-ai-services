@@ -15,6 +15,22 @@ assert.equal(manifest.overrides?.["@grpc/grpc-js"], "^1.14.6");
 assert.deepEqual(lock.packages?.[""]?.dependencies, manifest.dependencies);
 assert.deepEqual(lock.packages?.[""]?.devDependencies, manifest.devDependencies);
 
+const remediationWorkflow = await readFile(
+  new URL("../.github/workflows/nested-dependency-remediation-preview.yml", import.meta.url),
+  "utf8",
+);
+assert.ok(
+  remediationWorkflow.includes('if [ "$AUDIT_FIX_OUTCOME" != "success" ]; then'),
+  "the remediation workflow must refuse to commit if npm audit fix fails or is skipped",
+);
+assert.ok(
+  remediationWorkflow.includes("Number.isInteger(v.high)")
+    && remediationWorkflow.includes("Number.isInteger(v.critical)")
+    && remediationWorkflow.includes("(v.high || 0) !== 0")
+    && remediationWorkflow.includes("(v.critical || 0) !== 0"),
+  "the remediation workflow must validate audit metadata and refuse high/critical advisories",
+);
+
 function compareVersions(actual, minimum) {
   const parse = (value) => value.split(".").map((part) => Number.parseInt(part, 10));
   const a = parse(actual);
