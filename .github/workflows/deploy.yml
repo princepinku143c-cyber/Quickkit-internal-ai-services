@@ -124,6 +124,13 @@ jobs:
           fs.writeFileSync(process.argv[2], JSON.stringify(manifest, null, 2) + '\n');
           NODE
           npm install --prefix "$audit_dir" --package-lock-only --ignore-scripts --no-audit --no-fund --legacy-peer-deps
+          # Apply only semver-compatible fixes to this disposable lockfile.
+          # No --force: the pinned Firebase CLI major and app lockfiles stay unchanged.
+          if npm audit fix --prefix "$audit_dir" --package-lock-only --ignore-scripts --no-fund --legacy-peer-deps --audit-level=high; then
+            echo "Semver-safe Firestore tooling fixes applied where available; no force upgrade used."
+          else
+            echo "::warning::Semver-safe tooling fix attempt did not complete; final severity gate still runs."
+          fi
           npm audit --prefix "$audit_dir" --json > "$audit_dir/audit.json" || true
           node --input-type=commonjs - "$audit_dir/audit.json" <<'NODE'
           const fs = require('node:fs');
