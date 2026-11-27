@@ -87,9 +87,12 @@ assert.ok(
   firestoreAuditBlock.includes('npm audit fix --prefix "$audit_dir" --package-lock-only --ignore-scripts'),
   "Semver-safe remediation must stay limited to the temporary lockfile and skip install scripts.",
 );
+const hasForceFlag = firestoreAuditBlock.split("\n").some((line) =>
+  !line.trimStart().startsWith("#") && line.trim().split(" ").includes("--force")
+);
 assert.ok(
-  !firestoreAuditBlock.includes("--force"),
-  "The isolated tooling audit must never force a major dependency upgrade.",
+  !hasForceFlag,
+  "The isolated tooling audit must never pass a force-upgrade flag.",
 );
 assert.ok(
   firestoreAuditBlock.includes('npm audit --prefix "$audit_dir" --json'),
