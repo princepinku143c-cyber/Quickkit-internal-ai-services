@@ -77,7 +77,7 @@ jobs:
           retention-days: 7
 
       - name: Commit tested patch-level lockfile remediation to this feature branch
-        if: always()
+        if: ${{ always() && !cancelled() }}
         env:
           AUDIT_FIX_OUTCOME: ${{ steps.audit_fix.outcome }}
           MANIFEST_GUARD_OUTCOME: ${{ steps.manifest_guard.outcome }}

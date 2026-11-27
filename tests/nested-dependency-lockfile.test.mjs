@@ -31,6 +31,11 @@ assert.ok(
   "the remediation workflow must validate audit metadata and refuse high/critical advisories",
 );
 
+assert.ok(
+  remediationWorkflow.includes("if: ${{ always() && !cancelled() }}"),
+  "the remediation workflow must not commit after a cancelled run",
+);
+
 function compareVersions(actual, minimum) {
   const parse = (value) => value.split(".").map((part) => Number.parseInt(part, 10));
   const a = parse(actual);
