@@ -87,8 +87,8 @@ jobs:
           AUDIT_AFTER_OUTCOME: ${{ steps.audit_after.outcome }}
         run: |
           set -euo pipefail
-          if [ "$AUDIT_FIX_OUTCOME" = "skipped" ]; then
-            echo "::error::The non-force audit fix step was skipped; refusing to commit."
+          if [ "$AUDIT_FIX_OUTCOME" != "success" ]; then
+            echo "::error::The non-force audit fix step outcome was $AUDIT_FIX_OUTCOME; refusing to commit."
             exit 1
           fi
           for item in MANIFEST_GUARD_OUTCOME NESTED_INSTALL_OUTCOME LINT_OUTCOME BUILD_OUTCOME AUDIT_AFTER_OUTCOME; do
@@ -98,7 +98,7 @@ jobs:
               exit 1
             fi
           done
-          node -e "const a=require('./nested-audit-remediation/audit-after.json'); const v=a.metadata?.vulnerabilities || {}; console.log('Post-fix audit:', JSON.stringify(v)); if ((v.critical || 0) !== 0) process.exit(1)"
+          node -e 'const a=require("./nested-audit-remediation/audit-after.json"); const v=a.metadata?.vulnerabilities; if (!v || !Number.isInteger(v.high) || !Number.isInteger(v.critical)) { console.error("Post-fix audit metadata is missing or invalid."); process.exit(1); } console.log("Post-fix audit:", JSON.stringify(v)); if ((v.high || 0) !== 0 || (v.critical || 0) !== 0) { console.error("Refusing to commit while high or critical advisories remain."); process.exit(1); }'
           git diff --exit-code -- quickkit-automation-agent-main/package.json
           if git diff --quiet -- quickkit-automation-agent-main/package-lock.json; then
             echo "No lockfile changes to commit."
