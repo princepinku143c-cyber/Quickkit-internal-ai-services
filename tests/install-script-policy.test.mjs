@@ -56,4 +56,59 @@ for (const [packageName, version] of Object.entries(unapprovedScriptPackages)) {
   }
 }
 
+
+const deploymentWorkflow = await readFile(
+  new URL("../.github/workflows/deploy.yml", import.meta.url),
+  "utf8",
+);
+const firestoreAuditBlock = deploymentWorkflow.match(
+  /- name: Audit isolated Firestore emulator tooling[\\s\\S]*?(?=\\n      - name: Install Firestore emulator test tooling)/,
+)?.[0];
+
+assert.ok(
+  firestoreAuditBlock,
+  "The isolated Firestore tooling audit step must remain present.",
+);
+assert.match(
+  firestoreAuditBlock,
+  /audit_dir="\\$\\(mktemp -d\\)"/,
+  "The tooling audit must use a fresh temporary directory.",
+);
+assert.match(
+  firestoreAuditBlock,
+  /trap 'rm -rf "\\$audit_dir"' EXIT/,
+  "The temporary tooling directory must be removed when the step exits.",
+);
+assert.match(
+  firestoreAuditBlock,
+  /npm install --prefix "\\$audit_dir" --package-lock-only --ignore-scripts/,
+  "The audit manifest and lockfile must be created in the temporary directory without install scripts.",
+);
+assert.match(
+  firestoreAuditBlock,
+  /npm audit fix --prefix "\\$audit_dir" --package-lock-only --ignore-scripts/,
+  "Semver-safe remediation must stay limited to the temporary lockfile and skip install scripts.",
+);
+assert.doesNotMatch(
+  firestoreAuditBlock,
+  /--force(?:\\s|$)/,
+  "The isolated tooling audit must never force a major dependency upgrade.",
+);
+assert.match(
+  firestoreAuditBlock,
+  /npm audit --prefix "\\$audit_dir" --json/,
+  "The final audit must inspect the temporary lockfile.",
+);
+assert.match(
+  firestoreAuditBlock,
+  /summary\\.high[\\s\\S]*summary\\.critical/,
+  "The final audit must enforce both high and critical severity gates.",
+);
+
+assert.match(
+  deploymentWorkflow,
+  /- name: Install Firestore emulator test tooling[\\s\\S]*?npm install --ignore-scripts/,
+  "The actual Firestore emulator tooling install must continue to skip package install scripts.",
+);
+
 console.log("Root dependency install-script approval policy tests passed.");
