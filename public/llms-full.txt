@@ -1,40 +1,41 @@
-# QuickKitAI / Raja AI Systems — Complete Technical Architecture & Specification Blueprint
+# QuickKitAI | Raja AI Systems — Complete Technical Architecture & Specification Blueprint
 > Canonical URL: https://quickkitai.com/llms-full.txt
 > Summary Document: https://quickkitai.com/llms.txt
 > Official Website: https://quickkitai.com
-> Last Updated: 2026-11-16
+> Last updated: 2026-11-27
 
 ---
 
 ## 1. Executive Summary & Brand Entity
 
-**Brand Name:** QuickKitAI / Raja AI Systems  
-**Entity Type:** Managed Autonomous AI Agency & Business Automation Platform  
-**Primary Focus:** High-ticket real estate developers, builders, and brokers in India, with healthcare workflow automation as a secondary specialized service.  
-**Core Value Proposition:** Deploying a five-member autonomous AI workforce operating 24/7 across WhatsApp, CRM, and voice channels to deliver sub-12-second speed-to-lead qualification, appointment setting, site-visit confirmations, and reputation management.
+**Brand Name:** QuickKitAI | Raja AI Systems  
+**Founder & Author:** Prince (Raja), Founder & Chief AI Systems Architect (https://quickkitai.com/about)  
+**Entity Type:** Managed Autonomous AI Agency, AEO/GEO Engineering & Business Automation Platform  
+**Primary Focus:** Answer Engine Optimization (AEO), Generative Engine Optimization (GEO), and 5-agent managed AI automation for Indian real estate developers, builders, and brokers, with healthcare workflow automation as a secondary specialized service.  
+**Verified Site Benchmark:** `quickkitai.com` serves 14 canonical XML sitemap routes at 100% HTTP 200 integrity, records a 683ms Time-to-First-Byte (TTFB) benchmark, and deploys a connected JSON-LD `@graph` architecture alongside `/llms.txt` and `/llms-full.txt`.
 
 ---
 
 ## 2. The Five-Member Autonomous Workforce Architecture
 
-### 2.1 Agent 1: 12-Second WhatsApp Speed-to-Lead Closer
+### 2.1 Agent 1: Speed-to-Lead Closer
 - **Role:** Immediate inbound lead intake, qualification, and appointment booking.
 - **Channels:** WhatsApp Business API, voice-note synthesis, SMS, and interactive web chat.
-- **Workflow:** Ingests inbound ads (Meta Ads, Google Ads, 99acres, MagicBricks), responds within 12 seconds, verifies budget, timeline, and location preference, and locks the appointment.
+- **Workflow:** Ingests inbound enquiries (Meta Ads, Google Ads, 99acres, MagicBricks), responds rapidly, verifies budget, timeline, and location preference, and offers verified appointment slots.
 
 ### 2.2 Agent 2: Apify B2B Lead Prospector & Intelligence Agent
 - **Role:** Targeted prospect research, competitive intelligence, and high-value account enrichment.
-- **Safeguards:** Rate-limited to a maximum of 50 enriched executive dossiers per day to maintain deliverability and compliance.
+- **Safeguards:** Rate-limited daily enrichment to maintain deliverability and compliance.
 
 ### 2.3 Agent 3: CRM Sentinel & No-Show Guard
 - **Role:** Calendar locking, pipeline synchronization, pre-visit location reminders, and transportation coordination.
-- **Outcome:** Eliminates no-shows for physical site visits and in-clinic consultations.
+- **Outcome:** Reduces physical site-visit and in-clinic consultation no-shows with automated T-24h and T-2h reminders.
 
 ### 2.4 Agent 4: Dead Lead Reviver
 - **Role:** Conversational reactivation of dormant CRM databases.
 - **Strategy:** Short, personalized conversational check-ins to re-engage past leads without spam triggers.
 
-### 2.5 Agent 5: 5-Star Reputation & Local SEO Sentinel
+### 2.5 Agent 5: Reputation & Local SEO Sentinel
 - **Role:** Post-visit feedback collection, Google Business Profile review routing, and escalation of dissatisfied customer feedback to senior management.
 
 ---
@@ -50,10 +51,11 @@
 
 ## 4. Published Service Plans & Pricing
 
+- **AEO Tier 01 — AI Technical Foundation & Schema Fix:** ₹15,000 one-time (₹30,000 standard anchor), Pay After Live Verified Result, ₹0 advance, delivered in 7 business days, zero monthly maintenance. Includes enterprise JSON-LD `@graph` schema, `llms.txt`, `llms-full.txt`, `robots.txt` AI bot configuration, Core Web Vitals optimization, and live Google Rich Results validation.
+- **AEO Tier 02 — AI Search Growth & Autonomous Sentinel:** ₹20,000 setup + ₹25,000/month (30-day rolling AI search growth & sentinel across ChatGPT, Perplexity, Gemini, and Claude; includes automated daily indexing logs, schema expansion, and bi-weekly executive audit reports).
 - **AI Visibility Audit:** ₹9,999 one-time (comprehensive multi-platform baseline audit across ChatGPT, Perplexity, Gemini, Claude, and Google AI Overviews).
 - **AI Visibility Monitor:** ₹29,999/month (fortnightly prompt tracking and citation monitoring).
-- **Managed Real Estate AI Workforce (Growth):** ₹75,000 setup + ₹1,20,000/month retainer (includes inbound qualification, WhatsApp speed-to-lead, calendar booking, CRM handoff).
-- **Dussehra Pilot Offer (Limited Cohort):** ₹35,000 upfront setup + ₹1,20,000/month management with a 10-site-visit performance SLA.
+- **Managed Real Estate AI Workforce (Pilot):** ₹35,000 setup + ₹1,20,000/month management (50% pilot offer from ₹70,000 setup + ₹2,40,000/month; limited to 3 pilot slots with a written 30-day SLA targeting 10 qualified physical site visits in real estate or 15 consultations in healthcare, subject to signed traffic and access conditions).
 - **Enterprise Multi-Location Deployment:** ₹2,50,000 setup + ₹2,00,000/month retainer (custom multi-branch orchestration).
 
 ---
@@ -66,7 +68,7 @@
 - Real Estate AI Questions: https://quickkitai.com/real-estate-ai-questions
 - Property Lead Qualification Guide: https://quickkitai.com/guides/real-estate-ai-lead-qualification
 - Educational Blog & Articles: https://quickkitai.com/blog
-- About Raja AI Systems / QuickKitAI: https://quickkitai.com/about
+- About Prince (Raja) & Raja AI Systems: https://quickkitai.com/about
 - Contact & Architect Consultation: https://quickkitai.com/contact
 - AI Visibility & AEO Plans: https://quickkitai.com/ai-visibility
 - Proof of Value & Measurement: https://quickkitai.com/proof-of-value
@@ -84,5 +86,5 @@
 
 - **Operations & Support:** admin@quickkitai.com
 - **Technical Inquiries:** support@quickkitai.com
-- **Founder & Chief Architect:** Raja (Prince)
+- **Founder & Chief Architect:** Prince (Raja)
 - **Location & Coverage:** Serving builders, brokers, and clinics across India with global deployment capabilities.

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
+import { EditorialMetaBar, PublicRouteFooter, SeoMeta } from '../SeoMeta';
 import {
   Globe, User, Megaphone, Bot, CheckCircle2, ArrowLeft,
   Key, FileText, Zap, Target, AlertTriangle, Check, X
@@ -50,11 +50,11 @@ const PHASE3 = [
 ];
 
 const PROJECTED = [
-  { week: 'Week 1–2', result: 'Google indexing improve ho jayegi (Index ratio 2x – 3x)' },
-  { week: 'Week 3',   result: "Brand keyword 'QuickKit' rank #1 (current rank: 4)" },
-  { week: 'Week 4',   result: 'AI Agent related queries rank 3-5 (Traffic +20–30% estimate)' },
-  { week: 'Week 5',   result: 'Backlink profile strong (Target DR 15+ estimate)' },
-  { week: 'Week 6',   result: 'Established authority in AI niches (Traffic +50% estimate)' },
+  { week: 'Week 1–2', result: 'Google indexing & sitemap coverage audit target (measured baseline)' },
+  { week: 'Week 3',   result: "Brand keyword 'QuickKitAI / Raja AI Systems' visibility baseline check" },
+  { week: 'Week 4',   result: 'AI Agent & AEO query citation observation across ChatGPT & Perplexity' },
+  { week: 'Week 5',   result: 'Structured data @graph & llms.txt ingestion verification pass' },
+  { week: 'Week 6',   result: 'Bi-weekly Executive Proof report comparing observed baseline vs pilot targets' },
 ];
 
 const AI_KEYWORDS = [
@@ -343,27 +343,13 @@ export const SEOAudit = () => {
 
   return (
     <div className="min-h-screen bg-[#030712] text-slate-300 font-sans" style={{ fontFamily: "'JetBrains Mono', monospace" }}>
-      <Helmet>
-        <title>SEO Audit 2026 | QuickKit AI — AI Agent Rankings & Growth Strategy</title>
-        <meta name="description" content="QuickKit AI complete SEO audit for 2026 — actionable phases, AI agent keyword targeting, Google Search Ad copy, and competitor comparison to rank above ChatGPT and Zapier." />
-        <meta name="keywords" content="quickkit ai seo audit 2026, ai agents for business, ai agent platform, beat chatgpt, quickkit seo strategy, ai crm seo, ai workflow ranking" />
-        <link rel="canonical" href="https://quickkitai.com/seo-audit" />
-        <meta property="og:title" content="QuickKit AI SEO Audit 2026 — Rank Above ChatGPT" />
-        <meta property="og:description" content="Full interactive SEO audit dashboard with 3-phase action plan, AI agent SEO strategy, and perfect Google Ad copy for 2026." />
-        <meta property="og:url" content="https://quickkitai.com/seo-audit" />
-        <meta property="og:type" content="article" />
-        <script type="application/ld+json">{JSON.stringify({
-          "@context": "https://schema.org",
-          "@type": "WebPage",
-          "name": "QuickKit AI SEO Audit 2026",
-          "description": "Interactive SEO Audit Dashboard for QuickKit AI — action plans, keyword targeting, and Google Ad strategy to dominate AI agent search rankings in 2026.",
-          "url": "https://quickkitai.com/seo-audit",
-          "publisher": { "@type": "Organization", "name": "QuickKit AI", "url": "https://quickkitai.com" },
-          "datePublished": "2026-05-18",
-          "dateModified": "2026-05-18"
-        })}</script>
-      </Helmet>
-
+      <SeoMeta
+        title="SEO & AI Search Audit 2026 | Raja AI Systems"
+        description="Interactive SEO and AI search readiness audit for QuickKitAI covering technical crawlability, schema architecture, and AEO action steps."
+        keywords="quickkit ai seo audit 2026, ai agents for business, aeo audit, quickkit seo strategy, ai crm seo, structured data audit"
+        canonical="https://quickkitai.com/seo-audit"
+        ogType="article"
+      />
       {/* ── Nav ── */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#030712]/90 backdrop-blur-lg border-b border-slate-800">
         <div className="container mx-auto px-4 sm:px-6 py-3 flex items-center justify-between">
@@ -372,7 +358,8 @@ export const SEOAudit = () => {
           </Link>
           <div className="flex gap-4 text-[10px] font-black uppercase tracking-widest text-slate-500">
             <Link to="/blog" className="hover:text-white transition-colors">Blog</Link>
-            <Link to="/features" className="hover:text-white transition-colors">Features</Link>
+            <Link to="/ai-visibility" className="hover:text-white transition-colors">AI Visibility</Link>
+            <Link to="/proof-of-value" className="hover:text-white transition-colors">Proof</Link>
             <span className="text-cyan-400">SEO Audit</span>
           </div>
         </div>
@@ -381,12 +368,17 @@ export const SEOAudit = () => {
       {/* ── Header ── */}
       <div className="pt-20 pb-6 border-b border-slate-800">
         <div className="container mx-auto px-4 sm:px-6 max-w-4xl">
-          <p className="font-mono text-[10px] text-slate-500 uppercase tracking-[0.3em] mb-2">QUICKKITAI.COM — UPDATED MAY 2026</p>
+          <p className="font-mono text-[10px] text-slate-500 uppercase tracking-[0.3em] mb-2">QUICKKITAI.COM — LAST UPDATED 27 NOV 2026</p>
           <h1 className="text-3xl sm:text-5xl font-black tracking-tight leading-none">
             <span className="text-cyan-400">QuickKit AI</span>
             <span className="text-slate-600"> — </span>
             <span className="text-pink-400">SEO Audit</span>
           </h1>
+          <EditorialMetaBar className="mt-4 font-sans" />
+
+          <div className="mt-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/[0.06] p-4 font-sans text-xs leading-6 text-slate-200">
+            <strong className="text-emerald-300 uppercase tracking-wider">TL;DR:</strong> Technical SEO &amp; AEO readiness checklist tracking crawlability, JSON-LD schema integrity, llms.txt ingestion, and measured search targets—with zero ranking guarantees.
+          </div>
 
           {/* Score Banner */}
           <div className="mt-4 inline-flex items-center gap-2 bg-red-950/60 border border-red-800/50 text-red-400 rounded-full px-4 py-1.5 text-xs font-mono font-bold">
@@ -440,7 +432,7 @@ export const SEOAudit = () => {
       </div>
 
       {/* ── Content ── */}
-      <div className="container mx-auto px-4 sm:px-6 max-w-4xl py-8">
+      <main className="container mx-auto px-4 sm:px-6 max-w-4xl py-8">
         {topTab === 'overview' && (
           <div className="rounded-2xl border border-slate-700 bg-slate-900/40 p-8 text-center">
             <Globe size={40} className="text-cyan-400 mx-auto mb-4" />
@@ -451,7 +443,7 @@ export const SEOAudit = () => {
             <div className="mt-8 grid grid-cols-3 gap-4 text-center">
               {[
                 { label: 'SEO Score',    value: '34/100', color: 'text-red-400' },
-                { label: 'Pages',        value: '12',     color: 'text-cyan-400' },
+                { label: 'Pages',        value: '14',     color: 'text-cyan-400' },
                 { label: 'Backlinks',    value: '~5',     color: 'text-orange-400' },
               ].map((s, i) => (
                 <div key={i} className="rounded-xl bg-slate-800/50 p-4">
@@ -466,14 +458,11 @@ export const SEOAudit = () => {
         {topTab === 'issues' && subTab === 'action-plan' && <ActionPlanTab />}
         {topTab === 'issues' && subTab === 'ai-agent-seo' && <AIAgentSEOTab />}
         {topTab === 'perfect-ad' && <PerfectAdTab />}
-      </div>
+      </main>
 
-      {/* ── Footer ── */}
-      <footer className="border-t border-slate-800/60 py-8 text-center">
-        <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-slate-700">
-          QuickKit AI — SEO Audit Report — Created by Prince — May 2026
-        </p>
-      </footer>
+      <div className="font-sans">
+        <PublicRouteFooter />
+      </div>
     </div>
   );
 };

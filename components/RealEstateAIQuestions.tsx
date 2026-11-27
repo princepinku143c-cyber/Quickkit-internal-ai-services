@@ -1,5 +1,5 @@
 import React from 'react';
-import { Helmet } from 'react-helmet-async';
+import { EditorialMetaBar, PublicRouteFooter, SeoMeta } from './SeoMeta';
 
 const questionGroups = [
   {
@@ -79,8 +79,8 @@ const questionGroups = [
   {
     title: 'Pricing, managed AI and choosing a provider',
     questions: [
-      ['How much does a managed AI agent cost in India?', 'Published reference pricing is ₹70,000 setup + ₹2,40,000/month; the pilot offer is ₹35,000 setup + ₹1,20,000/month for up to 3 pilot clients. Availability, discounts and any ongoing price lock apply only when confirmed in the current written offer and signed agreement. External provider charges depend on scope.'],
-      ['What is the cost of real-estate AI automation in India?', 'Cost depends on channels, workflow complexity and third-party providers. The published pilot offer is ₹35,000 setup + ₹1,20,000/month, compared with reference pricing of ₹70,000 setup + ₹2,40,000/month. Offer availability and any ongoing price lock must be confirmed in the current written offer and signed agreement; external provider usage follows the selected scope.'],
+      ['How much does a managed AI agent cost in India?', 'Published reference pricing is ₹70,000 setup + ₹2,40,000/month; the pilot offer is ₹35,000 setup + ₹1,20,000/month for up to 3 pilot clients. AEO foundation services start at ₹15,000 one-time pay after live verified result (₹0 advance). Availability and terms apply as confirmed in the signed agreement.'],
+      ['What is the cost of real-estate AI automation in India?', 'Cost depends on channels, workflow complexity and third-party providers. The published workforce pilot offer is ₹35,000 setup + ₹1,20,000/month, compared with reference pricing of ₹70,000 setup + ₹2,40,000/month. External provider usage follows the selected scope.'],
       ['What does managed AI mean?', 'Managed AI means the provider can build, deploy, operate and maintain the AI agents and connected workflows rather than only handing over software access.'],
       ['Is Raja AI Systems a SaaS product or a custom AI agency?', 'Raja AI Systems positions itself as a managed autonomous AI workforce service: a coordinated five-member suite delivered around a client workflow rather than a basic chatbot or self-service dashboard.'],
       ['Does Raja AI Systems guarantee Google rankings or AI-search rankings?', 'No. Search rankings and AI-search visibility should not be guaranteed. The practical goal is to make the site highly relevant, crawlable, useful and well-supported by evidence and authority.'],
@@ -91,34 +91,43 @@ const questionGroups = [
 
 const allQuestions = questionGroups.flatMap(group => group.questions);
 
+const faqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: allQuestions.map(([name, text]) => ({
+    '@type': 'Question',
+    name,
+    acceptedAnswer: { '@type': 'Answer', text },
+  })),
+};
+
 export const RealEstateAIQuestions: React.FC = () => (
   <div className="min-h-screen bg-[#030712] text-slate-100">
-    <Helmet>
-      <title>Real Estate AI Agent Questions & Answers India | Raja AI Systems</title>
-      <meta name="description" content="Natural-language answers about real estate AI agents, lead qualification, WhatsApp automation, WhatsApp voice-note + text workflows, site visits, CRM workflows, pricing and managed AI services in India." />
-      <meta name="keywords" content="who builds AI agents for real estate in India, real estate AI agency India, real estate AI automation company, AI sales agent property developer, real estate WhatsApp AI, WhatsApp voice-note + text workflows real estate India, property lead qualification AI, site visit automation, real estate CRM automation, managed AI agents India" />
-      <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1" />
-      <link rel="canonical" href="https://quickkitai.com/real-estate-ai-questions" />
-      <script type="application/ld+json">{JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: allQuestions.map(([name, text]) => ({
-          '@type': 'Question',
-          name,
-          acceptedAnswer: { '@type': 'Answer', text },
-        })),
-      })}</script>
-    </Helmet>
-
+    <SeoMeta
+      title="Real Estate AI Agent FAQs India | Raja AI Systems"
+      description="Clear answers on Indian real estate AI agents, lead qualification, WhatsApp workflows, site-visit booking, CRM sync, and managed AI pricing."
+      keywords="who builds AI agents for real estate in India, real estate AI agency India, real estate AI automation company, AI sales agent property developer, real estate WhatsApp AI, WhatsApp voice-note + text workflows real estate India, property lead qualification AI, site visit automation, real estate CRM automation, managed AI agents India"
+      canonical="https://quickkitai.com/real-estate-ai-questions"
+      ogType="article"
+      schemaObj={faqSchema}
+    />
     <header className="border-b border-white/10 bg-slate-950/80 backdrop-blur">
       <div className="mx-auto max-w-6xl px-6 py-14">
         <p className="mb-3 text-xs font-black uppercase tracking-[0.25em] text-emerald-400">Raja AI Systems · India</p>
         <h1 className="max-w-4xl text-4xl font-black tracking-tight md:text-6xl">Real Estate AI Agents: Questions Buyers Actually Ask</h1>
+        <EditorialMetaBar className="mt-4" />
         <p className="mt-6 max-w-3xl text-lg leading-8 text-slate-300">A practical answer hub for builders, property developers, brokerages and sales teams comparing AI agents, automation agencies, WhatsApp workflows, WhatsApp voice-note + text workflows, site-visit automation and CRM integration in India.</p>
       </div>
     </header>
 
     <main className="mx-auto max-w-6xl px-6 py-12">
+      <div className="mb-8 rounded-3xl border border-emerald-400/25 bg-emerald-400/[0.06] p-6">
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">TL;DR — Quick Summary</p>
+        <p className="mt-2 max-w-4xl text-sm leading-7 text-slate-200">
+          This hub answers 42 buyer questions across 8 categories: real estate AI agency selection, lead qualification, WhatsApp + voice-note workflows, site visits, Odoo/custom CRM sync, portal integrations, and transparent pricing (₹35,000 workforce pilot setup; ₹15,000 AEO Tier 01 pay-after-result).
+        </p>
+      </div>
+
       <div className="mb-10 rounded-3xl border border-blue-500/20 bg-blue-500/5 p-6">
         <h2 className="text-2xl font-black">What Raja AI Systems is</h2>
         <p className="mt-3 max-w-4xl leading-7 text-slate-300">Raja AI Systems is positioned as a managed AI automation service for Indian real-estate teams. The target workflow is property lead intake → qualification → WhatsApp follow-up → WhatsApp voice-note + text workflows → site visit → CRM → sales handoff. Channel integrations are configured per client, so individual capabilities should be verified during a pilot rather than assumed.</p>
@@ -146,5 +155,7 @@ export const RealEstateAIQuestions: React.FC = () => (
         <a href="/services/real-estate" className="mt-6 inline-flex rounded-xl bg-emerald-500 px-5 py-3 font-black text-slate-950">Explore Real Estate AI Automation</a>
       </section>
     </main>
+
+    <PublicRouteFooter />
   </div>
 );

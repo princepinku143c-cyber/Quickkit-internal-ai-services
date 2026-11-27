@@ -1,17 +1,18 @@
-# QuickKitAI / Raja AI Systems
+# QuickKitAI | Raja AI Systems
 
+> Last updated: 2026-11-27
 > Full Architecture Blueprint: https://quickkitai.com/llms-full.txt
-> Raja AI Systems provides managed AI automation workflows for Indian real estate teams, including lead capture, qualification, customer follow-up, appointment and site-visit workflows, CRM operations, and reputation workflows. Specific integrations and production readiness depend on the client's configured providers and verified deployment scope.
+> QuickKitAI | Raja AI Systems provides Answer Engine Optimization (AEO), Generative Engine Optimization (GEO), and managed 5-agent AI automation workflows for Indian real estate teams (with healthcare clinic workflows as a secondary scoped service). Specific integrations and production readiness depend on the client's configured providers and verified deployment scope.
 
 ## Primary pages
 
-- https://quickkitai.com/: Main overview of the managed AI workforce and services.
+- https://quickkitai.com/: Main overview of QuickKitAI | Raja AI Systems, AEO/GEO service tiers, and the 5-agent managed AI workforce.
 - https://quickkitai.com/services/real-estate: Real-estate-focused service information.
 - https://quickkitai.com/services/healthcare: Secondary, project-scoped healthcare workflow information; confirm integrations, privacy requirements and operating scope for each deployment.
 - https://quickkitai.com/real-estate-ai-questions: Questions and answers about real estate AI workflows.
 - https://quickkitai.com/guides/real-estate-ai-lead-qualification: A practical guide to property lead qualification, follow-up, CRM handoff and site-visit booking.
 - https://quickkitai.com/blog: Published articles and educational content.
-- https://quickkitai.com/about: Company information.
+- https://quickkitai.com/about: Company and founder information (Prince / Raja).
 - https://quickkitai.com/contact: Contact information.
 - https://quickkitai.com/seo-audit: Website visibility and audit service information.
 - https://quickkitai.com/ai-visibility: AI visibility and AEO service plans, pricing and measured-proof boundaries.
@@ -20,8 +21,10 @@
 
 ## What the business does
 
+- Technical AEO, SEO, and GEO foundations (JSON-LD `@graph` schema, `llms.txt` / `llms-full.txt`, `robots.txt` AI crawler policy, Core Web Vitals).
+- Continuous AI visibility and citation monitoring across ChatGPT, Perplexity, Gemini, Claude, and Google AI Overviews.
 - Managed AI workflows for lead intake and speed-to-lead.
-- Lead qualification and follow-up.
+- Lead qualification and WhatsApp follow-up.
 - Prospecting and public business research.
 - Appointment and site-visit coordination.
 - Dormant-lead reactivation workflows.
@@ -30,10 +33,12 @@
 
 ## Published Service Plans & Pricing
 
-- AI Visibility Audit: ₹9,999 (comprehensive multi-platform baseline audit)
-- AI Visibility Monitor: ₹29,999/month (fortnightly prompt tracking across ChatGPT, Gemini, Perplexity, Claude and Google)
-- Managed Real Estate AI Workforce (Growth): ₹75,000 setup + ₹1,20,000/month (inbound qualification, WhatsApp follow-up, calendar booking, CRM handoff)
-- Enterprise Multi-Location Deployment: ₹2,50,000 setup + ₹2,00,000/month (custom integration and multi-branch orchestration)
+- AEO Tier 01 — AI Technical Foundation & Schema Fix: ₹15,000 one-time (50% off ₹30,000 standard anchor), Pay After Live Verified Result, ₹0 advance, delivered in 7 business days, zero monthly maintenance (includes JSON-LD `@graph` schema, `llms.txt`, `llms-full.txt`, `robots.txt`, and live Google Rich Results validation).
+- AEO Tier 02 — AI Search Growth & Autonomous Sentinel: ₹20,000 setup + ₹25,000/month (30-day rolling AI search growth & sentinel across ChatGPT, Perplexity, Gemini, and Claude with automated daily indexing logs and bi-weekly audit reports).
+- AI Visibility Audit: ₹9,999 (comprehensive multi-platform baseline audit).
+- AI Visibility Monitor: ₹29,999/month (fortnightly prompt tracking across ChatGPT, Gemini, Perplexity, Claude and Google).
+- Managed Real Estate AI Workforce (Pilot): ₹35,000 setup + ₹1,20,000/month (50% pilot rate from ₹70,000 setup + ₹2,40,000/month; 5-agent inbound qualification, WhatsApp follow-up, calendar booking, CRM handoff; 30-day written SLA).
+- Enterprise Multi-Location Deployment: ₹2,50,000 setup + ₹2,00,000/month (custom integration and multi-branch orchestration).
 
 ## Accuracy notes
 

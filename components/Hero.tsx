@@ -33,7 +33,7 @@ export const Hero: React.FC<HeroProps> = () => {
               <Sparkles className="w-3 h-3" /> Pilot offer · up to 3 clients · 50% discount*
             </div>
 
-            <div className="text-xs md:text-sm font-black tracking-[.38em] text-slate-500 uppercase mb-5">RAJA AI SYSTEMS</div>
+            <div className="text-xs md:text-sm font-black tracking-[.38em] text-slate-500 uppercase mb-5">QUICKKITAI | RAJA AI SYSTEMS</div>
 
             <h1 className="text-5xl sm:text-6xl xl:text-[78px] font-black leading-[.92] tracking-[-.06em] text-white max-w-4xl">
               Stop losing high-ticket leads

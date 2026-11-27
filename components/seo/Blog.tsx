@@ -1,6 +1,6 @@
 import React from 'react';
-import { SeoMeta } from '../SeoMeta';
-import { ArrowLeft, BookOpen, ShieldCheck, Building2, MessageCircle } from 'lucide-react';
+import { EditorialMetaBar, PublicRouteFooter, SeoMeta } from '../SeoMeta';
+import { ArrowLeft, BookOpen, ShieldCheck, Building2, MessageCircle, Eye } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const RESOURCES = [
@@ -27,6 +27,14 @@ const RESOURCES = [
     href: '/services/real-estate',
     icon: ShieldCheck,
     label: 'Explore the service'
+  },
+  {
+    title: 'AI Visibility & AEO Services (Pay After Result)',
+    category: 'AEO & GEO Engine',
+    description: 'Tier 01: ₹15,000 one-time, pay after live verified result (₹0 advance). Tier 02: ₹25,000/month + ₹20,000 setup.',
+    href: '/ai-visibility',
+    icon: Eye,
+    label: 'Explore AEO plans'
   }
 ];
 
@@ -38,6 +46,7 @@ export const Blog = () => {
         description="Practical resources on real-estate AI lead qualification, WhatsApp follow-up, site-visit workflows, CRM handoff, and managed AI automation in India."
         keywords="real estate AI guide India, property lead qualification, AI WhatsApp follow-up, real estate CRM automation, site visit workflow"
         canonical="https://quickkitai.com/blog"
+        ogType="article"
       />
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#030712]/80 backdrop-blur-md border-b border-slate-800">
         <div className="container mx-auto px-6 py-4 flex items-center justify-between">
@@ -46,6 +55,7 @@ export const Blog = () => {
           </Link>
           <div className="flex gap-6 text-[10px] font-black uppercase tracking-widest text-slate-500">
             <Link to="/services/real-estate" className="hover:text-white transition-colors">Real Estate</Link>
+            <Link to="/ai-visibility" className="hover:text-white transition-colors">AEO Visibility</Link>
             <Link to="/real-estate-ai-questions" className="hover:text-white transition-colors">Questions</Link>
             <span className="text-blue-400">Knowledge Hub</span>
           </div>
@@ -60,12 +70,20 @@ export const Blog = () => {
           <h1 className="text-4xl md:text-6xl font-black text-white tracking-tight leading-tight mb-6">
             Real Estate AI, Explained Clearly
           </h1>
+          <EditorialMetaBar className="justify-center mb-5" />
           <p className="text-lg md:text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed">
-            Practical, reader-facing resources for Indian builders, developers, brokerages, and sales teams. We list published guides and service information here rather than presenting unfinished summaries as full articles.
+            Practical, reader-facing resources for Indian builders, developers, brokerages, and sales teams. We publish verified workflows, buyer FAQs, and evidence-first AEO documentation.
           </p>
         </div>
       </header>
       <main className="container mx-auto px-6 max-w-5xl py-16">
+        <div className="mb-10 rounded-3xl border border-emerald-400/25 bg-emerald-400/[0.06] p-6">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">TL;DR — Resource Directory</p>
+          <p className="mt-2 text-sm leading-6 text-slate-200">
+            Explore our complete real-estate AI qualification workflow, 42-question buyer FAQ, live staging acceptance demo, and AEO visibility service terms—each backed by testable technical standards rather than unverified ranking claims.
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {RESOURCES.map(({ title, category, description, href, icon: Icon, label }) => (
             <article key={href} className="group bg-slate-900/40 border border-slate-800 rounded-3xl p-7 hover:bg-slate-800/50 hover:border-slate-700 transition-colors">
@@ -88,9 +106,7 @@ export const Blog = () => {
           </p>
         </section>
       </main>
-      <footer className="py-10 border-t border-slate-900 text-center">
-        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-600">Raja AI Systems · Practical AI Automation Resources</p>
-      </footer>
+      <PublicRouteFooter />
     </div>
   );
 };

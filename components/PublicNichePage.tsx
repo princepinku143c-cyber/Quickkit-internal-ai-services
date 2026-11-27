@@ -1,12 +1,14 @@
 import React from 'react';
 import { useParams, Link, Navigate } from 'react-router-dom';
-import { SeoMeta } from './SeoMeta';
-import { Zap, Sparkles, CheckCircle2, MapPin, Clock, ArrowRight, Bot, MessageCircle, CalendarCheck, UserCheck, RefreshCw, ShieldCheck, Tag } from 'lucide-react';
+import { EditorialMetaBar, PublicRouteFooter, SeoMeta } from './SeoMeta';
+import { Zap, CheckCircle2, ArrowRight, Bot, MessageCircle, CalendarCheck, UserCheck, RefreshCw, ShieldCheck } from 'lucide-react';
 
 interface NicheDetails {
   title: string;
+  seoTitle: string;
   sub: string;
   description: string;
+  seoDescription: string;
   keywords: string;
   features: string[];
 }
@@ -14,39 +16,76 @@ interface NicheDetails {
 const NICHE_DATA: Record<string, NicheDetails> = {
   'real-estate': {
     title: 'Raja AI Systems — Autonomous AI Workforce for Luxury Real Estate in India',
+    seoTitle: 'Real Estate AI Agents India | Raja AI Systems',
     sub: 'Turn property enquiries into qualified conversations, follow-ups and site visits with managed AI agents built for builders, developers and brokerages.',
     description: 'Raja AI Systems helps Indian real estate teams automate property lead qualification, WhatsApp follow-ups, site-visit coordination and CRM workflows. Healthcare automation is available as a secondary service; integrations are configured and verified per deployment.',
+    seoDescription: 'Managed AI workforce for Indian real estate: property lead qualification, WhatsApp follow-ups, site-visit scheduling, and CRM workflow sync.',
     keywords: 'real estate AI automation agency India, real estate AI agents India, AI for real estate India, property lead generation AI, real estate lead qualification AI, WhatsApp AI for real estate, real estate WhatsApp automation, AI calling for real estate, real estate CRM automation, property enquiry automation, site visit booking automation, builder AI automation, broker AI automation, real estate sales automation India, AI workforce for real estate, managed AI agents real estate',
-    features: ['Capture property enquiries from website, ads and WhatsApp', 'Qualify budget, location, property type, timeline and buying intent', 'Automate WhatsApp replies, reminders and long-tail follow-ups', 'WhatsApp voice-note + text workflows for qualification and appointment handling', 'Book site visits and sales appointments automatically', 'Sync qualified lead context and activity into the configured CRM workflow']
+    features: [
+      'Capture property enquiries from website, ads and WhatsApp',
+      'Qualify budget, location, property type, timeline and buying intent',
+      'Automate WhatsApp replies, reminders and long-tail follow-ups',
+      'WhatsApp voice-note + text workflows for qualification and appointment handling',
+      'Book site visits and sales appointments automatically',
+      'Sync qualified lead context and activity into the configured CRM workflow',
+    ],
   },
   'e-commerce': {
     title: 'AI Agents for E-Commerce in India',
+    seoTitle: 'E-Commerce AI Agents India | Raja AI Systems',
     sub: 'Automate customer support, order questions, product discovery and repetitive commerce workflows.',
     description: 'Managed AI agents for Indian e-commerce businesses covering customer support, product questions, order workflows and business automation.',
+    seoDescription: 'Managed AI agents for Indian e-commerce teams covering customer support, product questions, order follow-ups, and CRM workflow automation.',
     keywords: 'ecommerce AI agents India, ecommerce AI automation India, AI customer support ecommerce, ecommerce workflow automation',
-    features: ['Product and order question handling', 'Customer support automation', 'Lead and customer follow-up workflows', 'CRM and business system integrations']
+    features: [
+      'Product and order question handling',
+      'Customer support automation',
+      'Lead and customer follow-up workflows',
+      'CRM and business system integrations',
+    ],
   },
   'healthcare': {
     title: 'AI Agents for Healthcare Clinics in India',
+    seoTitle: 'Healthcare Clinic AI Agents India | Raja AI Systems',
     sub: 'Automate approved administrative workflows such as enquiries, intake and appointment coordination.',
     description: 'Managed AI automation for Indian healthcare businesses focused on approved administrative workflows, patient enquiries, intake and appointment coordination.',
+    seoDescription: 'Managed AI automation for Indian healthcare clinics covering patient enquiries, structured intake, appointment coordination, and CRM sync.',
     keywords: 'healthcare AI agents India, clinic AI automation India, appointment automation India, healthcare workflow automation',
-    features: ['Administrative enquiry handling', 'Structured intake workflows', 'Appointment coordination', 'CRM and approved system integrations']
+    features: [
+      'Administrative enquiry handling',
+      'Structured intake workflows',
+      'Appointment coordination',
+      'CRM and approved system integrations',
+    ],
   },
   'agency': {
     title: 'AI Agents for Digital Agencies in India',
+    seoTitle: 'Digital Agency AI Agents India | Raja AI Systems',
     sub: 'Automate lead intake, client onboarding, proposals and repetitive agency operations.',
     description: 'Managed AI agents for Indian digital and creative agencies covering lead qualification, onboarding, proposals, client communication and workflow automation.',
+    seoDescription: 'Managed AI agents for Indian digital agencies automating lead intake, client onboarding, proposals, follow-ups, and CRM project workflows.',
     keywords: 'agency AI agents India, digital agency AI automation, client onboarding AI, agency workflow automation India',
-    features: ['Lead qualification and intake', 'Client onboarding automation', 'Proposal and follow-up workflows', 'CRM and project workflow automation']
+    features: [
+      'Lead qualification and intake',
+      'Client onboarding automation',
+      'Proposal and follow-up workflows',
+      'CRM and project workflow automation',
+    ],
   },
   'travel': {
     title: 'AI Agents for Travel Agencies in India',
+    seoTitle: 'Travel Agency AI Agents India | Raja AI Systems',
     sub: 'Capture travel requirements, answer routine enquiries and automate approved follow-up workflows.',
     description: 'Managed AI automation for Indian travel businesses covering enquiry intake, itinerary workflows, customer support and follow-up automation.',
+    seoDescription: 'Managed AI automation for Indian travel agencies handling destination enquiries, itinerary workflows, customer support, and CRM follow-ups.',
     keywords: 'travel AI agents India, travel agency AI automation, itinerary AI India, travel CRM automation',
-    features: ['Destination and budget requirement capture', 'Travel enquiry automation', 'Itinerary workflow assistance', 'CRM and follow-up automation']
-  }
+    features: [
+      'Destination and budget requirement capture',
+      'Travel enquiry automation',
+      'Itinerary workflow assistance',
+      'CRM and follow-up automation',
+    ],
+  },
 };
 
 const REAL_ESTATE_WORKFLOWS = [
@@ -54,7 +93,7 @@ const REAL_ESTATE_WORKFLOWS = [
   { icon: UserCheck, title: 'Apify Prospecting + Competitor Intelligence', text: 'Builds targeted prospect lists and competitive intelligence from approved public business/ad signals.' },
   { icon: CalendarCheck, title: 'CRM Sentinel + No-Show Guard', text: 'Locks appointment context, sends the pre-visit location reminder and supports the no-show protection workflow.' },
   { icon: RefreshCw, title: 'Dead Lead Reviver', text: 'Re-engages dormant databases with short conversational hooks and routes responses back into the sales workflow.' },
-  { icon: ShieldCheck, title: 'Reputation + Local SEO Sentinel', text: 'Routes positive feedback toward reviews and unhappy feedback toward a private escalation path while supporting local/AI-search visibility work.' }
+  { icon: ShieldCheck, title: 'Reputation + Local SEO Sentinel', text: 'Routes positive feedback toward reviews and unhappy feedback toward a private escalation path while supporting local/AI-search visibility work.' },
 ];
 
 export const PublicNichePage: React.FC = () => {
@@ -62,60 +101,134 @@ export const PublicNichePage: React.FC = () => {
   if (!niche || !NICHE_DATA[niche]) return <Navigate to="/services/real-estate" replace />;
   const data = NICHE_DATA[niche];
   const isRealEstate = niche === 'real-estate';
+  const canonicalUrl = `https://quickkitai.com/services/${niche}`;
 
   const schemaObj = {
     '@context': 'https://schema.org',
     '@type': 'Service',
-    name: data.title,
-    description: data.description,
-    provider: { '@type': 'Organization', name: 'Raja AI Systems', url: 'https://quickkitai.com' },
+    name: data.seoTitle,
+    description: data.seoDescription,
+    provider: { '@type': 'Organization', '@id': 'https://quickkitai.com/#organization', name: 'Raja AI Systems', url: 'https://quickkitai.com' },
     areaServed: { '@type': 'Country', name: 'India' },
-    serviceType: isRealEstate ? 'Real estate AI automation and managed AI agents' : 'AI automation and managed AI agent deployment'
+    serviceType: isRealEstate ? 'Real estate AI automation and managed AI agents' : 'AI automation and managed AI agent deployment',
   };
 
   return (
     <div className="bg-[#030712] min-h-screen text-slate-300 font-sans flex flex-col">
-      <SeoMeta title={`${data.title} | Raja AI Systems`} description={data.description} keywords={data.keywords} schemaObj={schemaObj} />
-      <header className="border-b border-slate-800/60 sticky top-0 z-50 backdrop-blur-md">
+      <SeoMeta
+        title={data.seoTitle}
+        description={data.seoDescription}
+        keywords={data.keywords}
+        canonical={canonicalUrl}
+        schemaObj={schemaObj}
+        breadcrumbs={[
+          { name: 'Home', url: 'https://quickkitai.com/' },
+          { name: 'Services', url: 'https://quickkitai.com/services/real-estate' },
+          { name: data.seoTitle.split('|')[0].trim(), url: canonicalUrl },
+        ]}
+      />
+      <header className="border-b border-slate-800/60 sticky top-0 z-50 backdrop-blur-md bg-[#030712]/80">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-3"><div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center"><Zap className="text-white w-5 h-5" /></div><span className="font-bold text-white text-lg">Raja AI Systems</span></Link>
-          <Link to="/contact" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-widest">Get the 5-Agent Live Demo</Link>
+          <Link to="/" className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center">
+              <Zap className="text-white w-5 h-5" />
+            </div>
+            <span className="font-bold text-white text-lg">Raja AI Systems</span>
+          </Link>
+          <div className="flex items-center gap-4">
+            <Link to="/ai-visibility" className="hidden sm:inline-block text-xs font-bold text-amber-300 hover:text-amber-200">
+              AEO Services
+            </Link>
+            <Link to="/contact" className="px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl text-xs font-black uppercase tracking-widest">
+              Get the 5-Agent Live Demo
+            </Link>
+          </div>
         </div>
       </header>
       <main className="max-w-6xl mx-auto px-6 py-16 md:py-24 flex-1">
         <div className="text-center">
-          <span className="px-4 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-full text-[10px] font-black text-purple-400 uppercase tracking-widest inline-flex items-center gap-2"><Bot className="w-3.5 h-3.5" /> {isRealEstate ? 'Real Estate AI Automation · India' : 'India Business AI'}</span>
+          <span className="px-4 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-full text-[10px] font-black text-purple-400 uppercase tracking-widest inline-flex items-center gap-2">
+            <Bot className="w-3.5 h-3.5" /> {isRealEstate ? 'Real Estate AI Automation · India' : 'India Business AI'}
+          </span>
           <h1 className="text-4xl md:text-6xl font-black text-white tracking-tight max-w-5xl mx-auto leading-tight mt-8">{data.title}</h1>
-          <p className="text-base md:text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed mt-7">{data.sub}</p>
+          <EditorialMetaBar className="mt-5 justify-center" />
+          <p className="text-base md:text-xl text-slate-400 max-w-3xl mx-auto leading-relaxed mt-6">{data.sub}</p>
+          <div className="mt-8 max-w-3xl mx-auto rounded-2xl border border-emerald-500/25 bg-emerald-500/[0.06] p-5 text-left">
+            <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">TL;DR — Scope &amp; Verification</p>
+            <p className="mt-2 text-sm leading-6 text-slate-200">
+              {data.seoDescription} All channel connections (WhatsApp Cloud API, CRM sync, and scheduling) are staged and verified per deployment without ranking or lead-volume guarantees.
+            </p>
+          </div>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mt-9">
-            <Link to="/" className="py-4 px-8 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2">Get Qualified Leads <ArrowRight className="w-4 h-4" /></Link>
-            <a href="https://wa.me/918260485230?text=Hi%2C%20I%20want%20to%20automate%20my%20real%20estate%20sales%20process%20with%20AI." target="_blank" rel="noopener noreferrer" className="py-4 px-8 border border-emerald-500/30 bg-emerald-500/5 text-emerald-300 rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2"><MessageCircle className="w-4 h-4" /> Automate WhatsApp Follow-ups</a>
+            <Link to="/" className="py-4 px-8 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2">
+              Explore AI Workforce <ArrowRight className="w-4 h-4" />
+            </Link>
+            <a
+              href="https://wa.me/918260485230?text=Hi%2C%20I%20want%20to%20automate%20my%20real%20estate%20sales%20process%20with%20AI."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="py-4 px-8 border border-emerald-500/30 bg-emerald-500/5 text-emerald-300 rounded-2xl text-xs font-black uppercase tracking-widest flex items-center justify-center gap-2"
+            >
+              <MessageCircle className="w-4 h-4" /> Automate WhatsApp Follow-ups
+            </a>
           </div>
         </div>
 
-        {isRealEstate && <>
-          <section className="mt-16 grid md:grid-cols-3 gap-5">
-            {REAL_ESTATE_WORKFLOWS.map(({ icon: Icon, title, text }) => <article key={title} className="p-6 bg-slate-900/50 border border-slate-800 rounded-2xl"><Icon className="w-6 h-6 text-blue-400 mb-4" /><h2 className="text-lg font-black text-white mb-2">{title}</h2><p className="text-sm text-slate-400 leading-relaxed">{text}</p></article>)}
-          </section>
-          <section className="mt-16 max-w-4xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-black text-white text-center">What your real estate AI workforce can handle</h2>
-            <div className="grid sm:grid-cols-2 gap-4 mt-8">{data.features.map((feature) => <div key={feature} className="p-5 bg-slate-900/40 border border-slate-800 rounded-2xl flex gap-3"><CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" /><span className="text-sm text-slate-300 font-semibold">{feature}</span></div>)}</div>
-          </section>
-          <section className="mt-12 rounded-2xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
-            <h2 className="text-xl md:text-2xl font-black text-white">Practical guide: AI lead qualification for real estate in India</h2>
-            <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-400">Learn how to structure property enquiries, qualification questions, CRM handoff, and site-visit booking without promising unverified integrations or results.</p>
-            <Link to="/guides/real-estate-ai-lead-qualification" className="inline-flex mt-5 rounded-xl border border-emerald-500/30 px-5 py-3 text-sm font-bold text-emerald-300 hover:bg-emerald-500/10">Read the practical guide <ArrowRight className="ml-2 h-4 w-4" /></Link>
-          </section>
-          <section className="mt-16 rounded-3xl border border-blue-500/20 bg-blue-500/5 p-8 md:p-12 text-center">
-            <h2 className="text-3xl font-black text-white">Stop losing property leads after the first enquiry.</h2>
-            <p className="max-w-2xl mx-auto mt-4 text-slate-400">Raja AI Systems can deploy the 5-member workforce around your lead source, WhatsApp, sales process and CRM, with the signed SLA defining the applicable performance conditions.</p>
-            <Link to="/" className="inline-flex mt-7 py-4 px-8 bg-white text-slate-950 rounded-2xl text-xs font-black uppercase tracking-widest">Book Your Real Estate AI Demo</Link>
-          </section>
-        </>}
+        {isRealEstate && (
+          <>
+            <section className="mt-16 grid md:grid-cols-3 gap-5">
+              {REAL_ESTATE_WORKFLOWS.map(({ icon: Icon, title, text }) => (
+                <article key={title} className="p-6 bg-slate-900/50 border border-slate-800 rounded-2xl">
+                  <Icon className="w-6 h-6 text-blue-400 mb-4" />
+                  <h2 className="text-lg font-black text-white mb-2">{title}</h2>
+                  <p className="text-sm text-slate-400 leading-relaxed">{text}</p>
+                </article>
+              ))}
+            </section>
+            <section className="mt-16 max-w-4xl mx-auto">
+              <h2 className="text-3xl md:text-4xl font-black text-white text-center">What your real estate AI workforce can handle</h2>
+              <div className="grid sm:grid-cols-2 gap-4 mt-8">
+                {data.features.map((feature) => (
+                  <div key={feature} className="p-5 bg-slate-900/40 border border-slate-800 rounded-2xl flex gap-3">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
+                    <span className="text-sm text-slate-300 font-semibold">{feature}</span>
+                  </div>
+                ))}
+              </div>
+            </section>
+            <section className="mt-12 rounded-2xl border border-white/10 bg-white/[0.03] p-6 md:p-8">
+              <h2 className="text-xl md:text-2xl font-black text-white">Practical guide: AI lead qualification for real estate in India</h2>
+              <p className="mt-3 max-w-3xl text-sm leading-7 text-slate-400">
+                Learn how to structure property enquiries, qualification questions, CRM handoff, and site-visit booking without promising unverified integrations or results.
+              </p>
+              <Link to="/guides/real-estate-ai-lead-qualification" className="inline-flex mt-5 rounded-xl border border-emerald-500/30 px-5 py-3 text-sm font-bold text-emerald-300 hover:bg-emerald-500/10">
+                Read the practical guide <ArrowRight className="ml-2 h-4 w-4" />
+              </Link>
+            </section>
+            <section className="mt-16 rounded-3xl border border-blue-500/20 bg-blue-500/5 p-8 md:p-12 text-center">
+              <h2 className="text-3xl font-black text-white">Stop losing property leads after the first enquiry.</h2>
+              <p className="max-w-2xl mx-auto mt-4 text-slate-400">
+                Raja AI Systems configures the 5-member workforce around your lead source, WhatsApp, sales process and CRM, with the signed agreement defining pilot targets and scope.
+              </p>
+              <Link to="/live-demo" className="inline-flex mt-7 py-4 px-8 bg-white text-slate-950 rounded-2xl text-xs font-black uppercase tracking-widest">
+                View Live Workflow Demo
+              </Link>
+            </section>
+          </>
+        )}
 
-        {!isRealEstate && <div className="grid sm:grid-cols-2 gap-5 max-w-4xl mx-auto mt-14 text-left">{data.features.map((feature) => <div key={feature} className="p-6 bg-slate-900/50 border border-slate-800 rounded-2xl flex gap-3"><CheckCircle2 className="w-5 h-5 text-blue-400 shrink-0" /><span className="text-sm text-slate-300 font-semibold">{feature}</span></div>)}</div>}
+        {!isRealEstate && (
+          <div className="grid sm:grid-cols-2 gap-5 max-w-4xl mx-auto mt-14 text-left">
+            {data.features.map((feature) => (
+              <div key={feature} className="p-6 bg-slate-900/50 border border-slate-800 rounded-2xl flex gap-3">
+                <CheckCircle2 className="w-5 h-5 text-blue-400 shrink-0" />
+                <span className="text-sm text-slate-300 font-semibold">{feature}</span>
+              </div>
+            ))}
+          </div>
+        )}
       </main>
-      <footer className="border-t border-slate-800/60 py-8"><div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-slate-500 text-xs"><span className="flex items-center gap-1"><MapPin className="w-3.5 h-3.5" /> India</span><span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> Managed AI operations</span><span>© {new Date().getFullYear()} Raja AI Systems. All rights reserved.</span></div></footer>
+      <PublicRouteFooter />
     </div>
   );
 };

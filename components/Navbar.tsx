@@ -34,7 +34,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onContact, isAuthenticated }) =>
     <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${scrolled ? 'bg-[#030712]/92 backdrop-blur-2xl border-b border-white/8 py-3' : 'bg-gradient-to-b from-[#030712]/75 to-transparent py-5'}`}>
       <div className="container mx-auto px-5 md:px-8 flex justify-between items-center">
         <button className="cursor-pointer bg-transparent border-0 p-0" onClick={() => scrollTo('hero')} aria-label="Go to homepage">
-          <Logo size={38} showText={true} brandText="RAJA AI SYSTEMS" />
+          <Logo size={34} showText={true} brandText="QUICKKITAI | RAJA AI SYSTEMS" className="whitespace-nowrap" />
         </button>
 
         <div className="hidden lg:flex items-center gap-5">
@@ -64,7 +64,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onContact, isAuthenticated }) =>
           <button onClick={() => scrollTo('roi')} className="text-left text-base font-bold text-slate-300">ROI</button>
           <button onClick={() => scrollTo('ad')} className="text-left text-base font-bold text-slate-300">Ad Demo</button><Link to="/ai-visibility" onClick={() => setIsOpen(false)} className="text-left text-base font-bold text-amber-300">AI Visibility</Link><Link to="/real-estate-ai-questions" onClick={() => setIsOpen(false)} className="text-left text-base font-bold text-slate-300">AI Answers</Link>
           <Link to={portalPath} onClick={() => setIsOpen(false)} className="text-left text-base font-bold text-blue-300 border-t border-slate-800 pt-4">{isAuthenticated ? 'Client Portal' : 'Client Login'}</Link>
-          <button onClick={() => { setIsOpen(false); openContact(); }} className="text-left text-base font-black text-white pt-1">Talk to QuickKit AI →</button>
+          <button onClick={() => { setIsOpen(false); openContact(); }} className="text-left text-base font-black text-white pt-1">Talk to QuickKitAI | Raja AI Systems →</button>
         </div>
       )}
     </nav>

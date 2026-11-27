@@ -1,7 +1,6 @@
 import React from 'react';
-import { Helmet } from 'react-helmet-async';
 import { Link } from 'react-router-dom';
-import { SeoMeta } from '../SeoMeta';
+import { EditorialMetaBar, PublicRouteFooter, SeoMeta } from '../SeoMeta';
 
 const FAQS = [
   {
@@ -22,46 +21,37 @@ const FAQS = [
   }
 ];
 
-const articleSchema = {
+const faqSchema = {
   '@context': 'https://schema.org',
-  '@type': 'Article',
-  headline: 'AI Lead Qualification for Real Estate in India: A Practical Workflow',
-  description: 'A practical guide for Indian builders and brokerages to design AI-assisted property lead intake, qualification, follow-up, CRM handoff, and site-visit booking.',
-  datePublished: '2026-10-23',
-  dateModified: '2026-10-23',
-  author: { '@type': 'Organization', name: 'Raja AI Systems' },
-  publisher: { '@type': 'Organization', name: 'Raja AI Systems', url: 'https://quickkitai.com' },
-  mainEntityOfPage: 'https://quickkitai.com/guides/real-estate-ai-lead-qualification'
+  '@type': 'FAQPage',
+  mainEntity: FAQS.map(({ question, answer }) => ({
+    '@type': 'Question',
+    name: question,
+    acceptedAnswer: { '@type': 'Answer', text: answer }
+  }))
 };
 
 export const RealEstateLeadQualificationGuide: React.FC = () => (
-  <article className="min-h-screen bg-[#030712] text-slate-200">
+  <div className="min-h-screen bg-[#030712] text-slate-200">
     <SeoMeta
-      title="AI Lead Qualification for Real Estate in India: A Practical Workflow"
-      description="Learn how Indian builders and brokerages can structure AI-assisted property lead qualification, WhatsApp follow-up, CRM handoff, and site-visit booking."
+      title="Real Estate AI Lead Qualification | Raja AI Systems"
+      description="Practical guide for Indian builders and brokerages on AI property lead qualification, WhatsApp follow-up, CRM handoff, and site-visit booking."
       keywords="AI lead qualification real estate India, property lead qualification, WhatsApp automation for builders, real estate CRM automation, site visit booking workflow"
       canonical="https://quickkitai.com/guides/real-estate-ai-lead-qualification"
-      schemaObj={articleSchema}
-      authorName="Raja AI Systems"
+      ogType="article"
+      schemaObj={faqSchema}
+      breadcrumbs={[
+        { name: 'Home', url: 'https://quickkitai.com/' },
+        { name: 'Knowledge Hub', url: 'https://quickkitai.com/blog' },
+        { name: 'Lead Qualification Guide', url: 'https://quickkitai.com/guides/real-estate-ai-lead-qualification' },
+      ]}
     />
-    <Helmet>
-      <script type="application/ld+json">{JSON.stringify({
-        '@context': 'https://schema.org',
-        '@type': 'FAQPage',
-        mainEntity: FAQS.map(({ question, answer }) => ({
-          '@type': 'Question',
-          name: question,
-          acceptedAnswer: { '@type': 'Answer', text: answer }
-        }))
-      })}</script>
-    </Helmet>
-
     <header className="border-b border-white/10 bg-slate-950/80">
       <div className="mx-auto max-w-4xl px-6 py-14">
         <p className="text-xs font-bold uppercase tracking-[0.24em] text-emerald-400">Real Estate AI · India</p>
         <h1 className="mt-4 text-4xl font-black tracking-tight text-white md:text-5xl">AI Lead Qualification for Real Estate in India: A Practical Workflow</h1>
+        <EditorialMetaBar className="mt-4" />
         <p className="mt-6 text-lg leading-8 text-slate-300">AI lead qualification should do more than reply quickly. It should collect the right property requirements, keep the conversation accurate, hand qualified enquiries to the sales team, and record what happened in the CRM.</p>
-        <p className="mt-4 text-sm text-slate-500">Published 23 October 2026 · Practical guide for builders, developers, and brokerages</p>
       </div>
     </header>
 
@@ -74,7 +64,14 @@ export const RealEstateLeadQualificationGuide: React.FC = () => (
         <span className="text-slate-300">Lead Qualification Guide</span>
       </nav>
 
-      <section className="space-y-5 leading-8 text-slate-300">
+      <div className="mb-8 rounded-2xl border border-emerald-400/25 bg-emerald-400/[0.06] p-5">
+        <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-300">TL;DR — 6-Step Qualification Blueprint</p>
+        <p className="mt-2 text-sm leading-6 text-slate-200">
+          Capture enquiries from 1 verified source, ask 4–5 core questions (location, BHK/type, budget, timeline, visit preference), validate inventory before quoting availability, sync every answer to the CRM, and route exceptions to a human salesperson.
+        </p>
+      </div>
+
+      <article className="space-y-5 leading-8 text-slate-300">
         <h2 className="pt-2 text-2xl font-bold text-white">1. Start with the questions your sales team actually needs</h2>
         <p>For a residential property enquiry, a useful first conversation may capture the preferred location or project, property type or BHK, approximate budget range, expected purchase timeline, and whether the person wants a callback or site visit. Commercial property teams may need a different set of questions. Keep the form short and adapt it to the inventory the business actually sells.</p>
         <p>Do not ask for every possible detail at the beginning. Collect only what is relevant to matching the enquiry to a suitable project and deciding the next step. If the prospect does not know an answer, allow them to skip it.</p>
@@ -122,7 +119,9 @@ export const RealEstateLeadQualificationGuide: React.FC = () => (
             <Link to="/contact" className="rounded-xl border border-white/15 px-5 py-3 font-bold text-white">Discuss a Workflow</Link>
           </div>
         </section>
-      </section>
+      </article>
     </main>
-  </article>
+
+    <PublicRouteFooter />
+  </div>
 );

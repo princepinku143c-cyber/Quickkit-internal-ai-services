@@ -52,7 +52,7 @@ for (const [source, destination] of [
     source + ' should permanently redirect to its canonical legal page',
   );
 }
-for (const path of ['/services/real-estate','/services/healthcare','/guides/real-estate-ai-lead-qualification','/real-estate-ai-questions','/blog','/about','/contact','/ai-visibility','/proof-of-value','/seo-audit','/privacy','/terms']) {
+for (const path of ['/services/real-estate','/services/healthcare','/guides/real-estate-ai-lead-qualification','/real-estate-ai-questions','/blog','/about','/contact','/ai-visibility','/proof-of-value','/live-demo','/seo-audit','/privacy','/terms']) {
   const routeIndex = vercelConfig.rewrites.findIndex((r) => r.source === path && r.destination === `${path}/index.html`);
   const slashIndex = vercelConfig.rewrites.findIndex((r) => r.source === `${path}/` && r.destination === `${path}/index.html`);
   const fallbackIndex = vercelConfig.rewrites.findIndex((r) => r.destination === '/index.html');
@@ -61,10 +61,12 @@ for (const path of ['/services/real-estate','/services/healthcare','/guides/real
   assert.ok(routeIndex < fallbackIndex && slashIndex < fallbackIndex, `Specific prerender rewrites for ${path} must precede the SPA fallback`);
 }
 const spaFallback = vercelConfig.rewrites.find((r) => r.destination === '/index.html');
-assert.ok(spaFallback && ['llms','services/real-estate','services/healthcare','guides/real-estate-ai-lead-qualification','real-estate-ai-questions','blog','proof-of-value'].every((route) => spaFallback.source.includes(route)), 'SPA fallback must exclude llms.txt and prerendered routes');
+assert.ok(spaFallback && ['llms','services/real-estate','services/healthcare','guides/real-estate-ai-lead-qualification','real-estate-ai-questions','blog','proof-of-value','live-demo'].every((route) => spaFallback.source.includes(route)), 'SPA fallback must exclude llms.txt and prerendered routes');
 const fallbackMatcher = new RegExp(`^${spaFallback.source}`);
-for (const path of ['/services/real-estate','/services/real-estate/index.html','/services/healthcare','/guides/real-estate-ai-lead-qualification/index.html','/real-estate-ai-questions/index.html','/blog/index.html','/proof-of-value','/proof-of-value/index.html','/llms.txt']) assert.ok(!fallbackMatcher.test(path), `SPA fallback must not rewrite static route/file ${path}`);
+for (const path of ['/services/real-estate','/services/real-estate/index.html','/services/healthcare','/guides/real-estate-ai-lead-qualification/index.html','/real-estate-ai-questions/index.html','/blog/index.html','/proof-of-value','/proof-of-value/index.html','/live-demo','/live-demo/index.html','/llms.txt']) assert.ok(!fallbackMatcher.test(path), `SPA fallback must not rewrite static route/file ${path}`);
 assert.ok(fallbackMatcher.test('/services/not-a-real-niche'), 'unknown service slugs must still reach the React route handler');
+assert.ok(fallbackMatcher.test('/login') && fallbackMatcher.test('/client') && fallbackMatcher.test('/admin'), 'authenticated SPA client routes must reach /index.html');
+assert.ok(!fallbackMatcher.test('/nonexistent-garbage-404'), 'unknown root URLs must not rewrite to /index.html so Vercel serves a 404');
 assert.match(app, /<Route path="\/guides\/real-estate-ai-lead-qualification"/);
 assert.match(app, /<Route path="\/services\/:niche"/);
 assert.match(nichePage, /<Navigate to="\/services\/real-estate" replace\s*\/>/);

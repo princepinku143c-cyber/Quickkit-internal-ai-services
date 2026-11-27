@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import {
   ArrowRight, BarChart3, CalendarCheck2, Check, ChevronRight, CircleCheck,
   Clock3, Crown, Database, Gauge, Globe2, LayoutDashboard, MessageCircle,
@@ -569,7 +570,7 @@ export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) =>
                       <span className="text-sm text-slate-600 line-through">₹30,000</span>
                       <span className="text-4xl font-black text-white">₹15,000</span>
                     </div>
-                    <div className="mt-1 text-[11px] text-emerald-300 font-bold">50% introductory rate · Zero monthly commitment</div>
+                    <div className="mt-1 text-[11px] text-emerald-300 font-bold">₹0 advance · Pay After Live Verified Result · Zero monthly maintenance</div>
                   </div>
 
                   <div className="mt-7 space-y-3">
@@ -597,7 +598,7 @@ export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) =>
                   >
                     Claim Technical Fix <ArrowRight className="h-4 w-4" />
                   </button>
-                  <p className="mt-2 text-center text-[10px] text-slate-600">7-Day Deployment Target · Staged & Verified</p>
+                  <p className="mt-2 text-center text-[10px] text-slate-600">7 Business Days Delivery · ₹0 Advance · Live Verified</p>
                 </div>
               </div>
 
@@ -664,7 +665,7 @@ export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) =>
                   >
                     Start AI Growth Plan <ArrowRight className="h-4 w-4" />
                   </button>
-                  <p className="mt-2 text-center text-[10px] text-slate-600">Daily Automated Monitoring · Fortnightly Reports</p>
+                  <p className="mt-2 text-center text-[10px] text-slate-600">30-Day Rolling AI Search Growth &amp; Sentinel · Daily Logs</p>
                 </div>
               </div>
             </div>
@@ -747,17 +748,62 @@ export const PremiumLanding: React.FC<PremiumLandingProps> = ({ onBookDemo }) =>
       </section>
 
       <footer className="relative z-10 border-t border-white/[0.07] bg-black/20">
-        <div className="mx-auto flex max-w-7xl flex-col gap-7 px-5 py-12 md:px-8 md:flex-row md:items-end md:justify-between">
-          <div>
-            <div className="flex items-center gap-3"><div className="grid h-9 w-9 place-items-center rounded-lg bg-amber-200 text-black"><Crown className="h-4 w-4" /></div><div><div className="text-sm font-black tracking-[0.10em]">QUICKKITAI <span className="text-amber-300">×</span> RAJA AI SYSTEMS</div><div className="text-[9px] uppercase tracking-[0.18em] text-slate-500">quickkitai.com · Managed AI workforce</div></div></div>
-            <p className="mt-4 max-w-xl text-xs leading-6 text-slate-600">Managed AI systems for high-response businesses. Public claims, integrations, SLAs and dependencies remain subject to the signed scope and actual verification.</p>
+        <div className="mx-auto max-w-7xl px-5 py-12 md:px-8">
+          <div className="flex flex-col gap-7 md:flex-row md:items-end md:justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="grid h-9 w-9 place-items-center rounded-lg bg-amber-200 text-black"><Crown className="h-4 w-4" /></div>
+                <div>
+                  <div className="text-sm font-black tracking-[0.10em]">QUICKKITAI <span className="text-amber-300">|</span> RAJA AI SYSTEMS</div>
+                  <div className="text-[9px] uppercase tracking-[0.18em] text-slate-500">quickkitai.com · Last updated: 27 November 2026 · By Prince (Raja)</div>
+                </div>
+              </div>
+              <p className="mt-4 max-w-xl text-xs leading-6 text-slate-500">Managed AEO, GEO &amp; AI systems for high-response businesses in India. Public claims, integrations, SLAs and dependencies remain subject to the signed scope and live verification.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <button onClick={onBookDemo} className="rounded-xl bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-black hover:bg-amber-100">Book Demo</button>
+              <button onClick={() => openWhatsApp()} className="rounded-xl border border-emerald-300/15 bg-emerald-400/[0.05] px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-emerald-100">WhatsApp</button>
+              <Link to="/terms" className="rounded-xl border border-white/10 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white">Terms</Link>
+              <Link to="/privacy" className="rounded-xl border border-white/10 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white">Privacy</Link>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <button onClick={onBookDemo} className="rounded-xl bg-white px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-black hover:bg-amber-100">Book Demo</button>
-            <button onClick={openWhatsApp} className="rounded-xl border border-emerald-300/15 bg-emerald-400/[0.05] px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-emerald-100">WhatsApp</button>
-            <a href="/terms" className="rounded-xl border border-white/10 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white">Terms</a>
-            <a href="/privacy" className="rounded-xl border border-white/10 px-4 py-2.5 text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-white">Privacy</a>
-          </div>
+
+          <nav aria-label="Site directory" className="mt-10 grid gap-6 border-t border-white/[0.06] pt-8 text-xs text-slate-400 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-amber-300">Core &amp; AEO Plans</p>
+              <ul className="mt-3 space-y-2">
+                <li><Link to="/" className="hover:text-white">Home Overview</Link></li>
+                <li><Link to="/ai-visibility" className="hover:text-white">AI Visibility &amp; AEO Plans</Link></li>
+                <li><Link to="/proof-of-value" className="hover:text-white">Proof of Value &amp; Audit Data</Link></li>
+                <li><Link to="/seo-audit" className="hover:text-white">SEO &amp; AI Search Audit</Link></li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-cyan-300">Industry Solutions</p>
+              <ul className="mt-3 space-y-2">
+                <li><Link to="/services/real-estate" className="hover:text-white">Real Estate AI Workforce</Link></li>
+                <li><Link to="/services/healthcare" className="hover:text-white">Healthcare Clinic Workflows</Link></li>
+                <li><Link to="/live-demo" className="hover:text-white">Live Controlled Workflow Demo</Link></li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-300">Guides &amp; Knowledge</p>
+              <ul className="mt-3 space-y-2">
+                <li><Link to="/guides/real-estate-ai-lead-qualification" className="hover:text-white">Real Estate Qualification Guide</Link></li>
+                <li><Link to="/real-estate-ai-questions" className="hover:text-white">Real Estate AI Q&amp;A</Link></li>
+                <li><Link to="/blog" className="hover:text-white">Knowledge Hub &amp; Blog</Link></li>
+              </ul>
+            </div>
+            <div>
+              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-300">Company &amp; Legal</p>
+              <ul className="mt-3 space-y-2">
+                <li><Link to="/about" className="hover:text-white">About Prince (Raja) &amp; Team</Link></li>
+                <li><Link to="/contact" className="hover:text-white">Contact &amp; Pilot Consultation</Link></li>
+                <li><Link to="/privacy" className="hover:text-white">Privacy Policy</Link></li>
+                <li><Link to="/terms" className="hover:text-white">Terms of Service</Link></li>
+              </ul>
+            </div>
+          </nav>
         </div>
       </footer>
 
