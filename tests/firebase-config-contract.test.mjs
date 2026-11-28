@@ -76,4 +76,22 @@ for (const aliasPath of projectAliasPaths) {
   );
 }
 
-console.log("PASS: root and nested Firebase configs resolve to separate existing rules; no default project aliases are committed; nested indexes and CI emulator port are valid.");
+// The nested application contains unfinished worker source files, but it has
+// no deployable Firebase Functions codebase yet. Keep that state explicit:
+// registering Functions before a reviewed package manifest and entrypoint
+// exist could accidentally expose unfinished payment/worker code to deployment.
+assert.equal(
+  nestedConfig.functions,
+  undefined,
+  "Nested Firebase Functions must remain unregistered until the worker is implemented and reviewed.",
+);
+const nestedFunctionsDir = resolve(dirname(nestedConfigPath), "functions");
+for (const entrypoint of ["package.json", "index.js", "index.ts"]) {
+  await assert.rejects(
+    access(resolve(nestedFunctionsDir, entrypoint)),
+    (error) => error?.code === "ENOENT",
+    `Nested Firebase Functions must not be deployable without an explicit reviewed entrypoint (${entrypoint}).`,
+  );
+}
+
+console.log("PASS: root and nested Firebase configs resolve to separate existing rules; no default project aliases are committed; nested indexes and CI emulator port are valid; unfinished nested Functions remain unregistered.");
