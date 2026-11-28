@@ -133,7 +133,7 @@ class AeoAgentCredentialTests(unittest.TestCase):
     @patch("agents.aeo_agent.urllib.request.build_opener")
     def test_provider_response_without_content_length_is_bounded(self, mocked_build_opener):
         response = FakeResponse({"choices": [{"message": {"content": "x" * MAX_PROVIDER_RESPONSE_BYTES}}]})
-        mocked_build_opener.return_value = response
+        mocked_build_opener.return_value.open.return_value = response
         stderr = io.StringIO()
         with contextlib.redirect_stderr(stderr):
             result = generate_qa_pairs("real estate")
@@ -149,7 +149,7 @@ class AeoAgentCredentialTests(unittest.TestCase):
             {"choices": [{"message": {"content": "small"}}]},
             headers={"Content-Length": str(MAX_PROVIDER_RESPONSE_BYTES + 1)},
         )
-        mocked_build_opener.return_value = response
+        mocked_build_opener.return_value.open.return_value = response
         stderr = io.StringIO()
         with contextlib.redirect_stderr(stderr):
             result = generate_qa_pairs("real estate")
