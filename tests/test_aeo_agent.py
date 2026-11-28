@@ -4,13 +4,14 @@ import json
 import os
 import sys
 import unittest
+import urllib.request
 from pathlib import Path
 from urllib.error import HTTPError
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from agents.aeo_agent import MAX_PROVIDER_RESPONSE_BYTES, generate_qa_pairs
+from agents.aeo_agent import MAX_PROVIDER_RESPONSE_BYTES, _NoRedirectHandler, generate_qa_pairs
 
 
 class FakeResponse:
@@ -41,25 +42,40 @@ PROVIDER_ENV = {
 
 class AeoAgentCredentialTests(unittest.TestCase):
     @patch.dict(os.environ, {}, clear=True)
-    @patch("agents.aeo_agent.urllib.request.urlopen")
-    def test_missing_key_fails_closed_without_network_call(self, mocked_urlopen):
+    @patch("agents.aeo_agent.urllib.request.build_opener")
+    def test_missing_key_fails_closed_without_network_call(self, mocked_build_opener):
         stderr = io.StringIO()
         with contextlib.redirect_stderr(stderr):
             result = generate_qa_pairs("real estate lead qualification")
 
         self.assertEqual(result, "[]")
-        mocked_urlopen.assert_not_called()
+        mocked_build_opener.assert_not_called()
         self.assertIn("OPENCODE_API_KEY", stderr.getvalue())
 
+    def test_redirect_handler_rejects_cross_origin_redirects(self):
+        handler = _NoRedirectHandler()
+        request = urllib.request.Request(
+            "https://opencode.ai/inference/openai/v1/chat/completions",
+            data=b"{}",
+            headers={"Authorization": "Bearer unit-test-only"},
+            method="POST",
+        )
+        redirected = handler.redirect_request(
+            request, None, 302, "Found", {}, "https://attacker.example/collect"
+        )
+        self.assertIsNone(redirected)
+
     @patch.dict(os.environ, PROVIDER_ENV, clear=True)
-    @patch("agents.aeo_agent.urllib.request.urlopen")
-    def test_request_uses_environment_key_and_expected_provider(self, mocked_urlopen):
-        mocked_urlopen.return_value = FakeResponse(
+    @patch("agents.aeo_agent.urllib.request.build_opener")
+    def test_request_uses_environment_key_and_expected_provider(self, mocked_build_opener):
+        mocked_build_opener.return_value.open.return_value = FakeResponse(
             {"choices": [{"message": {"content": "[]"}}]}
         )
 
         self.assertEqual(generate_qa_pairs("real estate"), "[]")
-        request = mocked_urlopen.call_args.args[0]
+        handler = mocked_build_opener.call_args.args[0]
+        self.assertIsInstance(handler, _NoRedirectHandler)
+        request = mocked_build_opener.return_value.open.call_args.args[0]
         payload = json.loads(request.data)
 
         self.assertEqual(
@@ -68,13 +84,13 @@ class AeoAgentCredentialTests(unittest.TestCase):
         )
         self.assertEqual(request.get_header("Authorization"), "Bearer unit-test-only")
         self.assertEqual(payload["model"], "test-model")
-        self.assertEqual(mocked_urlopen.call_args.kwargs["timeout"], 30)
-        self.assertEqual(mocked_urlopen.return_value.read_sizes, [MAX_PROVIDER_RESPONSE_BYTES + 1])
+        self.assertEqual(mocked_build_opener.return_value.open.call_args.kwargs["timeout"], 30)
+        self.assertEqual(mocked_build_opener.return_value.open.return_value.read_sizes, [MAX_PROVIDER_RESPONSE_BYTES + 1])
 
     @patch.dict(os.environ, PROVIDER_ENV, clear=True)
-    @patch("agents.aeo_agent.urllib.request.urlopen")
-    def test_provider_error_body_is_not_written_to_stderr(self, mocked_urlopen):
-        mocked_urlopen.side_effect = HTTPError(
+    @patch("agents.aeo_agent.urllib.request.build_opener")
+    def test_provider_error_body_is_not_written_to_stderr(self, mocked_build_opener):
+        mocked_build_opener.return_value.open.side_effect = HTTPError(
             "https://opencode.ai/inference/openai/v1/chat/completions",
             403,
             "Forbidden",
@@ -91,14 +107,14 @@ class AeoAgentCredentialTests(unittest.TestCase):
         self.assertIn("HTTPError", stderr.getvalue())
 
     @patch.dict(os.environ, {**PROVIDER_ENV, "AEO_API_ENABLED": "false"}, clear=True)
-    @patch("agents.aeo_agent.urllib.request.urlopen")
-    def test_disabled_flag_fails_closed_even_when_key_is_present(self, mocked_urlopen):
+    @patch("agents.aeo_agent.urllib.request.build_opener")
+    def test_disabled_flag_fails_closed_even_when_key_is_present(self, mocked_build_opener):
         self.assertEqual(generate_qa_pairs("real estate"), "[]")
-        mocked_urlopen.assert_not_called()
+        mocked_build_opener.assert_not_called()
 
     @patch.dict(os.environ, PROVIDER_ENV, clear=True)
-    @patch("agents.aeo_agent.urllib.request.urlopen")
-    def test_invalid_provider_configuration_fails_closed(self, mocked_urlopen):
+    @patch("agents.aeo_agent.urllib.request.build_opener")
+    def test_invalid_provider_configuration_fails_closed(self, mocked_build_opener):
         invalid_configs = [
             {"OPENCODE_API_ENDPOINT": ""},
             {"OPENCODE_MODEL": ""},
@@ -111,13 +127,13 @@ class AeoAgentCredentialTests(unittest.TestCase):
         for overrides in invalid_configs:
             with self.subTest(overrides=overrides), patch.dict(os.environ, {**PROVIDER_ENV, **overrides}, clear=True):
                 self.assertEqual(generate_qa_pairs("real estate"), "[]")
-        mocked_urlopen.assert_not_called()
+        mocked_build_opener.assert_not_called()
 
     @patch.dict(os.environ, PROVIDER_ENV, clear=True)
-    @patch("agents.aeo_agent.urllib.request.urlopen")
-    def test_provider_response_without_content_length_is_bounded(self, mocked_urlopen):
+    @patch("agents.aeo_agent.urllib.request.build_opener")
+    def test_provider_response_without_content_length_is_bounded(self, mocked_build_opener):
         response = FakeResponse({"choices": [{"message": {"content": "x" * MAX_PROVIDER_RESPONSE_BYTES}}]})
-        mocked_urlopen.return_value = response
+        mocked_build_opener.return_value = response
         stderr = io.StringIO()
         with contextlib.redirect_stderr(stderr):
             result = generate_qa_pairs("real estate")
@@ -127,13 +143,13 @@ class AeoAgentCredentialTests(unittest.TestCase):
         self.assertIn("ValueError", stderr.getvalue())
 
     @patch.dict(os.environ, PROVIDER_ENV, clear=True)
-    @patch("agents.aeo_agent.urllib.request.urlopen")
-    def test_declared_oversized_provider_response_is_rejected_before_read(self, mocked_urlopen):
+    @patch("agents.aeo_agent.urllib.request.build_opener")
+    def test_declared_oversized_provider_response_is_rejected_before_read(self, mocked_build_opener):
         response = FakeResponse(
             {"choices": [{"message": {"content": "small"}}]},
             headers={"Content-Length": str(MAX_PROVIDER_RESPONSE_BYTES + 1)},
         )
-        mocked_urlopen.return_value = response
+        mocked_build_opener.return_value = response
         stderr = io.StringIO()
         with contextlib.redirect_stderr(stderr):
             result = generate_qa_pairs("real estate")
@@ -143,8 +159,8 @@ class AeoAgentCredentialTests(unittest.TestCase):
         self.assertIn("ValueError", stderr.getvalue())
 
     @patch.dict(os.environ, PROVIDER_ENV, clear=True)
-    @patch("agents.aeo_agent.urllib.request.urlopen")
-    def test_invalid_keyword_and_count_are_rejected_before_network_call(self, mocked_urlopen):
+    @patch("agents.aeo_agent.urllib.request.build_opener")
+    def test_invalid_keyword_and_count_are_rejected_before_network_call(self, mocked_build_opener):
         invalid_requests = [
             (None, 5),
             ("", 5),
@@ -161,7 +177,7 @@ class AeoAgentCredentialTests(unittest.TestCase):
             for keyword, count in invalid_requests:
                 with self.subTest(keyword=repr(keyword)[:24], count=repr(count)):
                     self.assertEqual(generate_qa_pairs(keyword, count), "[]")
-        mocked_urlopen.assert_not_called()
+        mocked_build_opener.assert_not_called()
 
     def test_agent_source_has_no_hardcoded_bearer_api_key(self):
         source = (Path(__file__).resolve().parents[1] / "agents" / "aeo_agent.py").read_text()
