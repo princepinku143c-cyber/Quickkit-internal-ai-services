@@ -19,6 +19,8 @@ OPEN_CODE_ENDPOINT_PATHS = {
     "/inference/go/openai/v1/chat/completions",
 }
 OPEN_CODE_MODEL_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
+MAX_PROVIDER_RESPONSE_BYTES = 64 * 1024
+MAX_KEYWORD_LENGTH = 160
 
 
 def _provider_config():
@@ -50,6 +52,19 @@ def _provider_config():
 
 
 def generate_qa_pairs(keyword, count=5):
+    if (
+        not isinstance(keyword, str)
+        or not keyword.strip()
+        or len(keyword) > MAX_KEYWORD_LENGTH
+        or re.search(r"[\x00-\x1f\x7f]", keyword)
+        or type(count) is not int
+        or count < 1
+        or count > 5
+    ):
+        print("AEO agent received an invalid topic or Q&A count.", file=sys.stderr)
+        return "[]"
+    keyword = keyword.strip()
+
     provider = _provider_config()
     if provider is None:
         print(
@@ -79,7 +94,18 @@ def generate_qa_pairs(keyword, count=5):
             method="POST",
         )
         with urllib.request.urlopen(req, timeout=30) as resp:
-            result = json.loads(resp.read().decode("utf-8"))
+            headers = getattr(resp, "headers", None)
+            declared_length = headers.get("Content-Length") if headers is not None else None
+            if (
+                isinstance(declared_length, str)
+                and re.fullmatch(r"\d+", declared_length)
+                and int(declared_length) > MAX_PROVIDER_RESPONSE_BYTES
+            ):
+                raise ValueError("AEO provider response is too large.")
+            response_body = resp.read(MAX_PROVIDER_RESPONSE_BYTES + 1)
+            if not isinstance(response_body, (bytes, bytearray)) or len(response_body) > MAX_PROVIDER_RESPONSE_BYTES:
+                raise ValueError("AEO provider response is too large or invalid.")
+            result = json.loads(bytes(response_body).decode("utf-8"))
         return result["choices"][0]["message"].get("content", "")
     except (urllib.error.URLError, TimeoutError, ValueError, KeyError, IndexError) as exc:
         print(f"AEO agent request failed: {type(exc).__name__}", file=sys.stderr)

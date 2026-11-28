@@ -2,7 +2,6 @@ import contextlib
 import io
 import json
 import os
-import re
 import sys
 import unittest
 from pathlib import Path
@@ -11,12 +10,14 @@ from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from agents.aeo_agent import generate_qa_pairs
+from agents.aeo_agent import MAX_PROVIDER_RESPONSE_BYTES, generate_qa_pairs
 
 
 class FakeResponse:
-    def __init__(self, payload):
+    def __init__(self, payload, headers=None):
         self.payload = payload
+        self.headers = headers or {}
+        self.read_sizes = []
 
     def __enter__(self):
         return self
@@ -24,8 +25,10 @@ class FakeResponse:
     def __exit__(self, *args):
         return False
 
-    def read(self):
-        return json.dumps(self.payload).encode("utf-8")
+    def read(self, size=-1):
+        self.read_sizes.append(size)
+        body = json.dumps(self.payload).encode("utf-8")
+        return body if size is None or size < 0 else body[:size]
 
 
 PROVIDER_ENV = {
@@ -66,6 +69,7 @@ class AeoAgentCredentialTests(unittest.TestCase):
         self.assertEqual(request.get_header("Authorization"), "Bearer unit-test-only")
         self.assertEqual(payload["model"], "test-model")
         self.assertEqual(mocked_urlopen.call_args.kwargs["timeout"], 30)
+        self.assertEqual(mocked_urlopen.return_value.read_sizes, [MAX_PROVIDER_RESPONSE_BYTES + 1])
 
     @patch.dict(os.environ, PROVIDER_ENV, clear=True)
     @patch("agents.aeo_agent.urllib.request.urlopen")
@@ -86,7 +90,7 @@ class AeoAgentCredentialTests(unittest.TestCase):
         self.assertNotIn("provider-secret-response", stderr.getvalue())
         self.assertIn("HTTPError", stderr.getvalue())
 
-    @patch.dict(os.environ, {**PROVIDER_ENV, "AEO_API_ENABLED": "false"}, clear=True)
+    @patch.dict(os.environ, {"AEO_API_ENABLED": "false", **PROVIDER_ENV}, clear=True)
     @patch("agents.aeo_agent.urllib.request.urlopen")
     def test_disabled_flag_fails_closed_even_when_key_is_present(self, mocked_urlopen):
         self.assertEqual(generate_qa_pairs("real estate"), "[]")
@@ -107,6 +111,56 @@ class AeoAgentCredentialTests(unittest.TestCase):
         for overrides in invalid_configs:
             with self.subTest(overrides=overrides), patch.dict(os.environ, {**PROVIDER_ENV, **overrides}, clear=True):
                 self.assertEqual(generate_qa_pairs("real estate"), "[]")
+        mocked_urlopen.assert_not_called()
+
+    @patch.dict(os.environ, PROVIDER_ENV, clear=True)
+    @patch("agents.aeo_agent.urllib.request.urlopen")
+    def test_provider_response_without_content_length_is_bounded(self, mocked_urlopen):
+        response = FakeResponse({"choices": [{"message": {"content": "x" * MAX_PROVIDER_RESPONSE_BYTES}}]})
+        mocked_urlopen.return_value = response
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            result = generate_qa_pairs("real estate")
+
+        self.assertEqual(result, "[]")
+        self.assertEqual(response.read_sizes, [MAX_PROVIDER_RESPONSE_BYTES + 1])
+        self.assertIn("ValueError", stderr.getvalue())
+
+    @patch.dict(os.environ, PROVIDER_ENV, clear=True)
+    @patch("agents.aeo_agent.urllib.request.urlopen")
+    def test_declared_oversized_provider_response_is_rejected_before_read(self, mocked_urlopen):
+        response = FakeResponse(
+            {"choices": [{"message": {"content": "small"}}]},
+            headers={"Content-Length": str(MAX_PROVIDER_RESPONSE_BYTES + 1)},
+        )
+        mocked_urlopen.return_value = response
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            result = generate_qa_pairs("real estate")
+
+        self.assertEqual(result, "[]")
+        self.assertEqual(response.read_sizes, [])
+        self.assertIn("ValueError", stderr.getvalue())
+
+    @patch.dict(os.environ, PROVIDER_ENV, clear=True)
+    @patch("agents.aeo_agent.urllib.request.urlopen")
+    def test_invalid_keyword_and_count_are_rejected_before_network_call(self, mocked_urlopen):
+        invalid_requests = [
+            (None, 5),
+            ("", 5),
+            ("   ", 5),
+            ("x" * 161, 5),
+            ("bad\nkeyword", 5),
+            ("real estate", 0),
+            ("real estate", 6),
+            ("real estate", True),
+            ("real estate", "5"),
+        ]
+        stderr = io.StringIO()
+        with contextlib.redirect_stderr(stderr):
+            for keyword, count in invalid_requests:
+                with self.subTest(keyword=repr(keyword)[:24], count=repr(count)):
+                    self.assertEqual(generate_qa_pairs(keyword, count), "[]")
         mocked_urlopen.assert_not_called()
 
     def test_agent_source_has_no_hardcoded_bearer_api_key(self):
