@@ -90,7 +90,7 @@ class AeoAgentCredentialTests(unittest.TestCase):
         self.assertNotIn("provider-secret-response", stderr.getvalue())
         self.assertIn("HTTPError", stderr.getvalue())
 
-    @patch.dict(os.environ, {"AEO_API_ENABLED": "false", **PROVIDER_ENV}, clear=True)
+    @patch.dict(os.environ, {**PROVIDER_ENV, "AEO_API_ENABLED": "false"}, clear=True)
     @patch("agents.aeo_agent.urllib.request.urlopen")
     def test_disabled_flag_fails_closed_even_when_key_is_present(self, mocked_urlopen):
         self.assertEqual(generate_qa_pairs("real estate"), "[]")
