@@ -257,6 +257,8 @@ export function createAeoHandler({
     try {
       const providerResponse = await fetchImpl(providerConfig.endpoint, {
         method: "POST",
+        // Never forward AEO prompts or credentials through provider redirects.
+        redirect: "error",
         headers: {
           "Content-Type": "application/json",
           Authorization: "Bearer " + apiKey,
