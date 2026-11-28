@@ -67,7 +67,7 @@ class AeoAgentCredentialTests(unittest.TestCase):
         self.assertEqual(payload["model"], "test-model")
         self.assertEqual(mocked_urlopen.call_args.kwargs["timeout"], 30)
 
-    @patch.dict(os.environ, {"OPENCODE_API_KEY": "unit-test-only"}, clear=True)
+    @patch.dict(os.environ, PROVIDER_ENV, clear=True)
     @patch("agents.aeo_agent.urllib.request.urlopen")
     def test_provider_error_body_is_not_written_to_stderr(self, mocked_urlopen):
         mocked_urlopen.side_effect = HTTPError(
@@ -96,10 +96,13 @@ class AeoAgentCredentialTests(unittest.TestCase):
     @patch("agents.aeo_agent.urllib.request.urlopen")
     def test_invalid_provider_configuration_fails_closed(self, mocked_urlopen):
         invalid_configs = [
+            {"OPENCODE_API_ENDPOINT": ""},
+            {"OPENCODE_MODEL": ""},
             {"OPENCODE_API_ENDPOINT": "https://attacker.example/inference/openai/v1/chat/completions"},
             {"OPENCODE_API_ENDPOINT": "https://opencode.ai/zen/v1/chat/completions"},
             {"OPENCODE_MODEL": "deepseek-v4-flash-free"},
             {"OPENCODE_MODEL": "bad model id"},
+            {"OPENCODE_MODEL": "unapproved-free"},
         ]
         for overrides in invalid_configs:
             with self.subTest(overrides=overrides), patch.dict(os.environ, {**PROVIDER_ENV, **overrides}, clear=True):
@@ -108,7 +111,7 @@ class AeoAgentCredentialTests(unittest.TestCase):
 
     def test_agent_source_has_no_hardcoded_bearer_api_key(self):
         source = (Path(__file__).resolve().parents[1] / "agents" / "aeo_agent.py").read_text()
-        self.assertIsNone(re.search(r"Bearer\\s+sk-[A-Za-z0-9]", source))
+        self.assertNotIn("Bearer sk-", source)
         self.assertNotIn("/zen/v1/chat/completions", source)
         self.assertNotIn('"model": "deepseek-v4-flash-free"', source)
 

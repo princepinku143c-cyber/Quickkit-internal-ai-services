@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """AEO (Answer Engine Optimization) Agent.
 
-OPENCODE_API_KEY is optional. When it is absent, the agent returns an empty
-result without making a provider request. Never commit provider credentials
-to source control.
+AEO_API_ENABLED, OPENCODE_API_KEY, OPENCODE_API_ENDPOINT, and OPENCODE_MODEL
+must all be explicitly configured. Missing or invalid configuration returns an
+empty result without making a provider request. Never commit credentials to source control.
 """
 import json
 import os
