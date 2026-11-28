@@ -423,6 +423,7 @@ const validContent = JSON.stringify([
   assert.deepEqual(rateArgs, ["uid:tenant-user", "aeo-generation", 3]);
   assert.equal(captured.url, "https://opencode.ai/inference/openai/v1/chat/completions");
   assert.equal(captured.options.method, "POST");
+  assert.equal(captured.options.redirect, "error", "Provider redirects must fail closed.");
   assert.equal(captured.options.headers.Authorization, "Bearer unit-test-provider-key");
   assert.equal(JSON.parse(captured.options.body).model, "test-model");
   assert.equal(response.body.data.keyword, "real estate lead qualification");
