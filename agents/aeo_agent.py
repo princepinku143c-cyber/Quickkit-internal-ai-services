@@ -23,6 +23,13 @@ MAX_PROVIDER_RESPONSE_BYTES = 64 * 1024
 MAX_KEYWORD_LENGTH = 160
 
 
+class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Reject redirects so the provider bearer key cannot reach another origin."""
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        return None
+
+
 def _provider_config():
     api_key = os.environ.get("OPENCODE_API_KEY", "").strip()
     endpoint = os.environ.get("OPENCODE_API_ENDPOINT", "").strip()
@@ -93,7 +100,8 @@ def generate_qa_pairs(keyword, count=5):
             },
             method="POST",
         )
-        with urllib.request.urlopen(req, timeout=30) as resp:
+        opener = urllib.request.build_opener(_NoRedirectHandler())
+        with opener.open(req, timeout=30) as resp:
             headers = getattr(resp, "headers", None)
             declared_length = headers.get("Content-Length") if headers is not None else None
             if (
