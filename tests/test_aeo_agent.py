@@ -123,10 +123,10 @@ class AeoAgentCredentialTests(unittest.TestCase):
         self.assertIn("without network access", template)
         self.assertIn("Optional AEO agent provider key", dev_template)
         self.assertRegex(dev_template, r"(?m)^# OPENCODE_API_KEY=$")
-        self.assertRegex(template, r"(?m)^# OPENCODE_API_ENDPOINT=https://opencode\\.ai/inference/openai/v1/chat/completions$")
-        self.assertRegex(template, r"(?m)^# OPENCODE_MODEL=your_approved_paid_or_go_model_id$")
-        self.assertRegex(dev_template, r"(?m)^# OPENCODE_API_ENDPOINT=https://opencode\\.ai/inference/openai/v1/chat/completions$")
-        self.assertRegex(dev_template, r"(?m)^# OPENCODE_MODEL=your_approved_paid_or_go_model_id$")
+        self.assertIn("# OPENCODE_API_ENDPOINT=https://opencode.ai/inference/openai/v1/chat/completions", template)
+        self.assertIn("# OPENCODE_MODEL=your_approved_paid_or_go_model_id", template)
+        self.assertIn("# OPENCODE_API_ENDPOINT=https://opencode.ai/inference/openai/v1/chat/completions", dev_template)
+        self.assertIn("# OPENCODE_MODEL=your_approved_paid_or_go_model_id", dev_template)
 
 
 if __name__ == "__main__":

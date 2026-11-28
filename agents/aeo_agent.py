@@ -53,7 +53,7 @@ def generate_qa_pairs(keyword, count=5):
     provider = _provider_config()
     if provider is None:
         print(
-            "AEO agent is disabled or provider configuration is incomplete.",
+            "AEO agent is disabled or provider configuration is incomplete (AEO_API_ENABLED, OPENCODE_API_KEY, OPENCODE_API_ENDPOINT, OPENCODE_MODEL).",
             file=sys.stderr,
         )
         return "[]"
