@@ -2,8 +2,43 @@ import admin from "./_lib/firebaseAdmin.js";
 import { checkRateLimit } from "./_lib/security.js";
 import { isPlainObject, payloadTooLarge, safeText } from "./_lib/input.js";
 
-const PROVIDER_ENDPOINT = "https://opencode.ai/zen/v1/chat/completions";
-const PROVIDER_MODEL = "deepseek-v4-flash-free";
+// AEO requires an explicit supported OpenCode Console/Go chat endpoint and model.
+// It never falls back to a legacy provider route or an unapproved free-tier model.
+const OPEN_CODE_ENDPOINT_PATHS = new Set([
+  "/inference/openai/v1/chat/completions",
+  "/inference/go/openai/v1/chat/completions",
+]);
+const OPEN_CODE_MODEL_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$/;
+
+function getOpenCodeProviderConfig(env) {
+  const endpoint = typeof env.OPENCODE_API_ENDPOINT === "string" ? env.OPENCODE_API_ENDPOINT.trim() : "";
+  const model = typeof env.OPENCODE_MODEL === "string" ? env.OPENCODE_MODEL.trim() : "";
+  if (!endpoint || !model || !OPEN_CODE_MODEL_PATTERN.test(model)) return null;
+  if (model.toLowerCase() === "deepseek-v4-flash-free") return null;
+
+  let parsed;
+  try {
+    parsed = new URL(endpoint);
+  } catch {
+    return null;
+  }
+  if (
+    parsed.origin !== "https://opencode.ai"
+    || parsed.username
+    || parsed.password
+    || parsed.search
+    || parsed.hash
+    || !OPEN_CODE_ENDPOINT_PATHS.has(parsed.pathname)
+  ) {
+    return null;
+  }
+  // OpenCode's direct Console API does not serve free-tier chat models to
+  // external clients. A Go endpoint may use models explicitly available to Go.
+  if (parsed.pathname === "/inference/openai/v1/chat/completions" && model.toLowerCase().endsWith("-free")) {
+    return null;
+  }
+  return { endpoint: parsed.toString(), model };
+}
 const DEFAULT_TIMEOUT_MS = 15000;
 const MAX_TOKEN_LENGTH = 8192;
 const MAX_PROVIDER_RESPONSE_BYTES = 64 * 1024;
@@ -188,7 +223,8 @@ export function createAeoHandler({
 
     const env = envProvider();
     const apiKey = typeof env.OPENCODE_API_KEY === "string" ? env.OPENCODE_API_KEY.trim() : "";
-    if (env.AEO_API_ENABLED !== "true" || !apiKey) {
+    const providerConfig = getOpenCodeProviderConfig(env);
+    if (env.AEO_API_ENABLED !== "true" || !apiKey || !providerConfig) {
       return sendError(res, 503, "AEO generation is disabled or not configured.");
     }
 
@@ -219,14 +255,14 @@ export function createAeoHandler({
     const controller = new AbortController();
     const timeout = setTimeoutImpl(() => controller.abort(), timeoutMs);
     try {
-      const providerResponse = await fetchImpl(PROVIDER_ENDPOINT, {
+      const providerResponse = await fetchImpl(providerConfig.endpoint, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: "Bearer " + apiKey,
         },
         body: JSON.stringify({
-          model: PROVIDER_MODEL,
+          model: providerConfig.model,
           messages: [
             {
               role: "system",
@@ -263,7 +299,7 @@ export function createAeoHandler({
           requestedCount: count,
           qaPairs,
           provider: "opencode",
-          model: PROVIDER_MODEL,
+          model: providerConfig.model,
           schemaVersion: 1,
           createdAt: new Date().toISOString(),
         });

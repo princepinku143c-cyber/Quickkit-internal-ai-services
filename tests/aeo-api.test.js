@@ -73,6 +73,8 @@ function enabledEnv(overrides = {}) {
   return {
     AEO_API_ENABLED: "true",
     OPENCODE_API_KEY: "unit-test-provider-key",
+    OPENCODE_API_ENDPOINT: "https://opencode.ai/inference/openai/v1/chat/completions",
+    OPENCODE_MODEL: "test-model",
     ...overrides,
   };
 }
@@ -197,6 +199,26 @@ const validContent = JSON.stringify([
   assert.equal(missingProviderKey.statusCode, 503);
   assertNoStore(missingProviderKey);
   assert.equal(fetchCalls, 0);
+
+  // Provider routing/model must be explicit, current, and restricted to OpenCode's HTTPS API.
+  const invalidProviderConfigs = [
+    { OPENCODE_API_ENDPOINT: "" },
+    { OPENCODE_MODEL: "" },
+    { OPENCODE_API_ENDPOINT: "https://attacker.example/inference/openai/v1/chat/completions" },
+    { OPENCODE_API_ENDPOINT: "https://opencode.ai/zen/v1/chat/completions" },
+    { OPENCODE_MODEL: "deepseek-v4-flash-free" },
+    { OPENCODE_MODEL: "bad model id" },
+  ];
+  for (const overrides of invalidProviderConfigs) {
+    const invalidProviderConfig = createResponse();
+    await createAeoHandler({ ...common, envProvider: () => enabledEnv(overrides) })(
+      createRequest(), invalidProviderConfig,
+    );
+    assert.equal(invalidProviderConfig.statusCode, 503);
+    assertNoStore(invalidProviderConfig);
+  }
+  assert.equal(fetchCalls, 0);
+  assert.equal(rateCalls, 0, "Invalid provider configuration must fail before consuming the UID rate limit.");
 }
 
 // Payload validation rejects extra fields, oversized topics and invalid counts.
@@ -394,15 +416,15 @@ const validContent = JSON.stringify([
   assert.equal(adminClient.aeoRecords[0].data.requestedCount, 2);
   assert.deepEqual(adminClient.aeoRecords[0].data.qaPairs, response.body.data.qaPairs);
   assert.equal(adminClient.aeoRecords[0].data.provider, "opencode");
-  assert.equal(adminClient.aeoRecords[0].data.model, "deepseek-v4-flash-free");
+  assert.equal(adminClient.aeoRecords[0].data.model, "test-model");
   assert.equal(adminClient.aeoRecords[0].data.schemaVersion, 1);
   assert.equal(typeof adminClient.aeoRecords[0].data.createdAt, "string");
   assert.equal(JSON.stringify(adminClient.aeoRecords[0]).includes("unit-test-provider-key"), false);
   assert.deepEqual(rateArgs, ["uid:tenant-user", "aeo-generation", 3]);
-  assert.equal(captured.url, "https://opencode.ai/zen/v1/chat/completions");
+  assert.equal(captured.url, "https://opencode.ai/inference/openai/v1/chat/completions");
   assert.equal(captured.options.method, "POST");
   assert.equal(captured.options.headers.Authorization, "Bearer unit-test-provider-key");
-  assert.equal(JSON.parse(captured.options.body).model, "deepseek-v4-flash-free");
+  assert.equal(JSON.parse(captured.options.body).model, "test-model");
   assert.equal(response.body.data.keyword, "real estate lead qualification");
   assert.equal(JSON.stringify(response.body).includes("unit-test-provider-key"), false);
 }
